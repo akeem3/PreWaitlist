@@ -23,7 +23,7 @@ A placeholder page is live on the production wildcard domain, an arbitrary subdo
 | 0.6  | Vercel project + wildcard domain + routing                     | 0.2           | ready   |
 | 0.7  | memsearch install + config                                     | 0.1           | blocked |
 | 0.8  | Repo scaffolding (AGENTS.md, memory seed, docs, design tokens) | 0.2, 0.7      | ready   |
-| 0.9  | Lint, format, git hooks                                        | 0.2           | ready   |
+| 0.9  | Lint, format, git hooks                                        | 0.2           | done    |
 | 0.10 | End-to-end smoke test                                          | 0.3, 0.6, 0.8 | ready   |
 
 Work through these in dependency order, one at a time. Each has a `status` you should update as you go (`ready` → `in-progress` → `blocked` or `done`). A story marked `blocked` stays blocked until manually cleared — don't silently re-attempt it next session.
@@ -105,3 +105,25 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - T2: Added `"plugin": ["@zilliz/memsearch-opencode"]` to `~/.config/opencode/opencode.json`.
 - T3: **BLOCKED** — Milvus Lite does not support Windows (no PyPI wheels). Docker not installed, WSL2 not installed. The `.memory/MEMORY.md` file is created with initial content, but indexing cannot run. Unblock by installing Docker Desktop (`docker run -d -p 19530:19530 milvusdb/milvus:latest standalone`) or enabling WSL2.
 - T4: Blocked behind T3.
+
+---
+
+### Story 0.9 — Lint, format, git hooks
+
+**Status:** done
+
+**Story:** As the founder working solo across many agent sessions, I want lint/format enforced at commit time, so a bad session can't silently commit broken or inconsistent code.
+
+**Acceptance Criteria (EARS):**
+
+- AC1: The system shall run ESLint and Prettier with no errors on the scaffolded project.
+- AC2: When a commit is attempted with lint errors present, the system shall block the commit via a pre-commit hook.
+
+**Tasks:** T1 (AC1) configure ESLint + Prettier · T2 (AC2) add pre-commit hook (e.g. simple-git-hooks or husky + lint-staged).
+
+**Out of scope:** CI/CD pipeline beyond Vercel's own build-time checks (not needed at this solo, pre-launch stage).
+
+**Dev Notes:**
+
+- T1: ESLint already configured via `eslint.config.mjs` (eslint-config-next). Added Prettier 3.9.6 with `.prettierrc` and `.prettierignore`. Added `format` and `format:check` scripts. Fixed one unused-variable warning in `auth/callback/route.ts`.
+- T2: Installed `simple-git-hooks` + `lint-staged`. Pre-commit hook runs `prettier --write` + `eslint --fix` on staged `*.{js,ts,tsx,mjs,json,css,md}` files. Verified working — commit succeeded with hook running.
