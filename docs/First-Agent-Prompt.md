@@ -1,6 +1,7 @@
 # First Prompt — Paste This Into OpenCode
 
 Before sending this, make sure the following are present in the project directory:
+
 - `AGENTS.md` (root)
 - `PRD-Sprint-1.md`
 - `Epic-0-Environment-Setup.md`

@@ -1,4 +1,5 @@
 # Working Guidelines — OpenCode + Fork-Agnostic Memory
+
 **Purpose:** how this project uses OpenCode alongside VS Code, in a way that survives switching the underlying fork (MiMoCode, vanilla OpenCode, or any other) and the underlying model provider (DeepSeek, or any other free/paid provider available through OpenCode).
 **Supersedes:** the earlier MiMoCode-specific guidelines document. That document tied memory and workflow to MiMoCode's native features specifically; this one deliberately does not, per the decision to keep the fork and the model swappable.
 
@@ -15,13 +16,16 @@ This is why memory now runs on **memsearch**, not on MiMoCode's native `MEMORY.m
 **What it is:** a hybrid semantic + keyword search layer (dense vector search fused with BM25 via reciprocal rank fusion) over a folder of markdown files. The files are the source of truth; the search index is a disposable cache that rebuilds from them.
 
 **Install (free, local, no API key):**
+
 ```bash
 uv tool install 'memsearch[onnx]'
 # or: pip install 'memsearch[onnx]'
 ```
+
 Uses `bge-m3` via ONNX, CPU-only. First run downloads the embedding model once (~558MB). Zero marginal cost, zero dependency on whichever paid model API is active that week — this matters specifically because the model provider is expected to change over time.
 
 **Register with OpenCode** (user-level config, not project- or fork-specific):
+
 ```json
 // ~/.config/opencode/opencode.json
 {
@@ -32,24 +36,28 @@ Uses `bge-m3` via ONNX, CPU-only. First run downloads the embedding model once (
 **Storage backend:** Milvus Lite by default — a local `.db` file, zero server, zero cost. Reconsider only if collaborators are ever added.
 
 **File layout this produces:**
+
 ```
 .memory/
 ├── MEMORY.md            ← hand-written, durable: architecture decisions and their reasoning,
 │                            standing rules, anything expensive to re-derive
 └── 2026-07-25.md         ← auto-generated daily log, one file per day, watched and re-indexed on save
 ```
+
 Per-project isolation is automatic (collection keyed off project path) — this repo's memory never bleeds into a future project's.
 
 **What goes in `MEMORY.md` vs. the daily logs:**
-- `MEMORY.md`: the *why* behind decisions (e.g., "chose Next.js 16 over 14 because subdomain routing needs `proxy.ts`"), schema decisions once tables actually exist, anything corrected mid-build that a spec got slightly wrong.
+
+- `MEMORY.md`: the _why_ behind decisions (e.g., "chose Next.js 16 over 14 because subdomain routing needs `proxy.ts`"), schema decisions once tables actually exist, anything corrected mid-build that a spec got slightly wrong.
 - Daily logs: everything else, written as it happens — these get search-recall automatically, so they don't need to be curated the way `MEMORY.md` does.
 - Neither should duplicate what's already in `docs/PRD-Sprint1.md` or a story file — duplication is exactly what caused this project's earlier user-flow-document drift, and it's just as possible to recreate that problem inside memory files as inside spec files.
 
 ## 3. `AGENTS.md`: what it is and isn't
 
-`AGENTS.md` lives at the project root, is read every session by essentially every current coding agent (OpenCode, Claude Code, Cursor, Codex CLI, and others all read it natively), and is the single highest-leverage file in the repo *if kept lean*. Research directly on this (not just convention) found that bloated or auto-generated `AGENTS.md` files measurably hurt: they reduce agent task success and increase inference cost, mostly by duplicating information the agent could already infer from the codebase or from `package.json`.
+`AGENTS.md` lives at the project root, is read every session by essentially every current coding agent (OpenCode, Claude Code, Cursor, Codex CLI, and others all read it natively), and is the single highest-leverage file in the repo _if kept lean_. Research directly on this (not just convention) found that bloated or auto-generated `AGENTS.md` files measurably hurt: they reduce agent task success and increase inference cost, mostly by duplicating information the agent could already infer from the codebase or from `package.json`.
 
 **Practical rules adopted here, and enforced in the companion `AGENTS.md` file itself:**
+
 - Under 150 lines. If it's tempted to grow past that, the fix is almost always to delete, not to add a section.
 - Structure: **Commands** (exact, copy-pasteable), **Boundaries** in three tiers (Always do / Ask first / Never do), **Project Structure** (a flat map, not prose), and a pointer into `docs/PRD-Sprint1.md` and `docs/stories/` for anything requiring depth.
 - Hand-written, not agent-generated. An agent-generated `AGENTS.md` tends to restate what's already obvious from the repo, which is exactly the pattern shown to hurt performance.
