@@ -22,7 +22,7 @@ A placeholder page is live on the production wildcard domain, an arbitrary subdo
 | 0.5  | Paddle sandbox (setup only)                                    | 0.1           | ready   |
 | 0.6  | Vercel project + wildcard domain + routing                     | 0.2           | ready   |
 | 0.7  | memsearch install + config                                     | 0.1           | blocked |
-| 0.8  | Repo scaffolding (AGENTS.md, memory seed, docs, design tokens) | 0.2, 0.7      | ready   |
+| 0.8  | Repo scaffolding (AGENTS.md, memory seed, docs, design tokens) | 0.2, 0.7      | done    |
 | 0.9  | Lint, format, git hooks                                        | 0.2           | done    |
 | 0.10 | End-to-end smoke test                                          | 0.3, 0.6, 0.8 | ready   |
 
@@ -127,3 +127,31 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 - T1: ESLint already configured via `eslint.config.mjs` (eslint-config-next). Added Prettier 3.9.6 with `.prettierrc` and `.prettierignore`. Added `format` and `format:check` scripts. Fixed one unused-variable warning in `auth/callback/route.ts`.
 - T2: Installed `simple-git-hooks` + `lint-staged`. Pre-commit hook runs `prettier --write` + `eslint --fix` on staged `*.{js,ts,tsx,mjs,json,css,md}` files. Verified working — commit succeeded with hook running.
+
+---
+
+### Story 0.8 — Repo scaffolding for the agent workflow
+
+**Status:** done
+
+**Story:** As the founder, I want the repo scaffolded with `AGENTS.md`, a seeded `MEMORY.md`, the docs tree, and design tokens as code, so every subsequent session starts from consistent, non-duplicated context.
+
+**Acceptance Criteria (EARS):**
+
+- AC1: The system shall create a root `AGENTS.md` under 150 lines, structured as Commands / Boundaries (Always do, Ask first, Never do) / Project Structure, with no content duplicated from `package.json` or the PRD.
+- AC2: The system shall seed `.memory/MEMORY.md` with the tech-stack decisions from PRD S7.1, including the reasoning (not just the conclusion) for each.
+- AC3: The system shall place `PRD-Sprint-1.md` and `Epic-0-Environment-Setup.md` in the repository at consistent, referenced paths.
+- AC4: The system shall express Design System v2.0's colors, type scale, spacing, and radii as a Tailwind theme extension, not as values to be eyeballed from a document per component.
+- AC5: All of the above shall be committed together as a single scaffolding commit.
+
+**Tasks:** T1 (AC1) write AGENTS.md · T2 (AC2) seed .memory/MEMORY.md · T3 (AC3) place PRD/epic files · T4 (AC4) Tailwind theme extension for design tokens · T5 (AC5) commit.
+
+**Out of scope:** any actual UI component built from these tokens (Sprint 1 feature stories).
+
+**Dev Notes:**
+
+- T1: Copied `docs/AGENTS.md` (48 lines) to root. Structured as Commands / Boundaries / Project Structure. No duplication from package.json or PRD.
+- T2: `.memory/MEMORY.md` created in Story 0.7 with tech-stack decisions (Next.js 16, Supabase via @supabase/ssr, pnpm, memsearch) and reasoning for each.
+- T3: `docs/PRD-Sprint-1.md` and `docs/epics/epic-0-environment-setup.md` already placed in previous stories.
+- T4: `src/app/globals.css` rewritten with Tailwind v4 `@theme inline` block containing Design System v2.0 tokens: colors (`#FAF8F4` background, `#FFFFFF` card, `#0F7A5E` accent), Inter font, 8px grid spacing, three radii (sm/md/lg), single floating shadow token, success gradient. Build passes clean.
+- T5: Single commit with all scaffolding changes.
