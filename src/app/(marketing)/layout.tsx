@@ -1,7 +1,9 @@
+import MarketingLayout from "../../../components/layout/marketing-layout";
+
 export default function MarketingGroupLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <MarketingLayout>{children}</MarketingLayout>;
 }

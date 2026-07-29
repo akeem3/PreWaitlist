@@ -4,9 +4,13 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+
+  const cookieRedirect = request.cookies.get("auth_redirect_to")?.value;
+  const next = cookieRedirect || searchParams.get("next") || "/dashboard";
 
   if (code) {
+    let supabaseResponse = NextResponse.next({ request });
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
@@ -19,11 +23,10 @@ export async function GET(request: NextRequest) {
             cookiesToSet.forEach(({ name, value }) =>
               request.cookies.set(name, value)
             );
-            NextResponse.next({ request });
-            cookiesToSet.forEach(({ name, value, options }) => {
-              const response = NextResponse.next({ request });
-              response.cookies.set(name, value, options);
-            });
+            supabaseResponse = NextResponse.next({ request });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              supabaseResponse.cookies.set(name, value, options)
+            );
           },
         },
       }
@@ -31,7 +34,28 @@ export async function GET(request: NextRequest) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      let redirectPath = next;
+
+      if (user && !cookieRedirect) {
+        const { data: waitlist } = await supabase
+          .from("waitlists")
+          .select("id")
+          .eq("founder_id", user.id)
+          .single();
+
+        redirectPath = waitlist ? "/dashboard" : "/onboarding/1";
+      }
+
+      const response = NextResponse.redirect(`${origin}${redirectPath}`, 302);
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        response.cookies.set(cookie.name, cookie.value, cookie);
+      });
+      response.cookies.delete("auth_redirect_to");
+      return response;
     }
   }
 

@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { updateSession } from "./src/lib/supabase/middleware";
 
 const RESERVED_SLUGS = [
   "app",
@@ -9,6 +10,8 @@ const RESERVED_SLUGS = [
   "signin",
   "signup",
   "verify-email",
+  "forgot-password",
+  "reset-password",
   "www",
   "mail",
   "admin",
@@ -44,29 +47,30 @@ export const config = {
      * - /api/* (API routes)
      * - /_next/* (Next.js internals)
      * - /auth/* (auth routes — signin, signup, callback)
-     * - /onboarding/* (onboarding wizard)
-     * - /dashboard (dashboard)
      * - Static files (favicon.ico, images, etc.)
+     *
+     * NOTE: /onboarding/* and /dashboard ARE included so the auth guard
+     * can protect them. The subdomain rewrite logic skips reserved slugs.
      */
-    "/((?!api/|_next/|auth/|onboarding/|dashboard|favicon.ico|.*\\..*).*)",
+    "/((?!api/|_next/|auth/|favicon.ico|.*\\..*).*)",
   ],
 };
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const host = request.headers.get("host") ?? "";
   const subdomain = getSubdomain(host);
 
-  // No subdomain on localhost or apex domain — serve normally
+  // No subdomain on localhost or apex domain — apply auth guard
   if (!subdomain) {
-    return NextResponse.next();
+    return updateSession(request);
   }
 
-  // Reserved slugs — serve the app's own pages, not a waitlist
+  // Reserved slugs — serve the app's own pages, apply auth guard
   if (RESERVED_SLUGS.includes(subdomain)) {
-    return NextResponse.next();
+    return updateSession(request);
   }
 
-  // Rewrite to the [subdomain] dynamic route
+  // Rewrite to the [subdomain] dynamic route (no auth guard for tenant pages)
   const url = request.nextUrl.clone();
   url.pathname = `/${subdomain}${url.pathname}`;
   return NextResponse.rewrite(url);

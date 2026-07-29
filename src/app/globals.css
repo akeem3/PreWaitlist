@@ -216,6 +216,14 @@ body {
   letter-spacing: var(--tracking-tight);
 }
 
+/* Heading 2 Semibold — Auth page titles, card headers */
+.text-h2-semibold {
+  font-size: var(--text-3xl);
+  line-height: var(--heading-leading-snug);
+  font-weight: var(--font-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
 /* Heading 3 — Subsection titles */
 .text-h3 {
   font-size: var(--text-2xl);

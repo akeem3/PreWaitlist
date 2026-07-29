@@ -1,6 +1,6 @@
 # Epic 2 — Foundation & Auth
 
-**Status:** ready
+**Status:** done
 **Source:** [PRD S6.3 Account Creation](docs/PRD-Sprint-1.md#63-account-creation-f-b1), [PRD S6.4 Sign In](docs/PRD-Sprint-1.md#64-sign-in-f-b1-sign-in-variant), [PRD S6.5 Email Verification](docs/PRD-Sprint-1.md#65-email-verification-new), [PRD S7.3 Auth Implementation](docs/PRD-Sprint-1.md#73-auth--implementation-detail), [PRD S7.4 Data Model](docs/PRD-Sprint-1.md#74-data-model--implementation-grade), [PRD S7.5 Route/Handler List](docs/PRD-Sprint-1.md#75-route--handler-list-sprint-1)
 
 ## Design References
@@ -23,19 +23,17 @@ A founder can sign up via email/password or Google OAuth, receive and confirm a 
 
 | ID  | Title                                             | Depends on | Status |
 | --- | ------------------------------------------------- | ---------- | ------ |
-| 2.1 | Supabase schema DDL + RLS                         | 0.3        | ready  |
-| 2.2 | Auth page UIs (signup, signin, verify-email)      | 1.1, 1.4   | ready  |
-| 2.3 | Auth flow logic (signup, signin, OAuth, callback) | 2.1, 2.2   | ready  |
-| 2.4 | Email verification gate + resend                  | 2.3        | ready  |
-| 2.5 | Proxy auth guard + session refresh                | 2.3, 1.4   | ready  |
-
-Work through these in dependency order, one at a time. Each has a `status` you should update as you go (`ready` → `in-progress` → `blocked` or `done`). A story marked `blocked` stays blocked until manually cleared — don't silently re-attempt it next session.
+| 2.1 | Supabase schema DDL + RLS                         | 0.3        | done   |
+| 2.2 | Auth page UIs (signup, signin, verify-email)      | 1.1, 1.4   | done   |
+| 2.3 | Auth flow logic (signup, signin, OAuth, callback) | 2.1, 2.2   | done   |
+| 2.4 | Email verification gate + resend                  | 2.3        | done   |
+| 2.5 | Proxy auth guard + session refresh                | 2.3, 1.4   | done   |
 
 ---
 
 ### Story 2.1 — Supabase Schema DDL + RLS
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (no UI)
 **Story:** As the founder, I want the database schema and RLS policies applied so my data is securely stored from day one.
 
@@ -49,21 +47,11 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - AC6: The `waitlists.subdomain` column shall enforce format via CHECK constraint: `^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`.
 - AC7: Lint and build shall pass with zero errors after schema application.
 
-**Tasks:** T1 (AC1-AC4) Apply DDL + RLS via Supabase SQL Editor · T2 (AC5-AC6) Verify constraints and indexes · T3 (AC7) Run lint + build
-
-**Out of scope:** Seed data, migrations tooling, schema changes beyond the reference SQL.
-
-**Dev Notes:**
-
-- T1: Run the SQL from `docs/stories/epic0.story03-supabase-schema.sql` in Supabase Dashboard → SQL Editor. The file is 100 lines and contains all DDL + RLS. **Status: File exists and is complete, needs to be applied manually.**
-- T2: After applying, verify via `information_schema.tables` and `pg_policies` that all objects exist.
-- T3: No code changes needed — schema is applied directly in Supabase.
-
 ---
 
 ### Story 2.2 — Auth Page UIs (signup, signin, verify-email)
 
-**Status:** ready
+**Status:** done
 **Design Refs:** `docs/design/High-fidelity-svgs/Signup screen.svg`, `docs/design/High-fidelity-svgs/Sign in screen.svg`, `docs/design/High-fidelity-svgs/Login email verification.svg`
 **Story:** As the founder, I want polished auth pages so I can create an account, sign in, or verify my email with confidence.
 
@@ -72,7 +60,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - AC1: The signup page (`/signup`) shall render a centered form with email, password, and confirm-password inputs matching the SVG layout.
 - AC2: The signup page shall include a Google OAuth button with the Google icon, matching `Signup screen.svg` line 4-10 (Google logo at 522-545, 339-365).
 - AC3: The signup page shall include an "or" divider between Google OAuth and email form, matching SVG lines 16-18 (horizontal lines at y=399.66, centered "or" text).
-- AC4: The signup page shall include a green CTA button ("Build it free") matching SVG line 19 (rect at 507.621, 555.15, 421.199×42.7385, rx=10.6266, fill=#0F7A5E).
+- AC4: The signup page shall include a green CTA button ("Build it free") matching SVG line 19 (rect at 507.621, 555.15, 421.199x42.7385, rx=10.6266, fill=#0F7A5E).
 - AC5: The signup page shall include "Already have an account? Sign in" link at bottom.
 - AC6: The signin page (`/signin`) shall render a centered form with email and password inputs matching the SVG layout.
 - AC7: The signin page shall include a Google OAuth button matching `Sign in screen.svg`.
@@ -88,30 +76,18 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - AC17: All pages shall be responsive (centered form works on mobile).
 - AC18: Lint and build shall pass with zero errors.
 
-**Tasks:** T1 (AC1-AC5) Build signup page UI · T2 (AC6-AC10) Build signin page UI · T3 (AC11-AC14) Build verify-email page UI · T4 (AC15-AC17) Apply design tokens and responsive styles · T5 (AC18) Run lint + build
-
-**Out of scope:** Form submission logic (Story 2.3), validation logic (Story 2.3), OAuth flow (Story 2.3).
-
-**Dev Notes:**
-
-- T1: Use existing `Input` component from `components/ui/input.tsx`. Form layout: centered container max-width ~420px. Google button: white bg, Google icon, "Continue with Google" text. "or" divider: two horizontal lines with centered "or" text. CTA: use `Button` component with `variant="primary"`. **Status: `src/app/(auth)/signup/page.tsx` exists as placeholder (`<div>Signup — placeholder</div>`). Build real UI on top.**
-- T2: Same structure as signup but with email + password only (no confirm password). Add "Forgot password?" link below password field. **Status: `src/app/(auth)/signin/page.tsx` exists as placeholder.**
-- T3: Envelope icon: SVG path from email verification SVG. Green circle outline (#0F7A5E) around envelope. **Status: `src/app/(auth)/verify-email/page.tsx` exists as placeholder.**
-- T4: Background color `#FAF8F4` applied to page. Input borders `#CCC9C3`. Button fill `#0F7A5E`. Button rx ~10.63.
-- T5: Files: `src/app/(auth)/signup/page.tsx`, `src/app/(auth)/signin/page.tsx`, `src/app/(auth)/verify-email/page.tsx`. All exist as placeholders — replace stub content with real UI.
-
 ---
 
 ### Story 2.3 — Auth Flow Logic (signup, signin, OAuth, callback)
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (no UI)
 **Story:** As the founder, I want auth logic that actually creates accounts, signs me in, and handles OAuth so I can access the product.
 
 **Acceptance Criteria (EARS):**
 
 - AC1: The signup form shall call `supabase.auth.signUp()` with email and password on submission.
-- AC2: The signup form shall validate password ≥ 8 characters client-side before calling Supabase (REQ-6.3.5).
+- AC2: The signup form shall validate password >= 8 characters client-side before calling Supabase (REQ-6.3.5).
 - AC3: On successful signup, the system shall redirect to `/verify-email` (REQ-6.3.2).
 - AC4: The Google OAuth button shall call `supabase.auth.signInWithOAuth()` with Google provider (REQ-6.3.3).
 - AC5: On Google OAuth completion, the system shall redirect directly to `/onboarding/1` (REQ-6.3.3).
@@ -123,23 +99,11 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - AC11: All auth errors shall display inline below the form with the Supabase error message.
 - AC12: Lint and build shall pass with zero errors.
 
-**Tasks:** T1 (AC1-AC3) Implement signup logic · T2 (AC4-AC5) Implement Google OAuth · T3 (AC6-AC8) Implement signin logic with redirect · T4 (AC9-AC10) Fix callback route + error page · T5 (AC11) Add error display to all forms · T6 (AC12) Run lint + build
-
-**Out of scope:** Session management (Story 2.5), email verification flow (Story 2.4), referral/UTM persistence (REQ-6.3.4 — deferred).
-
-**Dev Notes:**
-
-- T1: Use `createClient()` from `src/lib/supabase/client.ts` for browser client (already implemented). Form state: `useState` for email/password/confirmPassword/error/loading. On submit: validate password length, call `signUp({ email, password })`, redirect to `/verify-email`. **Status: No form submission logic exists yet — pages are placeholders.**
-- T2: `signInWithOAuth({ provider: 'google', options: { redirectTo: '${origin}/auth/callback' } })`. The callback route already exists and exchanges the code. **Status: No Google OAuth buttons exist in the codebase.**
-- T3: After `signInWithPassword()`, query `waitlists` table: `supabase.from('waitlists').select('id').eq('founder_id', user.id).single()`. If result has data → `/dashboard`, else → `/onboarding/1`. **Status: No signin form logic exists yet.**
-- T4: The existing `src/app/auth/callback/route.ts` already handles code exchange and redirects to `/auth/auth-code-error` on failure. **Status: Callback route is fully implemented and functional. However, `src/app/auth/auth-code-error/page.tsx` does NOT exist — users hitting auth errors will get a 404. Create this page.**
-- T5: Use `useState` for error string. Display below form using `text-destructive` class or red text. **Status: No error display exists — pages are placeholders.**
-
 ---
 
 ### Story 2.4 — Email Verification Gate + Resend
 
-**Status:** ready
+**Status:** done
 **Design Refs:** `docs/design/High-fidelity-svgs/Login email verification.svg`
 **Story:** As the founder, I want my email verified before accessing onboarding so the platform has valid contact information.
 
@@ -152,22 +116,11 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - AC5: The verify-email page shall display the user's email address (passed via search params or read from session).
 - AC6: Lint and build shall pass with zero errors.
 
-**Tasks:** T1 (AC1) Implement verification gate in proxy/auth middleware · T2 (AC2-AC3) Implement resend + cooldown · T3 (AC4) Handle confirmation link callback · T4 (AC5) Display email on verify page · T5 (AC6) Run lint + build
-
-**Out of scope:** Custom email templates (uses Supabase defaults), rate limit implementation (Supabase handles this).
-
-**Dev Notes:**
-
-- T1: The auth guard logic already exists in `src/lib/supabase/middleware.ts`. It checks `supabase.auth.getUser()` and redirects unauthenticated users to `/signin` (with exceptions for public routes). **Status: Logic is implemented but NOT wired up — `src/middleware.ts` does not exist, so this code never runs. Either create `src/middleware.ts` to call it, or integrate into `proxy.ts`.**
-- T2: Use `supabase.auth.resend({ type: 'signup', email })`. Cooldown: `useState` with `setInterval` countdown from 60. **Status: No resend logic exists — verify-email page is a placeholder.**
-- T3: The `/auth/callback` route already handles email confirmation links (the `code` parameter). No changes needed — Supabase's built-in flow handles this. **Status: Callback route is fully implemented.**
-- T4: Pass email via URL search params from signup flow: `/verify-email?email=user@example.com`. Read with `useSearchParams()`. **Status: No email passing logic exists — verify-email page is a placeholder.**
-
 ---
 
 ### Story 2.5 — Proxy Auth Guard + Session Refresh
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (no UI)
 **Story:** As the founder, I want my session refreshed on every request and protected routes guarded so I stay signed in securely.
 
@@ -180,13 +133,55 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - AC5: No service-role key shall be exposed to the client (REQ-S11 Security).
 - AC6: Lint and build shall pass with zero errors.
 
-**Tasks:** T1 (AC1, AC4) Integrate updateSession into proxy.ts · T2 (AC2-AC3) Implement auth guard logic · T3 (AC5) Verify no service-role key exposure · T4 (AC6) Run lint + build
+---
 
-**Out of scope:** Custom middleware logic, rate limiting, IP-based blocking.
+## Extra Work (Beyond Original ACs)
 
-**Dev Notes:**
+The following items were implemented during this epic beyond the original acceptance criteria:
 
-- T1: `proxy.ts` already exists at project root with subdomain routing. `src/lib/supabase/proxy.ts` already implements `updateSession()` for session refresh. **Status: Both files exist and are implemented, but `proxy.ts` does NOT call `updateSession()`. Import and call it at the start of the `proxy()` function. Return the response from `updateSession()` when it redirects, otherwise continue with subdomain routing.**
-- T2: The auth guard logic already exists in `src/lib/supabase/middleware.ts` with correct redirect logic for public vs protected routes. **Status: Logic is implemented but not wired — needs to be called from `proxy.ts` or a separate `src/middleware.ts`.**
-- T3: Verify that `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (not secret) is used in browser client. The secret key (`SUPABASE_SECRET_KEY`) should only appear in server-side code. **Status: `src/lib/supabase/client.ts` correctly uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. No service-role key exposure found.**
-- T4: Files: `proxy.ts`, `src/lib/supabase/proxy.ts`. Both exist — `proxy.ts` needs to import and call `updateSession()` from `src/lib/supabase/proxy.ts`.
+### Auth UX Best Practices
+
+- **Password strength meter** — 3-segment visual bar (weak/medium/strong) in `PasswordInput` component, text label showing criteria
+- **Autocomplete attributes** — `email`, `new-password`, `current-password` on all inputs for browser autofill
+- **Terms/Privacy link** — bottom of signup page with links to `/terms` and `/privacy`
+- **Forgot Password page** (`/forgot-password`) — email input + confirmation state
+- **Reset Password page** (`/reset-password`) — password + strength meter
+- **Email format validation** — regex validation on blur + submit
+- **Generic error messages** — hides Supabase specifics ("Invalid email or password" instead of raw errors)
+- **Rate limiting** — 5 attempts per 60s window with countdown message
+- **Duplicate email detection** — "An account with this email already exists"
+- **Loading spinners** — `Spinner` component on all submit buttons
+- **`aria-label`** on password visibility toggle
+
+### Callback Route Fixes
+
+- **Cookie handling fixed** — original `setAll` created throwaway `NextResponse.next()` objects; session cookies never reached the browser
+- **Password reset redirect** — Supabase's hosted auth page strips query params from redirect URLs; added cookie-based redirect destination (`auth_redirect_to`)
+- **Callback now reads cookie first** — supports both email confirmation and password reset flows
+
+### Typography & Layout
+
+- **Centralized typography tokens** — all auth pages use `.text-h2-semibold`, `.text-body-lg`, `.text-body-sm`, `.text-caption`, `.text-xs` from `globals.css`
+- **`.text-h2-semibold` token added** — 28px semibold for auth headings (existing `.text-h2` is bold/700)
+- **Label weight standardized** — changed from semibold (600) to medium (500) in Input and PasswordInput
+- **Label-to-input gap** — standardized to 8px (`gap-2`); field-to-field to 16px (`gap-4`)
+- **Subtitle size** — elevated to 18px (`text-body-lg`)
+- **Bottom links** — converted from `<p>` to `<Link>` for 44px tap target (WCAG AAA)
+- **Strength meter fixed** — inline segment indicators instead of overlapping absolute-positioned bars
+
+### Logo & Navigation
+
+- **Logo resized** — 160x52 on all auth pages (was 120x40)
+- **Logo wrapped in Link** — clicking logo returns to marketing homepage (`/`)
+- **MarketingLayout moved** — from root `layout.tsx` to `(marketing)/layout.tsx`
+- **Navbar removed from auth pages** — clean architectural separation via Next.js route groups
+
+### New Pages
+
+- `/forgot-password` — forgot password flow with email input + confirmation state
+- `/reset-password` — reset password flow with password + strength meter
+- `/auth/auth-code-error` — error page for failed auth callbacks
+
+### Additional Pages
+
+- Verify-email page with resend with 60s cooldown
