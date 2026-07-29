@@ -277,10 +277,12 @@ Do not begin implementing until instructed.
 
 **Use when:** Verifying an epic document matches current implementation, or after significant code changes.
 
+**Important:** This prompt aligns documentation only. Do NOT implement anything. Update the epic document's Dev Notes to reflect actual state.
+
 ```
 Align [epic file] with current implementation
 
-You are verifying that an epic document accurately reflects what has been built. This is a truth-check — the epic document and the codebase must agree. If they don't, flag every discrepancy.
+You are verifying that an epic document accurately reflects what has been built. This is a documentation-only task — you update the epic document, not the codebase.
 
 ## Phase 1: Document Analysis
 
@@ -314,11 +316,6 @@ For every file path in the epic, verify:
 - [ ] The file contains what the epic says it contains
 - [ ] No orphaned files exist (files created but not referenced)
 
-For every design reference, verify:
-- [ ] The SVG file exists
-- [ ] The referenced elements/lines exist in the SVG
-- [ ] The implementation matches the design (colors, dimensions, layout)
-
 ## Phase 4: Discrepancy Report
 
 Categorize findings:
@@ -338,33 +335,34 @@ Categorize findings:
 - Features built beyond what the epic specifies
 - Components created but not referenced in the epic
 
-### Design Misalignment
-- Colors, tokens, or values that don't match the SVG
-- Layout structure that differs from the design
-- Missing responsive behavior
+## Phase 5: Documentation Updates
 
-## Phase 5: Structured Report
+For each discrepancy found, update the epic document's Dev Notes to annotate actual state. Use this format:
+
+**Before:**
+- T1: [original instruction]
+
+**After:**
+- T1: [original instruction] **Status: [what actually exists — "implemented", "placeholder", "not started", "file exists but not wired"]**
+
+Do NOT change ACs, story descriptions, or story statuses. Only annotate Dev Notes with implementation reality.
+
+## Phase 6: Report
 
 Deliver:
 
 ### Per-Story Alignment
-| Story | Status Match | ACs Covered | Files Exist | Tests Pass | Issues |
-|-------|--------------|-------------|-------------|------------|--------|
-| N.0   | ✅/❌        | X/Y         | ✅/❌       | ✅/❌      | [list] |
+| Story | Status Match | ACs Covered | Files Exist | Issues |
+|-------|--------------|-------------|-------------|--------|
+| N.0   | ✅/❌        | X/Y         | ✅/❌       | [list] |
 
-### Discrepancies Found
-| # | Type | Story | Description | Resolution |
-|---|------|-------|-------------|------------|
-| 1 | [type] | N.0 | [what's wrong] | [fix needed] |
+### Documentation Updates Made
+| Story | Dev Note | Update Applied |
+|-------|----------|----------------|
+| N.0   | T1       | Added status annotation |
 
-### Recommendations
-1. [Priority 1 fix]
-2. [Priority 2 fix]
+### Remaining Gaps
+- [What still needs to be built — for reference only, not to implement now]
 
-### Alignment Score
-- [X] ACs fully aligned out of [Y] total
-- [X] Files correctly referenced out of [Z] total
-- Overall alignment: [percentage]%
-
-If alignment is below 90%, recommend specific updates to the epic document or codebase to restore truth.
+If all Dev Notes are accurately annotated, confirm the epic document is aligned with current implementation.
 ```
