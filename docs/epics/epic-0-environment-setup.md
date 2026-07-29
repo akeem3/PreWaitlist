@@ -1,6 +1,6 @@
 # Epic 0 — Environment Setup
 
-**Status:** in-progress
+**Status:** done
 **Source:** [PRD S7 Technical Architecture](../PRD-Sprint-1.md#7-technical-architecture), [PRD S12 Epic & Story Template Standard](../PRD-Sprint-1.md#12-epic--story-template-standard)
 
 ## Goal
@@ -13,18 +13,18 @@ A placeholder page is live on the production wildcard domain, an arbitrary subdo
 
 ## Story Index
 
-| ID   | Title                                                          | Depends on    | Status  |
-| ---- | -------------------------------------------------------------- | ------------- | ------- |
-| 0.1  | Toolchain verification                                         | —             | done    |
-| 0.2  | Initialize Next.js 16 project                                  | 0.1           | done    |
-| 0.3  | Supabase project, auth, schema, RLS                            | 0.2           | ready   |
-| 0.4  | Resend account (setup only)                                    | 0.1           | ready   |
-| 0.5  | Paddle sandbox (setup only)                                    | 0.1           | ready   |
-| 0.6  | Vercel project + wildcard domain + routing                     | 0.2           | ready   |
-| 0.7  | memsearch install + config                                     | 0.1           | blocked |
-| 0.8  | Repo scaffolding (AGENTS.md, memory seed, docs, design tokens) | 0.2, 0.7      | done    |
-| 0.9  | Lint, format, git hooks                                        | 0.2           | done    |
-| 0.10 | End-to-end smoke test                                          | 0.3, 0.6, 0.8 | ready   |
+| ID   | Title                                                          | Depends on    | Status |
+| ---- | -------------------------------------------------------------- | ------------- | ------ |
+| 0.1  | Toolchain verification                                         | —             | done   |
+| 0.2  | Initialize Next.js 16 project                                  | 0.1           | done   |
+| 0.3  | Supabase project, auth, schema, RLS                            | 0.2           | done   |
+| 0.4  | Resend account (setup only)                                    | 0.1           | done   |
+| 0.5  | Paddle sandbox (setup only)                                    | 0.1           | done   |
+| 0.6  | Vercel project + wildcard domain + routing                     | 0.2           | done   |
+| 0.7  | memsearch install + config                                     | 0.1           | done   |
+| 0.8  | Repo scaffolding (AGENTS.md, memory seed, docs, design tokens) | 0.2, 0.7      | done   |
+| 0.9  | Lint, format, git hooks                                        | 0.2           | done   |
+| 0.10 | End-to-end smoke test                                          | 0.3, 0.6, 0.8 | done   |
 
 Work through these in dependency order, one at a time. Each has a `status` you should update as you go (`ready` → `in-progress` → `blocked` or `done`). A story marked `blocked` stays blocked until manually cleared — don't silently re-attempt it next session.
 
