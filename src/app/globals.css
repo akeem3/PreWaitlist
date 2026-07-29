@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* Design System v2.0 — colors */
+  /* Design System v2.0 — Base Colors */
   --color-background: #faf8f4;
   --color-foreground: #1a1a1a;
   --color-card: #ffffff;
@@ -16,11 +16,62 @@
   --color-destructive: #dc2626;
   --color-destructive-foreground: #ffffff;
 
-  /* Design System v2.0 — typography (Inter) */
+  /* Design System v2.0 — Semantic States */
+  --color-success: #0f7a5e;
+  --color-success-foreground: #ffffff;
+  --color-warning: #d97706;
+  --color-warning-foreground: #ffffff;
+  --color-error: #dc2626;
+  --color-error-foreground: #ffffff;
+  --color-info: #2563eb;
+  --color-info-foreground: #ffffff;
+
+  /* Design System v2.0 — Typography Scale (Inter) */
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;
 
-  /* Design System v2.0 — 8px grid spacing */
+  /* Type Scale — 9-Level Token System (based on GetWaitlist) */
+  /* Scale ratio: ~1.16 average (moderate humanist scale) */
+  /* Base: 16px = 1rem */
+  --text-2xs: 0.6875rem; /* 11px — fine print, legal */
+  --text-xs: 0.75rem; /* 12px — captions, metadata */
+  --text-sm: 0.875rem; /* 14px — UI labels, helper text */
+  --text-base: 1rem; /* 16px — body text (design base) */
+  --text-lg: 1.125rem; /* 18px — lead text, secondary headings */
+  --text-xl: 1.25rem; /* 20px — section headings (H4) */
+  --text-2xl: 1.5rem; /* 24px — page headings (H3) */
+  --text-3xl: 1.75rem; /* 28px — dashboard titles (H2) */
+  --text-4xl: 2.1875rem; /* 35px — hero headings (H1) */
+  --text-5xl: 3rem; /* 48px — display headings */
+  --text-6xl: 3.75rem; /* 60px — large display */
+
+  /* Type Scale — Line Heights (body) */
+  --leading-none: 1;
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --leading-loose: 1.75;
+
+  /* Type Scale — Heading Line Heights (tighter than body) */
+  --heading-leading-tight: 1.125;
+  --heading-leading-snug: 1.25;
+  --heading-leading-normal: 1.375;
+
+  /* Type Scale — Font Weights */
+  --font-light: 300;
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Type Scale — Letter Spacing */
+  --tracking-tighter: -0.025em;
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0em;
+  --tracking-wide: 0.025em;
+
+  /* Design System v2.0 — 8px Grid Spacing */
   --spacing-px: 1px;
   --spacing-0: 0px;
   --spacing-0\.5: 2px;
@@ -40,20 +91,202 @@
   --spacing-20: 80px;
   --spacing-24: 96px;
 
-  /* Design System v2.0 — three radii */
+  /* Design System v2.0 — Three Radii */
   --radius-sm: 0.25rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
+  --radius-full: 9999px;
 
-  /* Design System v2.0 — floating-element shadow (single token) */
+  /* Design System v2.0 — Shadow (single floating-element token) */
   --shadow-float: 0 4px 12px rgba(0, 0, 0, 0.08);
 
-  /* Success-screen checkmark gradient */
+  /* Design System v2.0 — Gradient (success-screen checkmark only) */
   --gradient-success: linear-gradient(135deg, #0f7a5e 0%, #34d399 100%);
+
+  /* Design System v2.0 — Z-Index Scale */
+  --z-base: 0;
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-overlay: 30;
+  --z-modal: 40;
+  --z-popover: 50;
+  --z-tooltip: 60;
+
+  /* Design System v2.0 — Motion Tokens */
+  --duration-instant: 0ms;
+  --duration-fast: 100ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --duration-slower: 500ms;
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Design System v2.0 — Component Tokens: Button */
+  --button-radius: var(--radius-md);
+  --button-padding-x: var(--spacing-4);
+  --button-padding-y: var(--spacing-2);
+  --button-font-size: var(--text-sm);
+  --button-font-weight: var(--font-medium);
+
+  /* Design System v2.0 — Component Tokens: Input */
+  --input-radius: var(--radius-md);
+  --input-border-width: 1px;
+  --input-padding-x: var(--spacing-3);
+  --input-padding-y: var(--spacing-2);
+  --input-font-size: var(--text-sm);
+  --input-height: var(--spacing-10);
+
+  /* Design System v2.0 — Component Tokens: Card */
+  --card-radius: var(--radius-lg);
+  --card-padding: var(--spacing-6);
+  --card-shadow: none;
+
+  /* Design System v2.0 — Component Tokens: Badge */
+  --badge-radius: var(--radius-full);
+  --badge-padding-x: var(--spacing-2);
+  --badge-padding-y: var(--spacing-0\.5);
+  --badge-font-size: var(--text-xs);
+
+  /* Design System v2.0 — Component Tokens: Toggle */
+  --toggle-width: var(--spacing-10);
+  --toggle-height: var(--spacing-6);
+  --toggle-thumb-size: var(--spacing-5);
+  --toggle-radius: var(--radius-full);
+
+  /* Design System v2.0 — Component Tokens: Select */
+  --select-radius: var(--radius-md);
+  --select-padding-x: var(--spacing-3);
+  --select-padding-y: var(--spacing-2);
+  --select-font-size: var(--text-sm);
+  --select-height: var(--spacing-10);
+
+  /* Design System v2.0 — Form Field States */
+  --input-border-color: var(--color-border);
+  --input-border-color-focus: var(--color-accent);
+  --input-border-color-error: var(--color-error);
+  --input-border-color-disabled: var(--color-muted);
+  --input-background: var(--color-card);
+  --input-background-disabled: var(--color-muted);
+  --input-placeholder-color: var(--color-muted-foreground);
 }
 
+/* Design System v2.0 — Base Styles */
 body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Design System v2.0 — Typography Presets */
+
+/* Display — Large hero headings (marketing) */
+.text-display {
+  font-size: var(--text-6xl);
+  line-height: var(--heading-leading-tight);
+  font-weight: var(--font-bold);
+  letter-spacing: var(--tracking-tighter);
+}
+
+/* Display Large — Extra large display */
+.text-display-lg {
+  font-size: var(--text-5xl);
+  line-height: var(--heading-leading-tight);
+  font-weight: var(--font-bold);
+  letter-spacing: var(--tracking-tighter);
+}
+
+/* Heading 1 — Hero/page titles */
+.text-h1 {
+  font-size: var(--text-4xl);
+  line-height: var(--heading-leading-tight);
+  font-weight: var(--font-bold);
+  letter-spacing: var(--tracking-tight);
+}
+
+/* Heading 2 — Section titles */
+.text-h2 {
+  font-size: var(--text-3xl);
+  line-height: var(--heading-leading-snug);
+  font-weight: var(--font-bold);
+  letter-spacing: var(--tracking-tight);
+}
+
+/* Heading 3 — Subsection titles */
+.text-h3 {
+  font-size: var(--text-2xl);
+  line-height: var(--heading-leading-snug);
+  font-weight: var(--font-semibold);
+}
+
+/* Heading 4 — Card/widget titles */
+.text-h4 {
+  font-size: var(--text-xl);
+  line-height: var(--heading-leading-normal);
+  font-weight: var(--font-semibold);
+}
+
+/* Body Large — Lead paragraphs */
+.text-body-lg {
+  font-size: var(--text-lg);
+  line-height: var(--leading-normal);
+  font-weight: var(--font-normal);
+}
+
+/* Body — Default body text */
+.text-body {
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  font-weight: var(--font-normal);
+}
+
+/* Body Small — Secondary text, descriptions */
+.text-body-sm {
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  font-weight: var(--font-normal);
+}
+
+/* Caption — Metadata, timestamps, helper text */
+.text-caption {
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  font-weight: var(--font-normal);
+  color: var(--color-muted-foreground);
+}
+
+/* Fine Print — Legal text, fine print */
+.text-fine-print {
+  font-size: var(--text-2xs);
+  line-height: var(--leading-normal);
+  font-weight: var(--font-normal);
+  color: var(--color-muted-foreground);
+}
+
+/* Label — Form labels, column headers */
+.text-label {
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  font-weight: var(--font-medium);
+}
+
+/* Overline — Category labels, overlines */
+.text-overline {
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  font-weight: var(--font-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+/* Code — Monospace for code and data */
+.text-code {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  font-weight: var(--font-normal);
 }

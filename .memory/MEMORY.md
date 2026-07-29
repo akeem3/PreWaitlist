@@ -90,6 +90,72 @@ Side effect worth remembering: a founder completing custom-domain verification
 Free plan regardless of email volume — and that trigger happens to coincide with
 picking up a paying customer.
 
+## Sprint 1 Scope (from PRD §2, §4, §6)
+
+**Goal:** Founder discovers product → creates account → completes onboarding in <4 min → arrives at live subdomain URL with empty dashboard.
+
+**14 Screens in Scope:**
+
+1. Marketing homepage (cold visitor) — `/`
+2. Marketing homepage ("Powered by" visitor) — `/` (conditional hero)
+3. Account creation — `/signup`
+4. Sign in — `/signin`
+5. Email verification — `/verify-email`
+6. Onboarding Step 1: Name waitlist — `/onboarding/1`
+7. Onboarding Step 2: Choose template — `/onboarding/2`
+8. Onboarding Step 3: Make it yours — `/onboarding/3`
+9. Onboarding Step 4: Qualification decision — `/onboarding/4`
+10. Onboarding Step 4a: Configure questions — `/onboarding/4a`
+11. Onboarding Step 5: Email setup (Free) — `/onboarding/5`
+12. Onboarding Step 5: Email setup (Pro) — `/onboarding/5`
+13. Success screen — `/onboarding/success`
+14. Empty dashboard — `/dashboard`
+
+**Explicitly EXCLUDED from Sprint 1:**
+
+- Public waitlist page (Sprint 2)
+- Warmth tracking (Sprint 3)
+- Broadcast email sending (Sprint 3)
+- Paddle billing enforcement (Sprint 3)
+- Real SPF/DKIM verification (Sprint 3)
+- Referral mechanics beyond config UI
+- Subscriber user type (doesn't exist yet)
+
+**Design Reference:** 17 high-fidelity SVGs in `docs/design/High-fidelity-svgs/` — every screen must reference its SVG.
+
+**Data Model:** 5 tables (founder_profiles, waitlists, qualification_questions, milestone_rewards, founder_updates) with RLS.
+
+## Typography System (Design System v2.0)
+
+**Font:** Inter (variable weight 100-900, optimized for screen)
+
+**9-Level Token System** (based on GetWaitlist analysis):
+
+| Token     | Size | Use Case                |
+| --------- | ---- | ----------------------- |
+| text-2xs  | 11px | Fine print, legal       |
+| text-xs   | 12px | Captions, metadata      |
+| text-sm   | 14px | UI labels, helper text  |
+| text-base | 16px | Body text (design base) |
+| text-lg   | 18px | Lead paragraphs         |
+| text-xl   | 20px | Section headings (H4)   |
+| text-2xl  | 24px | Page headings (H3)      |
+| text-3xl  | 28px | Dashboard titles (H2)   |
+| text-4xl  | 35px | Hero headings (H1)      |
+| text-5xl  | 48px | Display headings        |
+| text-6xl  | 60px | Large display           |
+
+**Scale Ratio:** ~1.16 average (moderate humanist scale, tighter than Major Third 1.25)
+
+**Line Heights:**
+
+- Body: 1.0, 1.25, 1.375, 1.5, 1.625, 1.75
+- Headings: 1.125, 1.25, 1.375 (tighter than body)
+
+**Letter Spacing:** -0.025em (tighter) to 0.025em (wider)
+
+**Typography Presets:** display, display-lg, h1-h4, body-lg, body, body-sm, caption, fine-print, label, overline, code
+
 ## Standing Constraints
 
 - Domain `waitlist-build.vercel.app` acceptable for Sprint 1; proper domain needed by Sprint 2.
