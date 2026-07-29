@@ -187,6 +187,16 @@ picking up a paying customer.
 | 1.5   | ✅ done | ShareCopyLink: Web Share API + clipboard, 7 tests                                                      |
 | 1.6   | ✅ done | LivePreview: 3 templates, desktop/mobile toggle, BrowserFrame, Image                                   |
 
+## Epic 2 Progress (Foundation & Auth)
+
+| Story | Status | Summary                                           |
+| ----- | ------ | ------------------------------------------------- |
+| 2.1   | ready  | Supabase schema DDL + RLS (5 tables, policies)    |
+| 2.2   | ready  | Auth page UIs (signup, signin, verify-email)      |
+| 2.3   | ready  | Auth flow logic (signup, signin, OAuth, callback) |
+| 2.4   | ready  | Email verification gate + resend                  |
+| 2.5   | ready  | Proxy auth guard + session refresh                |
+
 ## Component Inventory
 
 | File                                     | Component               | Status                                                                         |
@@ -284,4 +294,5 @@ picking up a paying customer.
 
 1. ~~Implement Story 1.2 (Toggle, Select, Textarea)~~ ✅ Done
 2. ~~Run Follow-Up Audit (Prompt #4) on completed Epic 1~~ ✅ Done — all clean
-3. Proceed to Epic 2 — **Foundation & Auth** (Stories 2.1–2.5)
+3. ~~Create Epic 2 branch from dev~~ ✅ Done
+4. Start Story 2.1 — Supabase schema DDL + RLS
