@@ -55,7 +55,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 **Dev Notes:**
 
-- T1: Run the SQL from `docs/stories/epic0.story03-supabase-schema.sql` in Supabase Dashboard → SQL Editor. The file is 100 lines and contains all DDL + RLS.
+- T1: Run the SQL from `docs/stories/epic0.story03-supabase-schema.sql` in Supabase Dashboard → SQL Editor. The file is 100 lines and contains all DDL + RLS. **Status: File exists and is complete, needs to be applied manually.**
 - T2: After applying, verify via `information_schema.tables` and `pg_policies` that all objects exist.
 - T3: No code changes needed — schema is applied directly in Supabase.
 
@@ -94,11 +94,11 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 **Dev Notes:**
 
-- T1: Use existing `Input` component from `components/ui/input.tsx`. Form layout: centered container max-width ~420px. Google button: white bg, Google icon, "Continue with Google" text. "or" divider: two horizontal lines with centered "or" text. CTA: use `Button` component with `variant="primary"`.
-- T2: Same structure as signup but with email + password only (no confirm password). Add "Forgot password?" link below password field.
-- T3: Envelope icon: SVG path from email verification SVG. Green circle outline (#0F7A5E) around envelope.
+- T1: Use existing `Input` component from `components/ui/input.tsx`. Form layout: centered container max-width ~420px. Google button: white bg, Google icon, "Continue with Google" text. "or" divider: two horizontal lines with centered "or" text. CTA: use `Button` component with `variant="primary"`. **Status: `src/app/(auth)/signup/page.tsx` exists as placeholder (`<div>Signup — placeholder</div>`). Build real UI on top.**
+- T2: Same structure as signup but with email + password only (no confirm password). Add "Forgot password?" link below password field. **Status: `src/app/(auth)/signin/page.tsx` exists as placeholder.**
+- T3: Envelope icon: SVG path from email verification SVG. Green circle outline (#0F7A5E) around envelope. **Status: `src/app/(auth)/verify-email/page.tsx` exists as placeholder.**
 - T4: Background color `#FAF8F4` applied to page. Input borders `#CCC9C3`. Button fill `#0F7A5E`. Button rx ~10.63.
-- T5: Files: `src/app/(auth)/signup/page.tsx`, `src/app/(auth)/signin/page.tsx`, `src/app/(auth)/verify-email/page.tsx`.
+- T5: Files: `src/app/(auth)/signup/page.tsx`, `src/app/(auth)/signin/page.tsx`, `src/app/(auth)/verify-email/page.tsx`. All exist as placeholders — replace stub content with real UI.
 
 ---
 
@@ -129,11 +129,11 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 **Dev Notes:**
 
-- T1: Use `createClient()` from `src/lib/supabase/client.ts` for browser client. Form state: `useState` for email/password/confirmPassword/error/loading. On submit: validate password length, call `signUp({ email, password })`, redirect to `/verify-email`.
-- T2: `signInWithOAuth({ provider: 'google', options: { redirectTo: '${origin}/auth/callback' } })`. The callback route already exists and exchanges the code.
-- T3: After `signInWithPassword()`, query `waitlists` table: `supabase.from('waitlists').select('id').eq('founder_id', user.id).single()`. If result has data → `/dashboard`, else → `/onboarding/1`.
-- T4: The existing `src/app/auth/callback/route.ts` already handles code exchange. Create `src/app/auth/auth-code-error/page.tsx` as a simple error page with "Authentication failed" message and "Back to sign in" link.
-- T5: Use `useState` for error string. Display below form using `text-destructive` class or red text.
+- T1: Use `createClient()` from `src/lib/supabase/client.ts` for browser client (already implemented). Form state: `useState` for email/password/confirmPassword/error/loading. On submit: validate password length, call `signUp({ email, password })`, redirect to `/verify-email`. **Status: No form submission logic exists yet — pages are placeholders.**
+- T2: `signInWithOAuth({ provider: 'google', options: { redirectTo: '${origin}/auth/callback' } })`. The callback route already exists and exchanges the code. **Status: No Google OAuth buttons exist in the codebase.**
+- T3: After `signInWithPassword()`, query `waitlists` table: `supabase.from('waitlists').select('id').eq('founder_id', user.id).single()`. If result has data → `/dashboard`, else → `/onboarding/1`. **Status: No signin form logic exists yet.**
+- T4: The existing `src/app/auth/callback/route.ts` already handles code exchange and redirects to `/auth/auth-code-error` on failure. **Status: Callback route is fully implemented and functional. However, `src/app/auth/auth-code-error/page.tsx` does NOT exist — users hitting auth errors will get a 404. Create this page.**
+- T5: Use `useState` for error string. Display below form using `text-destructive` class or red text. **Status: No error display exists — pages are placeholders.**
 
 ---
 
@@ -158,10 +158,10 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 **Dev Notes:**
 
-- T1: The auth guard in `src/lib/supabase/middleware.ts` already redirects unauthenticated users. Add email verification check: `if (user && !user.email_confirmed_at) { /* block access to /onboarding/* and /dashboard */ }`.
-- T2: Use `supabase.auth.resend({ type: 'signup', email })`. Cooldown: `useState` with `setInterval` countdown from 60.
-- T3: The `/auth/callback` route already handles email confirmation links (the `code` parameter). No changes needed — Supabase's built-in flow handles this.
-- T4: Pass email via URL search params from signup flow: `/verify-email?email=user@example.com`. Read with `useSearchParams()`.
+- T1: The auth guard logic already exists in `src/lib/supabase/middleware.ts`. It checks `supabase.auth.getUser()` and redirects unauthenticated users to `/signin` (with exceptions for public routes). **Status: Logic is implemented but NOT wired up — `src/middleware.ts` does not exist, so this code never runs. Either create `src/middleware.ts` to call it, or integrate into `proxy.ts`.**
+- T2: Use `supabase.auth.resend({ type: 'signup', email })`. Cooldown: `useState` with `setInterval` countdown from 60. **Status: No resend logic exists — verify-email page is a placeholder.**
+- T3: The `/auth/callback` route already handles email confirmation links (the `code` parameter). No changes needed — Supabase's built-in flow handles this. **Status: Callback route is fully implemented.**
+- T4: Pass email via URL search params from signup flow: `/verify-email?email=user@example.com`. Read with `useSearchParams()`. **Status: No email passing logic exists — verify-email page is a placeholder.**
 
 ---
 
@@ -186,7 +186,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 **Dev Notes:**
 
-- T1: `proxy.ts` already exists at project root with subdomain routing. Import `updateSession` from `src/lib/supabase/proxy.ts` and call it at the start of the `proxy()` function. Return the response from `updateSession()` when it redirects, otherwise continue with subdomain routing.
-- T2: The auth guard logic already exists in `src/lib/supabase/middleware.ts`. The `updateSession` function in `src/lib/supabase/proxy.ts` already handles session refresh. Combine: call `updateSession()` first, then apply subdomain routing logic.
-- T3: Verify that `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (not secret) is used in browser client. The secret key (`SUPABASE_SECRET_KEY`) should only appear in server-side code.
-- T4: Files: `proxy.ts`, `src/lib/supabase/proxy.ts`.
+- T1: `proxy.ts` already exists at project root with subdomain routing. `src/lib/supabase/proxy.ts` already implements `updateSession()` for session refresh. **Status: Both files exist and are implemented, but `proxy.ts` does NOT call `updateSession()`. Import and call it at the start of the `proxy()` function. Return the response from `updateSession()` when it redirects, otherwise continue with subdomain routing.**
+- T2: The auth guard logic already exists in `src/lib/supabase/middleware.ts` with correct redirect logic for public vs protected routes. **Status: Logic is implemented but not wired — needs to be called from `proxy.ts` or a separate `src/middleware.ts`.**
+- T3: Verify that `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (not secret) is used in browser client. The secret key (`SUPABASE_SECRET_KEY`) should only appear in server-side code. **Status: `src/lib/supabase/client.ts` correctly uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. No service-role key exposure found.**
+- T4: Files: `proxy.ts`, `src/lib/supabase/proxy.ts`. Both exist — `proxy.ts` needs to import and call `updateSession()` from `src/lib/supabase/proxy.ts`.
