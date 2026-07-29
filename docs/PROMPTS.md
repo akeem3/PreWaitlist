@@ -6,13 +6,15 @@ Reusable prompts for story and epic workflow.
 
 ## Table of Contents
 
-| #   | Prompt                                                           | Purpose                                                            |
-| --- | ---------------------------------------------------------------- | ------------------------------------------------------------------ |
-| 1   | [Scan Story & Create Tasks](#1-scan-story--create-tasks)         | Understand story context, research, generate phase-based task list |
-| 2   | [Verify Tests & Implementation](#2-verify-tests--implementation) | Review implementation against story, run tests, identify gaps      |
-| 3   | [Story Execution](#3-story-execution)                            | Execute tasks systematically with quality gates                    |
-| 4   | [Follow-Up Audit](#4-follow-up-audit)                            | Independent post-implementation audit of a story                   |
-| 5   | [Epic-Level Verification](#5-epic-level-verification)            | Final release audit of entire epic                                 |
+| #   | Prompt                                                           | Purpose                                                                |
+| --- | ---------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| 1   | [Scan Story & Create Tasks](#1-scan-story--create-tasks)         | Understand story context, research, generate phase-based task list     |
+| 2   | [Verify Tests & Implementation](#2-verify-tests--implementation) | Review implementation against story, run tests, identify gaps          |
+| 3   | [Story Execution](#3-story-execution)                            | Execute tasks systematically with quality gates                        |
+| 4   | [Follow-Up Audit](#4-follow-up-audit)                            | Independent post-implementation audit of a story                       |
+| 5   | [Epic-Level Verification](#5-epic-level-verification)            | Final release audit of entire epic                                     |
+| 6   | [Epic Document Creation](#6-epic-document-creation)              | Create a structured epic document with stories and acceptance criteria |
+| 7   | [Epic Alignment Check](#7-epic-alignment-check)                  | Verify epic document matches current implementation                    |
 
 ---
 
@@ -173,4 +175,220 @@ Deliver a structured report as follows:
 - A clear, honest final statement on whether this epic is production-ready
 
 If you cannot make that final statement with full confidence — say so explicitly. Do not sign off on what you cannot prove.
+```
+
+---
+
+## 6. Epic Document Creation
+
+**Use when:** Creating a new epic document for a set of related stories.
+
+```
+Create Epic [N] — [Epic Title]
+
+You are writing an epic document that will guide implementation of a major feature area. This document must be actionable, specific, and aligned with the project's PRD and existing architecture.
+
+## Phase 1: Research & Context Gathering
+
+Scan the following to understand what this epic needs to accomplish:
+
+1. **PRD sections** referenced by this epic — read each section thoroughly, extract every requirement, constraint, and acceptance criterion
+2. **Design SVGs** in `docs/design/High-fidelity-svgs/` — identify all screens, components, layouts, colors, and interactions relevant to this epic
+3. **Existing codebase** — understand what's already built that this epic connects to or depends on
+4. **Previous epics** — read `docs/epics/epic-*.md` to understand the established document structure, conventions, and status workflow
+5. **MEMORY.md** — check for decisions, constraints, and gotchas that affect this epic
+6. **Web research** — search for best practices, production-proven patterns, and common pitfalls for the features this epic covers
+
+## Phase 2: Story Decomposition
+
+Break the epic into stories following these rules:
+
+- Each story must be **independently testable** — you can verify it works without requiring other stories to be complete
+- Each story must have **clear acceptance criteria** using EARS format (AC1, AC2, AC3...)
+- Stories must be **ordered by dependency** — earlier stories don't depend on later ones
+- Each story must include **specific file paths** where implementation will happen
+- Each story must reference **exact design elements** (SVG filenames, line numbers, pixel values, colors)
+- Stories should be **scope-bounded** — nothing extra beyond what the ACs require
+- Include a **Tasks** line mapping each task to specific ACs: `T1 (AC1-AC2) description · T2 (AC3) description`
+
+## Phase 3: Document Structure
+
+Create the epic document with this exact structure:
+
+```
+
+# Epic [N] — [Title]
+
+**Status:** ready
+**Source:** [PRD section links with anchors]
+
+## Design References
+
+| Reference | File                                        |
+| --------- | ------------------------------------------- |
+| [Name]    | `docs/design/High-fidelity-svgs/[file].svg` |
+
+## Goal
+
+[One paragraph: what this epic achieves and why it matters]
+
+## Definition of Done
+
+[One paragraph: the aggregate completion state across all stories]
+
+## Story Index
+
+| ID  | Title   | Depends on | Status |
+| --- | ------- | ---------- | ------ |
+| N.0 | [Title] | —          | ready  |
+| N.1 | [Title] | N.0        | ready  |
+
+[instructional paragraph about dependency order and status workflow]
+
+---
+
+### Story N.0 — [Title]
+
+**Status:** ready
+**Design Refs:** [specific SVG files and elements]
+**Story:** As the [role], I want [goal] so that [benefit].
+
+**Acceptance Criteria (EARS):**
+
+- AC1: The system shall [specific, testable requirement]
+- AC2: The system shall [specific, testable requirement]
+- AC3: Lint and build shall pass with zero errors.
+
+**Tasks:** T1 (AC1-AC2) description · T2 (AC3) description
+
+**Out of scope:** [what this story does NOT cover, with cross-references]
+
+**Dev Notes:**
+
+- T1: [implementation guidance, code patterns, token values, PRD REQ citations]
+- T2: [implementation guidance]
+
+```
+
+## Phase 4: Validation
+
+Before finalizing, verify:
+
+- [ ] Every story has a unique ID (no duplicates)
+- [ ] Every dependency reference points to an existing story ID
+- [ ] Every AC is specific and testable (no vague language like "should be good")
+- [ ] Every Design Ref includes exact file paths
+- [ ] No story exceeds a reasonable scope (if ACs > 10, consider splitting)
+- [ ] The Story Index table matches the actual story sections
+- [ ] All PRD requirements for this epic area are covered by at least one story
+- [ ] No requirements are duplicated across stories
+
+## Phase 5: Report
+
+Report back with:
+- A summary of the epic's purpose and scope
+- The complete story index with dependency chain
+- Any ambiguities, risks, or decision points flagged
+- Confirmation that all PRD requirements are covered
+- Your confidence level in the decomposition
+
+Do not begin implementing until instructed.
+```
+
+---
+
+## 7. Epic Alignment Check
+
+**Use when:** Verifying an epic document matches current implementation, or after significant code changes.
+
+```
+Align [epic file] with current implementation
+
+You are verifying that an epic document accurately reflects what has been built. This is a truth-check — the epic document and the codebase must agree. If they don't, flag every discrepancy.
+
+## Phase 1: Document Analysis
+
+Read the epic document thoroughly. Extract:
+1. Every story ID and its status
+2. Every acceptance criterion (AC) across all stories
+3. Every file path referenced
+4. Every design reference
+5. Every dependency relationship
+
+## Phase 2: Implementation Scan
+
+For each story in the epic, scan the codebase to find:
+1. **Actual files** — do the referenced files exist? Are they where the epic says they are?
+2. **Component structure** — do the components match the epic's description?
+3. **Test coverage** — do tests exist? Do they cover the ACs?
+4. **Prop interfaces** — do component props match what the epic specifies?
+5. **Route structure** — do routes match the epic's file paths?
+6. **Design tokens** — are the referenced colors, tokens, and values used correctly?
+
+## Phase 3: Cross-Reference Check
+
+For every AC in the epic, verify:
+- [ ] The AC has a corresponding implementation (code exists)
+- [ ] The implementation matches the AC's intent (not just surface wording)
+- [ ] The AC has test coverage (test file exists and includes this scenario)
+- [ ] No AC has been partially implemented or quietly skipped
+
+For every file path in the epic, verify:
+- [ ] The file exists at the specified path
+- [ ] The file contains what the epic says it contains
+- [ ] No orphaned files exist (files created but not referenced)
+
+For every design reference, verify:
+- [ ] The SVG file exists
+- [ ] The referenced elements/lines exist in the SVG
+- [ ] The implementation matches the design (colors, dimensions, layout)
+
+## Phase 4: Discrepancy Report
+
+Categorize findings:
+
+### Status Mismatches
+- Epic says "done" but implementation is missing/incomplete
+- Epic says "ready" but implementation already exists
+- Epic says "in-progress" but no work is evident
+
+### Missing Implementation
+- ACs with no corresponding code
+- Files referenced but don't exist
+- Components described but not built
+
+### Scope Drift
+- Code that exists but isn't justified by any AC
+- Features built beyond what the epic specifies
+- Components created but not referenced in the epic
+
+### Design Misalignment
+- Colors, tokens, or values that don't match the SVG
+- Layout structure that differs from the design
+- Missing responsive behavior
+
+## Phase 5: Structured Report
+
+Deliver:
+
+### Per-Story Alignment
+| Story | Status Match | ACs Covered | Files Exist | Tests Pass | Issues |
+|-------|--------------|-------------|-------------|------------|--------|
+| N.0   | ✅/❌        | X/Y         | ✅/❌       | ✅/❌      | [list] |
+
+### Discrepancies Found
+| # | Type | Story | Description | Resolution |
+|---|------|-------|-------------|------------|
+| 1 | [type] | N.0 | [what's wrong] | [fix needed] |
+
+### Recommendations
+1. [Priority 1 fix]
+2. [Priority 2 fix]
+
+### Alignment Score
+- [X] ACs fully aligned out of [Y] total
+- [X] Files correctly referenced out of [Z] total
+- Overall alignment: [percentage]%
+
+If alignment is below 90%, recommend specific updates to the epic document or codebase to restore truth.
 ```
