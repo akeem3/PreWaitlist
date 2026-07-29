@@ -6,15 +6,14 @@ Reusable prompts for story and epic workflow.
 
 ## Table of Contents
 
-| #   | Prompt                                                           | Purpose                                                                |
-| --- | ---------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| 1   | [Scan Story & Create Tasks](#1-scan-story--create-tasks)         | Understand story context, research, generate phase-based task list     |
-| 2   | [Verify Tests & Implementation](#2-verify-tests--implementation) | Review implementation against story, run tests, identify gaps          |
-| 3   | [Story Execution](#3-story-execution)                            | Execute tasks systematically with quality gates                        |
-| 4   | [Follow-Up Audit](#4-follow-up-audit)                            | Independent post-implementation audit of a story                       |
-| 5   | [Epic-Level Verification](#5-epic-level-verification)            | Final release audit of entire epic                                     |
-| 6   | [Epic Document Creation](#6-epic-document-creation)              | Create a structured epic document with stories and acceptance criteria |
-| 7   | [Epic Alignment Check](#7-epic-alignment-check)                  | Verify epic document matches current implementation                    |
+| #   | Prompt                                                   | Purpose                                                                |
+| --- | -------------------------------------------------------- | ---------------------------------------------------------------------- |
+| 1   | [Scan Story & Create Tasks](#1-scan-story--create-tasks) | Understand story context, research, generate phase-based task list     |
+| 2   | [Story Execution](#2-story-execution)                    | Execute tasks systematically with quality gates                        |
+| 3   | [Follow-Up Audit](#3-follow-up-audit)                    | Independent post-implementation audit of a story                       |
+| 4   | [Epic-Level Verification](#4-epic-level-verification)    | Final release audit of entire epic                                     |
+| 5   | [Epic Document Creation](#5-epic-document-creation)      | Create a structured epic document with stories and acceptance criteria |
+| 6   | [Epic Alignment Check](#6-epic-alignment-check)          | Verify epic document matches current implementation                    |
 
 ---
 
@@ -58,30 +57,7 @@ Do not begin implementing until instructed.
 
 ---
 
-## 2. Verify Tests & Implementation
-
-**Use when:** Story implementation is complete, before marking done.
-
-```
-Scan [story file] and the project folder.
-
-As the dev, identify all test suites for the story, review the implementation, then run the tests.
-
-Check for:
-
-- Correct implementation per the story
-- Missing code or tests
-- Errors
-- Mismatches between story and implementation
-
-If everything passes → update the story status to Ready for Review and fill in the Dev Agent Record sections.
-
-If not → write a report with recommended next steps.
-```
-
----
-
-## 3. Story Execution
+## 2. Story Execution
 
 **Use when:** Executing tasks from a story's task list.
 
@@ -99,7 +75,7 @@ When all tasks are complete, walk the user through verifying each one step by st
 
 ---
 
-## 4. Follow-Up Audit
+## 3. Follow-Up Audit
 
 **Use when:** Post-implementation audit of a single story.
 
@@ -132,7 +108,7 @@ If you cannot make that final statement with full confidence — say so, and lis
 
 ---
 
-## 5. Epic-Level Verification
+## 4. Epic-Level Verification
 
 **Use when:** Final release audit of an entire epic.
 
@@ -179,7 +155,7 @@ If you cannot make that final statement with full confidence — say so explicit
 
 ---
 
-## 6. Epic Document Creation
+## 5. Epic Document Creation
 
 **Use when:** Creating a new epic document for a set of related stories.
 
@@ -297,7 +273,7 @@ Do not begin implementing until instructed.
 
 ---
 
-## 7. Epic Alignment Check
+## 6. Epic Alignment Check
 
 **Use when:** Verifying an epic document matches current implementation, or after significant code changes.
 
