@@ -74,6 +74,22 @@
 | 0.9   | ✅ done | ESLint, Prettier, simple-git-hooks + lint-staged                                  |
 | 0.10  | ready   | Depends on 0.3 + 0.6 + 0.8                                                        |
 
+## Decision: Resend email architecture (2026-07)
+
+All MyWaitlist emails (confirmations, moved-up notices, Pro broadcasts) go through
+Resend's plain transactional/Batch Send API against our own Supabase subscriber
+data — never Resend's Audiences/Marketing product.
+
+Why: Audiences bills per stored contact and is built for one company managing one
+list. We're one platform sending on behalf of hundreds of separate founders' lists.
+Using Audiences would mean a second, independent, unpredictable per-contact bill
+on top of the per-email one. One meter (email volume) is easier to budget than two.
+
+Side effect worth remembering: a founder completing custom-domain verification
+(Pro tier) needs a second Resend domain slot, which forces the move off Resend's
+Free plan regardless of email volume — and that trigger happens to coincide with
+picking up a paying customer.
+
 ## Standing Constraints
 
 - Domain `waitlist-build.vercel.app` acceptable for Sprint 1; proper domain needed by Sprint 2.

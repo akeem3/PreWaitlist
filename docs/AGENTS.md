@@ -18,6 +18,7 @@ Local subdomains: use `*.lvh.me:3000` (e.g. `acme.lvh.me:3000`) — resolves to 
 **Always do**
 
 - Read `docs/stories/<current-story>.md` before starting work on it; follow its Acceptance Criteria exactly.
+- Send every email type (confirmations, moved-up notices, Pro-tier broadcasts) via Resend's plain transactional/Batch Send API, addressed from Supabase subscriber records — see `docs/PRD-Sprint1.md#71a-email-sending-architecture--resend`.
 - Enforce Row-Level Security on every Supabase table — see `docs/PRD-Sprint1.md#74-data-model--implementation-grade`.
 - Use `proxy.ts`, never recreate `middleware.ts`.
 - Use the shared `components/share/share-copy-link.tsx` component anywhere sharing appears — never a one-off implementation.
@@ -30,6 +31,7 @@ Local subdomains: use `*.lvh.me:3000` (e.g. `acme.lvh.me:3000`) — resolves to 
 
 **Never do**
 
+- Never create, sync to, or bill against a Resend Audience/contact-list object — no exceptions, including for broadcasts.
 - Never write or rephrase user-facing copy. All Sprint 1 copy has already been through review. A copy gap is a stop-and-ask, not a fill-in-the-blank.
 - Never build real SPF/DKIM domain-verification logic in Sprint 1 — `docs/PRD-Sprint1.md#611-onboarding-step-5--email-setup-f-c5` (REQ-6.11.3) — UI only, stub the backend.
 - Never introduce a new accent color, drop shadow, or gradient outside what's defined in Design System v2.0's Tailwind tokens.

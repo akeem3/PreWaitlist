@@ -215,6 +215,17 @@ _(Unchanged in substance from PRD v1 — repeated here at the level needed for b
 | Deployment          | **Vercel**, wildcard domain from day one       | Step 1's live subdomain check and the Sprint 2 public page both depend on this being correct from the start.                                                                                                                                                                                                |
 | Package manager     | **pnpm**                                       | Faster installs, disk-efficient -- reasonable default for a solo dev iterating quickly.                                                                                                                                                                                                                     |
 
+### 7.1a Email Sending Architecture — Resend (decided July 2026, not yet reflected elsewhere in this PRD's original scope)
+
+Resend offers two separate products with two separate billing models: a plain transactional send API (billed by email volume), and a contact-list/"Audiences" product for managing and broadcasting to a stored mailing list (billed by number of contacts stored).
+
+**Decision: MyWaitlist shall never use Resend's Audiences/Marketing product, for any email type, including Pro-tier founder broadcasts.** Reasoning: Audiences is built for one company managing one list; MyWaitlist is one platform sending on behalf of hundreds of separate founders' subscriber lists. Using Audiences would mean creating and syncing a separate Resend-side list per founder and paying on a second, independent per-contact meter that grows unpredictably alongside the existing per-email meter.
+
+- REQ-7.1a.1: All email sends -- subscriber confirmation, "moved up" notifications, and Pro-tier founder broadcasts alike -- shall be sent via Resend's plain transactional send/Batch Send API, addressed individually from subscriber records already stored in Supabase.
+- REQ-7.1a.2: The system shall never create, sync to, or bill against a Resend Audience/contact-list object.
+- REQ-7.1a.3: Free-tier founders' subscriber emails shall send from one shared MyWaitlist-owned domain. Pro-tier founders who complete domain verification (PRD REQ-6.11.2) shall each occupy one additional verified domain slot on the same Resend account -- note this, not just email volume, is what forces the first move off Resend's Free tier (which allows only 1 domain), and it happens to coincide with the founder becoming a paying customer.
+- REQ-7.1a.4: Resend usage/billing alerts shall be configured once the product is live, so approaching the 100/day or 3,000/month Free-tier caps is visible before it's hit.
+
 ### 7.2 Subdomain Routing -- implementation detail
 
 - proxy.ts at project root reads the host header, extracts the subdomain, and rewrites non-root/non-app requests to an internal dynamic segment, e.g. app/(public)/[subdomain]/...
