@@ -6,16 +6,16 @@ Pre-launch waitlist SaaS. Solo founder project. Full spec lives in `docs/PRD-Spr
 
 Type these in chat to run prompts instantly:
 
-| Shortcut          | Runs      | Description                                       |
-| ----------------- | --------- | ------------------------------------------------- |
-| `scan [story]`    | Prompt #1 | Scan story, research, generate task list          |
-| `execute [story]` | Prompt #2 | Execute tasks systematically with quality gates   |
-| `audit [story]`   | Prompt #3 | Independent post-implementation audit             |
-| `epic-check`      | Prompt #4 | Final release audit of entire epic                |
-| `create-epic [N]` | Prompt #5 | Create structured epic document                   |
-| `align-epic [N]`  | Prompt #6 | Verify epic matches implementation                |
-| `commit-push`     | —         | Stage, commit with auto-message, push             |
-| `merge-clean`     | —         | Merge epic→dev→main, resolve conflicts, lint+test |
+| Shortcut          | Runs      | Description                                     |
+| ----------------- | --------- | ----------------------------------------------- |
+| `scan [story]`    | Prompt #1 | Scan story, research, generate task list        |
+| `execute [story]` | Prompt #2 | Execute tasks systematically with quality gates |
+| `audit [story]`   | Prompt #3 | Independent post-implementation audit           |
+| `epic-check`      | Prompt #4 | Final release audit of entire epic              |
+| `create-epic [N]` | Prompt #5 | Create structured epic document                 |
+| `align-epic [N]`  | Prompt #6 | Verify epic matches implementation              |
+| `commit-push`     | —         | Stage, commit with auto-message, push           |
+| `merge-clean`     | —         | Merge epic→dev, resolve conflicts, lint+test    |
 
 **Examples:**
 
