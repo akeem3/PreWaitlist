@@ -25,6 +25,7 @@ A placeholder page is live on the production wildcard domain, an arbitrary subdo
 | 0.8  | Repo scaffolding (AGENTS.md, memory seed, docs, design tokens) | 0.2, 0.7      | done   |
 | 0.9  | Lint, format, git hooks                                        | 0.2           | done   |
 | 0.10 | End-to-end smoke test                                          | 0.3, 0.6, 0.8 | done   |
+| 0.11 | Design System v2.0 complete                                    | 0.8           | done   |
 
 Work through these in dependency order, one at a time. Each has a `status` you should update as you go (`ready` → `in-progress` → `blocked` or `done`). A story marked `blocked` stays blocked until manually cleared — don't silently re-attempt it next session.
 
@@ -155,3 +156,41 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - T3: `docs/PRD-Sprint-1.md` and `docs/epics/epic-0-environment-setup.md` already placed in previous stories.
 - T4: `src/app/globals.css` rewritten with Tailwind v4 `@theme inline` block containing Design System v2.0 tokens: colors (`#FAF8F4` background, `#FFFFFF` card, `#0F7A5E` accent), Inter font, 8px grid spacing, three radii (sm/md/lg), single floating shadow token, success gradient. Build passes clean.
 - T5: Single commit with all scaffolding changes.
+
+---
+
+### Story 0.11 — Design System v2.0 Complete
+
+**Status:** done
+
+**Story:** As the founder, I want a fully documented design system with all tokens, typography presets, and component tokens, so Sprint 1 feature stories can build consistent UI from day one.
+
+**Acceptance Criteria (EARS):**
+
+- AC1: The system shall define all Design System v2.0 colors, typography, spacing, radii, shadows, and gradients as Tailwind v4 `@theme inline` tokens in `src/app/globals.css`.
+- AC2: The system shall implement a 9-level typography token system based on GetWaitlist's approach, with scale ratio ~1.16 (moderate humanist scale).
+- AC3: The system shall provide typography presets (CSS classes) for all heading levels, body text, captions, labels, and code.
+- AC4: The system shall include component tokens for Button, Input, Card, Badge, Toggle, Select, and Form Field States.
+- AC5: The system shall include semantic state tokens (success, warning, error, info) with foreground variants.
+- AC6: The system shall include motion tokens (duration, easing), z-index scale, and letter-spacing tokens.
+- AC7: Lint and build shall pass with zero errors after design system completion.
+
+**Tasks:** T1 (AC1-AC2) define base colors, typography scale, spacing, radii · T2 (AC3) create typography presets CSS classes · T3 (AC4-AC6) add component tokens, semantic states, motion, z-index · T4 (AC7) verify lint + build pass.
+
+**Out of scope:** actual UI components built from these tokens (Sprint 1 feature stories).
+
+**Dev Notes:**
+
+- T1-T3: `src/app/globals.css` expanded from 59 lines → 292 lines. Design System v2.0 tokens implemented:
+  - **Colors:** background, foreground, card, accent, muted, border, destructive + semantic states (success, warning, error, info)
+  - **Typography:** 11-level token system (text-2xs through text-6xl), 6 body line heights + 3 heading line heights, 5 font weights, 4 letter-spacing tokens
+  - **Spacing:** 20 tokens on 8px grid (0px to 96px)
+  - **Radii:** 4 tokens (sm, md, lg, full)
+  - **Shadows:** single floating-element token
+  - **Gradients:** success-screen checkmark gradient
+  - **Z-Index:** 7 levels (base through tooltip)
+  - **Motion:** 5 duration tokens + 3 easing curves
+  - **Component Tokens:** Button, Input, Card, Badge, Toggle, Select, Form Field States
+  - **Typography Presets:** display, display-lg, h1-h4, body-lg, body, body-sm, caption, fine-print, label, overline, code
+- T4: `pnpm lint` and `pnpm build` pass with zero errors. Design system table map SVG added to `docs/design/`.
+- Research sources: GetWaitlist typography system, Lollypop B2B SaaS typography rules, FontFYI modular type scale guide, Tailwind CSS v4 conventions.
