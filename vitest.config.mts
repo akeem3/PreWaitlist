@@ -3,12 +3,10 @@ import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-  plugins: [tsconfigPaths(), react()],
+  plugins: [react(), tsconfigPaths()],
   test: {
     environment: "happy-dom",
-    globals: true,
-    setupFiles: ["./vitest.setup.ts"],
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
-    exclude: ["tests/**", "**/e2e/**", "**/node_modules/**"],
+    include: ["src/**/*.test.{ts,tsx}"],
+    setupFiles: ["src/__tests__/setup.ts"],
   },
 });

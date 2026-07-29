@@ -1,5 +1,11 @@
 # Project Memory — Durable Decisions
 
+## Project Path
+
+- **Location:** `C:\Users\User\Work Projects\Product US\wait-app`
+- **Note:** Folder was renamed from `Product [us]` to `Product US` (square brackets broke VS Code terminal + pnpm symlinks)
+- **Date:** 2026-07-29
+
 ## Tech Stack Decisions
 
 ### Next.js 16 (not 14)
@@ -32,6 +38,48 @@
 - **Reason:** A records cannot route `*.mywaitlist.com` to Vercel. Only Vercel nameservers or a wildcard CNAME can. Since the domain was on GoDaddy, updated nameservers to point to Vercel's DNS.
 - **Date:** 2026-07-26
 
+### Component token approach (Tailwind v4)
+
+- **Decision:** Use `var()` arbitrary values for component tokens (e.g. `rounded-[var(--button-radius)]`), NOT Tailwind utility classes.
+- **Reason:** Tailwind v4 `@theme` custom tokens don't follow naming conventions to auto-generate utilities. `--button-radius` does NOT generate `rounded-button`. Must use `var()` directly.
+- **Date:** 2026-07-28
+
+### Font-size type hint
+
+- **Decision:** Use direct Tailwind classes (`text-xs`, `text-sm`, etc.) for font-size, not `text-[var(...)]` or `text-[length:var(...)]` arbitrary values.
+- **Reason:** Tailwind v4 interprets `text-[var(--badge-font-size)]` as `color:`, not `font-size:`. Additionally, `@source not` directives in `globals.css` exclude `.memory/` and `docs/` from Tailwind scanning to prevent documentation text from generating broken CSS utilities (e.g., `text-[length:var(...)]` with literal `...`).
+- **Date:** 2026-07-28 (updated 2026-07-29)
+
+### Select component
+
+- **Decision:** Use native `<select>` styled with tokens, not a complex custom dropdown.
+- **Reason:** Story 1.2 scope is simple option selection. Native is accessible by default and avoids combobox/popover complexity.
+- **Date:** 2026-07-28
+
+### Live-preview debouncing
+
+- **Decision:** Use `useDeferredValue` (React 19) instead of extra debounce dependency for live preview.
+- **Reason:** `useDeferredValue` is built-in concurrent mode (~300-500ms deferred), avoids extra debounce dependency and library.
+- **Date:** 2026-07-28
+
+### Story 1.4 marketing layout architecture
+
+- **Decision:** Shared `MarketingLayout` component in root layout wraps all children; onboarding layout overrides it (Next.js nested layout replacement).
+- **Reason:** Route group layouts (`(marketing)/layout.tsx`, `(auth)/layout.tsx`) are passthrough `<>{children}</>`. Root `layout.tsx` wraps `{children}` in `<MarketingLayout>`. Onboarding layout provides its own split-pane shell.
+- **Date:** 2026-07-28
+
+### Story 1.5 clipboard mocking
+
+- **Decision:** Global clipboard mock in `src/__tests__/setup.ts` via `Object.defineProperty` with `configurable: true`.
+- **Reason:** happy-dom `navigator.clipboard` has only getter; `vi.stubGlobal` doesn't override it. Must use `Object.defineProperty` to redefine.
+- **Date:** 2026-07-28
+
+### Story 1.6 Image replacement
+
+- **Decision:** Use `unoptimized` prop on Next.js `<Image>` for dynamic user-provided logo URLs.
+- **Reason:** Avoids configuring `remotePatterns` for every possible domain. User logos are loaded at runtime.
+- **Date:** 2026-07-28
+
 ## External Services — Setup Status
 
 ### Supabase (Story 0.3)
@@ -58,21 +106,6 @@
 - **Domain:** `mywaitlist.com` + `www.mywaitlist.com` added
 - **DNS:** Nameservers updated in GoDaddy to Vercel's
 - **Wildcard:** `*.mywaitlist.com` not yet added via "Add Existing" in Vercel Domains
-
-## Epic 0 Progress
-
-| Story | Status  | Summary                                                                           |
-| ----- | ------- | --------------------------------------------------------------------------------- |
-| 0.1   | ✅ done | Toolchain verified, git init, .gitignore, first commit                            |
-| 0.2   | ✅ done | Next.js 16 scaffolded, 15 route placeholders, all folders                         |
-| 0.3   | ready   | Supabase project + Google OAuth done. Client/DDL/RLS not written                  |
-| 0.4   | ready   | Resend account not created                                                        |
-| 0.5   | ready   | Paddle sandbox keys in .env.local                                                 |
-| 0.6   | ready   | Vercel project + domain added. Wildcard + proxy.ts not done                       |
-| 0.7   | blocked | memsearch CLI + plugin done. Docker not installed (Milvus Lite no Windows wheels) |
-| 0.8   | ✅ done | AGENTS.md, MEMORY.md, docs tree, design tokens                                    |
-| 0.9   | ✅ done | ESLint, Prettier, simple-git-hooks + lint-staged                                  |
-| 0.10  | ready   | Depends on 0.3 + 0.6 + 0.8                                                        |
 
 ## Decision: Resend email architecture (2026-07)
 
@@ -125,6 +158,70 @@ picking up a paying customer.
 
 **Data Model:** 5 tables (founder_profiles, waitlists, qualification_questions, milestone_rewards, founder_updates) with RLS.
 
+## Epic 0 Progress (All 12 Stories Done)
+
+| Story | Status     | Summary                                                                           |
+| ----- | ---------- | --------------------------------------------------------------------------------- |
+| 0.1   | ✅ done    | Toolchain verified, git init, .gitignore, first commit                            |
+| 0.2   | ✅ done    | Next.js 16 scaffolded, 15 route placeholders, all folders                         |
+| 0.3   | ✅ done    | Supabase project + Google OAuth done. Client/DDL/RLS not written                  |
+| 0.4   | ✅ done    | Resend account setup                                                              |
+| 0.5   | ✅ done    | Paddle sandbox keys in .env.local                                                 |
+| 0.6   | ✅ done    | Vercel project + domain added                                                     |
+| 0.7   | ⛔ blocked | memsearch CLI + plugin done. Docker not installed (Milvus Lite no Windows wheels) |
+| 0.8   | ✅ done    | AGENTS.md, MEMORY.md, docs tree, design tokens                                    |
+| 0.9   | ✅ done    | ESLint, Prettier, simple-git-hooks + lint-staged                                  |
+| 0.11  | ✅ done    | Design tokens in globals.css (292 lines)                                          |
+| 0.12  | ✅ done    | Test infrastructure (Vitest + happy-dom + RTL + userEvent)                        |
+| 0.10  | ✅ done    | Smoke test — all routes render                                                    |
+
+## Epic 1 Progress (Design System, Layout Shells, Share Component)
+
+| Story | Status  | Summary                                                                                                |
+| ----- | ------- | ------------------------------------------------------------------------------------------------------ |
+| 1.0   | ✅ done | cn() utility (clsx 2.1.1 + tailwind-merge 3.6.0), component dirs exist                                 |
+| 1.1   | ✅ done | Button (4 variants/3 sizes), Card (6 parts), Input (label/error/helper), Badge (6 variants) — 42 tests |
+| 1.2   | ✅ done | Toggle, Select, Textarea — 33 tests, forwardRef, token-based styling                                   |
+| 1.3   | ✅ done | Onboarding layout: split-pane, progress bar, back nav, mobile responsive                               |
+| 1.4   | ✅ done | Marketing layout: sticky header (logo + nav), footer, mobile drawer                                    |
+| 1.5   | ✅ done | ShareCopyLink: Web Share API + clipboard, 7 tests                                                      |
+| 1.6   | ✅ done | LivePreview: 3 templates, desktop/mobile toggle, BrowserFrame, Image                                   |
+
+## Component Inventory
+
+| File                                     | Component               | Status                                                                         |
+| ---------------------------------------- | ----------------------- | ------------------------------------------------------------------------------ |
+| `components/ui/button.tsx`               | Button                  | ✅ Done — 4 variants (primary/secondary/destructive/ghost), 3 sizes (sm/md/lg) |
+| `components/ui/card.tsx`                 | Card + 5 sub-components | ✅ Done — CardHeader, CardTitle, CardDescription, CardContent, CardFooter      |
+| `components/ui/input.tsx`                | Input                   | ✅ Done — label, error, helperText, auto-ID, aria-invalid/describedby          |
+| `components/ui/badge.tsx`                | Badge                   | ✅ Done — 6 variants (default/success/warning/error/info/outline)              |
+| `components/ui/toggle.tsx`               | Toggle                  | ✅ Done — onCheckedChange, label, token-based styling                          |
+| `components/ui/select.tsx`               | Select                  | ✅ Done — native select, placeholder, error/helperText                         |
+| `components/ui/textarea.tsx`             | Textarea                | ✅ Done — label, error/helperText, resize-y                                    |
+| `components/share/share-copy-link.tsx`   | ShareCopyLink           | ✅ Done — Web Share API + clipboard, 2s confirmation                           |
+| `components/onboarding/live-preview.tsx` | LivePreview             | ✅ Done — 3 templates, BrowserFrame, desktop/mobile toggle                     |
+| `components/layout/marketing-layout.tsx` | MarketingLayout         | ✅ Done — Header (sticky, backdrop-blur, logo image, mobile drawer) + Footer   |
+| `components/lib/cn.ts`                   | cn()                    | ✅ Done — clsx + tailwind-merge                                                |
+
+## Layout Structure
+
+| File                             | Purpose                                                       |
+| -------------------------------- | ------------------------------------------------------------- |
+| `src/app/layout.tsx`             | Root layout — wraps children in `<MarketingLayout>`           |
+| `src/app/(marketing)/layout.tsx` | Passthrough `<>{children}</>`                                 |
+| `src/app/(auth)/layout.tsx`      | Passthrough `<>{children}</>`                                 |
+| `src/app/onboarding/layout.tsx`  | Split-pane layout — progress bar, back nav, mobile responsive |
+
+## Testing
+
+- **Framework:** Vitest 4.1.10 + happy-dom 20.11.1 + @testing-library/react 16.3.2 + @testing-library/user-event 14.6.1
+- **Config:** `vitest.config.mts` — setup file `src/__tests__/setup.ts`
+- **Test files:** 8 files in `src/__tests__/components/` — badge, card, button, input, toggle, select, textarea, share-copy-link
+- **Total tests:** 86 passing (all green)
+- **Critical fix:** happy-dom over jsdom (jsdom 30 has ESM issues on Windows)
+- **Critical fix:** `@rolldown/binding-win32-x64-msvc` required explicit install for Vitest 4 on Windows
+- **Critical fix:** `vitest.config.mts` uses `import { defineConfig } from "vitest/config"` (NOT `vite/config`) to avoid plugin import errors
+
 ## Typography System (Design System v2.0)
 
 **Font:** Inter (variable weight 100-900, optimized for screen)
@@ -156,6 +253,15 @@ picking up a paying customer.
 
 **Typography Presets:** display, display-lg, h1-h4, body-lg, body, body-sm, caption, fine-print, label, overline, code
 
+## Brand
+
+- **Logo:** `public/MyWaitlist Offical logo.png` (note: original filename has typo "Offical")
+- **Brand color (accent):** `#0f7a5e` (green)
+- **Accent hover:** `#0d6b52`
+- **Accent foreground:** `#ffffff`
+- **Logo usage in nav:** `<Image src="/MyWaitlist Offical logo.png" alt="MyWaitlist" width={140} height={28} priority />`
+- **Sign-in link hover:** `hover:text-accent` (brand green)
+
 ## Standing Constraints
 
 - Domain `waitlist-build.vercel.app` acceptable for Sprint 1; proper domain needed by Sprint 2.
@@ -163,3 +269,19 @@ picking up a paying customer.
 - Use `proxy.ts`, never `middleware.ts`.
 - Never write user-facing copy — all Sprint 1 copy is reviewed.
 - Never build real SPF/DKIM in Sprint 1 — UI only, stub backend.
+- Never recreate `middleware.ts` — use `proxy.ts` for subdomain routing.
+- Never introduce new accent colors, shadows, or gradients outside Design System v2.0 tokens.
+- Branching: `main` = production, `dev` = development, `epic-1` = feature branch.
+- Design-heavy epics must reference high-fidelity SVGs by file path.
+- Every story has `status` field: `ready` → `in-progress` → `blocked` or `done`.
+
+## Gotchas / Corrected Assumptions
+
+- **Tailwind v4 scans ALL project files** — including `.md` files. If documentation contains text like `text-[length:var(...)]` or `text-[var(--badge-font-size)]` (even in backtick code spans), Tailwind generates broken CSS utilities from them. Fix: add `@source not "../../docs"` and `@source not "../../.memory"` to `globals.css`.
+- **`--text-*` tokens in `@theme` conflict with Tailwind's `text-` utility namespace** — Tailwind v4 auto-generates utilities from `@theme` token names. Tokens starting with `--text-` get interpreted as color utilities, not font-size. Use direct Tailwind classes (`text-xs`, `text-sm`) instead of `text-[var(--text-xs)]`.
+
+## Next Steps
+
+1. ~~Implement Story 1.2 (Toggle, Select, Textarea)~~ ✅ Done
+2. ~~Run Follow-Up Audit (Prompt #4) on completed Epic 1~~ ✅ Done — all clean
+3. Proceed to Epic 2 — **Foundation & Auth** (Stories 2.1–2.5)

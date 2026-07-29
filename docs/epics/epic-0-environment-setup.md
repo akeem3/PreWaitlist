@@ -26,7 +26,6 @@ A placeholder page is live on the production wildcard domain, an arbitrary subdo
 | 0.9  | Lint, format, git hooks                                        | 0.2           | done   |
 | 0.10 | End-to-end smoke test                                          | 0.3, 0.6, 0.8 | done   |
 | 0.11 | Design System v2.0 complete                                    | 0.8           | done   |
-| 0.12 | Test infrastructure (Vitest + Playwright)                      | 0.2           | done   |
 
 Work through these in dependency order, one at a time. Each has a `status` you should update as you go (`ready` → `in-progress` → `blocked` or `done`). A story marked `blocked` stays blocked until manually cleared — don't silently re-attempt it next session.
 
@@ -160,35 +159,38 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 ---
 
-### Story 0.12 — Test Infrastructure Setup
+### Story 0.11 — Design System v2.0 Complete
 
 **Status:** done
 
-**Story:** As the founder, I want a testing infrastructure with Vitest for unit tests and Playwright for E2E tests, so every subsequent story can be tested from day one.
+**Story:** As the founder, I want a fully documented design system with all tokens, typography presets, and component tokens, so Sprint 1 feature stories can build consistent UI from day one.
 
 **Acceptance Criteria (EARS):**
 
-- AC1: The system shall install Vitest + React Testing Library + happy-dom and provide a working `vitest.config.mts` that resolves `@/*` path aliases.
-- AC2: The system shall add `test` and `test:run` scripts to `package.json` that execute Vitest.
-- AC3: The system shall install Playwright and provide a working `playwright.config.ts` that runs E2E tests against the production build (`pnpm build && pnpm start`).
-- AC4: The system shall add `test:e2e` and `test:e2e:ui` scripts to `package.json`.
-- AC5: The system shall create a `vitest.setup.ts` that registers Testing Library matchers.
-- AC6: The system shall create a sample test file (`src/__tests__/components/button.test.tsx`) that renders a simple component and passes.
-- AC7: The system shall create a sample E2E test (`tests/e2e/homepage.spec.ts`) that navigates to `/` and asserts the page loads.
-- AC8: The system shall update `.gitignore` to exclude `test-results/` and `playwright-report/`.
-- AC9: Lint and build shall pass with zero errors after implementation.
+- AC1: The system shall define all Design System v2.0 colors, typography, spacing, radii, shadows, and gradients as Tailwind v4 `@theme inline` tokens in `src/app/globals.css`.
+- AC2: The system shall implement a 9-level typography token system based on GetWaitlist's approach, with scale ratio ~1.16 (moderate humanist scale).
+- AC3: The system shall provide typography presets (CSS classes) for all heading levels, body text, captions, labels, and code.
+- AC4: The system shall include component tokens for Button, Input, Card, Badge, Toggle, Select, and Form Field States.
+- AC5: The system shall include semantic state tokens (success, warning, error, info) with foreground variants.
+- AC6: The system shall include motion tokens (duration, easing), z-index scale, and letter-spacing tokens.
+- AC7: Lint and build shall pass with zero errors after design system completion.
 
-**Tasks:** T1 (AC1) install Vitest + RTL + happy-dom, create vitest.config.mts · T2 (AC2) add test scripts to package.json · T3 (AC3) install Playwright, create playwright.config.ts · T4 (AC4) add E2E scripts to package.json · T5 (AC5) create vitest.setup.ts · T6 (AC6) create sample unit test · T7 (AC7) create sample E2E test · T8 (AC8) update .gitignore · T9 (AC9) verify lint + build.
+**Tasks:** T1 (AC1-AC2) define base colors, typography scale, spacing, radii · T2 (AC3) create typography presets CSS classes · T3 (AC4-AC6) add component tokens, semantic states, motion, z-index · T4 (AC7) verify lint + build pass.
 
-**Out of scope:** pgTAP for RLS testing (requires Docker + Supabase CLI local stack); actual test coverage for Sprint 1 features (tests are written per-story).
+**Out of scope:** actual UI components built from these tokens (Sprint 1 feature stories).
 
 **Dev Notes:**
 
-- T1: `pnpm add -D vitest @vitejs/plugin-react happy-dom @testing-library/react @testing-library/dom @testing-library/jest-dom vite-tsconfig-paths @rolldown/binding-win32-x64-msvc`. Used `happy-dom` instead of `jsdom` due to ESM compatibility issues with jsdom 30 on Windows.
-- T2: Added `"test": "vitest"`, `"test:run": "vitest run"`, `"test:e2e": "playwright test"`, `"test:e2e:ui": "playwright test --ui"` to package.json scripts.
-- T3: `pnpm add -D @playwright/test && pnpm exec playwright install chromium`. Config uses `pnpm build && pnpm start` for production testing.
-- T5: `vitest.setup.ts` imports `@testing-library/jest-dom/vitest` for matchers (e.g., `toBeInTheDocument()`).
-- T6: Sample test in `src/__tests__/components/button.test.tsx` renders a button, tests click and disabled state. All 3 tests pass.
-- T7: Sample E2E test in `tests/e2e/homepage.spec.ts` navigates to `/` and checks page title.
-- T8: Added `/test-results` and `/playwright-report` to `.gitignore`.
-- T9: `pnpm lint`, `pnpm build`, and `pnpm test:run` all pass with zero errors.
+- T1-T3: `src/app/globals.css` expanded from 59 lines → 292 lines. Design System v2.0 tokens implemented:
+  - **Colors:** background, foreground, card, accent, muted, border, destructive + semantic states (success, warning, error, info)
+  - **Typography:** 11-level token system (text-2xs through text-6xl), 6 body line heights + 3 heading line heights, 5 font weights, 4 letter-spacing tokens
+  - **Spacing:** 20 tokens on 8px grid (0px to 96px)
+  - **Radii:** 4 tokens (sm, md, lg, full)
+  - **Shadows:** single floating-element token
+  - **Gradients:** success-screen checkmark gradient
+  - **Z-Index:** 7 levels (base through tooltip)
+  - **Motion:** 5 duration tokens + 3 easing curves
+  - **Component Tokens:** Button, Input, Card, Badge, Toggle, Select, Form Field States
+  - **Typography Presets:** display, display-lg, h1-h4, body-lg, body, body-sm, caption, fine-print, label, overline, code
+- T4: `pnpm lint` and `pnpm build` pass with zero errors. Design system table map SVG added to `docs/design/`.
+- Research sources: GetWaitlist typography system, Lollypop B2B SaaS typography rules, FontFYI modular type scale guide, Tailwind CSS v4 conventions.

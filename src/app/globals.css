@@ -1,6 +1,9 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
+@source not "../../docs";
+@source not "../../.memory";
+
 @theme inline {
   /* Design System v2.0 — Base Colors */
   --color-background: #faf8f4;
@@ -146,7 +149,6 @@
   --badge-radius: var(--radius-full);
   --badge-padding-x: var(--spacing-2);
   --badge-padding-y: var(--spacing-0\.5);
-  --badge-font-size: var(--text-xs);
 
   /* Design System v2.0 — Component Tokens: Toggle */
   --toggle-width: var(--spacing-10);
@@ -158,7 +160,6 @@
   --select-radius: var(--radius-md);
   --select-padding-x: var(--spacing-3);
   --select-padding-y: var(--spacing-2);
-  --select-font-size: var(--text-sm);
   --select-height: var(--spacing-10);
 
   /* Design System v2.0 — Form Field States */
@@ -168,7 +169,6 @@
   --input-border-color-disabled: var(--color-muted);
   --input-background: var(--color-card);
   --input-background-disabled: var(--color-muted);
-  --input-placeholder-color: var(--color-muted-foreground);
 }
 
 /* Design System v2.0 — Base Styles */
