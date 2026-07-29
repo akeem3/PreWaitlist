@@ -22,8 +22,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           id={inputId}
           className={cn(
-            "flex h-10 w-full rounded-[var(--input-radius)] border bg-[var(--input-background)] px-[var(--input-padding-x)] py-[var(--input-padding-y)] text-[length:var(--input-font-size)] file:border-0 file:bg-transparent file:text-sm file:font-medium",
-            "placeholder:text-[var(--input-placeholder-color)]",
+            "flex h-10 w-full rounded-[var(--input-radius)] border bg-[var(--input-background)] px-[var(--input-padding-x)] py-[var(--input-padding-y)] text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium",
+            "placeholder:text-muted-foreground",
             "focus-visible:outline-none focus-visible:border-[var(--input-border-color-focus)]",
             "disabled:cursor-not-allowed disabled:bg-[var(--input-background-disabled)] disabled:opacity-50",
             error

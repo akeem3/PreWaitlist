@@ -8,7 +8,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         className={cn(
-          "rounded-[var(--card-radius)] bg-card text-[var(--color-card-foreground)] shadow-[var(--card-shadow)]",
+          "rounded-[var(--card-radius)] bg-card text-card-foreground shadow-[var(--card-shadow)]",
           className
         )}
         ref={ref}

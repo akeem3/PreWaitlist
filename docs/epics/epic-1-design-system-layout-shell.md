@@ -40,11 +40,10 @@ All design-system primitives (Button, Card, Input, Badge, Toggle, Select, Textar
 | --- | ------------------------------------------------------- | ---------- | ------ |
 | 1.0 | cn() utility + component directory setup                | —          | done   |
 | 1.1 | Design-system primitives (Button, Card, Input, Badge)   | 1.0        | done   |
-| 1.2 | Design-system primitives (Toggle, Select, Textarea)     | 1.0        | ready  |
-| 1.3 | Onboarding layout shell + step progress bar             | 1.0        | ready  |
-| 1.4 | Marketing layout shell (header/footer)                  | 1.0        | ready  |
-| 1.5 | Share-copy-link component                               | 1.0        | ready  |
-| 1.6 | Live-preview component (shared across onboarding steps) | 1.0        | ready  |
+| 1.2 | Design-system primitives (Toggle, Select, Textarea)     | 1.0        | done   |
+| 1.3 | Onboarding layout shell + step progress bar             | 1.0        | done   |
+| 1.5 | Share-copy-link component                               | 1.0        | done   |
+| 1.6 | Live-preview component (shared across onboarding steps) | 1.0        | done   |
 
 Work through these in dependency order, one at a time. Each has a `status` you should update as you go (`ready` → `in-progress` → `blocked` or `done`). A story marked `blocked` stays blocked until manually cleared — don't silently re-attempt it next session.
 
@@ -193,7 +192,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 ### Story 1.4 — Marketing layout shell (header/footer)
 
-**Status:** ready
+**Status:** done
 
 **Design Refs:**
 

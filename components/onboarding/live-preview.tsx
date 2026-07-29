@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useDeferredValue, useState } from "react";
 
 type Template = "minimal" | "bold" | "dark";
@@ -93,9 +94,12 @@ function MinimalTemplate({
       }}
     >
       {logoUrl && (
-        <img
+        <Image
           src={logoUrl}
           alt="Logo"
+          width={120}
+          height={40}
+          unoptimized
           style={{ height: 40, objectFit: "contain" }}
         />
       )}
@@ -187,9 +191,12 @@ function BoldTemplate({
       }}
     >
       {logoUrl && (
-        <img
+        <Image
           src={logoUrl}
           alt="Logo"
+          width={144}
+          height={48}
+          unoptimized
           style={{ height: 48, objectFit: "contain" }}
         />
       )}
@@ -300,9 +307,12 @@ function DarkTemplate({
       }}
     >
       {logoUrl && (
-        <img
+        <Image
           src={logoUrl}
           alt="Logo"
+          width={120}
+          height={40}
+          unoptimized
           style={{ height: 40, objectFit: "contain" }}
         />
       )}
