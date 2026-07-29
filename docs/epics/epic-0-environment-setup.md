@@ -25,6 +25,8 @@ A placeholder page is live on the production wildcard domain, an arbitrary subdo
 | 0.8  | Repo scaffolding (AGENTS.md, memory seed, docs, design tokens) | 0.2, 0.7      | done   |
 | 0.9  | Lint, format, git hooks                                        | 0.2           | done   |
 | 0.10 | End-to-end smoke test                                          | 0.3, 0.6, 0.8 | done   |
+| 0.11 | Design System v2.0 complete                                    | 0.8           | done   |
+| 0.12 | Test infrastructure (Vitest + Playwright)                      | 0.2           | done   |
 
 Work through these in dependency order, one at a time. Each has a `status` you should update as you go (`ready` → `in-progress` → `blocked` or `done`). A story marked `blocked` stays blocked until manually cleared — don't silently re-attempt it next session.
 
@@ -155,3 +157,38 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - T3: `docs/PRD-Sprint-1.md` and `docs/epics/epic-0-environment-setup.md` already placed in previous stories.
 - T4: `src/app/globals.css` rewritten with Tailwind v4 `@theme inline` block containing Design System v2.0 tokens: colors (`#FAF8F4` background, `#FFFFFF` card, `#0F7A5E` accent), Inter font, 8px grid spacing, three radii (sm/md/lg), single floating shadow token, success gradient. Build passes clean.
 - T5: Single commit with all scaffolding changes.
+
+---
+
+### Story 0.12 — Test Infrastructure Setup
+
+**Status:** done
+
+**Story:** As the founder, I want a testing infrastructure with Vitest for unit tests and Playwright for E2E tests, so every subsequent story can be tested from day one.
+
+**Acceptance Criteria (EARS):**
+
+- AC1: The system shall install Vitest + React Testing Library + happy-dom and provide a working `vitest.config.mts` that resolves `@/*` path aliases.
+- AC2: The system shall add `test` and `test:run` scripts to `package.json` that execute Vitest.
+- AC3: The system shall install Playwright and provide a working `playwright.config.ts` that runs E2E tests against the production build (`pnpm build && pnpm start`).
+- AC4: The system shall add `test:e2e` and `test:e2e:ui` scripts to `package.json`.
+- AC5: The system shall create a `vitest.setup.ts` that registers Testing Library matchers.
+- AC6: The system shall create a sample test file (`src/__tests__/components/button.test.tsx`) that renders a simple component and passes.
+- AC7: The system shall create a sample E2E test (`tests/e2e/homepage.spec.ts`) that navigates to `/` and asserts the page loads.
+- AC8: The system shall update `.gitignore` to exclude `test-results/` and `playwright-report/`.
+- AC9: Lint and build shall pass with zero errors after implementation.
+
+**Tasks:** T1 (AC1) install Vitest + RTL + happy-dom, create vitest.config.mts · T2 (AC2) add test scripts to package.json · T3 (AC3) install Playwright, create playwright.config.ts · T4 (AC4) add E2E scripts to package.json · T5 (AC5) create vitest.setup.ts · T6 (AC6) create sample unit test · T7 (AC7) create sample E2E test · T8 (AC8) update .gitignore · T9 (AC9) verify lint + build.
+
+**Out of scope:** pgTAP for RLS testing (requires Docker + Supabase CLI local stack); actual test coverage for Sprint 1 features (tests are written per-story).
+
+**Dev Notes:**
+
+- T1: `pnpm add -D vitest @vitejs/plugin-react happy-dom @testing-library/react @testing-library/dom @testing-library/jest-dom vite-tsconfig-paths @rolldown/binding-win32-x64-msvc`. Used `happy-dom` instead of `jsdom` due to ESM compatibility issues with jsdom 30 on Windows.
+- T2: Added `"test": "vitest"`, `"test:run": "vitest run"`, `"test:e2e": "playwright test"`, `"test:e2e:ui": "playwright test --ui"` to package.json scripts.
+- T3: `pnpm add -D @playwright/test && pnpm exec playwright install chromium`. Config uses `pnpm build && pnpm start` for production testing.
+- T5: `vitest.setup.ts` imports `@testing-library/jest-dom/vitest` for matchers (e.g., `toBeInTheDocument()`).
+- T6: Sample test in `src/__tests__/components/button.test.tsx` renders a button, tests click and disabled state. All 3 tests pass.
+- T7: Sample E2E test in `tests/e2e/homepage.spec.ts` navigates to `/` and checks page title.
+- T8: Added `/test-results` and `/playwright-report` to `.gitignore`.
+- T9: `pnpm lint`, `pnpm build`, and `pnpm test:run` all pass with zero errors.
