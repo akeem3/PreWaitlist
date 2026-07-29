@@ -22,7 +22,7 @@ describe("Card", () => {
   it("applies card styles", () => {
     render(<Card data-testid="card">Test</Card>);
     const card = screen.getByTestId("card");
-    expect(card.className).toContain("rounded-card");
+    expect(card.className).toContain("rounded-[var(--card-radius)]");
     expect(card.className).toContain("bg-card");
   });
 

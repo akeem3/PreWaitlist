@@ -31,7 +31,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-button font-button font-medium transition-colors duration-normal ease-out",
+          "inline-flex items-center justify-center gap-2 rounded-[var(--button-radius)] font-medium transition-colors duration-normal ease-out",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
           "disabled:pointer-events-none disabled:opacity-50",
           variantStyles[variant],

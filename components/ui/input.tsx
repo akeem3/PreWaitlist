@@ -22,13 +22,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           id={inputId}
           className={cn(
-            "flex h-10 w-full rounded-input border bg-input px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium",
-            "placeholder:text-input-placeholder-color",
-            "focus-visible:outline-none focus-visible:border-input-border-color-focus",
-            "disabled:cursor-not-allowed disabled:bg-input-background-disabled disabled:opacity-50",
+            "flex h-10 w-full rounded-[var(--input-radius)] border bg-[var(--input-background)] px-[var(--input-padding-x)] py-[var(--input-padding-y)] text-[length:var(--input-font-size)] file:border-0 file:bg-transparent file:text-sm file:font-medium",
+            "placeholder:text-[var(--input-placeholder-color)]",
+            "focus-visible:outline-none focus-visible:border-[var(--input-border-color-focus)]",
+            "disabled:cursor-not-allowed disabled:bg-[var(--input-background-disabled)] disabled:opacity-50",
             error
-              ? "border-input-border-color-error"
-              : "border-input-border-color",
+              ? "border-[var(--input-border-color-error)]"
+              : "border-[var(--input-border-color)]",
             className
           )}
           ref={ref}
