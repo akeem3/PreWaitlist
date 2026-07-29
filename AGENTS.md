@@ -2,6 +2,31 @@
 
 Pre-launch waitlist SaaS. Solo founder project. Full spec lives in `docs/PRD-Sprint1.md` — read the specific section you need via the current story's `Source` link, don't re-read the whole PRD by default.
 
+## Prompt Shortcuts
+
+Type these in chat to run prompts instantly:
+
+| Shortcut          | Runs      | Description                                       |
+| ----------------- | --------- | ------------------------------------------------- |
+| `scan [story]`    | Prompt #1 | Scan story, research, generate task list          |
+| `execute [story]` | Prompt #2 | Execute tasks systematically with quality gates   |
+| `audit [story]`   | Prompt #3 | Independent post-implementation audit             |
+| `epic-check`      | Prompt #4 | Final release audit of entire epic                |
+| `create-epic [N]` | Prompt #5 | Create structured epic document                   |
+| `align-epic [N]`  | Prompt #6 | Verify epic matches implementation                |
+| `commit-push`     | —         | Stage, commit with auto-message, push             |
+| `merge-clean`     | —         | Merge epic→dev→main, resolve conflicts, lint+test |
+
+**Examples:**
+
+- `scan 2.1` → I run Prompt #1 on Story 2.1
+- `execute` → I run Prompt #2 on the current story
+- `audit 2.3` → I run Prompt #3 on Story 2.3
+- `create-epic 3` → I run Prompt #5 to create Epic 3
+- `align-epic 2` → I run Prompt #6 on Epic 2
+
+Full prompt text: `docs/PROMPTS.md`
+
 ## Commands
 
 ```
