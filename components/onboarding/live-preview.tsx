@@ -2,9 +2,11 @@
 
 import Image from "next/image";
 import { useDeferredValue, useState } from "react";
+import { PoweredByFooter } from "../share/powered-by-footer";
 
 type Template = "minimal" | "bold" | "dark";
 type ViewMode = "desktop" | "mobile";
+type Tier = "free" | "pro" | "growth";
 
 interface MilestoneReward {
   name: string;
@@ -19,6 +21,7 @@ interface LivePreviewProps {
   logoUrl: string | null;
   ctaText: string;
   milestoneRewards: MilestoneReward[];
+  tier?: Tier;
 }
 
 function BrowserFrame({ children }: { children: React.ReactNode }) {
@@ -398,6 +401,7 @@ export function LivePreview({
   logoUrl,
   ctaText,
   milestoneRewards,
+  tier = "free",
 }: LivePreviewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("desktop");
 
@@ -468,15 +472,28 @@ export function LivePreview({
           }}
         >
           <BrowserFrame>
-            <TemplateComponent
-              template={deferredTemplate}
-              headline={deferredHeadline}
-              subheadline={deferredSubheadline}
-              brandColor={deferredBrandColor}
-              logoUrl={deferredLogoUrl}
-              ctaText={deferredCtaText}
-              milestoneRewards={deferredRewards}
-            />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                minHeight: "100%",
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <TemplateComponent
+                  template={deferredTemplate}
+                  headline={deferredHeadline}
+                  subheadline={deferredSubheadline}
+                  brandColor={deferredBrandColor}
+                  logoUrl={deferredLogoUrl}
+                  ctaText={deferredCtaText}
+                  milestoneRewards={deferredRewards}
+                />
+              </div>
+              {tier === "free" && (
+                <PoweredByFooter template={deferredTemplate} />
+              )}
+            </div>
           </BrowserFrame>
         </div>
       </div>

@@ -184,6 +184,19 @@ _(Unchanged in substance from PRD v1 — repeated here at the level needed for b
 - REQ-6.12.1: The Share button shall render only where navigator.share is supported; Copy Link shall always render, at equal visual weight, never as a fallback-only control.
 - REQ-6.12.2: "Or, go to my dashboard" shall navigate to `/dashboard`.
 
+### 6.12a "Powered by MyWaitlist" Footer — Onboarding Preview + Public Pages
+
+- REQ-onboarding-preview.4: The "Powered by MyWaitlist" footer shall never appear on MyWaitlist's own marketing site or app pages under any circumstance — it is exclusive to founders' public waitlist pages (onboarding preview in Sprint 1, live page in Sprint 2) when tier = Free.
+- REQ-onboarding-preview.5: The "Powered by MyWaitlist" footer shall render per the following visual spec. **Open TODO:** the Dark template's near-black background has no verified secondary-text color in the design system — Warm Grey #6B6459 likely fails contrast. Placeholder color is used on Dark template pending an actual token decision; do not treat the placeholder as final.
+  - Structure: inline "Powered by [16px icon] MyWaitlist", not a pill or card.
+  - Typography: Caption style (12px, Regular / 400 weight).
+  - Color: "Powered by" in Warm Grey #6B6459. "MyWaitlist" + icon in Deep Jade #0F7A5E (same rule as every other link/active-state use of jade in the system).
+  - Placement: centered, bottom of page, 24px vertical padding, 1px Border Subtle #E5E0D6 top divider on light templates (Minimal, Bold).
+  - No drop shadow, no gradient, no background box.
+  - Links to the F-A3 "powered by" homepage variant.
+  - Renders across all onboarding steps that include the preview, and must not render at all when tier is Pro or Growth.
+  - Shared component: `components/share/powered-by-footer.tsx`, reused by Sprint 2's real public page.
+
 ### 6.13 Empty Dashboard (F-G1)
 
 **Route:** `/dashboard`

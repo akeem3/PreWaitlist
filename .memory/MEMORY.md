@@ -296,3 +296,25 @@ picking up a paying customer.
 2. ~~Run Follow-Up Audit (Prompt #4) on completed Epic 1~~ ✅ Done — all clean
 3. ~~Create Epic 2 branch from dev~~ ✅ Done
 4. Start Story 2.1 — Supabase schema DDL + RLS
+
+## Decision + bug fix: "Powered by MyWaitlist" footer (2026-07)
+
+Scope: exclusive to founders' public waitlist pages (onboarding preview now,
+real public page in Sprint 2) when tier = Free. Never on MyWaitlist's own site —
+this was built wrongly onto our own homepage footer once already and had to be
+removed; if it recurs, same fix, same reasoning.
+
+Visual spec: inline "Powered by [16px jade icon] MyWaitlist", Caption size,
+"Powered by" in Warm Grey #6B6459, "MyWaitlist"+icon in Deep Jade #0F7A5E,
+centered, 24px vertical padding, Border Subtle top divider on light templates,
+no shadow/gradient/box. Links to the F-A3 homepage variant.
+
+Open gap: no verified Dark-template-safe secondary text color exists yet in the
+design system. Placeholder used on Dark template pending an actual token
+decision — do not treat the placeholder as final.
+
+Files: `components/share/powered-by-footer.tsx` (shared component),
+`components/onboarding/live-preview.tsx` (renders when tier = "free"),
+`components/layout/marketing-layout.tsx` (bug fix — removed badge from homepage footer).
+
+PRD ref: REQ-onboarding-preview.4 (scope exclusion), REQ-onboarding-preview.5 (visual spec + open TODO).

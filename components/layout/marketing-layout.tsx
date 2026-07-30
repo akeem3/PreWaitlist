@@ -149,10 +149,15 @@ function Footer() {
             width={36}
             height={27}
           />
-          © {new Date().getFullYear()} MyWaitlist. All rights reserved.
+          &copy; {new Date().getFullYear()} MyWaitlist
         </p>
-        <p>Powered by MyWaitlist</p>
         <nav className="flex gap-4">
+          <a
+            href="#"
+            className="transition-colors duration-normal hover:text-foreground"
+          >
+            Privacy
+          </a>
           <a
             href="#"
             className="transition-colors duration-normal hover:text-foreground"
@@ -160,10 +165,12 @@ function Footer() {
             Terms
           </a>
           <a
-            href="#"
+            href="https://twitter.com/mywaitlist"
+            target="_blank"
+            rel="noopener noreferrer"
             className="transition-colors duration-normal hover:text-foreground"
           >
-            Privacy
+            Twitter
           </a>
         </nav>
       </div>
