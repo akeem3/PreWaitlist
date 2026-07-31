@@ -177,7 +177,7 @@ export default function OnboardingStep4a() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex h-14.75 w-full items-center justify-center rounded-(--radius-md) bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50 md:w-114.5"
+          className="inline-flex h-14.75 w-full items-center justify-center rounded--md bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50 md:w-114.5"
         >
           {isSubmitting ? (
             <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />

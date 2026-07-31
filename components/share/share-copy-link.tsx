@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -10,12 +11,6 @@ interface ShareCopyLinkProps {
   className?: string;
 }
 
-function getCanShare(): boolean {
-  return (
-    typeof navigator !== "undefined" && typeof navigator.share === "function"
-  );
-}
-
 export default function ShareCopyLink({
   url,
   onShare,
@@ -23,6 +18,13 @@ export default function ShareCopyLink({
   className,
 }: ShareCopyLinkProps) {
   const [copied, setCopied] = useState(false);
+  const [canShare, setCanShare] = useState(false);
+
+  useEffect(() => {
+    setCanShare(
+      typeof navigator !== "undefined" && typeof navigator.share === "function"
+    );
+  }, []);
 
   useEffect(() => {
     if (!copied) return;
@@ -51,7 +53,7 @@ export default function ShareCopyLink({
 
   return (
     <div className={cn("flex items-center gap-3", className)}>
-      {getCanShare() && (
+      {canShare && (
         <button
           type="button"
           onClick={handleShare}

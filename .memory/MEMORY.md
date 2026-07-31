@@ -616,3 +616,17 @@ value as final — needs a real token decision from design.
 
 Same treatment as the earlier Dark-template gap noted on the "Powered by" footer
 (REQ-onboarding-preview.5).
+
+### Epic 5 dashboard is a placeholder
+
+**Status:** DECIDED — 2026-07-31
+
+The dashboard built in Epic 5 (stat cards, getting-started checklist, nav tabs,
+live URL display) is a **functional placeholder** — it satisfies Sprint 1's exit
+condition (founder lands on a working dashboard after onboarding) but the UI is
+not final design. All dashboard components will be **torn down and replaced** in
+Sprint 2 when real subscriber data, analytics, and settings pages ship.
+
+Do not treat any Epic 5 dashboard layout, styling, or component structure as
+canonical. The API routes (`POST /api/updates`) and auth callback logic
+(acquisition capture) are permanent — only the dashboard UI is placeholder.

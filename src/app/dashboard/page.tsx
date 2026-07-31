@@ -1,3 +1,35 @@
-export default function DashboardPage() {
-  return <div>Dashboard — placeholder</div>;
+import { redirect } from "next/navigation";
+import { createClient } from "../../lib/supabase/server";
+import DashboardClient from "./client";
+
+export default async function DashboardPage() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/signin");
+  }
+
+  const { data: waitlist } = await supabase
+    .from("waitlists")
+    .select("id, name, subdomain, template, status, logo_url")
+    .eq("founder_id", user.id)
+    .single();
+
+  if (!waitlist) {
+    redirect("/onboarding/1");
+  }
+
+  const liveUrl = `${waitlist.subdomain}.mywaitlist.com`;
+
+  return (
+    <DashboardClient
+      liveUrl={liveUrl}
+      waitlistName={waitlist.name}
+      logoUrl={waitlist.logo_url}
+    />
+  );
 }

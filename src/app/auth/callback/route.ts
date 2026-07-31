@@ -38,6 +38,26 @@ export async function GET(request: NextRequest) {
         data: { user },
       } = await supabase.auth.getUser();
 
+      // Capture acquisition source from cookie
+      const acquisitionCookie = request.cookies.get("mw_acquisition")?.value;
+      if (user && acquisitionCookie) {
+        try {
+          const acquisition = JSON.parse(acquisitionCookie);
+          await supabase
+            .from("founder_profiles")
+            .update({
+              ref_param: acquisition.ref ?? null,
+              utm_source: acquisition.utm_source ?? null,
+              utm_medium: acquisition.utm_medium ?? null,
+              utm_campaign: acquisition.utm_campaign ?? null,
+              acquisition_captured_at: new Date().toISOString(),
+            })
+            .eq("id", user.id);
+        } catch {
+          // Silent fail — acquisition capture is best-effort
+        }
+      }
+
       let redirectPath = next;
 
       if (user && !cookieRedirect) {
@@ -55,6 +75,7 @@ export async function GET(request: NextRequest) {
         response.cookies.set(cookie.name, cookie.value, cookie);
       });
       response.cookies.delete("auth_redirect_to");
+      response.cookies.delete("mw_acquisition");
       return response;
     }
   }

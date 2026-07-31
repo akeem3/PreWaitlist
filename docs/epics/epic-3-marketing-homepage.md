@@ -55,9 +55,9 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 **Dev Notes:**
 
-- T1: Option A — use `proxy.ts` to intercept `/` requests with query params and set cookies before the page renders. Option B — use a lightweight API route `src/app/api/acquisition/route.ts` called from a `useEffect` on the homepage. Option A is cleaner (no client-side JS needed). Use `NextResponse.cookies.set()` with `maxAge: 60 * 60 * 24 * 30` (30 days). **Status: done — implemented via `proxy.ts` (Option A).**
-- T2: The signup page (`src/app/(auth)/signup/page.tsx`) reads the cookie server-side or client-side and passes values to the `POST /api/waitlist` or Supabase `signUp()` call. **Status: done.**
-- T3: Files: `proxy.ts`. **Available components:** none needed (server-side cookie logic).
+- T1: Option A — use `proxy.ts` to intercept `/` requests with query params and set cookies before the page renders. Option B — use a lightweight API route `src/app/api/acquisition/route.ts` called from a `useEffect` on the homepage. Option A is cleaner (no client-side JS needed). Use `NextResponse.cookies.set()` with `maxAge: 60 * 60 * 24 * 30` (30 days). **Status: done — implemented via `proxy.ts` (Option A).** `captureAcquisition()` function reads `ref`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content` from query params and sets `mw_acquisition` cookie as JSON.
+- T2: The auth callback (`src/app/auth/callback/route.ts`) reads the `mw_acquisition` cookie after session exchange, parses the JSON, and updates the `founder_profiles` row with `ref_param`, `utm_source`, `utm_medium`, `utm_campaign`, `acquisition_captured_at`. Cookie is deleted after capture. **Status: done — implemented in auth callback.**
+- T3: Files: `proxy.ts`, `src/app/auth/callback/route.ts`. **Available components:** none needed (server-side cookie logic).
 
 ---
 

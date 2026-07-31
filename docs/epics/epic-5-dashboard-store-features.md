@@ -1,6 +1,7 @@
 # Epic 5 — Dashboard + Store Features
 
-**Status:** ready
+**Status:** done
+**Note:** This epic's dashboard UI is a **functional placeholder** — built to satisfy Sprint 1's exit condition (founder lands on a working dashboard after onboarding). The stat cards, checklist, nav tabs, and layout will be **torn down and replaced** with properly designed implementations in Sprint 2+ when real subscriber data, analytics, and settings pages ship. Do not treat these screens as final design.
 **Source:** [PRD S6.13 Empty Dashboard](../PRD-Sprint-1.md#613-empty-dashboard-f-g1), [PRD S6.14 Founder Acquisition Source Capture](../PRD-Sprint-1.md#614-founder-acquisition-source-capture), [PRD S6.15 Founder Updates Feed](../PRD-Sprint-1.md#615-founder-updates-feed--posting-only)
 
 ## Design References
@@ -21,9 +22,9 @@ The dashboard displays stat cards (Total Signups, Recent Signups, Conversion Rat
 
 | ID  | Title                                                   | Depends on | Status |
 | --- | ------------------------------------------------------- | ---------- | ------ |
-| 5.1 | Empty Dashboard (stat cards, checklist, nav, live URL)  | 4.7        | ready  |
-| 5.2 | Founder Acquisition Source Capture (signup attribution) | 3.0        | ready  |
-| 5.3 | Founder Updates Feed — Compose Only                     | 5.1        | ready  |
+| 5.1 | Empty Dashboard (stat cards, checklist, nav, live URL)  | 4.7        | done   |
+| 5.2 | Founder Acquisition Source Capture (signup attribution) | 3.0        | done   |
+| 5.3 | Founder Updates Feed — Compose Only                     | 5.1        | done   |
 
 Work through these in dependency order, one at a time. Each has a `status` you should update as you go (`ready` → `in-progress` → `blocked` or `done`). A story marked `blocked` stays blocked until manually cleared — don't silently re-attempt it next session.
 
@@ -31,7 +32,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 ### Story 5.1 — Empty Dashboard
 
-**Status:** ready
+**Status:** done
 **Design Refs:** `docs/design/High-fidelity-svgs/Empty Dashboard skeleton.svg`
 **Story:** As the founder, I want a dashboard that shows my waitlist stats (even if empty) and a getting-started checklist so I know what to do next.
 
@@ -52,17 +53,17 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 **Dev Notes:**
 
-- T1: Use `Card` components for each stat. Skeleton state: em-dash (`—`) in large text, or a pulsing `div` with `animate-pulse`. Never render "0". From `Empty Dashboard skeleton.svg`: stat cards are in a row at the top. **Status: not started — `src/app/dashboard/page.tsx` is a bare placeholder (`<div>Dashboard — placeholder</div>`).** Component exists: `Card` ✓.
-- T2: Checklist is a vertical list of items with checkboxes. "Share your waitlist" starts unchecked; use `useState` to track if `ShareCopyLink` was used, then auto-check. Other items are static links. **Status: not started.** Component exists: `ShareCopyLink` ✓ (from `components/share/share-copy-link.tsx`).
-- T3: Sidebar or top nav with tabs. Only the overview tab is functional. "View live page" is a link to `https://{slug}.mywaitlist.com` (opens in new tab). **Status: not started.**
-- T4: Use `createServerClient` from `@supabase/ssr` to query the `waitlists` table for the current founder's data. The founder's `waitlist_id` comes from the session. **Status: not started.** Existing: `src/lib/supabase/server.ts` ✓.
-- T5: Files: `src/app/dashboard/page.tsx`. **Available components:** `Card` ✓, `ShareCopyLink` ✓, `Link` (Next.js).
+- T1: ✅ Done — `src/app/dashboard/page.tsx` (server component) + `src/app/dashboard/client.tsx` (client component). Stat cards use `Card` component with em-dash (`—`) for empty state. Never renders "0". Three cards in a responsive grid (1 col mobile, 3 col desktop).
+- T2: ✅ Done — Getting-started checklist with 3 items: "Share your waitlist" (auto-checks via `ShareCopyLink` `onShare`/`onCopy` callbacks), "Set up email notifications" (links to `/onboarding/5`), "Customize your page" (links to `/onboarding/3`). Uses `useState` for check state.
+- T3: ✅ Done — Nav header with 4 tabs: Overview (active), Subscribers, Broadcasts, Settings. Visual only, all link to `/dashboard`. Live URL bar shows `{slug}.mywaitlist.com` with "View live page →" link (opens in new tab). `ShareCopyLink` component rendered for share/copy functionality.
+- T4: ✅ Done — Server component fetches waitlist data via `supabase.from("waitlists").select("id, name, subdomain, template, status").eq("founder_id", user.id)`. Redirects to `/signin` if no user, `/onboarding/1` if no waitlist.
+- T5: ✅ Done — Lint + build pass. Files: `src/app/dashboard/page.tsx`, `src/app/dashboard/client.tsx`. Available components: `Card` ✓, `ShareCopyLink` ✓, `Link` (Next.js) ✓.
 
 ---
 
 ### Story 5.2 — Founder Acquisition Source Capture
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (no UI)
 **Story:** As the founder, I want my signup's acquisition source (`ref`/`utm_*`) attached to my founder profile so I can later see where my signups came from.
 
@@ -81,15 +82,15 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 **Dev Notes:**
 
-- T1: In the signup flow (`src/app/(auth)/signup/page.tsx` or the auth callback `src/app/auth/callback/route.ts`), read the `mw_acquisition` cookie from the request. Parse the JSON value. After Supabase `signUp()` succeeds and the founder profile is created, update the `founder_profiles` row with the acquisition values. Use `supabase.from('founder_profiles').update({ ref_param, utm_source, utm_medium, utm_campaign, acquisition_captured_at: new Date().toISOString() }).eq('id', userId)`. **Status: not started — cookie is set by Story 3.0 (Epic 3).**
+- T1: In the auth callback (`src/app/auth/callback/route.ts`), after `exchangeCodeForSession()`, read the `mw_acquisition` cookie from the request. Parse the JSON value. Update the `founder_profiles` row with the acquisition values. Use `supabase.from('founder_profiles').update({ ref_param, utm_source, utm_medium, utm_campaign, acquisition_captured_at: new Date().toISOString() }).eq('id', userId)`. Cookie is deleted after capture. **Status: done — implemented in auth callback.**
 - T2: The `founder_profiles` table schema already has these columns (Epic 2.1, PRD S7.4). **Status: schema exists.**
-- T3: Files: `src/app/(auth)/signup/page.tsx` or `src/app/auth/callback/route.ts`. **Available:** `src/lib/supabase/server.ts` ✓, `src/lib/supabase/client.ts` ✓.
+- T3: Files: `src/app/auth/callback/route.ts`. **Available:** `src/lib/supabase/server.ts` ✓, `src/lib/supabase/client.ts` ✓.
 
 ---
 
 ### Story 5.3 — Founder Updates Feed — Compose Only
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (no UI in Sprint 1)
 **Story:** As the founder, I want a compose/create action for founder updates so I can start building content for my waitlist subscribers, even though the public read surface won't exist until Sprint 2.
 
@@ -108,6 +109,6 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 **Dev Notes:**
 
-- T1: Route file: `src/app/api/updates/route.ts`. Use `createServerClient` from `@supabase/ssr`. Validate `body` length. Insert into `founder_updates` table with `waitlist_id` from the founder's session. RLS policy "founders manage own waitlist's updates" already exists (Epic 2.1). **Status: not started — `src/app/api/` directory does not exist yet.**
-- T2: Optional: add a small compose section on the dashboard page with a Textarea + "Post update" button. This is Sprint 1 scope only if time permits — the route handler is the required part. **Status: not started.**
-- T3: Files: `src/app/api/updates/route.ts`, optionally `src/app/dashboard/page.tsx`. **Available components:** `Textarea` ✓, `Button` ✓, `Card` ✓.
+- T1: ✅ Done — `src/app/api/updates/route.ts` created. POST handler with auth check (401), body validation (non-empty, ≤2000 chars), waitlist lookup, and insert into `founder_updates`. Returns `{ id }` with 201. RLS handles ownership enforcement at DB level.
+- T2: ✅ Done — Compose UI deferred to Sprint 2 (AC5 says "may exist" — route handler is the required part).
+- T3: ✅ Done — Lint + build pass. Files: `src/app/api/updates/route.ts`. Available components: `Textarea` ✓, `Button` ✓, `Card` ✓.
