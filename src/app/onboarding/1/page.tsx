@@ -29,6 +29,7 @@ export default function OnboardingStep1() {
   const [slug, setSlug] = useState(form.slug);
   const [slugStatus, setSlugStatus] = useState<SlugStatus>("idle");
   const [slugError, setSlugError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [usedFallback, setUsedFallback] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -40,6 +41,26 @@ export default function OnboardingStep1() {
       if (abortRef.current) abortRef.current.abort();
     };
   }, []);
+
+  useEffect(() => {
+    form.setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    form.updateField("headline", headline);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [headline]);
+
+  useEffect(() => {
+    form.updateField("subheadline", subheadline);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subheadline]);
+
+  useEffect(() => {
+    form.updateField("slug", slug);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
 
   const checkSlug = useCallback(async (candidate: string) => {
     if (!candidate) {
@@ -109,7 +130,8 @@ export default function OnboardingStep1() {
     setUsedFallback(true);
     setSlugStatus("idle");
     setSlugError(null);
-  }, []);
+    form.updateField("slug", fallback);
+  }, [form]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -118,6 +140,7 @@ export default function OnboardingStep1() {
       if (!slug || slugStatus === "checking") return;
 
       form.setLoading(true);
+      setSubmitError(null);
 
       try {
         const res = await fetch("/api/waitlist", {
@@ -133,7 +156,9 @@ export default function OnboardingStep1() {
         const data = await res.json();
 
         if (!res.ok) {
-          throw new Error(data.error || "Failed to create waitlist");
+          setSubmitError(data.error || "Failed to create waitlist");
+          form.setLoading(false);
+          return;
         }
 
         form.setWaitlistId(data.id);
@@ -142,6 +167,7 @@ export default function OnboardingStep1() {
         form.updateField("subheadline", subheadline);
         router.push("/onboarding/2");
       } catch {
+        setSubmitError("Something went wrong. Please try again.");
         form.setLoading(false);
       }
     },
@@ -176,7 +202,7 @@ export default function OnboardingStep1() {
           value={headline}
           onChange={(e) => setHeadline(e.target.value)}
           disabled={isSubmitting}
-          className="flex w-full items-center rounded-[var(--radius-lg)] border border-border bg-card px-3 py-3 text-sm h-[60px] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-15 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 
@@ -190,7 +216,7 @@ export default function OnboardingStep1() {
           value={subheadline}
           onChange={(e) => setSubheadline(e.target.value)}
           disabled={isSubmitting}
-          className="flex w-full resize-none items-center rounded-[var(--radius-lg)] border border-border bg-card px-3 py-3 text-sm h-[60px] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full resize-none items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-15 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 
@@ -207,8 +233,7 @@ export default function OnboardingStep1() {
           value={slugInput}
           onChange={(e) => handleSlugChange(e.target.value)}
           disabled={isSubmitting || usedFallback}
-          className="flex w-full items-center rounded-[var(--radius-lg)] border border-border bg-card px-3 py-3 text-sm h-[60px] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
-          style={{ height: 60 }}
+          className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-15 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
         />
         {/* URL preview with availability */}
         <div className="mt-1 flex items-center gap-1 text-xs">
@@ -230,10 +255,13 @@ export default function OnboardingStep1() {
 
       {/* Submit button + I'll name it later */}
       <div className="sticky bottom-0 flex flex-col items-center bg-background pb-14 pt-4 md:static md:px-0 md:pb-0 md:pt-0">
+        {submitError && (
+          <p className="mb-3 text-sm text-destructive">{submitError}</p>
+        )}
         <button
           type="submit"
           disabled={isSubmitting || !isValid}
-          className="inline-flex h-[59px] w-[458px] items-center justify-center rounded-[var(--radius-md)] bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex h-14.75 w-114.5 items-center justify-center rounded-md bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50"
         >
           {isSubmitting ? (
             <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />

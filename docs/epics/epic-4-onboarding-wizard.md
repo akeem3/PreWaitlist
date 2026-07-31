@@ -1,6 +1,6 @@
 # Epic 4 — Onboarding Wizard
 
-**Status:** ready
+**Status:** in-progress
 **Source:** [PRD S6.6 Onboarding Step 1](../PRD-Sprint-1.md#66-onboarding-step-1--name-your-waitlist-f-c1), [PRD S6.7 Onboarding Step 2](../PRD-Sprint-1.md#67-onboarding-step-2--choose-a-template-f-c2), [PRD S6.8 Onboarding Step 3](../PRD-Sprint-1.md#68-onboarding-step-3--make-it-yours-f-c3), [PRD S6.9 Onboarding Step 4](../PRD-Sprint-1.md#69-onboarding-step-4--qualification-decision-f-c4), [PRD S6.10 Onboarding Step 4a](../PRD-Sprint-1.md#610-onboarding-step-4a--configure-qualification-questions-f-c4a), [PRD S6.11 Onboarding Step 5](../PRD-Sprint-1.md#611-onboarding-step-5--email-setup-f-c5), [PRD S6.12 Success Screen](../PRD-Sprint-1.md#612-success-screen-f-c6), [PRD S6.12a Powered-By Footer](../PRD-Sprint-1.md#612a-powered-by-mywaitlist-footer--onboarding-preview--public-pages)
 
 ## Design Analysis Reference
@@ -123,12 +123,12 @@ A founder can complete all onboarding steps — name their waitlist, choose a te
 
 | ID  | Title                                               | Depends on | Status |
 | --- | --------------------------------------------------- | ---------- | ------ |
-| 4.0 | API routes + shared form context + layout switching | 2.1, 1.3   | ready  |
-| 4.1 | Step 1 — Name Your Waitlist                         | 4.0        | ready  |
-| 4.2 | Step 2 — Choose a Template                          | 4.0        | ready  |
-| 4.3 | Step 3 — Make It Yours                              | 4.0, 4.1   | ready  |
-| 4.4 | Step 4 — Qualification Decision (centered layout)   | 4.0        | ready  |
-| 4.5 | Step 4a — Configure Qualification Questions         | 4.0, 4.4   | ready  |
+| 4.0 | API routes + shared form context + layout switching | 2.1, 1.3   | done   |
+| 4.1 | Step 1 — Name Your Waitlist                         | 4.0        | done   |
+| 4.2 | Step 2 — Choose a Template                          | 4.0        | done   |
+| 4.3 | Step 3 — Make It Yours                              | 4.0, 4.1   | done   |
+| 4.4 | Step 4 — Qualification Decision (centered layout)   | 4.0        | done   |
+| 4.5 | Step 4a — Configure Qualification Questions         | 4.0, 4.4   | done   |
 | 4.6 | Step 5 — Email Setup + Launch (centered layout)     | 4.0        | ready  |
 | 4.7 | Success Screen (centered layout, no progress dots)  | 4.0        | ready  |
 
@@ -138,7 +138,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 ### Story 4.0 — API Routes + Shared Form Context + Layout Switching
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (no UI, but drives layout switching per design analysis)
 **Story:** As the developer, I want API routes for waitlist CRUD and slug checking, a shared form context for multi-step state, the LivePreview wired into the onboarding layout for Steps 1–3, layout switching for centered steps (4, 5, Success), and correct progress dots/button patterns so that all subsequent step pages have a data layer, live preview, and layout that matches the design.
 
@@ -185,7 +185,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 ### Story 4.1 — Step 1 — Name Your Waitlist
 
-**Status:** ready
+**Status:** done
 **Design Refs:** `docs/design/High-fidelity-svgs/HF 4 onboard step 1.svg`
 **Story:** As the founder, I want to name my waitlist with a headline, subheadline, and custom subdomain so my waitlist has an identity and a shareable URL.
 
@@ -238,7 +238,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 ### Story 4.2 — Step 2 — Choose a Template
 
-**Status:** ready
+**Status:** done
 **Design Refs:** `docs/design/High-fidelity-svgs/HF 5 onboard step 2 v1.svg`, `docs/design/High-fidelity-svgs/HF 5 onboard step 2 Bold.svg`, `docs/design/High-fidelity-svgs/HF 5 onboard step 2 Dark.svg`
 **Story:** As the founder, I want to choose a visual template for my waitlist page so it matches my brand's aesthetic.
 
@@ -284,7 +284,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 ### Story 4.3 — Step 3 — Make It Yours
 
-**Status:** ready
+**Status:** done
 **Design Refs:** `docs/design/High-fidelity-svgs/HF 6 onboard step 3.svg`
 **Story:** As the founder, I want to customize my waitlist's branding — logo, colors, and milestone rewards — so it feels like my own product.
 
@@ -339,7 +339,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 ### Story 4.4 — Step 4 — Qualification Decision (Centered Layout)
 
-**Status:** ready
+**Status:** done
 **Design Refs:** `docs/design/High-fidelity-svgs/HF 6 onboard step 4.svg`, `docs/design/High-fidelity-svgs/HF 4 onboard step 4 pt 1.svg`
 **Story:** As the founder, I want to decide whether to add qualification questions to my waitlist so I can filter for serious signups.
 
@@ -387,7 +387,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 ### Story 4.5 — Step 4a — Configure Qualification Questions
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (derived from Step 4 SVGs, centered layout)
 **Story:** As the founder, I want to configure up to 2 qualification questions (Free tier) so I can learn about my waitlist signups before they join.
 

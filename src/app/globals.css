@@ -16,6 +16,7 @@
   --color-muted: #f0ede8;
   --color-muted-foreground: #6b6b6b;
   --color-border: #e0ddd8;
+  --color-dot-inactive: #c3c2c2;
   --color-destructive: #dc2626;
   --color-destructive-foreground: #ffffff;
 
@@ -28,6 +29,14 @@
   --color-error-foreground: #ffffff;
   --color-info: #2563eb;
   --color-info-foreground: #ffffff;
+
+  /* Dark Template Tokens */
+  --color-dark-template-bg: #1c1917;
+  --color-dark-template-text: #faf8f4;
+  --color-dark-template-muted: #a8a29e;
+  --color-dark-template-border: #57534e;
+  /* PLACEHOLDER: secondary text on dark bg — needs real token decision */
+  --color-dark-template-secondary: rgba(250, 248, 244, 0.7);
 
   /* Design System v2.0 — Typography Scale (Inter) */
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;

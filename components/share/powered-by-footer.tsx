@@ -12,32 +12,15 @@ export function PoweredByFooter({ template }: PoweredByFooterProps) {
 
   return (
     <div
-      style={{
-        borderTop: isDark ? "1px solid #292524" : "1px solid #E5E0D6",
-        paddingTop: 24,
-        paddingBottom: 24,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        gap: 4,
-        fontSize: "var(--text-xs, 0.75rem)",
-        fontWeight: "var(--font-regular, 400)",
-        lineHeight: 1,
-      }}
+      className={`flex items-center justify-center gap-1 py-6 text-xs font-normal leading-none ${
+        isDark
+          ? "border-t border-dark-template-border"
+          : "border-t border-border"
+      }`}
     >
-      <Link
-        href="/"
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 4,
-          textDecoration: "none",
-        }}
-      >
+      <Link href="/" className="inline-flex items-center gap-1 no-underline">
         <span
-          style={{
-            color: isDark ? "#A8A29E" : "#6B6459",
-          }}
+          className={isDark ? "text-muted-foreground" : "text-muted-foreground"}
         >
           Powered by
         </span>
@@ -46,16 +29,9 @@ export function PoweredByFooter({ template }: PoweredByFooterProps) {
           alt=""
           width={16}
           height={16}
-          style={{ display: "inline-block" }}
+          className="inline-block"
         />
-        <span
-          style={{
-            color: isDark ? "#0F7A5E" : "#0F7A5E",
-            fontWeight: "var(--font-medium, 500)",
-          }}
-        >
-          MyWaitlist
-        </span>
+        <span className="font-medium text-accent">MyWaitlist</span>
       </Link>
     </div>
   );

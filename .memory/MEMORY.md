@@ -44,6 +44,13 @@
 - **Reason:** Tailwind v4 `@theme` custom tokens don't follow naming conventions to auto-generate utilities. `--button-radius` does NOT generate `rounded-button`. Must use `var()` directly.
 - **Date:** 2026-07-28
 
+### `@theme inline` colors: use utility class names, NOT `var()` arbitrary values
+
+- **Decision:** For `--color-*` tokens defined in `@theme inline`, use generated Tailwind utility class names (e.g. `bg-card`, `text-foreground`, `border-dark-template-bg`) — never arbitrary value syntax like `bg-[--color-card]` or `bg-[var(--color-card)]`.
+- **Reason:** `@theme inline` inlines values directly into generated utilities but does NOT create CSS custom properties. So `bg-[--color-foreground]` references a variable that doesn't exist as a CSS custom property — the dark preview was rendering light for this exact reason. The generated utility class names (e.g. `bg-foreground`, `bg-dark-template-bg`) work because Tailwind bakes the value directly into the compiled CSS.
+- **Gotcha:** This is the opposite of regular `@theme` (without `inline`), which DOES generate CSS custom properties. The `inline` keyword is the key difference.
+- **Date:** 2026-07-31 (discovered during dark-template bug fix)
+
 ### Font-size type hint
 
 - **Decision:** Use direct Tailwind classes (`text-xs`, `text-sm`, etc.) for font-size, not `text-[var(...)]` or `text-[length:var(...)]` arbitrary values.
@@ -88,11 +95,12 @@
 - **Auth:** Google OAuth provider configured (client ID from GCP)
 - **Keys:** Publishable + secret in .env.local
 - **Redirect URLs:** Configured in Supabase Dashboard (localhost + vercel.app + mywaitlist.com)
-- **Not done:** Supabase client modules, schema DDL, RLS policies — code not yet written
+- **Schema DDL + RLS:** ✅ Done (Story 2.1) — 5 tables, policies
+- **Client modules:** ✅ Done — `src/lib/supabase/server.ts`, `src/lib/supabase/client.ts`
 
 ### Resend (Story 0.4)
 
-- **Status:** Not started. No account created, no API key.
+- **Status:** Account created, API key in .env.local. Client module not yet written (setup-only story).
 
 ### Paddle (Story 0.5)
 
@@ -268,14 +276,75 @@ picking up a paying customer.
 **Web research:** Multi-step onboarding UX, template selectors, color pickers, qualification question builders — all documented.
 **Confidence:** 98% — analysis complete, ready for epic restructuring.
 
-### Next: Execute Epic 4 Stories
+### Story Status — Epic 4
 
-Current Epic 4 stories are restructured and aligned with design analysis. Ready to execute:
+| Story | Status         | Summary                                                                                                                                                                                                                                                                                                                                                                                 |
+| ----- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4.0   | ✅ done        | API routes (POST/PATCH waitlist, GET check-slug), OnboardingFormContext (14 fields, loading state), layout switching (two-pane Steps 1–3, centered Steps 4/4a/5/Success), progress dots with touch targets, sticky mobile CTA, back links in Steps 2+3                                                                                                                                  |
+| 4.1   | ✅ done        | Step 1: Headline, subheadline, subdomain input with debounced availability check, "I'll name it later" fallback, POST to create waitlist, arrow-only submit                                                                                                                                                                                                                             |
+| 4.2   | ✅ done        | Step 2: Template selector (Minimal/Bold/Dark) with MiniPreviews, PATCH to save selection, dark template CSS tokens (5 tokens in globals.css), dark theme selector thumbnail fix (h-full w-full), BrowserFrame dark mode fix (utility class names not var() arbitrary values), Bold template hero headline (text-h1), Bold email input dark border (border-2 border-foreground)          |
+| 4.3   | ✅ done        | Step 3: Headline/subheadline/brand color/logo upload/CTA text, Meta Preview OG-card mock (browser chrome + mini page + domain/title/description), milestone rewards (fixed 3/10/25 tiers, editable reward_label inputs, required validation), live preview real-time sync (headline/subheadline/ctaText/brandColor update on every keystroke), PoweredByFooter dark template border fix |
+| 4.4   | ✅ done        | Step 4: Qualification Decision — two-card choice UI (centered layout), arrow-only submit, PATCH + conditional navigation to /onboarding/4a or /onboarding/5                                                                                                                                                                                                                             |
+| 4.5   | ✅ done        | Step 4a: Configure Qualification Questions — dynamic form with add/edit/remove, tier-based cap (Free=2, Pro=5, Growth=∞), required/optional toggle, example placeholder, PATCH + navigation                                                                                                                                                                                             |
+| 4.6   | 🔲 placeholder | Step 5: Email Setup + Launch — not started                                                                                                                                                                                                                                                                                                                                              |
+| 4.7   | 🔲 placeholder | Success Screen — not started                                                                                                                                                                                                                                                                                                                                                            |
 
-1. ~~Start with Story 4.0 — API routes, context, layout switching~~ ✅ Done
-2. Execute stories in dependency order (4.1 → 4.2 → 4.3 → 4.4 → 4.5 → 4.6 → 4.7)
-3. Each story has design specs, acceptance criteria, and dev notes aligned with design analysis
-4. Alignment check completed — all Dev Notes accurately reflect "not started" state
+### Extra Work Done (Beyond Story Scope)
+
+**Dark Template System (5 CSS tokens + 4 bug fixes):**
+
+Tokens added to `globals.css` `@theme inline`:
+
+- `--color-dark-template-bg: #1c1917` → use as `bg-dark-template-bg`
+- `--color-dark-template-text: #faf8f4` → use as `text-dark-template-text`
+- `--color-dark-template-secondary: rgba(250, 248, 244, 0.7)` → use as `text-dark-template-secondary` (PLACEHOLDER)
+- `--color-dark-template-muted: #a8a29e` → use as `bg-dark-template-muted`, `text-dark-template-muted`
+- `--color-dark-template-border: #57534e` → use as `border-dark-template-border`
+
+Bug fixes applied:
+
+1. MiniPreview `h-full w-full` — dark thumbnail now fills container
+2. BrowserFrame `dark` prop — uses `data-theme="dark"` attribute + utility class names
+3. DarkTemplate — all colors via utility class names (not `bg-[--color-*]` arbitrary values)
+4. PoweredByFooter — `border-dark-template-border` for dark mode
+
+**Bold Template Enhancements:**
+
+- Headline: `text-h1` (hero size) instead of `text-h2`
+- Input/button height: `h-11` (taller)
+- Email input: `border-2 border-foreground` (strong dark border)
+- Button: `font-semibold`, `px-8` (bolder, wider)
+
+**Meta Preview (OG-card mock) — REQ-6.8.6:**
+Structure: browser chrome header → headline + subheadline + mini email input + mini button → divider → domain + bold title + grey description
+
+**Milestone Rewards — REQ-6.8.3 corrected:**
+
+- Fixed tiers: "Refer 3 friends" / "Refer 10 friends" / "Refer 25 friends" (not editable)
+- Editable reward_label inputs with contextual placeholders
+- Validation: empty rewards block submit with inline errors
+
+**Live Preview Sync:**
+
+- Step 3 headline/subheadline/ctaText/brandColor all update right-pane LivePreview in real-time via `form.updateField` on every keystroke
+
+**Back Links:**
+
+- Removed from `TwoPaneLayout` in layout.tsx (was unused prop)
+- Added to Step 2 (→ /onboarding/1) and Step 3 (→ /onboarding/2) pages individually, centered below submit button
+
+### Next: Implement Remaining Stories
+
+Implementation order:
+
+1. ~~Story 4.0 — API routes, context, layout switching~~ ✅ Done
+2. ~~Story 4.1 — Step 1 (Name Your Waitlist)~~ ✅ Done
+3. ~~Story 4.2 — Step 2 (Choose Template)~~ ✅ Done
+4. ~~Story 4.3 — Step 3 (Make It Yours)~~ ✅ Done
+5. ~~Story 4.4 — Step 4 (Qualification Decision)~~ ✅ Done
+6. ~~Story 4.5 — Step 4a (Configure Questions)~~ ✅ Done
+7. **Story 4.6 — Step 5 (Email Setup + Launch)** ← NEXT
+8. **Story 4.7 — Success Screen**
 
 ## Component Inventory
 
@@ -289,7 +358,8 @@ Current Epic 4 stories are restructured and aligned with design analysis. Ready 
 | `components/ui/select.tsx`                    | Select                  | ✅ Done — native select, placeholder, error/helperText                                                              |
 | `components/ui/textarea.tsx`                  | Textarea                | ✅ Done — label, error/helperText, resize-y                                                                         |
 | `components/share/share-copy-link.tsx`        | ShareCopyLink           | ✅ Done — Web Share API + clipboard, 2s confirmation                                                                |
-| `components/onboarding/live-preview.tsx`      | LivePreview             | ✅ Done — 3 templates, BrowserFrame, desktop/mobile toggle                                                          |
+| `components/share/powered-by-footer.tsx`      | PoweredByFooter         | ✅ Done — dark template border fix applied, scoped to Free tier                                                     |
+| `components/onboarding/live-preview.tsx`      | LivePreview             | ✅ Done — 3 templates, BrowserFrame with dark mode (`data-theme`), desktop/mobile toggle, dark template tokens      |
 | `components/layout/marketing-layout.tsx`      | MarketingLayout         | ✅ Done — Header (sticky, backdrop-blur, scroll border, logo image, mobile drawer) + Footer (warm ivory, 16px text) |
 | `components/marketing/hero.tsx`               | Hero                    | ✅ Done — conditional "Powered by" variant, text-display, Button CTA                                                |
 | `components/marketing/problem-section.tsx`    | ProblemSection          | ✅ Done — 3 cards, SVG icons, rounded-[10px], muted-foreground                                                      |
@@ -302,12 +372,14 @@ Current Epic 4 stories are restructured and aligned with design analysis. Ready 
 
 ## Layout Structure
 
-| File                             | Purpose                                                       |
-| -------------------------------- | ------------------------------------------------------------- |
-| `src/app/layout.tsx`             | Root layout — wraps children in `<MarketingLayout>`           |
-| `src/app/(marketing)/layout.tsx` | Passthrough `<>{children}</>`                                 |
-| `src/app/(auth)/layout.tsx`      | Passthrough `<>{children}</>`                                 |
-| `src/app/onboarding/layout.tsx`  | Split-pane layout — progress bar, back nav, mobile responsive |
+| File                                       | Purpose                                                       |
+| ------------------------------------------ | ------------------------------------------------------------- |
+| `src/app/layout.tsx`                       | Root layout — wraps children in `<MarketingLayout>`           |
+| `src/app/(marketing)/layout.tsx`           | Passthrough `<>{children}</>`                                 |
+| `src/app/(auth)/layout.tsx`                | Passthrough `<>{children}</>`                                 |
+| `src/app/onboarding/layout.tsx`            | Split-pane layout — progress bar, back nav, mobile responsive |
+| `src/app/api/waitlist/route.ts`            | POST (create) + PATCH (update) waitlist records               |
+| `src/app/api/waitlist/check-slug/route.ts` | GET slug availability check                                   |
 
 ## Testing
 
@@ -377,19 +449,27 @@ Current Epic 4 stories are restructured and aligned with design analysis. Ready 
 
 Design specs use hex values that don't always match the token system exactly. Map to the closest available token:
 
-| Design Spec Hex | Token                      | Tailwind Class            | Use Case                        |
-| --------------- | -------------------------- | ------------------------- | ------------------------------- |
-| `#0F7A5E`       | `--color-accent`           | `text-accent`/`bg-accent` | Brand green, CTAs, active dots  |
-| `#1A1A1A`       | `--color-foreground`       | `text-foreground`         | Primary text, headings          |
-| `#DC2626`       | `--color-destructive`      | `text-destructive`        | Error states, validation errors |
-| `#6B6459`       | `--color-muted-foreground` | `text-muted-foreground`   | Secondary text, helper copy     |
-| `#C3C2C2`       | `--color-muted-foreground` | `text-muted-foreground`   | Field labels, inactive dots     |
-| `#CCC9C3`       | `--color-border`           | `border-border`           | Input borders                   |
-| `#E0DDD8`       | `--color-border`           | `border-border`           | Dividers, separators            |
-| `#FAF8F4`       | `--color-background`       | `bg-background`           | Page background                 |
-| `#FFFFFF`       | `--color-card`             | `bg-card`                 | Card/input backgrounds          |
+| Design Spec Hex       | Token                             | Tailwind Class                                      | Use Case                                   |
+| --------------------- | --------------------------------- | --------------------------------------------------- | ------------------------------------------ |
+| `#0F7A5E`             | `--color-accent`                  | `text-accent`/`bg-accent`                           | Brand green, CTAs, active dots             |
+| `#1A1A1A`             | `--color-foreground`              | `text-foreground`                                   | Primary text, headings                     |
+| `#DC2626`             | `--color-destructive`             | `text-destructive`                                  | Error states, validation errors            |
+| `#6B6459`             | `--color-muted-foreground`        | `text-muted-foreground`                             | Secondary text, helper copy                |
+| `#C3C2C2`             | `--color-muted-foreground`        | `text-muted-foreground`                             | Field labels, inactive dots                |
+| `#CCC9C3`             | `--color-border`                  | `border-border`                                     | Input borders                              |
+| `#E0DDD8`             | `--color-border`                  | `border-border`                                     | Dividers, separators                       |
+| `#FAF8F4`             | `--color-background`              | `bg-background`                                     | Page background                            |
+| `#FFFFFF`             | `--color-card`                    | `bg-card`                                           | Card/input backgrounds                     |
+| `#1C1917`             | `--color-dark-template-bg`        | `bg-dark-template-bg`                               | Dark template page background              |
+| `#FAF8F4`             | `--color-dark-template-text`      | `text-dark-template-text`                           | Dark template headline text                |
+| rgba(250,248,244,0.7) | `--color-dark-template-secondary` | `text-dark-template-secondary`                      | Dark template secondary text (PLACEHOLDER) |
+| `#A8A29E`             | `--color-dark-template-muted`     | `bg-dark-template-muted`/`text-dark-template-muted` | Dark template inactive elements            |
+| `#57534E`             | `--color-dark-template-border`    | `border-dark-template-border`                       | Dark template borders                      |
 
-**Gap note:** `#6B6459` (warm grey) and `#C3C2C2` (light label grey) have no exact token match. Using `--color-muted-foreground` (#6b6b6b) as closest semantic equivalent. These may need dedicated tokens in a future design system update.
+**Gap notes:**
+
+- `#6B6459` (warm grey) and `#C3C2C2` (light label grey) have no exact token match. Using `--color-muted-foreground` (#6b6b6b) as closest semantic equivalent. These may need dedicated tokens in a future design system update.
+- Dark template secondary text color (`--color-dark-template-secondary`) is a PLACEHOLDER using `rgba(250, 248, 244, 0.7)`. Needs a real token decision from design.
 
 ## Gotchas / Corrected Assumptions
 
@@ -406,9 +486,15 @@ Design specs use hex values that don't always match the token system exactly. Ma
 6. ~~Epic 3 — Marketing Homepage~~ ✅ Done (all stories + extra work)
 7. ~~Create Epic 4 branch from dev~~ ✅ Done (on `epic-4` branch)
 8. ~~Epic 4 Design Analysis~~ ✅ Done — all 10 screens analyzed, cross-referenced with PRD, web research complete
-9. Update Epic 4 document to restructure stories to match design reality
-10. Execute Epic 4 — Onboarding Wizard (restructured stories)
-11. Create Epic 5 branch from dev — Dashboard + Store Features
+9. ~~Story 4.0 — API routes, context, layout switching~~ ✅ Done
+10. ~~Story 4.1 — Step 1 (Name Your Waitlist)~~ ✅ Done
+11. ~~Story 4.2 — Step 2 (Choose Template)~~ ✅ Done + dark theme fixes + bold border
+12. ~~Story 4.3 — Step 3 (Make It Yours)~~ ✅ Done + Meta Preview OG-card + milestone rewards + live sync
+13. ~~Story 4.4 — Step 4 (Qualification Decision)~~ ✅ Done
+14. ~~Story 4.5 — Step 4a (Configure Questions)~~ ✅ Done
+15. **Story 4.6 — Step 5 (Email Setup + Launch)** ← NEXT
+16. Story 4.7 — Success Screen
+17. Create Epic 5 branch from dev — Dashboard + Store Features
 
 ## Decision + bug fix: "Powered by MyWaitlist" footer (2026-07)
 
@@ -431,3 +517,102 @@ Files: `components/share/powered-by-footer.tsx` (shared component),
 `components/layout/marketing-layout.tsx` (bug fix — removed badge from homepage footer).
 
 PRD ref: REQ-onboarding-preview.4 (scope exclusion), REQ-onboarding-preview.5 (visual spec + open TODO).
+
+## Bug Fixes — Onboarding Preview & Milestone Rewards (2026-07-31)
+
+### Bug 1: Dark template selector thumbnail was rendering light
+
+**What was wrong:** The MiniPreview component for the Dark template had the correct
+`bg-[--color-dark-template-bg]` class, but the div didn't fill its container (`h-[95px]
+w-[137px]`). The parent button's `bg-card` (white) bled through the unfilled space,
+making the thumbnail appear light/white.
+
+**Fix:** Added `h-full w-full` to all three MiniPreview variants so they fill their
+container completely. Dark thumbnail now shows near-black background with light bars.
+
+**Root cause pattern:** When a child element has a background color but doesn't fill
+its parent, the parent's background shows through. Always ensure background elements
+fill their containers.
+
+### Bug 2: Dark template live-preview was not rendering dark
+
+**What was wrong:** Two issues: (1) BrowserFrame used `bg-[--color-foreground]` for
+dark mode — this references a `@theme inline` variable which does NOT exist as a CSS
+custom property, so the dark background never applied. (2) All dark template tokens
+were referenced using `bg-[--color-dark-template-*]` arbitrary value syntax, which
+fails for the same reason.
+
+**Root cause:** Tailwind v4 `@theme inline` inlines values into generated utilities
+but does NOT create CSS custom properties. `bg-[--color-foreground]` looks up a CSS
+variable that doesn't exist. Must use the generated Tailwind utility class names
+instead: `bg-foreground`, `bg-dark-template-bg`, `border-dark-template-border`, etc.
+
+**Fix:** Replaced all `bg-[--color-dark-template-*]` arbitrary values with Tailwind
+utility class names (`bg-dark-template-bg`, `text-dark-template-text`, etc.) across
+all files: `live-preview.tsx` (BrowserFrame + DarkTemplate), `page.tsx` (MiniPreview),
+`powered-by-footer.tsx`. Same fix applied to `bg-[--color-foreground]` references.
+
+**Dark template color tokens (centralized in globals.css `@theme inline`):**
+
+- `--color-dark-template-bg: #1c1917` → use as `bg-dark-template-bg`
+- `--color-dark-template-text: #faf8f4` → use as `text-dark-template-text`
+- `--color-dark-template-secondary: rgba(250, 248, 244, 0.7)` → use as `text-dark-template-secondary` (PLACEHOLDER)
+- `--color-dark-template-muted: #a8a29e` → use as `bg-dark-template-muted`, `text-dark-template-muted`
+- `--color-dark-template-border: #57534e` → use as `border-dark-template-border`
+
+**Web research finding:** For scoped dark mode (just the preview panel, not the whole
+app), CSS variables scoped to the container is the correct pattern — NOT Tailwind's
+`dark:` variant which would leak to the entire page. However, the CSS variables must
+be REAL CSS custom properties (defined outside `@theme inline`), not Tailwind theme
+variables. The correct approach for `@theme inline` colors is to use the generated
+utility class names directly (e.g. `bg-dark-template-bg`).
+
+### Bug 3: Step 3 "Preview" box was not an OG-card mock
+
+**What was wrong:** The Step 3 preview was a plain dashed box showing just headline
+and subheadline as text. The designed element is a "Meta Preview" — a mock of what
+the page looks like as a social-media link-unfurl card (OG card).
+
+**Fix:** Rebuilt as a structured OG-card mock with:
+
+1. Browser-chrome header (three dots, matching BrowserFrame style)
+2. Inside: headline (bold), subheadline (grey), mini email input, mini "Join waitlist" button
+3. Divider line
+4. Domain in small grey text (e.g. "acme.mywaitlist.com")
+5. Bold line "[Headline] — Join the waitlist"
+6. Grey description line (subheadline text)
+
+**Files changed:** `src/app/onboarding/3/page.tsx` (Meta Preview section)
+
+### Bug 4: Milestone rewards were static, no editable reward_label
+
+**What was wrong:** Three static rows reading "Refer 3 friends" / "Refer 10 friends" /
+"Refer 25 friends" with no way for the founder to enter the actual reward. The
+DEFAULT_REWARDS set both `name` and `value` to the same text, and there was no
+label indicating what the input was for.
+
+**Fix:**
+
+- DEFAULT_REWARDS now have empty `value` fields (reward labels start blank)
+- Each tier shows a fixed label ("Refer 3 friends" etc.) above an editable input
+- Inputs have contextual placeholders (e.g. "e.g. Early access")
+- Added validation: if milestone toggle is ON and any reward is empty, shows inline
+  error and blocks submission
+- REQ-6.8.3 updated in PRD to reflect correct behavior
+- New REQ-6.8.6 added for Meta Preview OG-card structure
+
+**DB schema alignment:** `milestone_rewards.reward_label text not null` — the
+validation enforces this constraint client-side before API submission.
+
+### Open gap: Dark template secondary text color
+
+**Status:** UNRESOLVED — placeholder token used.
+
+The design system explicitly notes "Dark template secondary text color token remains
+unresolved." Using `--color-dark-template-secondary: rgba(250, 248, 244, 0.7)` (Warm
+Ivory at 70% opacity) as a working placeholder. This affects subheadline text, input
+placeholder text, and milestone list text on the Dark template. Do not treat this
+value as final — needs a real token decision from design.
+
+Same treatment as the earlier Dark-template gap noted on the "Powered by" footer
+(REQ-onboarding-preview.5).

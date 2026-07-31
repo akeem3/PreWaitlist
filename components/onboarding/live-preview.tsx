@@ -13,6 +13,11 @@ interface MilestoneReward {
   value: string;
 }
 
+interface Question {
+  text: string;
+  required: boolean;
+}
+
 interface LivePreviewProps {
   template: Template;
   headline: string;
@@ -21,6 +26,7 @@ interface LivePreviewProps {
   logoUrl: string | null;
   ctaText: string;
   milestoneRewards: MilestoneReward[];
+  questions?: Question[];
   tier?: Tier;
   slug?: string;
 }
@@ -28,10 +34,14 @@ interface LivePreviewProps {
 function BrowserFrame({
   children,
   slug,
+  template,
 }: {
   children: React.ReactNode;
   slug?: string;
+  template?: Template;
 }) {
+  const isDark = template === "dark";
+
   return (
     <div
       style={{
@@ -40,14 +50,14 @@ function BrowserFrame({
         border: "1px solid #CCC9C3",
         overflow: "hidden",
         width: "100%",
-        background: "#fff",
+        background: isDark ? "#1C1917" : "#fff",
       }}
     >
       <div
         style={{
           height: 36,
-          background: "#fff",
-          borderBottom: "1px solid #E5E5E5",
+          background: isDark ? "#1C1917" : "#fff",
+          borderBottom: `1px solid ${isDark ? "#6B6459" : "#E5E5E5"}`,
           display: "flex",
           alignItems: "center",
           padding: "0 12px",
@@ -145,21 +155,39 @@ function MinimalTemplate({
       >
         {subheadline || "Your subheadline goes here"}
       </p>
-      <button
-        type="button"
-        style={{
-          background: brandColor || "#0C6350",
-          color: "#fff",
-          border: "none",
-          borderRadius: "var(--radius-md, 0.5rem)",
-          padding: "10px 24px",
-          fontSize: "var(--text-sm, 0.875rem)",
-          fontWeight: "var(--font-medium, 500)",
-          cursor: "pointer",
-        }}
-      >
-        {ctaText || "Join Waitlist"}
-      </button>
+      <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 360 }}>
+        <input
+          type="email"
+          placeholder="Email address"
+          readOnly
+          style={{
+            flex: 1,
+            minWidth: 0,
+            borderRadius: "var(--radius-md, 0.5rem)",
+            border: "1px solid #E5E5E5",
+            padding: "10px 12px",
+            fontSize: "var(--text-sm, 0.875rem)",
+            color: "#1A1A1A",
+            outline: "none",
+          }}
+        />
+        <button
+          type="button"
+          style={{
+            background: brandColor || "#0C6350",
+            color: "#fff",
+            border: "none",
+            borderRadius: "var(--radius-md, 0.5rem)",
+            padding: "10px 20px",
+            fontSize: "var(--text-sm, 0.875rem)",
+            fontWeight: "var(--font-medium, 500)",
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {ctaText || "Join Waitlist"}
+        </button>
+      </div>
       {milestoneRewards.length > 0 && (
         <div
           style={{
@@ -244,21 +272,39 @@ function BoldTemplate({
       >
         {subheadline || "Your subheadline goes here"}
       </p>
-      <button
-        type="button"
-        style={{
-          background: brandColor || "#0C6350",
-          color: "#fff",
-          border: "none",
-          borderRadius: "var(--radius-md, 0.5rem)",
-          padding: "12px 32px",
-          fontSize: "var(--text-base, 1rem)",
-          fontWeight: "var(--font-semibold, 600)",
-          cursor: "pointer",
-        }}
-      >
-        {ctaText || "Join Waitlist"}
-      </button>
+      <div style={{ display: "flex", gap: 10, width: "100%", maxWidth: 400 }}>
+        <input
+          type="email"
+          placeholder="Email address"
+          readOnly
+          style={{
+            flex: 1,
+            minWidth: 0,
+            borderRadius: "var(--radius-md, 0.5rem)",
+            border: "1px solid #1A1A1A",
+            padding: "12px 14px",
+            fontSize: "var(--text-base, 1rem)",
+            color: "#1A1A1A",
+            outline: "none",
+          }}
+        />
+        <button
+          type="button"
+          style={{
+            background: brandColor || "#0C6350",
+            color: "#fff",
+            border: "none",
+            borderRadius: "var(--radius-md, 0.5rem)",
+            padding: "12px 28px",
+            fontSize: "var(--text-base, 1rem)",
+            fontWeight: "var(--font-semibold, 600)",
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {ctaText || "Join Waitlist"}
+        </button>
+      </div>
       {milestoneRewards.length > 0 && (
         <div
           style={{
@@ -323,9 +369,7 @@ function DarkTemplate({
         alignItems: "center",
         textAlign: "center",
         gap: 16,
-        background: "#1C1917",
-        margin: "0 -32px",
-        padding: "48px 32px",
+        padding: "32px 0",
       }}
     >
       {logoUrl && (
@@ -358,21 +402,40 @@ function DarkTemplate({
       >
         {subheadline || "Your subheadline goes here"}
       </p>
-      <button
-        type="button"
-        style={{
-          background: brandColor || "#0C6350",
-          color: "#fff",
-          border: "none",
-          borderRadius: "var(--radius-md, 0.5rem)",
-          padding: "10px 24px",
-          fontSize: "var(--text-sm, 0.875rem)",
-          fontWeight: "var(--font-medium, 500)",
-          cursor: "pointer",
-        }}
-      >
-        {ctaText || "Join Waitlist"}
-      </button>
+      <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 360 }}>
+        <input
+          type="email"
+          placeholder="Email address"
+          readOnly
+          style={{
+            flex: 1,
+            minWidth: 0,
+            borderRadius: "var(--radius-md, 0.5rem)",
+            border: "1px solid #44403C",
+            padding: "10px 12px",
+            fontSize: "var(--text-sm, 0.875rem)",
+            color: "#FAFAFA",
+            background: "#292524",
+            outline: "none",
+          }}
+        />
+        <button
+          type="button"
+          style={{
+            background: brandColor || "#0C6350",
+            color: "#fff",
+            border: "none",
+            borderRadius: "var(--radius-md, 0.5rem)",
+            padding: "10px 20px",
+            fontSize: "var(--text-sm, 0.875rem)",
+            fontWeight: "var(--font-medium, 500)",
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {ctaText || "Join Waitlist"}
+        </button>
+      </div>
       {milestoneRewards.length > 0 && (
         <div
           style={{
@@ -492,7 +555,7 @@ export function LivePreview({
             maxWidth: isMobile ? 375 : 787,
           }}
         >
-          <BrowserFrame slug={deferredSlug}>
+          <BrowserFrame slug={deferredSlug} template={deferredTemplate}>
             <div
               style={{
                 display: "flex",
