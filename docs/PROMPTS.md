@@ -14,6 +14,7 @@ Reusable prompts for story and epic workflow.
 | 4   | [Epic-Level Verification](#4-epic-level-verification)    | Final release audit of entire epic                                     |
 | 5   | [Epic Document Creation](#5-epic-document-creation)      | Create a structured epic document with stories and acceptance criteria |
 | 6   | [Epic Alignment Check](#6-epic-alignment-check)          | Verify epic document matches current implementation                    |
+| 7   | [Analyze Design](#7-analyze-design-screen-by-screen)     | Screen-by-screen design analysis before epic execution                 |
 
 ---
 
@@ -365,4 +366,197 @@ Deliver:
 - [What still needs to be built — for reference only, not to implement now]
 
 If all Dev Notes are accurately annotated, confirm the epic document is aligned with current implementation.
+```
+
+---
+
+## 7. Analyze Design (Screen-by-Screen)
+
+**Use when:** Before executing an epic, to verify designs match PRD requirements and current implementation. Produces a detailed analysis recorded in `docs/design/design-analysis.md`.
+
+**Shortcut:** Type `analyze [epic-number].[screen]` (e.g. `analyze 4.1`) to analyze a single screen, or `analyze [epic-number]` (e.g. `analyze 4`) to analyze all screens in an epic.
+
+```
+Analyze [epic-number].[screen] — [Screen Name]
+
+You are a senior UI/UX engineer with deep production experience conducting a design-to-implementation analysis. You do not guess, you do not assume, and you do not skip details. You are the last line of defense before stories are written from these designs. Apply that standard to everything that follows.
+
+## Phase 1: Load the Design
+
+1. Read the design SVG file at its exact path in `docs/design/High-fidelity-svgs/`
+2. Read the design system mapping at `docs/design/Desing System table Map.svg`
+3. Read the PRD section referenced by this screen (use the epic document's `Source` links)
+
+## Phase 2: Extract Design Elements (Screenshot-Level Detail)
+
+From the SVG, extract and document every visible element. Be exhaustive — missing a detail here means a story will be written wrong.
+
+For each element, record:
+
+### Layout & Structure
+- Overall page layout (columns, split-pane, centered, full-width)
+- Left pane vs right pane content (if split layout)
+- Content widths, max-widths, padding, gaps
+- Mobile vs desktop rendering (if indicated)
+
+### Typography
+- Every text string EXACTLY as it appears — copy verbatim, never paraphrase
+- Text hierarchy (heading, subheading, body, caption, label)
+- Font sizes (estimate in px from the SVG scale)
+- Font weights (regular, medium, semibold, bold)
+- Text colors — map to design tokens where possible
+
+### Colors & Backgrounds
+- Every background color visible (page bg, card bg, input bg, etc.)
+- Text foreground colors
+- Border colors
+- Icon colors
+- Map all colors to design system tokens from `globals.css` where possible
+
+### Form Elements
+- Every input field: type (text, textarea, color picker, file upload, toggle), label, placeholder, default value, validation state
+- Every button: label, variant (primary, secondary, ghost), size, state (enabled, disabled, loading)
+- Every toggle/switch: label, default state
+- Every dropdown/select: options listed
+
+### Icons & Imagery
+- Every icon visible — describe shape, size, color
+- Every image/illustration — describe content and placement
+- SVG icon paths if extractable
+
+### Spacing & Dimensions
+- Horizontal and vertical spacing between elements
+- Card/border radius values
+- Element heights (buttons, inputs, cards)
+- Section spacing
+
+### Interactive States
+- Hover states visible in the design
+- Selected/active states
+- Disabled states
+- Error states
+- Loading states
+
+### Conditional Content
+- Elements that appear/disappear based on state (e.g., tier-dependent content)
+- Toggle-revealed sections
+- Progressive disclosure patterns
+
+## Phase 3: Cross-Reference with PRD
+
+Compare every extracted element against the PRD requirements for this screen:
+
+1. List every REQ ID that applies to this screen (e.g., REQ-6.6.1, REQ-6.6.2)
+2. For each REQ, verify the design implements it correctly
+3. Flag any discrepancies:
+   - Design shows something the PRD doesn't mention
+   - PRD requires something the design doesn't show
+   - Design and PRD contradict each other
+4. Check standing decisions and open items in the PRD for conflicts
+
+## Phase 4: Cross-Reference with Current Implementation
+
+Check what currently exists in the codebase for this screen:
+
+1. Read the current page file (e.g., `src/app/onboarding/1/page.tsx`)
+2. Read any related components
+3. Compare current implementation against the design
+4. Identify:
+   - Elements already built that match the design
+   - Elements built but different from the design
+   - Elements missing entirely
+   - Elements built but not in the design (scope drift)
+
+## Phase 5: Web Research
+
+Search the web for:
+
+1. Best practices for this specific UI pattern (e.g., multi-step onboarding forms, template selectors, color pickers)
+2. WCAG accessibility requirements for the form elements present
+3. Mobile UX patterns for the specific interactions shown
+4. Common pitfalls in similar UIs
+
+Factor findings into your analysis — if the design deviates from best practices, flag it.
+
+## Phase 6: Confidence Check & Redo
+
+Before recording results, ask yourself:
+
+- Have I extracted every visible text string verbatim?
+- Have I mapped every color to a design token?
+- Have I identified every form element and its properties?
+- Have I checked every PRD requirement that applies?
+- Have I compared against the current implementation?
+- Have I searched for relevant best practices?
+
+If any answer is "no" or "not sure", redo that phase. Do not proceed until you are 100% confident.
+
+## Phase 7: Record Results
+
+Append your analysis to `docs/design/design-analysis.md` under the appropriate epic and screen heading. Use this format:
+
+### [Screen Name] — Analysis
+
+**Design file:** `[filename].svg`
+**PRD sections:** [list REQ IDs]
+**Analysis date:** [date]
+
+#### Layout
+[Detailed layout description]
+
+#### Typography & Text (Verbatim)
+| Element | Text (exact) | Size | Weight | Color |
+| ------- | ------------ | ---- | ------ | ----- |
+| ... | ... | ... | ... | ... |
+
+#### Colors & Tokens
+| Element | Color Value | Token |
+| ------- | ----------- | ----- |
+| ... | ... | ... |
+
+#### Form Elements
+| Element | Type | Label | Placeholder | Default | Validation |
+| ------- | ---- | ----- | ----------- | ------- | ---------- |
+| ... | ... | ... | ... | ... | ... |
+
+#### Buttons
+| Label | Variant | Size | State |
+| ----- | ------- | ---- | ----- |
+| ... | ... | ... | ... |
+
+#### Icons & Images
+| Element | Description | Size | Color |
+| ------- | ----------- | ---- | ----- |
+| ... | ... | ... | ... |
+
+#### Spacing & Dimensions
+[Detailed spacing notes]
+
+#### PRD Cross-Reference
+| REQ ID | Design Match | Notes |
+| ------ | ------------ | ----- |
+| ... | ✅/❌/⚠️ | ... |
+
+#### Implementation Cross-Reference
+| Element | Current State | Design Match | Notes |
+| ------- | ------------- | ------------ | ----- |
+| ... | built/missing/different | ✅/❌/⚠️ | ... |
+
+#### Best Practice Notes
+[Web research findings]
+
+#### Discrepancies Found
+- [List any conflicts between design, PRD, and implementation]
+
+#### Confidence Level
+[State your confidence — must be 100% to proceed. If not 100%, list what's blocking you.]
+
+## Phase 8: Final Report
+
+Report back with:
+- Confirmation that the analysis is complete and recorded
+- A summary of key findings (discrepancies, gaps, decisions needed)
+- A clear statement that you are 100% confident in the analysis, or a list of what still needs resolution
+
+Do not begin implementation or epic updates until instructed.
 ```

@@ -16,6 +16,7 @@ Type these in chat to run prompts instantly:
 | `epic-check`      | Prompt #4 | Final release audit of entire epic              |
 | `create-epic [N]` | Prompt #5 | Create structured epic document                 |
 | `align-epic [N]`  | Prompt #6 | Verify epic matches implementation              |
+| `analyze [N.S]`   | Prompt #7 | Screen-by-screen design analysis                |
 | `commit-push`     | —         | Stage, commit with auto-message, push           |
 | `merge-clean`     | —         | Merge epic→dev, resolve conflicts, lint+test    |
 
@@ -26,6 +27,8 @@ Type these in chat to run prompts instantly:
 - `audit 2.3` → I run Prompt #3 on Story 2.3
 - `create-epic 3` → I run Prompt #5 to create Epic 3
 - `align-epic 2` → I run Prompt #6 on Epic 2
+- `analyze 4.1` → I run Prompt #7 on Onboarding Step 1
+- `analyze 4` → I run Prompt #7 on all Epic 4 screens
 
 Full prompt text: `docs/PROMPTS.md`
 
@@ -64,6 +67,7 @@ Local subdomains: use `*.lvh.me:3000` (e.g. `acme.lvh.me:3000`) — resolves to 
 - Never commit `.env*` files or any secret.
 - Never silently retry a story whose frontmatter `status` is `blocked`.
 - Never add a "Powered by MyWaitlist" badge to MyWaitlist's own marketing site or app pages — it is exclusive to founders' public waitlist pages, gated to Free tier.
+- Never use inline styles (`style={{ ... }}`). Use Tailwind utility classes and design system tokens from `src/app/globals.css` exclusively. All colors must reference CSS custom properties (`--color-*`), never hardcoded hex values.
 
 ## Project Structure
 

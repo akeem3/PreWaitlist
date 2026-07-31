@@ -1,3 +1,255 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useOnboardingForm } from "../context";
+
+type SlugStatus = "idle" | "checking" | "available" | "unavailable" | "error";
+
+function deriveSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 63);
+}
+
+function generateFallbackSlug(): string {
+  return crypto.randomUUID().slice(0, 8);
+}
+
 export default function OnboardingStep1() {
-  return <div>Onboarding Step 1 — Name your waitlist — placeholder</div>;
+  const router = useRouter();
+  const form = useOnboardingForm();
+
+  const [headline, setHeadline] = useState(form.headline);
+  const [subheadline, setSubheadline] = useState(form.subheadline);
+  const [slugInput, setSlugInput] = useState(form.slug);
+  const [slug, setSlug] = useState(form.slug);
+  const [slugStatus, setSlugStatus] = useState<SlugStatus>("idle");
+  const [slugError, setSlugError] = useState<string | null>(null);
+  const [usedFallback, setUsedFallback] = useState(false);
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (abortRef.current) abortRef.current.abort();
+    };
+  }, []);
+
+  const checkSlug = useCallback(async (candidate: string) => {
+    if (!candidate) {
+      setSlugStatus("idle");
+      setSlugError(null);
+      return;
+    }
+
+    setSlugStatus("checking");
+    setSlugError(null);
+
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      const res = await fetch(
+        `/api/waitlist/check-slug?slug=${encodeURIComponent(candidate)}`,
+        { signal: controller.signal }
+      );
+      const data = await res.json();
+
+      if (controller.signal.aborted) return;
+
+      if (data.available) {
+        setSlugStatus("available");
+        setSlugError(null);
+      } else {
+        setSlugStatus("unavailable");
+        setSlugError("Already taken");
+      }
+    } catch {
+      if (!controller.signal.aborted) {
+        setSlugStatus("error");
+        setSlugError("Could not check availability");
+      }
+    }
+  }, []);
+
+  const handleSlugChange = useCallback(
+    (value: string) => {
+      const derived = deriveSlug(value);
+      setSlugInput(value);
+      setSlug(derived);
+      setUsedFallback(false);
+
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+
+      if (!derived) {
+        setSlugStatus("idle");
+        setSlugError(null);
+        return;
+      }
+
+      setSlugStatus("checking");
+      debounceRef.current = setTimeout(() => {
+        checkSlug(derived);
+      }, 400);
+    },
+    [checkSlug]
+  );
+
+  const handleNameLater = useCallback(() => {
+    const fallback = generateFallbackSlug();
+    setSlugInput("");
+    setSlug(fallback);
+    setUsedFallback(true);
+    setSlugStatus("idle");
+    setSlugError(null);
+  }, []);
+
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+
+      if (!slug || slugStatus === "checking") return;
+
+      form.setLoading(true);
+
+      try {
+        const res = await fetch("/api/waitlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            subdomain: slug,
+            headline: headline || null,
+            subheadline: subheadline || null,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to create waitlist");
+        }
+
+        form.setWaitlistId(data.id);
+        form.updateField("slug", slug);
+        form.updateField("headline", headline);
+        form.updateField("subheadline", subheadline);
+        router.push("/onboarding/2");
+      } catch {
+        form.setLoading(false);
+      }
+    },
+    [slug, slugStatus, headline, subheadline, form, router]
+  );
+
+  const isSubmitting = form.loading;
+  const isValid =
+    slug && slugStatus !== "checking" && slugStatus !== "unavailable";
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col">
+      {/* Page header */}
+      <div className="mb-2">
+        <p className="text-xs font-medium text-accent">Step 1 of 5</p>
+        <p className="text-sm text-muted-foreground">Name your waitlist</p>
+      </div>
+
+      <h1 className="mb-1 text-h2">What are you building?</h1>
+      <p className="mb-8 text-body-lg text-muted-foreground">
+        Your page goes live as you type.
+      </p>
+
+      {/* Field 1: Headline */}
+      <div className="mb-3">
+        <label className="mb-1 block text-xs text-muted-foreground">
+          Headline
+        </label>
+        <input
+          type="text"
+          placeholder="e.g Buildly"
+          value={headline}
+          onChange={(e) => setHeadline(e.target.value)}
+          disabled={isSubmitting}
+          className="flex w-full items-center rounded-[var(--radius-lg)] border border-border bg-card px-3 py-3 text-sm h-[60px] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+        />
+      </div>
+
+      {/* Field 2: Sub-headline */}
+      <div className="mb-3">
+        <label className="mb-1 block text-xs text-muted-foreground">
+          Sub-headline
+        </label>
+        <textarea
+          placeholder="The Smarter way to manage Projects"
+          value={subheadline}
+          onChange={(e) => setSubheadline(e.target.value)}
+          disabled={isSubmitting}
+          className="flex w-full resize-none items-center rounded-[var(--radius-lg)] border border-border bg-card px-3 py-3 text-sm h-[60px] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+        />
+      </div>
+
+      {/* Field 3: Tagline (slug) */}
+      <div className="mb-3">
+        <label className="mb-1 block text-xs text-muted-foreground">
+          tagline
+        </label>
+        <input
+          type="text"
+          placeholder={
+            headline ? deriveSlug(headline) || "my-product" : "buildly"
+          }
+          value={slugInput}
+          onChange={(e) => handleSlugChange(e.target.value)}
+          disabled={isSubmitting || usedFallback}
+          className="flex w-full items-center rounded-[var(--radius-lg)] border border-border bg-card px-3 py-3 text-sm h-[60px] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+          style={{ height: 60 }}
+        />
+        {/* URL preview with availability */}
+        <div className="mt-1 flex items-center gap-1 text-xs">
+          <span className="text-muted-foreground">Your Page:</span>
+          {slug && (
+            <span className="font-medium text-accent">
+              {slug}.mywaitlist.com
+            </span>
+          )}
+          {slugStatus === "available" && (
+            <span className="text-accent">available</span>
+          )}
+          {slugStatus === "checking" && (
+            <span className="text-muted-foreground">checking…</span>
+          )}
+          {slugError && <span className="text-destructive">{slugError}</span>}
+        </div>
+      </div>
+
+      {/* Submit button + I'll name it later */}
+      <div className="sticky bottom-0 flex flex-col items-center bg-background pb-14 pt-4 md:static md:px-0 md:pb-0 md:pt-0">
+        <button
+          type="submit"
+          disabled={isSubmitting || !isValid}
+          className="inline-flex h-[59px] w-[458px] items-center justify-center rounded-[var(--radius-md)] bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50"
+        >
+          {isSubmitting ? (
+            <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          ) : (
+            <span>Next →</span>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={handleNameLater}
+          disabled={isSubmitting}
+          className="mt-3 text-sm underline underline-offset-2 transition-colors hover:text-foreground disabled:opacity-50 text-muted-foreground"
+        >
+          I&apos;ll name it later
+        </button>
+      </div>
+    </form>
+  );
 }

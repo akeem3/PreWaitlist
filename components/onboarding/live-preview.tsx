@@ -22,9 +22,16 @@ interface LivePreviewProps {
   ctaText: string;
   milestoneRewards: MilestoneReward[];
   tier?: Tier;
+  slug?: string;
 }
 
-function BrowserFrame({ children }: { children: React.ReactNode }) {
+function BrowserFrame({
+  children,
+  slug,
+}: {
+  children: React.ReactNode;
+  slug?: string;
+}) {
   return (
     <div
       style={{
@@ -71,6 +78,18 @@ function BrowserFrame({ children }: { children: React.ReactNode }) {
             background: "#C3C2C2",
           }}
         />
+        {slug && (
+          <span
+            style={{
+              flex: 1,
+              textAlign: "center",
+              fontSize: "var(--text-xs, 0.75rem)",
+              color: "#6B6B6B",
+            }}
+          >
+            {slug}.mywaitlist.com
+          </span>
+        )}
       </div>
       <div style={{ padding: "24px 32px", minHeight: 200 }}>{children}</div>
     </div>
@@ -402,6 +421,7 @@ export function LivePreview({
   ctaText,
   milestoneRewards,
   tier = "free",
+  slug,
 }: LivePreviewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("desktop");
 
@@ -412,6 +432,7 @@ export function LivePreview({
   const deferredLogoUrl = useDeferredValue(logoUrl);
   const deferredCtaText = useDeferredValue(ctaText);
   const deferredRewards = useDeferredValue(milestoneRewards);
+  const deferredSlug = useDeferredValue(slug);
 
   const TemplateComponent = templateMap[deferredTemplate];
 
@@ -433,10 +454,10 @@ export function LivePreview({
             padding: "6px 12px",
             fontSize: "var(--text-xs, 0.75rem)",
             fontWeight: "var(--font-medium, 500)",
-            border: "1px solid #E5E5E5",
+            border: !isMobile ? "none" : "1px solid #E5E5E5",
             borderRadius: "var(--radius-md, 0.5rem)",
-            background: !isMobile ? "#F5F5F5" : "#fff",
-            color: "#333",
+            background: !isMobile ? deferredBrandColor || "#0C6350" : "#fff",
+            color: !isMobile ? "#fff" : "#333",
             cursor: "pointer",
           }}
         >
@@ -449,10 +470,10 @@ export function LivePreview({
             padding: "6px 12px",
             fontSize: "var(--text-xs, 0.75rem)",
             fontWeight: "var(--font-medium, 500)",
-            border: "1px solid #E5E5E5",
+            border: isMobile ? "none" : "1px solid #E5E5E5",
             borderRadius: "var(--radius-md, 0.5rem)",
-            background: isMobile ? "#F5F5F5" : "#fff",
-            color: "#333",
+            background: isMobile ? deferredBrandColor || "#0C6350" : "#fff",
+            color: isMobile ? "#fff" : "#333",
             cursor: "pointer",
           }}
         >
@@ -471,7 +492,7 @@ export function LivePreview({
             maxWidth: isMobile ? 375 : 787,
           }}
         >
-          <BrowserFrame>
+          <BrowserFrame slug={deferredSlug}>
             <div
               style={{
                 display: "flex",

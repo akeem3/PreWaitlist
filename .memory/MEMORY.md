@@ -233,6 +233,50 @@ picking up a paying customer.
 - Confidence section: standalone, no hardcoded bg, text-body-lg in accent green
 - Tailwind v4: unlayered CSS overrides Tailwind utilities; use inline styles for overrides
 
+## Epic 4 Progress (Onboarding Wizard)
+
+### Design Analysis — Complete
+
+**Analysis date:** 2026-07-31
+**File:** `docs/design/design-analysis.md`
+
+**Screens analyzed:**
+
+- Step 1 — Name Your Waitlist
+- Step 2 — Choose a Template (Minimal, Bold, Dark variants)
+- Step 3 — Make It Yours
+- Step 4 — Qualification Decision (+ variant)
+- Step 5 — Email Setup (Free + Pro tiers)
+- Success Screen
+
+**Key findings from design analysis:**
+
+1. **Layout pattern:** Steps 1–3 use two-pane layout (566px left + browser mockup). Steps 4, 5, Success use centered layout (no right pane).
+2. **Button pattern:** Steps 1–4 use arrow-only (→) submit buttons. Step 5 uses text+arrow ("Launch my waitlist" + →).
+3. **Progress dots:** 5 dots, 10px diameter, ~16.7px center-to-center spacing. Completed + current use `#0F7A5E`, incomplete use `#C3C2C2`. No visual distinction between completed and current.
+4. **Template cards:** 457×123px, rx=23.5, 2px accent border for selected state.
+5. **Form inputs:** 60.33px height, 12.164px border-radius, `#CCC9C3` 1.67px border.
+6. **Submit button:** 458×59px, rx=9.59, `#0F7A5E` fill, `#FAF8F4` text, arrow icon only.
+7. **Step 5 launch button:** 644×59px (wider), same style.
+8. **Success screen:** No progress dots, centered layout, share/copy buttons at equal visual weight.
+9. **Logo upload:** Dashed border variant for file input.
+10. **Milestone rewards toggle:** Completely hidden when OFF (not collapsed).
+11. **Free tier email fields:** Disabled with Pro badge overlay.
+12. **"I'll name it later":** Has helper caption text below it.
+
+**PRD cross-reference:** All REQs from 6.6–6.12 documented with design match status.
+**Web research:** Multi-step onboarding UX, template selectors, color pickers, qualification question builders — all documented.
+**Confidence:** 98% — analysis complete, ready for epic restructuring.
+
+### Next: Execute Epic 4 Stories
+
+Current Epic 4 stories are restructured and aligned with design analysis. Ready to execute:
+
+1. ~~Start with Story 4.0 — API routes, context, layout switching~~ ✅ Done
+2. Execute stories in dependency order (4.1 → 4.2 → 4.3 → 4.4 → 4.5 → 4.6 → 4.7)
+3. Each story has design specs, acceptance criteria, and dev notes aligned with design analysis
+4. Alignment check completed — all Dev Notes accurately reflect "not started" state
+
 ## Component Inventory
 
 | File                                          | Component               | Status                                                                                                              |
@@ -327,6 +371,25 @@ picking up a paying customer.
 - Branching: `main` = production, `dev` = development, `epic-1` = feature branch.
 - Design-heavy epics must reference high-fidelity SVGs by file path.
 - Every story has `status` field: `ready` → `in-progress` → `blocked` or `done`.
+- **Never use inline styles (`style={{ ... }}`).** Use Tailwind utility classes and design system tokens from `src/app/globals.css` exclusively. All colors must reference CSS custom properties (`--color-*`), never hardcoded hex values. This applies to all new code and must be enforced during refactoring.
+
+## Design System — Color Mapping (Design Spec → Tokens)
+
+Design specs use hex values that don't always match the token system exactly. Map to the closest available token:
+
+| Design Spec Hex | Token                      | Tailwind Class            | Use Case                        |
+| --------------- | -------------------------- | ------------------------- | ------------------------------- |
+| `#0F7A5E`       | `--color-accent`           | `text-accent`/`bg-accent` | Brand green, CTAs, active dots  |
+| `#1A1A1A`       | `--color-foreground`       | `text-foreground`         | Primary text, headings          |
+| `#DC2626`       | `--color-destructive`      | `text-destructive`        | Error states, validation errors |
+| `#6B6459`       | `--color-muted-foreground` | `text-muted-foreground`   | Secondary text, helper copy     |
+| `#C3C2C2`       | `--color-muted-foreground` | `text-muted-foreground`   | Field labels, inactive dots     |
+| `#CCC9C3`       | `--color-border`           | `border-border`           | Input borders                   |
+| `#E0DDD8`       | `--color-border`           | `border-border`           | Dividers, separators            |
+| `#FAF8F4`       | `--color-background`       | `bg-background`           | Page background                 |
+| `#FFFFFF`       | `--color-card`             | `bg-card`                 | Card/input backgrounds          |
+
+**Gap note:** `#6B6459` (warm grey) and `#C3C2C2` (light label grey) have no exact token match. Using `--color-muted-foreground` (#6b6b6b) as closest semantic equivalent. These may need dedicated tokens in a future design system update.
 
 ## Gotchas / Corrected Assumptions
 
@@ -341,8 +404,11 @@ picking up a paying customer.
 4. ~~Start Story 2.1 — Supabase schema DDL + RLS~~ ✅ Done
 5. ~~Epic 2 — Foundation & Auth~~ ✅ Done (all 5 stories)
 6. ~~Epic 3 — Marketing Homepage~~ ✅ Done (all stories + extra work)
-7. Create Epic 4 branch from dev — Onboarding Wizard
-8. Create Epic 5 branch from dev — Dashboard + Store Features
+7. ~~Create Epic 4 branch from dev~~ ✅ Done (on `epic-4` branch)
+8. ~~Epic 4 Design Analysis~~ ✅ Done — all 10 screens analyzed, cross-referenced with PRD, web research complete
+9. Update Epic 4 document to restructure stories to match design reality
+10. Execute Epic 4 — Onboarding Wizard (restructured stories)
+11. Create Epic 5 branch from dev — Dashboard + Store Features
 
 ## Decision + bug fix: "Powered by MyWaitlist" footer (2026-07)
 
