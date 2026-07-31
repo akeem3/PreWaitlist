@@ -56,18 +56,77 @@ export const config = {
   ],
 };
 
+function captureAcquisition(request: NextRequest): NextResponse | null {
+  const url = request.nextUrl;
+
+  // Only capture on the marketing homepage
+  if (url.pathname !== "/") return null;
+
+  const ref = url.searchParams.get("ref");
+  const utmSource = url.searchParams.get("utm_source");
+  const utmMedium = url.searchParams.get("utm_medium");
+  const utmCampaign = url.searchParams.get("utm_campaign");
+  const utmTerm = url.searchParams.get("utm_term");
+  const utmContent = url.searchParams.get("utm_content");
+
+  // If no acquisition params present, do nothing
+  if (
+    !ref &&
+    !utmSource &&
+    !utmMedium &&
+    !utmCampaign &&
+    !utmTerm &&
+    !utmContent
+  ) {
+    return null;
+  }
+
+  const acquisition: Record<string, string> = {};
+  if (ref) acquisition.ref = ref;
+  if (utmSource) acquisition.utm_source = utmSource;
+  if (utmMedium) acquisition.utm_medium = utmMedium;
+  if (utmCampaign) acquisition.utm_campaign = utmCampaign;
+  if (utmTerm) acquisition.utm_term = utmTerm;
+  if (utmContent) acquisition.utm_content = utmContent;
+
+  const response = NextResponse.next();
+  response.cookies.set("mw_acquisition", JSON.stringify(acquisition), {
+    maxAge: 60 * 60 * 24 * 30, // 30 days
+    path: "/",
+    sameSite: "lax",
+  });
+
+  return response;
+}
+
 export async function proxy(request: NextRequest) {
   const host = request.headers.get("host") ?? "";
   const subdomain = getSubdomain(host);
 
+  // Capture acquisition params on marketing homepage
+  const acquisitionResponse = captureAcquisition(request);
+
   // No subdomain on localhost or apex domain — apply auth guard
   if (!subdomain) {
-    return updateSession(request);
+    const sessionResponse = await updateSession(request);
+    // Merge acquisition cookie if it was set
+    if (acquisitionResponse) {
+      for (const cookie of acquisitionResponse.cookies.getAll()) {
+        sessionResponse.cookies.set(cookie);
+      }
+    }
+    return sessionResponse;
   }
 
   // Reserved slugs — serve the app's own pages, apply auth guard
   if (RESERVED_SLUGS.includes(subdomain)) {
-    return updateSession(request);
+    const sessionResponse = await updateSession(request);
+    if (acquisitionResponse) {
+      for (const cookie of acquisitionResponse.cookies.getAll()) {
+        sessionResponse.cookies.set(cookie);
+      }
+    }
+    return sessionResponse;
   }
 
   // Rewrite to the [subdomain] dynamic route (no auth guard for tenant pages)

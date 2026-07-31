@@ -3,12 +3,49 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+
+const sectionLinks = [
+  { label: "Problem", id: "problem" },
+  { label: "Difference", id: "difference" },
+  { label: "Comparison", id: "comparison" },
+  { label: "Features", id: "features" },
+  { label: "Confidence", id: "confidence" },
+  { label: "Pricing", id: "pricing" },
+];
+
+function useSmoothScroll() {
+  const scrollTo = useCallback((id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      const isTopOrBottom = id === "hero" || id === "pricing";
+      el.scrollIntoView({
+        behavior: "smooth",
+        block: isTopOrBottom ? "start" : "center",
+      });
+    }
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  return { scrollTo, scrollToTop };
+}
 
 function Header() {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const { scrollTo, scrollToTop } = useSmoothScroll();
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 0);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     if (menuOpen) {
@@ -21,13 +58,27 @@ function Header() {
     };
   }, [menuOpen]);
 
+  const handleNavClick = (id: string) => {
+    setMenuOpen(false);
+    scrollTo(id);
+  };
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    if (isHome) {
+      e.preventDefault();
+      scrollToTop();
+    }
+  };
+
   return (
     <header
-      className="sticky top-0 z-[var(--z-sticky)] border-b border-border bg-background/80 backdrop-blur-md transition-colors duration-normal"
+      className={`sticky top-0 z-[var(--z-sticky)] bg-background/80 backdrop-blur-md transition-colors duration-normal ${
+        scrolled ? "" : "border-b border-border"
+      }`}
       {...(isHome ? { "data-transparent": "" } : {})}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-        <Link href="/" className="flex items-center">
+        <Link href="/" className="flex items-center" onClick={handleLogoClick}>
           <Image
             src="/main-logo.svg"
             alt="MyWaitlist"
@@ -36,6 +87,21 @@ function Header() {
             priority
           />
         </Link>
+
+        {isHome && (
+          <nav className="hidden items-center gap-6 md:flex">
+            {sectionLinks.map((link) => (
+              <button
+                key={link.id}
+                type="button"
+                onClick={() => scrollTo(link.id)}
+                className="text-body-sm font-medium text-muted-foreground transition-colors duration-normal hover:text-accent"
+              >
+                {link.label}
+              </button>
+            ))}
+          </nav>
+        )}
 
         <nav className="hidden items-center gap-4 md:flex">
           <Link
@@ -116,6 +182,17 @@ function Header() {
               </button>
             </div>
             <nav className="flex flex-col gap-4">
+              {isHome &&
+                sectionLinks.map((link) => (
+                  <button
+                    key={link.id}
+                    type="button"
+                    onClick={() => handleNavClick(link.id)}
+                    className="text-left text-body font-medium text-foreground transition-colors duration-normal hover:text-accent"
+                  >
+                    {link.label}
+                  </button>
+                ))}
               <Link
                 href="/signin"
                 onClick={() => setMenuOpen(false)}
@@ -140,14 +217,14 @@ function Header() {
 
 function Footer() {
   return (
-    <footer className="border-t border-[#CCC9C3] bg-muted">
-      <div className="mx-auto flex h-24 max-w-7xl items-center justify-between px-6 text-caption text-muted-foreground">
-        <p className="flex items-center gap-2">
+    <footer className="border-t border-[#CCC9C3]">
+      <div className="mx-auto flex h-24 max-w-7xl items-center justify-between px-6 text-body text-muted-foreground">
+        <p className="flex items-center gap-1">
           <Image
             src="/MyWaitlist Offical logo.png"
             alt=""
-            width={36}
-            height={27}
+            width={48}
+            height={36}
           />
           &copy; {new Date().getFullYear()} MyWaitlist
         </p>

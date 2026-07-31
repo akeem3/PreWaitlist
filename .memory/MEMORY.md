@@ -189,29 +189,72 @@ picking up a paying customer.
 
 ## Epic 2 Progress (Foundation & Auth)
 
-| Story | Status | Summary                                           |
-| ----- | ------ | ------------------------------------------------- |
-| 2.1   | ready  | Supabase schema DDL + RLS (5 tables, policies)    |
-| 2.2   | ready  | Auth page UIs (signup, signin, verify-email)      |
-| 2.3   | ready  | Auth flow logic (signup, signin, OAuth, callback) |
-| 2.4   | ready  | Email verification gate + resend                  |
-| 2.5   | ready  | Proxy auth guard + session refresh                |
+| Story | Status  | Summary                                           |
+| ----- | ------- | ------------------------------------------------- |
+| 2.1   | ✅ done | Supabase schema DDL + RLS (5 tables, policies)    |
+| 2.2   | ✅ done | Auth page UIs (signup, signin, verify-email)      |
+| 2.3   | ✅ done | Auth flow logic (signup, signin, OAuth, callback) |
+| 2.4   | ✅ done | Email verification gate + resend                  |
+| 2.5   | ✅ done | Proxy auth guard + session refresh                |
+
+## Epic 3 Progress (Marketing Homepage)
+
+| Story | Status  | Summary                                                             |
+| ----- | ------- | ------------------------------------------------------------------- |
+| 3.0   | ✅ done | Acquisition cookie capture via proxy.ts                             |
+| 3.1   | ✅ done | Hero section + conditional "Powered by" variant                     |
+| 3.2   | ✅ done | Problem section + "The Difference" section                          |
+| 3.3   | ✅ done | Comparison grid (✗/✓ marks) + feature grid (SVG icons)              |
+| 3.4   | ✅ done | Pricing section (Free + Pro, aligned CTAs, ✓ checkmarks)            |
+| 3.5   | ✅ done | Responsive polish + section order                                   |
+| 3.x   | ✅ done | Confidence section, navbar scroll, footer update, pricing alignment |
+
+**Marketing Homepage Section Order:** Hero → ProblemSection → DifferenceSection → ComparisonSection → FeatureGrid → ConfidenceSection → PricingSection
+
+**Marketing Homepage Files:**
+
+- `components/marketing/hero.tsx` — conditional "Powered by" variant
+- `components/marketing/problem-section.tsx` — 3 cards with SVG icons
+- `components/marketing/difference-section.tsx` — single-column centered
+- `components/marketing/comparison-section.tsx` — white bg, ✗/✓ SVG marks
+- `components/marketing/feature-grid.tsx` — 2×2 grid with green SVG icons
+- `components/marketing/confidence-section.tsx` — standalone callout, accent text
+- `components/marketing/pricing-section.tsx` — Free + Pro, aligned CTAs
+- `components/layout/marketing-layout.tsx` — header (scroll border), footer (warm ivory)
+
+**Marketing Homepage Decisions:**
+
+- Hero background: no pattern — plain warm ivory (#FAF8F4) is correct; comfort comes from restraint
+- Navbar border: visible at top (scrollY=0), disappears on scroll
+- Footer: warm ivory bg (no bg-muted), 16px text, 48×36 logo
+- Pricing: Free + Pro only, no Growth card; both cards have CTA; aligned via flex-1 spacer
+- Comparison: white bg-card band, red ✗ and green circled ✓ SVG marks
+- Feature grid: small green SVG icons, centered in max-w-4xl
+- Confidence section: standalone, no hardcoded bg, text-body-lg in accent green
+- Tailwind v4: unlayered CSS overrides Tailwind utilities; use inline styles for overrides
 
 ## Component Inventory
 
-| File                                     | Component               | Status                                                                         |
-| ---------------------------------------- | ----------------------- | ------------------------------------------------------------------------------ |
-| `components/ui/button.tsx`               | Button                  | ✅ Done — 4 variants (primary/secondary/destructive/ghost), 3 sizes (sm/md/lg) |
-| `components/ui/card.tsx`                 | Card + 5 sub-components | ✅ Done — CardHeader, CardTitle, CardDescription, CardContent, CardFooter      |
-| `components/ui/input.tsx`                | Input                   | ✅ Done — label, error, helperText, auto-ID, aria-invalid/describedby          |
-| `components/ui/badge.tsx`                | Badge                   | ✅ Done — 6 variants (default/success/warning/error/info/outline)              |
-| `components/ui/toggle.tsx`               | Toggle                  | ✅ Done — onCheckedChange, label, token-based styling                          |
-| `components/ui/select.tsx`               | Select                  | ✅ Done — native select, placeholder, error/helperText                         |
-| `components/ui/textarea.tsx`             | Textarea                | ✅ Done — label, error/helperText, resize-y                                    |
-| `components/share/share-copy-link.tsx`   | ShareCopyLink           | ✅ Done — Web Share API + clipboard, 2s confirmation                           |
-| `components/onboarding/live-preview.tsx` | LivePreview             | ✅ Done — 3 templates, BrowserFrame, desktop/mobile toggle                     |
-| `components/layout/marketing-layout.tsx` | MarketingLayout         | ✅ Done — Header (sticky, backdrop-blur, logo image, mobile drawer) + Footer   |
-| `components/lib/cn.ts`                   | cn()                    | ✅ Done — clsx + tailwind-merge                                                |
+| File                                          | Component               | Status                                                                                                              |
+| --------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `components/ui/button.tsx`                    | Button                  | ✅ Done — 4 variants (primary/secondary/destructive/ghost), 3 sizes (sm/md/lg)                                      |
+| `components/ui/card.tsx`                      | Card + 5 sub-components | ✅ Done — CardHeader, CardTitle, CardDescription, CardContent, CardFooter                                           |
+| `components/ui/input.tsx`                     | Input                   | ✅ Done — label, error, helperText, auto-ID, aria-invalid/describedby                                               |
+| `components/ui/badge.tsx`                     | Badge                   | ✅ Done — 6 variants (default/success/warning/error/info/outline)                                                   |
+| `components/ui/toggle.tsx`                    | Toggle                  | ✅ Done — onCheckedChange, label, token-based styling                                                               |
+| `components/ui/select.tsx`                    | Select                  | ✅ Done — native select, placeholder, error/helperText                                                              |
+| `components/ui/textarea.tsx`                  | Textarea                | ✅ Done — label, error/helperText, resize-y                                                                         |
+| `components/share/share-copy-link.tsx`        | ShareCopyLink           | ✅ Done — Web Share API + clipboard, 2s confirmation                                                                |
+| `components/onboarding/live-preview.tsx`      | LivePreview             | ✅ Done — 3 templates, BrowserFrame, desktop/mobile toggle                                                          |
+| `components/layout/marketing-layout.tsx`      | MarketingLayout         | ✅ Done — Header (sticky, backdrop-blur, scroll border, logo image, mobile drawer) + Footer (warm ivory, 16px text) |
+| `components/marketing/hero.tsx`               | Hero                    | ✅ Done — conditional "Powered by" variant, text-display, Button CTA                                                |
+| `components/marketing/problem-section.tsx`    | ProblemSection          | ✅ Done — 3 cards, SVG icons, rounded-[10px], muted-foreground                                                      |
+| `components/marketing/difference-section.tsx` | DifferenceSection       | ✅ Done — single-column centered, accent overline, Sarah/James example                                              |
+| `components/marketing/comparison-section.tsx` | ComparisonSection       | ✅ Done — white bg-card, ✗/✓ SVG marks, gap-4 list spacing                                                          |
+| `components/marketing/feature-grid.tsx`       | FeatureGrid             | ✅ Done — 2×2 grid, green SVG icons, centered max-w-4xl                                                             |
+| `components/marketing/confidence-section.tsx` | ConfidenceSection       | ✅ Done — standalone callout, accent text, border-y                                                                 |
+| `components/marketing/pricing-section.tsx`    | PricingSection          | ✅ Done — Free + Pro, aligned CTAs, ✓ checkmarks, flex-1 spacer                                                     |
+| `components/lib/cn.ts`                        | cn()                    | ✅ Done — clsx + tailwind-merge                                                                                     |
 
 ## Layout Structure
 
@@ -295,7 +338,11 @@ picking up a paying customer.
 1. ~~Implement Story 1.2 (Toggle, Select, Textarea)~~ ✅ Done
 2. ~~Run Follow-Up Audit (Prompt #4) on completed Epic 1~~ ✅ Done — all clean
 3. ~~Create Epic 2 branch from dev~~ ✅ Done
-4. Start Story 2.1 — Supabase schema DDL + RLS
+4. ~~Start Story 2.1 — Supabase schema DDL + RLS~~ ✅ Done
+5. ~~Epic 2 — Foundation & Auth~~ ✅ Done (all 5 stories)
+6. ~~Epic 3 — Marketing Homepage~~ ✅ Done (all stories + extra work)
+7. Create Epic 4 branch from dev — Onboarding Wizard
+8. Create Epic 5 branch from dev — Dashboard + Store Features
 
 ## Decision + bug fix: "Powered by MyWaitlist" footer (2026-07)
 

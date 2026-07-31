@@ -44,9 +44,11 @@
   --text-xl: 1.25rem; /* 20px — section headings (H4) */
   --text-2xl: 1.5rem; /* 24px — page headings (H3) */
   --text-3xl: 1.75rem; /* 28px — dashboard titles (H2) */
-  --text-4xl: 2.1875rem; /* 35px — hero headings (H1) */
+  --text-4xl: 2.5rem; /* 40px — hero headings (H1) */
   --text-5xl: 3rem; /* 48px — display headings */
   --text-6xl: 3.75rem; /* 60px — large display */
+  --text-7xl: 4.5rem; /* 72px — hero display */
+  --text-8xl: 6.25rem; /* 100px — large hero display */
 
   /* Type Scale — Line Heights (body) */
   --leading-none: 1;
@@ -67,6 +69,7 @@
   --font-medium: 500;
   --font-semibold: 600;
   --font-bold: 700;
+  --font-extrabold: 800;
 
   /* Type Scale — Letter Spacing */
   --tracking-tighter: -0.025em;
@@ -186,26 +189,34 @@ body {
 
 /* Display — Large hero headings (marketing) */
 .text-display {
-  font-size: var(--text-6xl);
-  line-height: var(--heading-leading-tight);
-  font-weight: var(--font-bold);
-  letter-spacing: var(--tracking-tighter);
+  font-size: 1.5rem; /* 24px mobile */
+  line-height: 1.1;
+  font-weight: var(--font-extrabold);
+  letter-spacing: -0.02em;
+}
+
+@media (min-width: 768px) {
+  .text-display {
+    font-size: 2.5rem; /* 40px desktop */
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
 }
 
 /* Display Large — Extra large display */
 .text-display-lg {
   font-size: var(--text-5xl);
   line-height: var(--heading-leading-tight);
-  font-weight: var(--font-bold);
+  font-weight: var(--font-extrabold);
   letter-spacing: var(--tracking-tighter);
 }
 
 /* Heading 1 — Hero/page titles */
 .text-h1 {
   font-size: var(--text-4xl);
-  line-height: var(--heading-leading-tight);
-  font-weight: var(--font-bold);
-  letter-spacing: var(--tracking-tight);
+  line-height: 1.15;
+  font-weight: var(--font-extrabold);
+  letter-spacing: -0.02em;
 }
 
 /* Heading 2 — Section titles */
@@ -242,7 +253,8 @@ body {
 .text-body-lg {
   font-size: var(--text-lg);
   line-height: var(--leading-normal);
-  font-weight: var(--font-normal);
+  font-weight: var(--font-semibold);
+  letter-spacing: var(--tracking-normal);
 }
 
 /* Body — Default body text */
