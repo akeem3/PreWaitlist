@@ -22,27 +22,6 @@ function get_max_questions(tier: string): number {
   }
 }
 
-function TrashIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <path
-        d="M2 4H14M5.333 4V2.667C5.333 2.313 5.474 1.973 5.724 1.724C5.974 1.474 6.314 1.333 6.667 1.333H9.333C9.687 1.333 10.027 1.474 10.276 1.724C10.526 1.973 10.667 2.313 10.667 2.667V4M12.667 4V13.333C12.667 13.687 12.526 14.027 12.276 14.276C12.027 14.526 11.687 14.667 11.333 14.667H4.667C4.313 14.667 3.973 14.526 3.724 14.276C3.474 14.027 3.333 13.687 3.333 13.333V4H12.667Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 export default function OnboardingStep4a() {
   const router = useRouter();
   const form = useOnboardingForm();
@@ -67,6 +46,11 @@ export default function OnboardingStep4a() {
     }
   }, [form.waitlistId, router]);
 
+  useEffect(() => {
+    form.updateField("questions", questions);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questions]);
+
   const max_questions = get_max_questions(form.tier);
   const at_cap = questions.length >= max_questions;
 
@@ -77,10 +61,6 @@ export default function OnboardingStep4a() {
     }
     setQuestions((prev) => [...prev, { text: "", required: false }]);
   }, [at_cap, router]);
-
-  const handle_remove_question = useCallback((index: number) => {
-    setQuestions((prev) => prev.filter((_, i) => i !== index));
-  }, []);
 
   const handle_update_question = useCallback(
     (index: number, field: keyof Question, value: string | boolean) => {
@@ -150,20 +130,9 @@ export default function OnboardingStep4a() {
             key={index}
             className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5"
           >
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-foreground">
-                Question {index + 1}
-              </span>
-              <button
-                type="button"
-                onClick={() => handle_remove_question(index)}
-                disabled={isSubmitting}
-                className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                aria-label="Remove question"
-              >
-                <TrashIcon />
-              </button>
-            </div>
+            <span className="text-sm font-medium text-foreground">
+              Question {index + 1}
+            </span>
             <Input
               placeholder="Type your question..."
               value={question.text}

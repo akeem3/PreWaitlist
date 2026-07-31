@@ -60,7 +60,7 @@ function ProgressDots({
             }`}
           />
           <span
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[44px] h-[44px]"
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11"
             aria-label={`Step ${step.num}: ${step.label}`}
           />
         </span>
@@ -72,9 +72,11 @@ function ProgressDots({
 function TwoPaneLayout({
   children,
   currentStep,
+  showQuestions,
 }: {
   children: React.ReactNode;
   currentStep: number;
+  showQuestions?: boolean;
 }) {
   const form = useOnboardingForm();
 
@@ -99,6 +101,7 @@ function TwoPaneLayout({
               ctaText={form.ctaText}
               milestoneRewards={form.milestoneRewards}
               questions={form.questions}
+              showQuestions={showQuestions}
               tier={form.tier}
               slug={form.slug}
             />
@@ -135,7 +138,14 @@ function OnboardingLayoutInner({ children }: { children: React.ReactNode }) {
   const isSuccess = pathname === "/onboarding/success";
 
   if (isTwoPane) {
-    return <TwoPaneLayout currentStep={currentStep}>{children}</TwoPaneLayout>;
+    return (
+      <TwoPaneLayout
+        currentStep={currentStep}
+        showQuestions={pathname === "/onboarding/4a"}
+      >
+        {children}
+      </TwoPaneLayout>
+    );
   }
 
   return (

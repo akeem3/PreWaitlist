@@ -8,6 +8,11 @@ type Template = "minimal" | "bold" | "dark";
 type ViewMode = "desktop" | "mobile";
 type Tier = "free" | "pro" | "growth";
 
+const DEFAULT_QUESTION_TEXTS = [
+  "What are you currently using?",
+  "What is your role?",
+];
+
 interface MilestoneReward {
   name: string;
   value: string;
@@ -27,6 +32,7 @@ interface LivePreviewProps {
   ctaText: string;
   milestoneRewards: MilestoneReward[];
   questions?: Question[];
+  showQuestions?: boolean;
   tier?: Tier;
   slug?: string;
 }
@@ -113,6 +119,8 @@ function MinimalTemplate({
   logoUrl,
   ctaText,
   milestoneRewards,
+  questions,
+  showQuestions,
 }: LivePreviewProps) {
   return (
     <div
@@ -155,39 +163,81 @@ function MinimalTemplate({
       >
         {subheadline || "Your subheadline goes here"}
       </p>
-      <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 360 }}>
-        <input
-          type="email"
-          placeholder="Email address"
-          readOnly
+      <input
+        type="email"
+        placeholder="Email address"
+        readOnly
+        style={{
+          width: "100%",
+          maxWidth: 360,
+          borderRadius: "var(--radius-md, 0.5rem)",
+          border: "1px solid #E5E5E5",
+          padding: "10px 12px",
+          fontSize: "var(--text-sm, 0.875rem)",
+          color: "#1A1A1A",
+          outline: "none",
+          boxSizing: "border-box",
+        }}
+      />
+      {showQuestions && (
+        <div
           style={{
-            flex: 1,
-            minWidth: 0,
-            borderRadius: "var(--radius-md, 0.5rem)",
-            border: "1px solid #E5E5E5",
-            padding: "10px 12px",
-            fontSize: "var(--text-sm, 0.875rem)",
-            color: "#1A1A1A",
-            outline: "none",
-          }}
-        />
-        <button
-          type="button"
-          style={{
-            background: brandColor || "#0C6350",
-            color: "#fff",
-            border: "none",
-            borderRadius: "var(--radius-md, 0.5rem)",
-            padding: "10px 20px",
-            fontSize: "var(--text-sm, 0.875rem)",
-            fontWeight: "var(--font-medium, 500)",
-            cursor: "pointer",
-            whiteSpace: "nowrap",
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            width: "100%",
+            maxWidth: 360,
           }}
         >
-          {ctaText || "Join Waitlist"}
-        </button>
-      </div>
+          {[0, 1].map((i) => {
+            const q = questions?.[i];
+            return (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  borderRadius: "var(--radius-md, 0.5rem)",
+                  border: "1px solid #E5E5E5",
+                  padding: "10px 14px",
+                  fontSize: "var(--text-sm, 0.875rem)",
+                  color: "#888",
+                }}
+              >
+                <span>{q?.text || DEFAULT_QUESTION_TEXTS[i]}</span>
+                {!q?.required && (
+                  <span
+                    style={{
+                      fontSize: "var(--text-xs, 0.75rem)",
+                      color: "#888",
+                    }}
+                  >
+                    (optional)
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <button
+        type="button"
+        style={{
+          width: "100%",
+          maxWidth: 360,
+          background: brandColor || "#0C6350",
+          color: "#fff",
+          border: "none",
+          borderRadius: "var(--radius-md, 0.5rem)",
+          padding: "10px 20px",
+          fontSize: "var(--text-sm, 0.875rem)",
+          fontWeight: "var(--font-medium, 500)",
+          cursor: "pointer",
+        }}
+      >
+        {ctaText || "Join Waitlist"}
+      </button>
       {milestoneRewards.length > 0 && (
         <div
           style={{
@@ -228,6 +278,8 @@ function BoldTemplate({
   logoUrl,
   ctaText,
   milestoneRewards,
+  questions,
+  showQuestions,
 }: LivePreviewProps) {
   return (
     <div
@@ -272,39 +324,81 @@ function BoldTemplate({
       >
         {subheadline || "Your subheadline goes here"}
       </p>
-      <div style={{ display: "flex", gap: 10, width: "100%", maxWidth: 400 }}>
-        <input
-          type="email"
-          placeholder="Email address"
-          readOnly
+      <input
+        type="email"
+        placeholder="Email address"
+        readOnly
+        style={{
+          width: "100%",
+          maxWidth: 400,
+          borderRadius: "var(--radius-md, 0.5rem)",
+          border: "1px solid #1A1A1A",
+          padding: "12px 14px",
+          fontSize: "var(--text-base, 1rem)",
+          color: "#1A1A1A",
+          outline: "none",
+          boxSizing: "border-box",
+        }}
+      />
+      {showQuestions && (
+        <div
           style={{
-            flex: 1,
-            minWidth: 0,
-            borderRadius: "var(--radius-md, 0.5rem)",
-            border: "1px solid #1A1A1A",
-            padding: "12px 14px",
-            fontSize: "var(--text-base, 1rem)",
-            color: "#1A1A1A",
-            outline: "none",
-          }}
-        />
-        <button
-          type="button"
-          style={{
-            background: brandColor || "#0C6350",
-            color: "#fff",
-            border: "none",
-            borderRadius: "var(--radius-md, 0.5rem)",
-            padding: "12px 28px",
-            fontSize: "var(--text-base, 1rem)",
-            fontWeight: "var(--font-semibold, 600)",
-            cursor: "pointer",
-            whiteSpace: "nowrap",
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+            width: "100%",
+            maxWidth: 400,
           }}
         >
-          {ctaText || "Join Waitlist"}
-        </button>
-      </div>
+          {[0, 1].map((i) => {
+            const q = questions?.[i];
+            return (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  borderRadius: "var(--radius-md, 0.5rem)",
+                  border: "1px solid #1A1A1A",
+                  padding: "12px 14px",
+                  fontSize: "var(--text-base, 1rem)",
+                  color: "#888",
+                }}
+              >
+                <span>{q?.text || DEFAULT_QUESTION_TEXTS[i]}</span>
+                {!q?.required && (
+                  <span
+                    style={{
+                      fontSize: "var(--text-xs, 0.75rem)",
+                      color: "#888",
+                    }}
+                  >
+                    (optional)
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <button
+        type="button"
+        style={{
+          width: "100%",
+          maxWidth: 400,
+          background: brandColor || "#0C6350",
+          color: "#fff",
+          border: "none",
+          borderRadius: "var(--radius-md, 0.5rem)",
+          padding: "12px 28px",
+          fontSize: "var(--text-base, 1rem)",
+          fontWeight: "var(--font-semibold, 600)",
+          cursor: "pointer",
+        }}
+      >
+        {ctaText || "Join Waitlist"}
+      </button>
       {milestoneRewards.length > 0 && (
         <div
           style={{
@@ -360,6 +454,8 @@ function DarkTemplate({
   logoUrl,
   ctaText,
   milestoneRewards,
+  questions,
+  showQuestions,
 }: LivePreviewProps) {
   return (
     <div
@@ -402,40 +498,82 @@ function DarkTemplate({
       >
         {subheadline || "Your subheadline goes here"}
       </p>
-      <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 360 }}>
-        <input
-          type="email"
-          placeholder="Email address"
-          readOnly
+      <input
+        type="email"
+        placeholder="Email address"
+        readOnly
+        style={{
+          width: "100%",
+          maxWidth: 360,
+          borderRadius: "var(--radius-md, 0.5rem)",
+          border: "1px solid #44403C",
+          padding: "10px 12px",
+          fontSize: "var(--text-sm, 0.875rem)",
+          color: "#FAFAFA",
+          background: "#292524",
+          outline: "none",
+          boxSizing: "border-box",
+        }}
+      />
+      {showQuestions && (
+        <div
           style={{
-            flex: 1,
-            minWidth: 0,
-            borderRadius: "var(--radius-md, 0.5rem)",
-            border: "1px solid #44403C",
-            padding: "10px 12px",
-            fontSize: "var(--text-sm, 0.875rem)",
-            color: "#FAFAFA",
-            background: "#292524",
-            outline: "none",
-          }}
-        />
-        <button
-          type="button"
-          style={{
-            background: brandColor || "#0C6350",
-            color: "#fff",
-            border: "none",
-            borderRadius: "var(--radius-md, 0.5rem)",
-            padding: "10px 20px",
-            fontSize: "var(--text-sm, 0.875rem)",
-            fontWeight: "var(--font-medium, 500)",
-            cursor: "pointer",
-            whiteSpace: "nowrap",
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            width: "100%",
+            maxWidth: 360,
           }}
         >
-          {ctaText || "Join Waitlist"}
-        </button>
-      </div>
+          {[0, 1].map((i) => {
+            const q = questions?.[i];
+            return (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  borderRadius: "var(--radius-md, 0.5rem)",
+                  border: "1px solid #6B6459",
+                  padding: "10px 14px",
+                  fontSize: "var(--text-sm, 0.875rem)",
+                  color: "#A8A29E",
+                }}
+              >
+                <span>{q?.text || DEFAULT_QUESTION_TEXTS[i]}</span>
+                {!q?.required && (
+                  <span
+                    style={{
+                      fontSize: "var(--text-xs, 0.75rem)",
+                      color: "#A8A29E",
+                    }}
+                  >
+                    (optional)
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <button
+        type="button"
+        style={{
+          width: "100%",
+          maxWidth: 360,
+          background: brandColor || "#0C6350",
+          color: "#fff",
+          border: "none",
+          borderRadius: "var(--radius-md, 0.5rem)",
+          padding: "10px 20px",
+          fontSize: "var(--text-sm, 0.875rem)",
+          fontWeight: "var(--font-medium, 500)",
+          cursor: "pointer",
+        }}
+      >
+        {ctaText || "Join Waitlist"}
+      </button>
       {milestoneRewards.length > 0 && (
         <div
           style={{
@@ -483,6 +621,8 @@ export function LivePreview({
   logoUrl,
   ctaText,
   milestoneRewards,
+  questions,
+  showQuestions,
   tier = "free",
   slug,
 }: LivePreviewProps) {
@@ -496,6 +636,8 @@ export function LivePreview({
   const deferredCtaText = useDeferredValue(ctaText);
   const deferredRewards = useDeferredValue(milestoneRewards);
   const deferredSlug = useDeferredValue(slug);
+  const deferredQuestions = useDeferredValue(questions);
+  const deferredShowQuestions = useDeferredValue(showQuestions);
 
   const TemplateComponent = templateMap[deferredTemplate];
 
@@ -572,6 +714,8 @@ export function LivePreview({
                   logoUrl={deferredLogoUrl}
                   ctaText={deferredCtaText}
                   milestoneRewards={deferredRewards}
+                  questions={deferredQuestions}
+                  showQuestions={deferredShowQuestions}
                 />
               </div>
               {tier === "free" && (
