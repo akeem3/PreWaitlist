@@ -163,81 +163,118 @@ function MinimalTemplate({
       >
         {subheadline || "Your subheadline goes here"}
       </p>
-      <input
-        type="email"
-        placeholder="Email address"
-        readOnly
-        style={{
-          width: "100%",
-          maxWidth: 360,
-          borderRadius: "var(--radius-md, 0.5rem)",
-          border: "1px solid #E5E5E5",
-          padding: "10px 12px",
-          fontSize: "var(--text-sm, 0.875rem)",
-          color: "#1A1A1A",
-          outline: "none",
-          boxSizing: "border-box",
-        }}
-      />
-      {showQuestions && (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-            width: "100%",
-            maxWidth: 360,
-          }}
-        >
-          {[0, 1].map((i) => {
-            const q = questions?.[i];
-            return (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  borderRadius: "var(--radius-md, 0.5rem)",
-                  border: "1px solid #E5E5E5",
-                  padding: "10px 14px",
-                  fontSize: "var(--text-sm, 0.875rem)",
-                  color: "#888",
-                }}
-              >
-                <span>{q?.text || DEFAULT_QUESTION_TEXTS[i]}</span>
-                {!q?.required && (
-                  <span
-                    style={{
-                      fontSize: "var(--text-xs, 0.75rem)",
-                      color: "#888",
-                    }}
-                  >
-                    (optional)
-                  </span>
-                )}
-              </div>
-            );
-          })}
+      {!showQuestions && (
+        <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 360 }}>
+          <input
+            type="email"
+            placeholder="Email address"
+            readOnly
+            style={{
+              flex: 1,
+              minWidth: 0,
+              borderRadius: "var(--radius-md, 0.5rem)",
+              border: "1px solid #E5E5E5",
+              padding: "10px 12px",
+              fontSize: "var(--text-sm, 0.875rem)",
+              color: "#1A1A1A",
+              outline: "none",
+            }}
+          />
+          <button
+            type="button"
+            style={{
+              background: brandColor || "#0C6350",
+              color: "#fff",
+              border: "none",
+              borderRadius: "var(--radius-md, 0.5rem)",
+              padding: "10px 20px",
+              fontSize: "var(--text-sm, 0.875rem)",
+              fontWeight: "var(--font-medium, 500)",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {ctaText || "Join Waitlist"}
+          </button>
         </div>
       )}
-      <button
-        type="button"
-        style={{
-          width: "100%",
-          maxWidth: 360,
-          background: brandColor || "#0C6350",
-          color: "#fff",
-          border: "none",
-          borderRadius: "var(--radius-md, 0.5rem)",
-          padding: "10px 20px",
-          fontSize: "var(--text-sm, 0.875rem)",
-          fontWeight: "var(--font-medium, 500)",
-          cursor: "pointer",
-        }}
-      >
-        {ctaText || "Join Waitlist"}
-      </button>
+      {showQuestions && (
+        <>
+          <input
+            type="email"
+            placeholder="Email address"
+            readOnly
+            style={{
+              width: "100%",
+              maxWidth: 360,
+              borderRadius: "var(--radius-md, 0.5rem)",
+              border: "1px solid #E5E5E5",
+              padding: "10px 12px",
+              fontSize: "var(--text-sm, 0.875rem)",
+              color: "#1A1A1A",
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              width: "100%",
+              maxWidth: 360,
+            }}
+          >
+            {[0, 1].map((i) => {
+              const q = questions?.[i];
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    borderRadius: "var(--radius-md, 0.5rem)",
+                    border: "1px solid #E5E5E5",
+                    padding: "10px 14px",
+                    fontSize: "var(--text-sm, 0.875rem)",
+                    color: "#888",
+                  }}
+                >
+                  <span>{q?.text || DEFAULT_QUESTION_TEXTS[i]}</span>
+                  {!q?.required && (
+                    <span
+                      style={{
+                        fontSize: "var(--text-xs, 0.75rem)",
+                        color: "#888",
+                      }}
+                    >
+                      (optional)
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            style={{
+              width: "100%",
+              maxWidth: 360,
+              background: brandColor || "#0C6350",
+              color: "#fff",
+              border: "none",
+              borderRadius: "var(--radius-md, 0.5rem)",
+              padding: "10px 20px",
+              fontSize: "var(--text-sm, 0.875rem)",
+              fontWeight: "var(--font-medium, 500)",
+              cursor: "pointer",
+            }}
+          >
+            {ctaText || "Join Waitlist"}
+          </button>
+        </>
+      )}
       {milestoneRewards.length > 0 && (
         <div
           style={{
@@ -324,81 +361,118 @@ function BoldTemplate({
       >
         {subheadline || "Your subheadline goes here"}
       </p>
-      <input
-        type="email"
-        placeholder="Email address"
-        readOnly
-        style={{
-          width: "100%",
-          maxWidth: 400,
-          borderRadius: "var(--radius-md, 0.5rem)",
-          border: "1px solid #1A1A1A",
-          padding: "12px 14px",
-          fontSize: "var(--text-base, 1rem)",
-          color: "#1A1A1A",
-          outline: "none",
-          boxSizing: "border-box",
-        }}
-      />
-      {showQuestions && (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 10,
-            width: "100%",
-            maxWidth: 400,
-          }}
-        >
-          {[0, 1].map((i) => {
-            const q = questions?.[i];
-            return (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  borderRadius: "var(--radius-md, 0.5rem)",
-                  border: "1px solid #1A1A1A",
-                  padding: "12px 14px",
-                  fontSize: "var(--text-base, 1rem)",
-                  color: "#888",
-                }}
-              >
-                <span>{q?.text || DEFAULT_QUESTION_TEXTS[i]}</span>
-                {!q?.required && (
-                  <span
-                    style={{
-                      fontSize: "var(--text-xs, 0.75rem)",
-                      color: "#888",
-                    }}
-                  >
-                    (optional)
-                  </span>
-                )}
-              </div>
-            );
-          })}
+      {!showQuestions && (
+        <div style={{ display: "flex", gap: 10, width: "100%", maxWidth: 400 }}>
+          <input
+            type="email"
+            placeholder="Email address"
+            readOnly
+            style={{
+              flex: 1,
+              minWidth: 0,
+              borderRadius: "var(--radius-md, 0.5rem)",
+              border: "1px solid #1A1A1A",
+              padding: "12px 14px",
+              fontSize: "var(--text-base, 1rem)",
+              color: "#1A1A1A",
+              outline: "none",
+            }}
+          />
+          <button
+            type="button"
+            style={{
+              background: brandColor || "#0C6350",
+              color: "#fff",
+              border: "none",
+              borderRadius: "var(--radius-md, 0.5rem)",
+              padding: "12px 28px",
+              fontSize: "var(--text-base, 1rem)",
+              fontWeight: "var(--font-semibold, 600)",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {ctaText || "Join Waitlist"}
+          </button>
         </div>
       )}
-      <button
-        type="button"
-        style={{
-          width: "100%",
-          maxWidth: 400,
-          background: brandColor || "#0C6350",
-          color: "#fff",
-          border: "none",
-          borderRadius: "var(--radius-md, 0.5rem)",
-          padding: "12px 28px",
-          fontSize: "var(--text-base, 1rem)",
-          fontWeight: "var(--font-semibold, 600)",
-          cursor: "pointer",
-        }}
-      >
-        {ctaText || "Join Waitlist"}
-      </button>
+      {showQuestions && (
+        <>
+          <input
+            type="email"
+            placeholder="Email address"
+            readOnly
+            style={{
+              width: "100%",
+              maxWidth: 400,
+              borderRadius: "var(--radius-md, 0.5rem)",
+              border: "1px solid #1A1A1A",
+              padding: "12px 14px",
+              fontSize: "var(--text-base, 1rem)",
+              color: "#1A1A1A",
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+              width: "100%",
+              maxWidth: 400,
+            }}
+          >
+            {[0, 1].map((i) => {
+              const q = questions?.[i];
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    borderRadius: "var(--radius-md, 0.5rem)",
+                    border: "1px solid #1A1A1A",
+                    padding: "12px 14px",
+                    fontSize: "var(--text-base, 1rem)",
+                    color: "#888",
+                  }}
+                >
+                  <span>{q?.text || DEFAULT_QUESTION_TEXTS[i]}</span>
+                  {!q?.required && (
+                    <span
+                      style={{
+                        fontSize: "var(--text-xs, 0.75rem)",
+                        color: "#888",
+                      }}
+                    >
+                      (optional)
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            style={{
+              width: "100%",
+              maxWidth: 400,
+              background: brandColor || "#0C6350",
+              color: "#fff",
+              border: "none",
+              borderRadius: "var(--radius-md, 0.5rem)",
+              padding: "12px 28px",
+              fontSize: "var(--text-base, 1rem)",
+              fontWeight: "var(--font-semibold, 600)",
+              cursor: "pointer",
+            }}
+          >
+            {ctaText || "Join Waitlist"}
+          </button>
+        </>
+      )}
       {milestoneRewards.length > 0 && (
         <div
           style={{
@@ -498,82 +572,120 @@ function DarkTemplate({
       >
         {subheadline || "Your subheadline goes here"}
       </p>
-      <input
-        type="email"
-        placeholder="Email address"
-        readOnly
-        style={{
-          width: "100%",
-          maxWidth: 360,
-          borderRadius: "var(--radius-md, 0.5rem)",
-          border: "1px solid #44403C",
-          padding: "10px 12px",
-          fontSize: "var(--text-sm, 0.875rem)",
-          color: "#FAFAFA",
-          background: "#292524",
-          outline: "none",
-          boxSizing: "border-box",
-        }}
-      />
-      {showQuestions && (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-            width: "100%",
-            maxWidth: 360,
-          }}
-        >
-          {[0, 1].map((i) => {
-            const q = questions?.[i];
-            return (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  borderRadius: "var(--radius-md, 0.5rem)",
-                  border: "1px solid #6B6459",
-                  padding: "10px 14px",
-                  fontSize: "var(--text-sm, 0.875rem)",
-                  color: "#A8A29E",
-                }}
-              >
-                <span>{q?.text || DEFAULT_QUESTION_TEXTS[i]}</span>
-                {!q?.required && (
-                  <span
-                    style={{
-                      fontSize: "var(--text-xs, 0.75rem)",
-                      color: "#A8A29E",
-                    }}
-                  >
-                    (optional)
-                  </span>
-                )}
-              </div>
-            );
-          })}
+      {!showQuestions && (
+        <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 360 }}>
+          <input
+            type="email"
+            placeholder="Email address"
+            readOnly
+            style={{
+              flex: 1,
+              minWidth: 0,
+              borderRadius: "var(--radius-md, 0.5rem)",
+              border: "1px solid #44403C",
+              padding: "10px 12px",
+              fontSize: "var(--text-sm, 0.875rem)",
+              color: "#FAFAFA",
+              background: "#292524",
+              outline: "none",
+            }}
+          />
+          <button
+            type="button"
+            style={{
+              background: brandColor || "#0C6350",
+              color: "#fff",
+              border: "none",
+              borderRadius: "var(--radius-md, 0.5rem)",
+              padding: "10px 20px",
+              fontSize: "var(--text-sm, 0.875rem)",
+              fontWeight: "var(--font-medium, 500)",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {ctaText || "Join Waitlist"}
+          </button>
         </div>
       )}
-      <button
-        type="button"
-        style={{
-          width: "100%",
-          maxWidth: 360,
-          background: brandColor || "#0C6350",
-          color: "#fff",
-          border: "none",
-          borderRadius: "var(--radius-md, 0.5rem)",
-          padding: "10px 20px",
-          fontSize: "var(--text-sm, 0.875rem)",
-          fontWeight: "var(--font-medium, 500)",
-          cursor: "pointer",
-        }}
-      >
-        {ctaText || "Join Waitlist"}
-      </button>
+      {showQuestions && (
+        <>
+          <input
+            type="email"
+            placeholder="Email address"
+            readOnly
+            style={{
+              width: "100%",
+              maxWidth: 360,
+              borderRadius: "var(--radius-md, 0.5rem)",
+              border: "1px solid #44403C",
+              padding: "10px 12px",
+              fontSize: "var(--text-sm, 0.875rem)",
+              color: "#FAFAFA",
+              background: "#292524",
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              width: "100%",
+              maxWidth: 360,
+            }}
+          >
+            {[0, 1].map((i) => {
+              const q = questions?.[i];
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    borderRadius: "var(--radius-md, 0.5rem)",
+                    border: "1px solid #6B6459",
+                    padding: "10px 14px",
+                    fontSize: "var(--text-sm, 0.875rem)",
+                    color: "#A8A29E",
+                  }}
+                >
+                  <span>{q?.text || DEFAULT_QUESTION_TEXTS[i]}</span>
+                  {!q?.required && (
+                    <span
+                      style={{
+                        fontSize: "var(--text-xs, 0.75rem)",
+                        color: "#A8A29E",
+                      }}
+                    >
+                      (optional)
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            style={{
+              width: "100%",
+              maxWidth: 360,
+              background: brandColor || "#0C6350",
+              color: "#fff",
+              border: "none",
+              borderRadius: "var(--radius-md, 0.5rem)",
+              padding: "10px 20px",
+              fontSize: "var(--text-sm, 0.875rem)",
+              fontWeight: "var(--font-medium, 500)",
+              cursor: "pointer",
+            }}
+          >
+            {ctaText || "Join Waitlist"}
+          </button>
+        </>
+      )}
       {milestoneRewards.length > 0 && (
         <div
           style={{

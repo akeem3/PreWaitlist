@@ -100,7 +100,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { id, milestone_rewards, ...updates } = body;
+  const { id, milestone_rewards, questions, ...updates } = body;
 
   if (!id) {
     return NextResponse.json({ error: "Missing waitlist id" }, { status: 400 });
@@ -112,6 +112,7 @@ export async function PATCH(request: NextRequest) {
     updates.milestone_rewards_enabled = milestone_rewards.length > 0;
   }
 
+  // Update waitlists table (excluding questions — that's a child table)
   const { error } = await supabase
     .from("waitlists")
     .update(updates)
@@ -120,6 +121,39 @@ export async function PATCH(request: NextRequest) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  // Upsert qualification_questions if provided
+  if (Array.isArray(questions)) {
+    // Delete existing questions for this waitlist
+    await supabase
+      .from("qualification_questions")
+      .delete()
+      .eq("waitlist_id", id);
+
+    // Insert new questions
+    if (questions.length > 0) {
+      const questionRows = questions.map(
+        (q: { text: string; required: boolean }, index: number) => ({
+          waitlist_id: id,
+          question_text: q.text,
+          question_type: q.required ? "free_text" : "multiple_choice",
+          sort_order: index,
+        })
+      );
+
+      const { error: questionsError } = await supabase
+        .from("qualification_questions")
+        .insert(questionRows);
+
+      if (questionsError) {
+        console.error("Failed to save questions:", questionsError);
+        return NextResponse.json(
+          { error: questionsError.message },
+          { status: 400 }
+        );
+      }
+    }
   }
 
   return NextResponse.json({ success: true });
