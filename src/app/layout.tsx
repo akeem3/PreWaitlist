@@ -15,7 +15,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "PreWaitlist",
   description: "Pre-launch waitlist builder",
-  icons: { icon: "/just-logo.png" },
 };
 
 export default function RootLayout({
