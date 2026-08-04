@@ -25,7 +25,7 @@ export function PoweredByFooter({ template }: PoweredByFooterProps) {
           Powered by
         </span>
         <Image
-          src="/main-logo.svg"
+          src="/PreWaitlist-logo.svg"
           alt=""
           width={16}
           height={16}

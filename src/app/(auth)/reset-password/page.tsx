@@ -51,7 +51,7 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-[400px]">
         <Link href="/" className="mb-8 block">
           <Image
-            src="/main-logo.svg"
+            src="/PreWaitlist-logo.svg"
             alt="PreWaitlist"
             width={160}
             height={52}
