@@ -80,7 +80,7 @@ function Header() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
         <Link href="/" className="flex items-center" onClick={handleLogoClick}>
           <Image
-            src="/main-logo.svg"
+            src="/PreWaitlist-logo.svg"
             alt="PreWaitlist"
             width={132}
             height={45}
@@ -154,7 +154,7 @@ function Header() {
             <div className="mb-8 flex items-center justify-between">
               <span className="flex items-center">
                 <Image
-                  src="/main-logo.svg"
+                  src="/PreWaitlist-logo.svg"
                   alt="PreWaitlist"
                   width={132}
                   height={45}
@@ -220,7 +220,7 @@ function Footer() {
     <footer className="border-t border-[#CCC9C3]">
       <div className="mx-auto flex h-24 max-w-7xl items-center justify-between px-6 text-body text-muted-foreground">
         <p className="flex items-center gap-1">
-          <Image src="/PreWaitlist-logo.svg" alt="" width={48} height={36} />
+          <Image src="/just-logo.png" alt="" width={48} height={36} />
           &copy; {new Date().getFullYear()} PreWaitlist
         </p>
         <nav className="flex gap-4">
