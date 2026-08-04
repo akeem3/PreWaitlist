@@ -31,7 +31,7 @@ export function PoweredByFooter({ template }: PoweredByFooterProps) {
           height={16}
           className="inline-block"
         />
-        <span className="font-medium text-accent">MyWaitlist</span>
+        <span className="font-medium text-accent">PreWaitlist</span>
       </Link>
     </div>
   );

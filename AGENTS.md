@@ -51,7 +51,7 @@ Local subdomains: use `*.lvh.me:3000` (e.g. `acme.lvh.me:3000`) — resolves to 
 - Enforce Row-Level Security on every Supabase table — see `docs/PRD-Sprint1.md#74-data-model--implementation-grade`.
 - Use `proxy.ts`, never recreate `middleware.ts`.
 - Use the shared `components/share/share-copy-link.tsx` component anywhere sharing appears — never a one-off implementation.
-- Render the "Powered by MyWaitlist" footer (spec in PRD REQ-onboarding-preview.5) in the onboarding live-preview whenever tier = Free, and build it as a shared component reusable by Sprint 2's real public page — not duplicated per screen.
+- Render the "Powered by PreWaitlist" footer (spec in PRD REQ-onboarding-preview.5) in the onboarding live-preview whenever tier = Free, and build it as a shared component reusable by Sprint 2's real public page — not duplicated per screen.
 
 **Ask first**
 
@@ -66,7 +66,7 @@ Local subdomains: use `*.lvh.me:3000` (e.g. `acme.lvh.me:3000`) — resolves to 
 - Never introduce a new accent color, drop shadow, or gradient outside what's defined in Design System v2.0's Tailwind tokens.
 - Never commit `.env*` files or any secret.
 - Never silently retry a story whose frontmatter `status` is `blocked`.
-- Never add a "Powered by MyWaitlist" badge to MyWaitlist's own marketing site or app pages — it is exclusive to founders' public waitlist pages, gated to Free tier.
+- Never add a "Powered by PreWaitlist" badge to PreWaitlist's own marketing site or app pages — it is exclusive to founders' public waitlist pages, gated to Free tier.
 - Never use inline styles (`style={{ ... }}`). Use Tailwind utility classes and design system tokens from `src/app/globals.css` exclusively. All colors must reference CSS custom properties (`--color-*`), never hardcoded hex values.
 
 ## Project Structure

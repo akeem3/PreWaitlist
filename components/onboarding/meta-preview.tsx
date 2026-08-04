@@ -11,7 +11,9 @@ export default function MetaPreview({
   ctaText,
   slug,
 }: MetaPreviewProps) {
-  const liveUrl = slug ? `${slug}.mywaitlist.com` : "your-slug.mywaitlist.com";
+  const liveUrl = slug
+    ? `${slug}.prewaitlist.com`
+    : "your-slug.prewaitlist.com";
 
   return (
     <div className="rounded-(--radius-lg) border border-border bg-card overflow-hidden">

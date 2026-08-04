@@ -240,7 +240,7 @@ export default function OnboardingStep1() {
           <span className="text-muted-foreground">Your Page:</span>
           {slug && (
             <span className="font-medium text-accent">
-              {slug}.mywaitlist.com
+              {slug}.prewaitlist.com
             </span>
           )}
           {slugStatus === "available" && (

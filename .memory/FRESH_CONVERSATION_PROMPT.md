@@ -29,7 +29,7 @@ Read `.memory/MEMORY.md` and `docs/AGENTS.md` for full project context. This is 
 - Run `pnpm lint` and `pnpm build` after every change
 - Run `pnpm test:run` after test changes
 - All Sprint 1 copy is reviewed — never write/rephrase user-facing text
-- Logo file: `public/MyWaitlist Offical logo.png` (typo is in the original filename)
+- Logo file: `public/PreWaitlist-logo.svg`
 - Brand color: `#0f7a5e` (accent), `#0d6b52` (accent-hover)
 
 ---

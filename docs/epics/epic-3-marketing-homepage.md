@@ -65,7 +65,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 **Status:** done
 **Design Refs:** `docs/design/High-fidelity-svgs/HF1-Marketing Homepage.svg` (hero section), `docs/design/High-fidelity-svgs/HF2-_Powered by_ Homepage.svg`
-**Story:** As the visitor, I want to see a compelling hero section that explains what MyWaitlist is and invites me to sign up, so I understand the product's value immediately.
+**Story:** As the visitor, I want to see a compelling hero section that explains what PreWaitlist is and invites me to sign up, so I understand the product's value immediately.
 
 **Acceptance Criteria (EARS):**
 
@@ -96,12 +96,12 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 **Status:** done
 **Design Refs:** `docs/design/High-fidelity-svgs/HF1-Marketing Homepage.svg` (problem + "The Difference" sections)
-**Story:** As the visitor, I want to understand the problem MyWaitlist solves and what makes it different from alternatives, so I can decide if it's right for me.
+**Story:** As the visitor, I want to understand the problem PreWaitlist solves and what makes it different from alternatives, so I can decide if it's right for me.
 
 **Acceptance Criteria (EARS):**
 
 - AC1: The homepage shall render a problem section below the hero, matching the HF1 SVG layout — describing the pain points of pre-launch audience building.
-- AC2: The homepage shall render a "The Difference" section below the problem section, matching the HF1 SVG layout — explaining MyWaitlist's unique approach.
+- AC2: The homepage shall render a "The Difference" section below the problem section, matching the HF1 SVG layout — explaining PreWaitlist's unique approach.
 - AC3: All text content shall match the HF1 SVG exactly — no rewritten or paraphrased copy (AGENTS.md: never write or rephrase user-facing text).
 - AC4: Both sections shall use design system tokens for typography (`.text-h2`, `.text-body-lg`, etc.) and spacing.
 - AC5: Both sections shall be responsive — stacked on mobile, properly spaced on `md:` and above.
@@ -124,11 +124,11 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 **Status:** done
 **Design Refs:** `docs/design/High-fidelity-svgs/HF1-Marketing Homepage.svg` (comparison + feature grid sections)
-**Story:** As the visitor, I want to see a comparison of MyWaitlist vs alternatives and a detailed feature grid, so I can make an informed decision.
+**Story:** As the visitor, I want to see a comparison of PreWaitlist vs alternatives and a detailed feature grid, so I can make an informed decision.
 
 **Acceptance Criteria (EARS):**
 
-- AC1: The homepage shall render a comparison section below "The Difference" section, matching the HF1 SVG layout — comparing MyWaitlist to alternatives (e.g., traditional waitlist tools, manual spreadsheets).
+- AC1: The homepage shall render a comparison section below "The Difference" section, matching the HF1 SVG layout — comparing PreWaitlist to alternatives (e.g., traditional waitlist tools, manual spreadsheets).
 - AC2: The homepage shall render a feature grid/detail section showing key features with icons or descriptions, matching the HF1 SVG layout.
 - AC3: All text content shall match the HF1 SVG exactly — no rewritten or paraphrased copy.
 - AC4: The comparison section shall use Card components or a grid layout for clean visual separation.

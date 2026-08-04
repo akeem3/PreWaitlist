@@ -1,7 +1,7 @@
 # Epic 4 — Onboarding Wizard
 
 **Status:** done
-**Source:** [PRD S6.6 Onboarding Step 1](../PRD-Sprint-1.md#66-onboarding-step-1--name-your-waitlist-f-c1), [PRD S6.7 Onboarding Step 2](../PRD-Sprint-1.md#67-onboarding-step-2--choose-a-template-f-c2), [PRD S6.8 Onboarding Step 3](../PRD-Sprint-1.md#68-onboarding-step-3--make-it-yours-f-c3), [PRD S6.9 Onboarding Step 4](../PRD-Sprint-1.md#69-onboarding-step-4--qualification-decision-f-c4), [PRD S6.10 Onboarding Step 4a](../PRD-Sprint-1.md#610-onboarding-step-4a--configure-qualification-questions-f-c4a), [PRD S6.11 Onboarding Step 5](../PRD-Sprint-1.md#611-onboarding-step-5--email-setup-f-c5), [PRD S6.12 Success Screen](../PRD-Sprint-1.md#612-success-screen-f-c6), [PRD S6.12a Powered-By Footer](../PRD-Sprint-1.md#612a-powered-by-mywaitlist-footer--onboarding-preview--public-pages)
+**Source:** [PRD S6.6 Onboarding Step 1](../PRD-Sprint-1.md#66-onboarding-step-1--name-your-waitlist-f-c1), [PRD S6.7 Onboarding Step 2](../PRD-Sprint-1.md#67-onboarding-step-2--choose-a-template-f-c2), [PRD S6.8 Onboarding Step 3](../PRD-Sprint-1.md#68-onboarding-step-3--make-it-yours-f-c3), [PRD S6.9 Onboarding Step 4](../PRD-Sprint-1.md#69-onboarding-step-4--qualification-decision-f-c4), [PRD S6.10 Onboarding Step 4a](../PRD-Sprint-1.md#610-onboarding-step-4a--configure-qualification-questions-f-c4a), [PRD S6.11 Onboarding Step 5](../PRD-Sprint-1.md#611-onboarding-step-5--email-setup-f-c5), [PRD S6.12 Success Screen](../PRD-Sprint-1.md#612-success-screen-f-c6), [PRD S6.12a Powered-By Footer](../PRD-Sprint-1.md#612a-powered-by-prewaitlist-footer--onboarding-preview--public-pages)
 
 ## Design Analysis Reference
 
@@ -197,11 +197,11 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - **Field dimensions:** 60.33px height, 12.164px border-radius, `#CCC9C3` 1.67px border
 - **Submit button:** 458×59px, rx=9.59, `#0F7A5E` fill, arrow-only (→)
 - **"I'll name it later":** Link text with `text-caption` helper below: "We'll assign a random URL — you can change it later."
-- **Subdomain suffix:** `.mywaitlist.com` (read-only)
+- **Subdomain suffix:** `.prewaitlist.com` (read-only)
 
 **Acceptance Criteria (EARS):**
 
-- AC1: The page shall render a form with three fields: Headline (text input), Subheadline (textarea), and Subdomain (text input with suffix showing `.mywaitlist.com`).
+- AC1: The page shall render a form with three fields: Headline (text input), Subheadline (textarea), and Subdomain (text input with suffix showing `.prewaitlist.com`).
 - AC2: While the founder types in the subdomain field, the system shall derive a candidate slug (lowercase, alphanumeric + hyphens only) and check its availability via `GET /api/waitlist/check-slug`, debounced 300-500ms after the last keystroke (REQ-6.6.1).
 - AC3: The system shall display real-time availability feedback: a green checkmark + "Available" for available slugs, or a red error + "Already taken" for unavailable slugs.
 - AC4: If a candidate slug matches a reserved word, the system shall reject it as unavailable, identically to an already-taken slug (REQ-6.6.2).
@@ -226,7 +226,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 **Dev Notes:**
 
-- T1: ✅ Done — `src/app/onboarding/1/page.tsx` built with `Input`/`Textarea` from `components/ui/`. Subdomain shows `{candidateSlug}.mywaitlist.com` read-only suffix. Field dimensions: 60.33px height, 12.164px border-radius, `#CCC9C3` 1.67px border.
+- T1: ✅ Done — `src/app/onboarding/1/page.tsx` built with `Input`/`Textarea` from `components/ui/`. Subdomain shows `{candidateSlug}.prewaitlist.com` read-only suffix. Field dimensions: 60.33px height, 12.164px border-radius, `#CCC9C3` 1.67px border.
 - T2: ✅ Done — Slug derivation: `value.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').slice(0, 63)`. Debounced 300ms. Check-slug API returns `{ available: boolean }`. Green checkmark / "Available" or red error / "Already taken" shown inline.
 - T3: ✅ Done — "I'll name it later" generates `crypto.randomUUID().slice(0, 8)` fallback. Helper text below: "We'll assign a random URL — you can change it later."
 - T4: ✅ Done — POST to `/api/waitlist`, stores `waitlistId` in context, navigates to `/onboarding/2`. `setLoading(true)` before call, `setLoading(false)` after. Form disabled during loading.
@@ -460,7 +460,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - AC4: The Pro-tier SPF/DKIM panel UI is Sprint 1 scope; the backend verification logic is Sprint 3 scope. In Sprint 1, "Verify my domain setup" shall be wired to a stubbed response and shall never block "Launch my waitlist" (REQ-6.11.3). The expanded panel shall show SPF record and DKIM CNAME fields with Copy buttons, a "Verify my domain setup" button, a "Skip for now — send from [tool]'s domain" link, and an info box explaining why custom domains matter.
 - AC5: When "Launch my waitlist" is clicked and no subdomain was ever finalized (i.e., "I'll name it later" was used), the system shall auto-assign the fallback slug rather than blocking the action (REQ-6.11.4).
 - AC6: On launch, the system shall PATCH the waitlist record with `status = 'live'` and navigate to `/onboarding/success`. While the API call is in progress, the form shall be disabled and a loading indicator shown (uses `loading`/`setLoading` from context).
-- AC7: The live URL shall be displayed on the success screen as `{slug}.mywaitlist.com`.
+- AC7: The live URL shall be displayed on the success screen as `{slug}.prewaitlist.com`.
 - AC8: The launch button shall be 644×59px (wider than other steps), displaying "Launch my waitlist" text + arrow icon (→).
 - AC9: Lint and build shall pass with zero errors.
 
@@ -477,7 +477,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 **Dev Notes:**
 
-- T1: ✅ Done (rebuilt) — `src/app/onboarding/5/page.tsx` with centered layout. Heading: "Your subscribers get a confirmation email" / "it includes their position and referral link automatically". **Free tier:** Preview card showing "From: [Your name]" (PRO badge), "Subject: [Customise on Pro]" (lock icon), 3 grey skeleton bars, "Upgrade to Pro to customise →" button inside card. Helper text below card. **Pro tier:** Editable Sender name / Email subject / Message body fields. Collapsible "Send from your own domain (recommended)" panel with subtext "Improves deliverability. Takes 2 minutes." Expanded state shows SPF record + DKIM CNAME with Copy buttons, "Verify my domain setup" button, "Skip for now — send from MyWaitlist's domain" link, info box.
+- T1: ✅ Done (rebuilt) — `src/app/onboarding/5/page.tsx` with centered layout. Heading: "Your subscribers get a confirmation email" / "it includes their position and referral link automatically". **Free tier:** Preview card showing "From: [Your name]" (PRO badge), "Subject: [Customise on Pro]" (lock icon), 3 grey skeleton bars, "Upgrade to Pro to customise →" button inside card. Helper text below card. **Pro tier:** Editable Sender name / Email subject / Message body fields. Collapsible "Send from your own domain (recommended)" panel with subtext "Improves deliverability. Takes 2 minutes." Expanded state shows SPF record + DKIM CNAME with Copy buttons, "Verify my domain setup" button, "Skip for now — send from PreWaitlist's domain" link, info box.
 - T2: ✅ Done — `src/app/api/waitlist/verify-domain/route.ts` created. Returns `{ verified: false, message: "Verification will be available in a future update" }`. Never blocks launch.
 - T3: ✅ Done — Launch button always enabled. If slug is missing, auto-assigns fallback via `crypto.randomUUID().slice(0, 8)`.
 - T4: ✅ Done — PATCH to `/api/waitlist` with `{ status: 'live', email_sender_name, email_subject, email_body }`. Navigates to `/onboarding/success`. Loading state during API call.
@@ -518,7 +518,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - AC4: The page shall display the live URL inline with a pill-shaped copy link button containing a clipboard icon.
 - AC5: The page shall render a share card with: header text ("Share it now while the momentum is fresh"), a dashed inner card with "Suggested caption" and dynamic quote, a green filled Share button, and an outlined Copy link button side-by-side.
 - AC6: "Or, go to my dashboard →" shall navigate to `/dashboard` with green text and arrow icon (REQ-6.12.2).
-- AC7: The "Powered by MyWaitlist" footer shall render below the dashboard link for Free tier only, using the shared `PoweredByFooter` component.
+- AC7: The "Powered by PreWaitlist" footer shall render below the dashboard link for Free tier only, using the shared `PoweredByFooter` component.
 - AC8: The progress dots shall NOT be rendered on the success screen — it is a terminal state.
 - AC9: The page shall display a "What will happen next?" section with 3 numbered items below a divider.
 - AC10: Lint and build shall pass with zero errors.

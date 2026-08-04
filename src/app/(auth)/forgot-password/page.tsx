@@ -66,7 +66,7 @@ export default function ForgotPasswordPage() {
         <Link href="/" className="mb-8 block">
           <Image
             src="/main-logo.svg"
-            alt="MyWaitlist"
+            alt="PreWaitlist"
             width={160}
             height={52}
             className="mx-auto"

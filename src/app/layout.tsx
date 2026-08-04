@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Wait App",
-  description: "Pre-launch waitlist SaaS",
+  title: "PreWaitlist",
+  description: "Pre-launch waitlist builder",
 };
 
 export default function RootLayout({

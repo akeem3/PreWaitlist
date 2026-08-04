@@ -150,7 +150,7 @@ _(Unchanged in substance from PRD v1 — repeated here at the level needed for b
 - REQ-6.8.3: When the milestone-rewards toggle is switched ON, the system shall reveal exactly 3 fixed reward tiers (refer-3 / refer-10 / refer-25). Each tier's referral threshold is immutable (not editable, not addable, not removable — enforced by `milestone_rewards.tier_referrals check (tier_referrals in (3,10,25))`). Each tier shall display a fixed label ("Refer 3 friends" / "Refer 10 friends" / "Refer 25 friends") and an editable text input for the founder to specify the reward (e.g. "Early access", "Skip the line + free swag", "Lifetime 50% off"). The reward_label is required (not null) when the toggle is on — if a founder leaves any tier's reward blank and attempts to proceed, the system shall show an inline validation error and block submission. Scope: Sprint 1 is configuration only; no referral-counting or reward-fulfillment logic.
 - REQ-6.8.4: The system shall accept logo uploads in PNG or SVG only, up to 2MB, stored in Supabase Storage.
 - REQ-6.8.5: The brand-color field shall validate as a well-formed hex value before it can be saved; default value is #0F7A5E.
-- REQ-6.8.6: The Meta Preview panel shall render as an OG-card mock (simulating how the waitlist URL appears when shared on social media / messaging apps). It shall contain: (a) a browser-chrome header with three dots matching the main live-preview panel style; (b) inside the card: the headline (bold), subheadline (grey), a mini email input field, and a mini "Join waitlist" button — a miniature version of the actual waitlist page; (c) below a divider line: the domain in small grey text (e.g. "acme.mywaitlist.com"), a bold line reading "[Headline] — Join the waitlist", and a grey description line repeating the subheadline text. This component represents the og:title / og:description / og:image source data and is not a generic content preview.
+- REQ-6.8.6: The Meta Preview panel shall render as an OG-card mock (simulating how the waitlist URL appears when shared on social media / messaging apps). It shall contain: (a) a browser-chrome header with three dots matching the main live-preview panel style; (b) inside the card: the headline (bold), subheadline (grey), a mini email input field, and a mini "Join waitlist" button — a miniature version of the actual waitlist page; (c) below a divider line: the domain in small grey text (e.g. "acme.prewaitlist.com"), a bold line reading "[Headline] — Join the waitlist", and a grey description line repeating the subheadline text. This component represents the og:title / og:description / og:image source data and is not a generic content preview.
 
 ### 6.9 Onboarding Step 4 — Qualification Decision (F-C4)
 
@@ -185,13 +185,13 @@ _(Unchanged in substance from PRD v1 — repeated here at the level needed for b
 - REQ-6.12.1: The Share button shall render only where navigator.share is supported; Copy Link shall always render, at equal visual weight, never as a fallback-only control.
 - REQ-6.12.2: "Or, go to my dashboard" shall navigate to `/dashboard`.
 
-### 6.12a "Powered by MyWaitlist" Footer — Onboarding Preview + Public Pages
+### 6.12a "Powered by PreWaitlist" Footer — Onboarding Preview + Public Pages
 
-- REQ-onboarding-preview.4: The "Powered by MyWaitlist" footer shall never appear on MyWaitlist's own marketing site or app pages under any circumstance — it is exclusive to founders' public waitlist pages (onboarding preview in Sprint 1, live page in Sprint 2) when tier = Free.
-- REQ-onboarding-preview.5: The "Powered by MyWaitlist" footer shall render per the following visual spec. **Open TODO:** the Dark template's near-black background has no verified secondary-text color in the design system — Warm Grey #6B6459 likely fails contrast. Placeholder color is used on Dark template pending an actual token decision; do not treat the placeholder as final.
-  - Structure: inline "Powered by [16px icon] MyWaitlist", not a pill or card.
+- REQ-onboarding-preview.4: The "Powered by PreWaitlist" footer shall never appear on PreWaitlist's own marketing site or app pages under any circumstance — it is exclusive to founders' public waitlist pages (onboarding preview in Sprint 1, live page in Sprint 2) when tier = Free.
+- REQ-onboarding-preview.5: The "Powered by PreWaitlist" footer shall render per the following visual spec. **Open TODO:** the Dark template's near-black background has no verified secondary-text color in the design system — Warm Grey #6B6459 likely fails contrast. Placeholder color is used on Dark template pending an actual token decision; do not treat the placeholder as final.
+  - Structure: inline "Powered by [16px icon] PreWaitlist", not a pill or card.
   - Typography: Caption style (12px, Regular / 400 weight).
-  - Color: "Powered by" in Warm Grey #6B6459. "MyWaitlist" + icon in Deep Jade #0F7A5E (same rule as every other link/active-state use of jade in the system).
+  - Color: "Powered by" in Warm Grey #6B6459. "PreWaitlist" + icon in Deep Jade #0F7A5E (same rule as every other link/active-state use of jade in the system).
   - Placement: centered, bottom of page, 24px vertical padding, 1px Border Subtle #E5E0D6 top divider on light templates (Minimal, Bold).
   - No drop shadow, no gradient, no background box.
   - Links to the F-A3 "powered by" homepage variant.
@@ -233,11 +233,11 @@ _(Unchanged in substance from PRD v1 — repeated here at the level needed for b
 
 Resend offers two separate products with two separate billing models: a plain transactional send API (billed by email volume), and a contact-list/"Audiences" product for managing and broadcasting to a stored mailing list (billed by number of contacts stored).
 
-**Decision: MyWaitlist shall never use Resend's Audiences/Marketing product, for any email type, including Pro-tier founder broadcasts.** Reasoning: Audiences is built for one company managing one list; MyWaitlist is one platform sending on behalf of hundreds of separate founders' subscriber lists. Using Audiences would mean creating and syncing a separate Resend-side list per founder and paying on a second, independent per-contact meter that grows unpredictably alongside the existing per-email meter.
+**Decision: PreWaitlist shall never use Resend's Audiences/Marketing product, for any email type, including Pro-tier founder broadcasts.** Reasoning: Audiences is built for one company managing one list; PreWaitlist is one platform sending on behalf of hundreds of separate founders' subscriber lists. Using Audiences would mean creating and syncing a separate Resend-side list per founder and paying on a second, independent per-contact meter that grows unpredictably alongside the existing per-email meter.
 
 - REQ-7.1a.1: All email sends -- subscriber confirmation, "moved up" notifications, and Pro-tier founder broadcasts alike -- shall be sent via Resend's plain transactional send/Batch Send API, addressed individually from subscriber records already stored in Supabase.
 - REQ-7.1a.2: The system shall never create, sync to, or bill against a Resend Audience/contact-list object.
-- REQ-7.1a.3: Free-tier founders' subscriber emails shall send from one shared MyWaitlist-owned domain. Pro-tier founders who complete domain verification (PRD REQ-6.11.2) shall each occupy one additional verified domain slot on the same Resend account -- note this, not just email volume, is what forces the first move off Resend's Free tier (which allows only 1 domain), and it happens to coincide with the founder becoming a paying customer.
+- REQ-7.1a.3: Free-tier founders' subscriber emails shall send from one shared PreWaitlist-owned domain. Pro-tier founders who complete domain verification (PRD REQ-6.11.2) shall each occupy one additional verified domain slot on the same Resend account -- note this, not just email volume, is what forces the first move off Resend's Free tier (which allows only 1 domain), and it happens to coincide with the founder becoming a paying customer.
 - REQ-7.1a.4: Resend usage/billing alerts shall be configured once the product is live, so approaching the 100/day or 3,000/month Free-tier caps is visible before it's hit.
 
 ### 7.2 Subdomain Routing -- implementation detail

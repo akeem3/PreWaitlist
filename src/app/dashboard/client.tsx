@@ -90,7 +90,7 @@ export default function DashboardClient({
               </div>
             )}
             <span className="text-body-sm font-medium text-foreground">
-              {waitlistName || "My Waitlist"}
+              {waitlistName || "PreWaitlist"}
             </span>
             <svg
               width="12"

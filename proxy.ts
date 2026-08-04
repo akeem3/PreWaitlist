@@ -31,7 +31,7 @@ function getSubdomain(host: string): string | null {
     return hostname.split(".")[0];
   }
 
-  // Production: *.mywaitlist.com or *.vercel.app
+  // Production: *.prewaitlist.com or *.vercel.app
   const parts = hostname.split(".");
   if (parts.length >= 3) {
     return parts[0];

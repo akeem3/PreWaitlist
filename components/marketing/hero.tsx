@@ -25,7 +25,7 @@ function HeroContent() {
             <FadeIn delay={0.1}>
               <h1 className="max-w-4xl text-display">
                 That waitlist runs on{" "}
-                <span className="text-accent">MyWaitlist</span>. Yours can be
+                <span className="text-accent">PreWaitlist</span>. Yours can be
                 live in 4 minutes.
               </h1>
             </FadeIn>

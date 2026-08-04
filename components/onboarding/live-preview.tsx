@@ -103,7 +103,7 @@ function BrowserFrame({
               color: "#6B6B6B",
             }}
           >
-            {slug}.mywaitlist.com
+            {slug}.prewaitlist.com
           </span>
         )}
       </div>

@@ -15,8 +15,8 @@ export default function OnboardingSuccess() {
   }, []);
 
   const liveUrl = form.slug
-    ? `${form.slug}.mywaitlist.com`
-    : "your-waitlist.mywaitlist.com";
+    ? `${form.slug}.prewaitlist.com`
+    : "your-waitlist.prewaitlist.com";
 
   async function handleCopy() {
     try {

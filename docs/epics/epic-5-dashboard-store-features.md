@@ -55,7 +55,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 - T1: ✅ Done — `src/app/dashboard/page.tsx` (server component) + `src/app/dashboard/client.tsx` (client component). Stat cards use `Card` component with em-dash (`—`) for empty state. Never renders "0". Three cards in a responsive grid (1 col mobile, 3 col desktop).
 - T2: ✅ Done — Getting-started checklist with 3 items: "Share your waitlist" (auto-checks via `ShareCopyLink` `onShare`/`onCopy` callbacks), "Set up email notifications" (links to `/onboarding/5`), "Customize your page" (links to `/onboarding/3`). Uses `useState` for check state.
-- T3: ✅ Done — Nav header with 4 tabs: Overview (active), Subscribers, Broadcasts, Settings. Visual only, all link to `/dashboard`. Live URL bar shows `{slug}.mywaitlist.com` with "View live page →" link (opens in new tab). `ShareCopyLink` component rendered for share/copy functionality.
+- T3: ✅ Done — Nav header with 4 tabs: Overview (active), Subscribers, Broadcasts, Settings. Visual only, all link to `/dashboard`. Live URL bar shows `{slug}.prewaitlist.com` with "View live page →" link (opens in new tab). `ShareCopyLink` component rendered for share/copy functionality.
 - T4: ✅ Done — Server component fetches waitlist data via `supabase.from("waitlists").select("id, name, subdomain, template, status").eq("founder_id", user.id)`. Redirects to `/signin` if no user, `/onboarding/1` if no waitlist.
 - T5: ✅ Done — Lint + build pass. Files: `src/app/dashboard/page.tsx`, `src/app/dashboard/client.tsx`. Available components: `Card` ✓, `ShareCopyLink` ✓, `Link` (Next.js) ✓.
 

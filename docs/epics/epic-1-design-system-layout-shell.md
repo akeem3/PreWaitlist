@@ -206,7 +206,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 **Acceptance Criteria (EARS):**
 
 - AC1: The marketing layout shall render a sticky header with the product logo/name on the left and "Sign in" / "Build it free" CTAs on the right. Ref: `@docs/design/High-fidelity-svgs/HF1-Marketing Homepage.svg` lines 5-8.
-- AC2: The marketing layout shall render a footer with copyright, "Powered by MyWaitlist" disclosure (for Free tier), and links to terms/privacy.
+- AC2: The marketing layout shall render a footer with copyright, "Powered by PreWaitlist" disclosure (for Free tier), and links to terms/privacy.
 - AC3: The header shall be transparent on the homepage hero section and opaque (with background) on scroll or on non-homepage routes.
 - AC4: The layout shall be responsive — hamburger menu on mobile, full navigation on `md:` and above.
 - AC5: The layout shall wrap all routes under `src/app/(marketing)/` and `src/app/(auth)/` via a shared layout or route group.

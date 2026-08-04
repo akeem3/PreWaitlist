@@ -7,7 +7,7 @@
 
 ## Overview
 
-Sprint 1 delivers the complete founder experience: from discovering MyWaitlist on the marketing homepage, through signup and onboarding, to a functional empty dashboard. The work is divided into **6 epics** (0–5) with clear dependency chains and defined exit criteria.
+Sprint 1 delivers the complete founder experience: from discovering PreWaitlist on the marketing homepage, through signup and onboarding, to a functional empty dashboard. The work is divided into **6 epics** (0–5) with clear dependency chains and defined exit criteria.
 
 The structure was reorganised from the original plan (which had marketing homepage absent and onboarding + dashboard combined into a single overloaded Epic 3) into a cleaner separation where each epic maps to a distinct product surface.
 
@@ -96,7 +96,7 @@ Additionally, two features exist in the PRD but were not covered by any original
 - Supabase project with schema DDL, RLS, auth (email + Google OAuth)
 - Resend account configured (API key only, no sending in Sprint 1)
 - Paddle sandbox configured (env placeholders only)
-- Vercel project with wildcard domain (`*.mywaitlist.com`) + proxy.ts routing
+- Vercel project with wildcard domain (`*.prewaitlist.com`) + proxy.ts routing
 - Design System v2.0 tokens in `globals.css` (292 lines: colors, typography, spacing, radii, shadows, motion)
 - `AGENTS.md` + `.memory/MEMORY.md` seeded
 - ESLint + Prettier + pre-commit hooks
@@ -204,7 +204,7 @@ Additionally, two features exist in the PRD but were not covered by any original
 - "I'll name it later" assigns random fallback slug (REQ-6.6.4)
 - Free tier: 2 qualification questions max, email fields locked (REQ-6.10.1, 6.11.1)
 - Pro tier: 5 questions, editable email fields, SPF/DKIM panel UI only (REQ-6.11.3 — backend is Sprint 3)
-- "Powered by MyWaitlist" footer renders in preview when tier = Free (REQ-onboarding-preview.4–.5)
+- "Powered by PreWaitlist" footer renders in preview when tier = Free (REQ-onboarding-preview.4–.5)
 - Sticky mobile CTA, progress dots completed state, WCAG 2.5.8 touch targets (stress test recommendations)
 
 **File:** `docs/epics/epic-4-onboarding-wizard.md`
@@ -252,7 +252,7 @@ From the PRD (Section 3):
 2. Auth flow works end-to-end: email/password + Google OAuth (Epic 2 ✅)
 3. Onboarding wizard completes all 5 steps + success screen (Epic 4)
 4. Empty dashboard shows stat skeletons + getting-started checklist (Epic 5)
-5. Subdomain routing works: `{slug}.mywaitlist.com` resolves (Epic 0 ✅)
+5. Subdomain routing works: `{slug}.prewaitlist.com` resolves (Epic 0 ✅)
 6. RLS enforced on all tables (Epic 0 ✅)
 7. Design system tokens used consistently (Epic 1 ✅)
 

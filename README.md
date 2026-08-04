@@ -1,3 +1,3 @@
-# wait-app
+# PreWaitlist
 
-Pre-launch waitlist tool for indie hackers and solo founders.
+Pre-launch waitlist builder for indie hackers and solo founders.

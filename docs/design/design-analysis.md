@@ -70,7 +70,7 @@ Detailed screen-by-screen analysis of high-fidelity designs, cross-referenced wi
 | Headline label    | "Headline"                                             | Input label                              |
 | Subheadline label | "Subheadline"                                          | Input label                              |
 | Subdomain label   | "Subdomain"                                            | Input label                              |
-| Subdomain suffix  | ".mywaitlist.com"                                      | Read-only suffix                         |
+| Subdomain suffix  | ".prewaitlist.com"                                     | Read-only suffix                         |
 | Helper text       | "I'll name it later"                                   | Link text below subdomain field          |
 | Helper caption    | "We'll assign a random URL — you can change it later." | Below "I'll name it later" link          |
 | Submit button     | "→"                                                    | Arrow icon only, right-aligned in button |
@@ -93,11 +93,11 @@ Detailed screen-by-screen analysis of high-fidelity designs, cross-referenced wi
 
 #### Form Elements
 
-| Element     | Type       | Height  | Border Radius | Border           | Placeholder | Default                           |
-| ----------- | ---------- | ------- | ------------- | ---------------- | ----------- | --------------------------------- |
-| Headline    | text input | 60.33px | 12.164        | `#CCC9C3` 1.67px | —           | empty                             |
-| Subheadline | textarea   | 60.33px | 12.164        | `#CCC9C3` 1.67px | —           | empty                             |
-| Subdomain   | text input | 60.33px | 12.164        | `#CCC9C3` 1.67px | —           | empty (suffix: `.mywaitlist.com`) |
+| Element     | Type       | Height  | Border Radius | Border           | Placeholder | Default                            |
+| ----------- | ---------- | ------- | ------------- | ---------------- | ----------- | ---------------------------------- |
+| Headline    | text input | 60.33px | 12.164        | `#CCC9C3` 1.67px | —           | empty                              |
+| Subheadline | textarea   | 60.33px | 12.164        | `#CCC9C3` 1.67px | —           | empty                              |
+| Subdomain   | text input | 60.33px | 12.164        | `#CCC9C3` 1.67px | —           | empty (suffix: `.prewaitlist.com`) |
 
 #### Buttons
 
@@ -135,7 +135,7 @@ Detailed screen-by-screen analysis of high-fidelity designs, cross-referenced wi
 
 - Design shows "→" arrow icon on submit button, not text like "Next" or "Continue"
 - "I'll name it later" helper text is present in design, matching REQ-6.6.4
-- The subdomain field shows `.mywaitlist.com` as suffix (not prefix)
+- The subdomain field shows `.prewaitlist.com` as suffix (not prefix)
 
 #### Confidence Level
 
@@ -461,7 +461,7 @@ Detailed screen-by-screen analysis of high-fidelity designs, cross-referenced wi
 | ---------------- | ------------------------ | ----------------------------------- |
 | Checkmark        | ✓ (green circle)         | 64px circle, `#0F7A5E` fill         |
 | Heading          | "Your waitlist is live!" | Centered                            |
-| Live URL         | `{slug}.mywaitlist.com`  | Displayed prominently               |
+| Live URL         | `{slug}.prewaitlist.com` | Displayed prominently               |
 | Share button     | "Share"                  | Only if `navigator.share` supported |
 | Copy Link button | "Copy Link"              | Always visible                      |
 | Dashboard link   | "Or, go to my dashboard" | Navigates to /dashboard             |
@@ -476,10 +476,10 @@ Detailed screen-by-screen analysis of high-fidelity designs, cross-referenced wi
 #### Powered by Footer
 
 - Below divider line
-- "Powered by [icon] MyWaitlist"
+- "Powered by [icon] PreWaitlist"
 - Caption style (12px, Regular/400)
 - "Powered by" in Warm Grey `#6B6459`
-- "MyWaitlist" + icon in Deep Jade `#0F7A5E`
+- "PreWaitlist" + icon in Deep Jade `#0F7A5E`
 - Centered, 24px vertical padding
 
 #### PRD Cross-Reference

@@ -174,7 +174,7 @@ export default function OnboardingStep5() {
           {/* Helper text */}
           <p className="text-sm text-muted-foreground">
             On the free plan, emails send from{" "}
-            <span className="font-medium text-accent">MyWaitlist</span> with a
+            <span className="font-medium text-accent">PreWaitlist</span> with a
             standard template. Your product name and the subscriber&apos;s info
             are included automatically.
           </p>
@@ -316,7 +316,7 @@ export default function OnboardingStep5() {
                 <p className="mb-3 text-xs text-muted-foreground">
                   Skip for now — send from{" "}
                   <span className="font-medium text-accent">
-                    MyWaitlist&apos;s
+                    PreWaitlist&apos;s
                   </span>{" "}
                   domain
                 </p>

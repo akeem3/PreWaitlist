@@ -35,7 +35,7 @@
 ### Wildcard subdomain routing via Vercel nameservers
 
 - **Decision:** Use Vercel-managed nameservers (ns1/ns2.vercel-dns.com) instead of A-record + CNAME for wildcard routing.
-- **Reason:** A records cannot route `*.mywaitlist.com` to Vercel. Only Vercel nameservers or a wildcard CNAME can. Since the domain was on GoDaddy, updated nameservers to point to Vercel's DNS.
+- **Reason:** A records cannot route `*.prewaitlist.com` to Vercel. Only Vercel nameservers or a wildcard CNAME can. Since the domain was on GoDaddy, updated nameservers to point to Vercel's DNS.
 - **Date:** 2026-07-26
 
 ### Component token approach (Tailwind v4)
@@ -94,7 +94,7 @@
 - **Project:** `ollaykzbhyniqxxlbkhn.supabase.co` — "waitlist-build"
 - **Auth:** Google OAuth provider configured (client ID from GCP)
 - **Keys:** Publishable + secret in .env.local
-- **Redirect URLs:** Configured in Supabase Dashboard (localhost + vercel.app + mywaitlist.com)
+- **Redirect URLs:** Configured in Supabase Dashboard (localhost + vercel.app + prewaitlist.com)
 - **Schema DDL + RLS:** ✅ Done (Story 2.1) — 5 tables, policies
 - **Client modules:** ✅ Done — `src/lib/supabase/server.ts`, `src/lib/supabase/client.ts`
 
@@ -111,13 +111,13 @@
 ### Vercel (Story 0.6)
 
 - **Project:** `waitlist-build` on Vercel
-- **Domain:** `mywaitlist.com` + `www.mywaitlist.com` added
+- **Domain:** `prewaitlist.com` + `www.prewaitlist.com` added
 - **DNS:** Nameservers updated in GoDaddy to Vercel's
-- **Wildcard:** `*.mywaitlist.com` not yet added via "Add Existing" in Vercel Domains
+- **Wildcard:** `*.prewaitlist.com` not yet added via "Add Existing" in Vercel Domains
 
 ## Decision: Resend email architecture (2026-07)
 
-All MyWaitlist emails (confirmations, moved-up notices, Pro broadcasts) go through
+All PreWaitlist emails (confirmations, moved-up notices, Pro broadcasts) go through
 Resend's plain transactional/Batch Send API against our own Supabase subscriber
 data — never Resend's Audiences/Marketing product.
 
@@ -424,11 +424,11 @@ Implementation order:
 
 ## Brand
 
-- **Logo:** `public/MyWaitlist Offical logo.png` (note: original filename has typo "Offical")
+- **Logo:** `public/PreWaitlist-logo.svg`
 - **Brand color (accent):** `#0f7a5e` (green)
 - **Accent hover:** `#0d6b52`
 - **Accent foreground:** `#ffffff`
-- **Logo usage in nav:** `<Image src="/MyWaitlist Offical logo.png" alt="MyWaitlist" width={140} height={28} priority />`
+- **Logo usage in nav:** `<Image src="/PreWaitlist-logo.svg" alt="PreWaitlist" width={140} height={28} priority />`
 - **Sign-in link hover:** `hover:text-accent` (brand green)
 
 ## Standing Constraints
@@ -496,15 +496,15 @@ Design specs use hex values that don't always match the token system exactly. Ma
 16. Story 4.7 — Success Screen
 17. Create Epic 5 branch from dev — Dashboard + Store Features
 
-## Decision + bug fix: "Powered by MyWaitlist" footer (2026-07)
+## Decision + bug fix: "Powered by PreWaitlist" footer (2026-07)
 
 Scope: exclusive to founders' public waitlist pages (onboarding preview now,
-real public page in Sprint 2) when tier = Free. Never on MyWaitlist's own site —
+real public page in Sprint 2) when tier = Free. Never on PreWaitlist's own site —
 this was built wrongly onto our own homepage footer once already and had to be
 removed; if it recurs, same fix, same reasoning.
 
-Visual spec: inline "Powered by [16px jade icon] MyWaitlist", Caption size,
-"Powered by" in Warm Grey #6B6459, "MyWaitlist"+icon in Deep Jade #0F7A5E,
+Visual spec: inline "Powered by [16px jade icon] PreWaitlist", Caption size,
+"Powered by" in Warm Grey #6B6459, "PreWaitlist"+icon in Deep Jade #0F7A5E,
 centered, 24px vertical padding, Border Subtle top divider on light templates,
 no shadow/gradient/box. Links to the F-A3 homepage variant.
 
@@ -578,7 +578,7 @@ the page looks like as a social-media link-unfurl card (OG card).
 1. Browser-chrome header (three dots, matching BrowserFrame style)
 2. Inside: headline (bold), subheadline (grey), mini email input, mini "Join waitlist" button
 3. Divider line
-4. Domain in small grey text (e.g. "acme.mywaitlist.com")
+4. Domain in small grey text (e.g. "acme.prewaitlist.com")
 5. Bold line "[Headline] — Join the waitlist"
 6. Grey description line (subheadline text)
 

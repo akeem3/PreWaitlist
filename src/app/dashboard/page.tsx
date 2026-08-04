@@ -23,7 +23,7 @@ export default async function DashboardPage() {
     redirect("/onboarding/1");
   }
 
-  const liveUrl = `${waitlist.subdomain}.mywaitlist.com`;
+  const liveUrl = `${waitlist.subdomain}.prewaitlist.com`;
 
   return (
     <DashboardClient
