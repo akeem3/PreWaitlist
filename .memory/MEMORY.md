@@ -617,6 +617,24 @@ value as final — needs a real token decision from design.
 Same treatment as the earlier Dark-template gap noted on the "Powered by" footer
 (REQ-onboarding-preview.5).
 
+### Milestone Rewards — Editable Thresholds (2026-08-08)
+
+**Status:** SHIPPED
+
+Changed milestone rewards from 3 fixed tiers (3/10/25) to fully editable:
+
+- Founder can set any positive integer threshold (not just 3, 10, 25)
+- Founder can add tiers (1-5) or remove tiers (minimum 1)
+- Live preview shows simulated subscriber view with locked/unlocked states
+- Database schema updated: check constraint changed from `in (3,10,25)` to `> 0`
+- API upserts milestone_rewards to separate table (delete + insert pattern)
+- PRD REQ-6.8.3 updated to reflect new behavior
+
+**MilestoneReward type changed:** `{ name, value }` → `{ threshold, label }`
+
+- `threshold`: number (referral count)
+- `label`: string (reward description)
+
 ### Epic 5 dashboard is a placeholder
 
 **Status:** DECIDED — 2026-07-31
@@ -630,3 +648,52 @@ Sprint 2 when real subscriber data, analytics, and settings pages ship.
 Do not treat any Epic 5 dashboard layout, styling, or component structure as
 canonical. The API routes (`POST /api/updates`) and auth callback logic
 (acquisition capture) are permanent — only the dashboard UI is placeholder.
+
+### Performance Optimizations (2026-08-08)
+
+**Status:** SHIPPED
+
+#### Font Loading
+
+- Removed render-blocking CSS `@import` for Inter from Google Fonts
+- Added Inter via `next/font/google` with `adjustFontFallback: true`
+- CSS variable `--font-sans` now references `var(--font-inter)` from next/font
+
+#### State Persistence
+
+- Onboarding form state persists to `localStorage` on every change
+- On mount: restores from localStorage, then fetches fresh data from API
+- Smart redirect: determines which step to resume based on data completeness
+- Clears localStorage on success page after onboarding completes
+- New GET endpoint: `GET /api/waitlist` returns full waitlist state
+
+#### Loading States
+
+- Added `src/app/onboarding/loading.tsx` skeleton
+- Added `src/app/dashboard/loading.tsx` skeleton
+
+#### Lazy Loading
+
+- LivePreview now uses `next/dynamic` with `ssr: false`
+- Shows spinner skeleton while loading
+
+### Post-Sprint-1 Issue List (2026-08-08)
+
+**Status:** 6 done, 8 remaining
+
+| #   | Issue                                                                                                        | Status   | File(s)                                                                                                                                                                                                                                                   |
+| --- | ------------------------------------------------------------------------------------------------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Preview responsiveness — mobile stacks CTA below email                                                       | **Done** | `components/onboarding/live-preview.tsx`                                                                                                                                                                                                                  |
+| 2   | Color picker with 8 preset swatches + hex input                                                              | **Done** | `src/app/onboarding/3/page.tsx`                                                                                                                                                                                                                           |
+| 3   | Milestone rewards — editable thresholds, add/remove tiers, subscriber preview                                | **Done** | `src/app/onboarding/3/page.tsx`, `components/onboarding/live-preview.tsx`, `src/app/api/waitlist/route.ts`, `docs/stories/epic0.story03-supabase-schema.sql`                                                                                              |
+| 4   | Loading slowness + state persistence — font fix, localStorage, GET endpoint, loading skeletons, lazy preview | **Done** | `src/app/layout.tsx`, `src/app/globals.css`, `src/app/onboarding/context.tsx`, `src/app/api/waitlist/route.ts`, `src/app/onboarding/loading.tsx`, `src/app/dashboard/loading.tsx`, `src/app/onboarding/layout.tsx`, `src/app/onboarding/success/page.tsx` |
+| 5   | Qualification step dropdown broken                                                                           | Open     | `src/app/onboarding/4a/page.tsx`                                                                                                                                                                                                                          |
+| 6   | Powered by footer uses brand color + full logo                                                               | **Done** | `components/share/powered-by-footer.tsx`                                                                                                                                                                                                                  |
+| 7   | Pro preview explanation                                                                                      | Open     | `src/app/onboarding/5/page.tsx`                                                                                                                                                                                                                           |
+| 8   | Success page scrollable                                                                                      | Open     | `src/app/onboarding/success/page.tsx`                                                                                                                                                                                                                     |
+| 9   | Dashboard link semi-bold                                                                                     | Open     | `src/app/dashboard/client.tsx`                                                                                                                                                                                                                            |
+| 10  | Dashboard fallback name shows "PreWaitlist" instead of founder's product                                     | Open     | `src/app/dashboard/client.tsx`                                                                                                                                                                                                                            |
+| 11  | Meta preview CTA uses user's brand color                                                                     | **Done** | `src/app/onboarding/3/page.tsx`, `src/app/onboarding/success/page.tsx`                                                                                                                                                                                    |
+| 12  | Milestone knob right                                                                                         | Open     | —                                                                                                                                                                                                                                                         |
+| 13  | Optional questions visible                                                                                   | Open     | —                                                                                                                                                                                                                                                         |
+| 14  | Email customisation GIF (needs design asset)                                                                 | Open     | —                                                                                                                                                                                                                                                         |

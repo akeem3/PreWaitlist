@@ -47,7 +47,7 @@ create table public.qualification_questions (
 create table public.milestone_rewards (
   id uuid primary key default gen_random_uuid(),
   waitlist_id uuid not null references public.waitlists(id) on delete cascade,
-  tier_referrals smallint not null check (tier_referrals in (3,10,25)),
+  tier_referrals smallint not null check (tier_referrals > 0),
   reward_label text not null,
   unique (waitlist_id, tier_referrals)
 );

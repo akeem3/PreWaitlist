@@ -14,8 +14,8 @@ const DEFAULT_QUESTION_TEXTS = [
 ];
 
 interface MilestoneReward {
-  name: string;
-  value: string;
+  threshold: number;
+  label: string;
 }
 
 interface Question {
@@ -35,6 +35,7 @@ interface LivePreviewProps {
   showQuestions?: boolean;
   tier?: Tier;
   slug?: string;
+  isMobile?: boolean;
 }
 
 function BrowserFrame({
@@ -121,6 +122,7 @@ function MinimalTemplate({
   milestoneRewards,
   questions,
   showQuestions,
+  isMobile,
 }: LivePreviewProps) {
   return (
     <div
@@ -164,20 +166,30 @@ function MinimalTemplate({
         {subheadline || "Your subheadline goes here"}
       </p>
       {!showQuestions && (
-        <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 360 }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: isMobile ? "column" : "row",
+            gap: 8,
+            width: "100%",
+            maxWidth: 360,
+          }}
+        >
           <input
             type="email"
             placeholder="Email address"
             readOnly
             style={{
-              flex: 1,
+              flex: isMobile ? undefined : 1,
               minWidth: 0,
+              width: isMobile ? "100%" : undefined,
               borderRadius: "var(--radius-md, 0.5rem)",
               border: "1px solid #E5E5E5",
               padding: "10px 12px",
               fontSize: "var(--text-sm, 0.875rem)",
               color: "#1A1A1A",
               outline: "none",
+              boxSizing: "border-box",
             }}
           />
           <button
@@ -192,6 +204,7 @@ function MinimalTemplate({
               fontWeight: "var(--font-medium, 500)",
               cursor: "pointer",
               whiteSpace: "nowrap",
+              width: isMobile ? "100%" : undefined,
             }}
           >
             {ctaText || "Join Waitlist"}
@@ -246,7 +259,7 @@ function MinimalTemplate({
                     <span
                       style={{
                         fontSize: "var(--text-xs, 0.75rem)",
-                        color: "#888",
+                        color: "var(--color-warning, #d97706)",
                       }}
                     >
                       (optional)
@@ -280,28 +293,66 @@ function MinimalTemplate({
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: 4,
-            marginTop: 12,
+            alignItems: "center",
+            gap: 8,
+            marginTop: 16,
             width: "100%",
-            maxWidth: 300,
+            maxWidth: 360,
           }}
         >
-          {milestoneRewards.map((r) => (
-            <div
-              key={r.name}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontSize: "var(--text-xs, 0.75rem)",
-                color: "#888",
-                padding: "4px 0",
-                borderBottom: "1px solid #F0F0F0",
-              }}
-            >
-              <span>{r.name}</span>
-              <span style={{ color: brandColor || "#0C6350" }}>{r.value}</span>
-            </div>
-          ))}
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              justifyContent: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            {milestoneRewards.map((r) => (
+              <div
+                key={r.threshold}
+                style={{
+                  flex: "1 1 0",
+                  minWidth: 80,
+                  maxWidth: 110,
+                  padding: "10px 8px",
+                  borderRadius: "var(--radius-md, 0.5rem)",
+                  border: "1px solid #E5E5E5",
+                  background: "#FAFAFA",
+                  textAlign: "center",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "var(--text-sm, 0.875rem)",
+                    fontWeight: "var(--font-semibold, 600)",
+                    color: "#1A1A1A",
+                  }}
+                >
+                  {r.threshold}
+                </div>
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: "#999",
+                    marginTop: 2,
+                  }}
+                >
+                  Refer friends
+                </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: "var(--font-medium, 500)",
+                    color: brandColor || "#0C6350",
+                    marginTop: 4,
+                  }}
+                >
+                  {r.label || "Unlock reward"}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -317,6 +368,7 @@ function BoldTemplate({
   milestoneRewards,
   questions,
   showQuestions,
+  isMobile,
 }: LivePreviewProps) {
   return (
     <div
@@ -362,20 +414,30 @@ function BoldTemplate({
         {subheadline || "Your subheadline goes here"}
       </p>
       {!showQuestions && (
-        <div style={{ display: "flex", gap: 10, width: "100%", maxWidth: 400 }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: isMobile ? "column" : "row",
+            gap: 10,
+            width: "100%",
+            maxWidth: 400,
+          }}
+        >
           <input
             type="email"
             placeholder="Email address"
             readOnly
             style={{
-              flex: 1,
+              flex: isMobile ? undefined : 1,
               minWidth: 0,
+              width: isMobile ? "100%" : undefined,
               borderRadius: "var(--radius-md, 0.5rem)",
               border: "1px solid #1A1A1A",
               padding: "12px 14px",
               fontSize: "var(--text-base, 1rem)",
               color: "#1A1A1A",
               outline: "none",
+              boxSizing: "border-box",
             }}
           />
           <button
@@ -390,6 +452,7 @@ function BoldTemplate({
               fontWeight: "var(--font-semibold, 600)",
               cursor: "pointer",
               whiteSpace: "nowrap",
+              width: isMobile ? "100%" : undefined,
             }}
           >
             {ctaText || "Join Waitlist"}
@@ -444,7 +507,7 @@ function BoldTemplate({
                     <span
                       style={{
                         fontSize: "var(--text-xs, 0.75rem)",
-                        color: "#888",
+                        color: "var(--color-warning, #d97706)",
                       }}
                     >
                       (optional)
@@ -477,44 +540,67 @@ function BoldTemplate({
         <div
           style={{
             display: "flex",
-            gap: 16,
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 8,
             marginTop: 16,
-            flexWrap: "wrap",
-            justifyContent: "center",
+            width: "100%",
+            maxWidth: 400,
           }}
         >
-          {milestoneRewards.map((r) => (
-            <div
-              key={r.name}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 2,
-                padding: "8px 16px",
-                borderRadius: "var(--radius-md, 0.5rem)",
-                background: "#F9F9F9",
-              }}
-            >
-              <span
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              justifyContent: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            {milestoneRewards.map((r) => (
+              <div
+                key={r.threshold}
                 style={{
-                  fontSize: "var(--text-lg, 1.125rem)",
-                  fontWeight: "var(--font-bold, 700)",
-                  color: brandColor || "#0C6350",
+                  flex: "1 1 0",
+                  minWidth: 80,
+                  maxWidth: 110,
+                  padding: "10px 8px",
+                  borderRadius: "var(--radius-md, 0.5rem)",
+                  border: "1px solid #1A1A1A",
+                  background: "#F9F9F9",
+                  textAlign: "center",
                 }}
               >
-                {r.value}
-              </span>
-              <span
-                style={{
-                  fontSize: "var(--text-xs, 0.75rem)",
-                  color: "#888",
-                }}
-              >
-                {r.name}
-              </span>
-            </div>
-          ))}
+                <div
+                  style={{
+                    fontSize: "var(--text-sm, 0.875rem)",
+                    fontWeight: "var(--font-semibold, 600)",
+                    color: "#1A1A1A",
+                  }}
+                >
+                  {r.threshold}
+                </div>
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: "#666",
+                    marginTop: 2,
+                  }}
+                >
+                  Refer friends
+                </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: "var(--font-medium, 500)",
+                    color: brandColor || "#0C6350",
+                    marginTop: 4,
+                  }}
+                >
+                  {r.label || "Unlock reward"}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -530,6 +616,7 @@ function DarkTemplate({
   milestoneRewards,
   questions,
   showQuestions,
+  isMobile,
 }: LivePreviewProps) {
   return (
     <div
@@ -573,14 +660,23 @@ function DarkTemplate({
         {subheadline || "Your subheadline goes here"}
       </p>
       {!showQuestions && (
-        <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 360 }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: isMobile ? "column" : "row",
+            gap: 8,
+            width: "100%",
+            maxWidth: 360,
+          }}
+        >
           <input
             type="email"
             placeholder="Email address"
             readOnly
             style={{
-              flex: 1,
+              flex: isMobile ? undefined : 1,
               minWidth: 0,
+              width: isMobile ? "100%" : undefined,
               borderRadius: "var(--radius-md, 0.5rem)",
               border: "1px solid #44403C",
               padding: "10px 12px",
@@ -588,6 +684,7 @@ function DarkTemplate({
               color: "#FAFAFA",
               background: "#292524",
               outline: "none",
+              boxSizing: "border-box",
             }}
           />
           <button
@@ -602,6 +699,7 @@ function DarkTemplate({
               fontWeight: "var(--font-medium, 500)",
               cursor: "pointer",
               whiteSpace: "nowrap",
+              width: isMobile ? "100%" : undefined,
             }}
           >
             {ctaText || "Join Waitlist"}
@@ -691,28 +789,66 @@ function DarkTemplate({
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: 4,
-            marginTop: 12,
+            alignItems: "center",
+            gap: 8,
+            marginTop: 16,
             width: "100%",
-            maxWidth: 300,
+            maxWidth: 360,
           }}
         >
-          {milestoneRewards.map((r) => (
-            <div
-              key={r.name}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontSize: "var(--text-xs, 0.75rem)",
-                color: "#78716C",
-                padding: "4px 0",
-                borderBottom: "1px solid #292524",
-              }}
-            >
-              <span>{r.name}</span>
-              <span style={{ color: brandColor || "#0C6350" }}>{r.value}</span>
-            </div>
-          ))}
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              justifyContent: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            {milestoneRewards.map((r) => (
+              <div
+                key={r.threshold}
+                style={{
+                  flex: "1 1 0",
+                  minWidth: 80,
+                  maxWidth: 110,
+                  padding: "10px 8px",
+                  borderRadius: "var(--radius-md, 0.5rem)",
+                  border: "1px solid #44403C",
+                  background: "#292524",
+                  textAlign: "center",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "var(--text-sm, 0.875rem)",
+                    fontWeight: "var(--font-semibold, 600)",
+                    color: "#FAFAF4",
+                  }}
+                >
+                  {r.threshold}
+                </div>
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: "#A8A29E",
+                    marginTop: 2,
+                  }}
+                >
+                  Refer friends
+                </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: "var(--font-medium, 500)",
+                    color: brandColor || "#0C6350",
+                    marginTop: 4,
+                  }}
+                >
+                  {r.label || "Unlock reward"}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -828,10 +964,14 @@ export function LivePreview({
                   milestoneRewards={deferredRewards}
                   questions={deferredQuestions}
                   showQuestions={deferredShowQuestions}
+                  isMobile={isMobile}
                 />
               </div>
               {tier === "free" && (
-                <PoweredByFooter template={deferredTemplate} />
+                <PoweredByFooter
+                  template={deferredTemplate}
+                  brandColor={deferredBrandColor}
+                />
               )}
             </div>
           </BrowserFrame>

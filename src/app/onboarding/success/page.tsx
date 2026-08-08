@@ -79,6 +79,7 @@ export default function OnboardingSuccess() {
             subheadline={form.subheadline}
             ctaText={form.ctaText}
             slug={form.slug}
+            brandColor={form.brandColor}
           />
         </div>
 

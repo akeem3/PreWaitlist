@@ -43,8 +43,8 @@ const Toggle = React.forwardRef<HTMLButtonElement, ToggleProps>(
             className
           )}
           style={{
-            width: "var(--toggle-width)",
-            height: "var(--toggle-height)",
+            width: 40,
+            height: 24,
           }}
           ref={ref}
           {...props}
@@ -52,11 +52,9 @@ const Toggle = React.forwardRef<HTMLButtonElement, ToggleProps>(
           <span
             className="pointer-events-none block rounded-full bg-white shadow-sm ring-0 transition-transform duration-normal ease-out"
             style={{
-              width: "var(--toggle-thumb-size)",
-              height: "var(--toggle-thumb-size)",
-              transform: checked
-                ? "translateX(calc(100% - var(--toggle-thumb-size) - 2px))"
-                : "translateX(2px)",
+              width: 20,
+              height: 20,
+              transform: checked ? "translateX(18px)" : "translateX(2px)",
             }}
           />
         </button>

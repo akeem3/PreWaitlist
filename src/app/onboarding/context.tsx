@@ -5,8 +5,8 @@ import { createContext, useCallback, useContext, useState } from "react";
 type Tier = "free" | "pro" | "growth";
 
 interface MilestoneReward {
-  name: string;
-  value: string;
+  threshold: number;
+  label: string;
 }
 
 interface Question {

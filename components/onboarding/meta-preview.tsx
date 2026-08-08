@@ -3,6 +3,7 @@ interface MetaPreviewProps {
   subheadline: string;
   ctaText: string;
   slug: string;
+  brandColor?: string;
 }
 
 export default function MetaPreview({
@@ -10,6 +11,7 @@ export default function MetaPreview({
   subheadline,
   ctaText,
   slug,
+  brandColor = "#0F7A5E",
 }: MetaPreviewProps) {
   const liveUrl = slug
     ? `${slug}.prewaitlist.com`
@@ -35,7 +37,10 @@ export default function MetaPreview({
               Enter your email
             </span>
           </div>
-          <div className="h-7 shrink-0 rounded bg-accent px-3">
+          <div
+            className="h-7 shrink-0 rounded px-3"
+            style={{ backgroundColor: brandColor }}
+          >
             <span className="text-[10px] leading-7 font-medium text-white whitespace-nowrap">
               {ctaText || "Join Waitlist"}
             </span>

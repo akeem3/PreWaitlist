@@ -8,9 +8,9 @@ import { Toggle } from "../../../../components/ui/toggle";
 import MetaPreview from "../../../../components/onboarding/meta-preview";
 
 const DEFAULT_REWARDS = [
-  { name: "Refer 3 friends", value: "" },
-  { name: "Refer 10 friends", value: "" },
-  { name: "Refer 25 friends", value: "" },
+  { threshold: 3, label: "" },
+  { threshold: 10, label: "" },
+  { threshold: 25, label: "" },
 ];
 
 const MILESTONE_REWARD_PLACEHOLDERS = [
@@ -20,6 +20,17 @@ const MILESTONE_REWARD_PLACEHOLDERS = [
 ];
 
 const HEX_REGEX = /^#[0-9A-Fa-f]{6}$/;
+
+const PRESET_COLORS = [
+  { hex: "#0F7A5E", label: "Jade" },
+  { hex: "#2563EB", label: "Blue" },
+  { hex: "#7C3AED", label: "Purple" },
+  { hex: "#DC2626", label: "Red" },
+  { hex: "#EA580C", label: "Orange" },
+  { hex: "#DB2777", label: "Pink" },
+  { hex: "#92400E", label: "Brown" },
+  { hex: "#1E293B", label: "Navy" },
+];
 
 export default function OnboardingStep3() {
   const router = useRouter();
@@ -117,14 +128,51 @@ export default function OnboardingStep3() {
     [form]
   );
 
-  const handleRewardChange = useCallback((index: number, value: string) => {
+  const handleRewardChange = useCallback((index: number, label: string) => {
     setRewards((prev) => {
       const next = [...prev];
-      next[index] = { ...next[index], value };
+      next[index] = { ...next[index], label };
       return next;
     });
     setMilestoneErrors([]);
   }, []);
+
+  const handleThresholdChange = useCallback((index: number, value: string) => {
+    const num = parseInt(value, 10);
+    setRewards((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], threshold: isNaN(num) ? 0 : num };
+      return next;
+    });
+    setMilestoneErrors([]);
+  }, []);
+
+  const handleAddTier = useCallback(() => {
+    setRewards((prev) => {
+      if (prev.length >= 5) return prev;
+      const lastThreshold =
+        prev.length > 0 ? prev[prev.length - 1].threshold : 0;
+      return [...prev, { threshold: lastThreshold + 5, label: "" }];
+    });
+  }, []);
+
+  const handleRemoveTier = useCallback((index: number) => {
+    setRewards((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((_, i) => i !== index);
+    });
+    setMilestoneErrors([]);
+  }, []);
+
+  // Sync rewards to form context for live preview
+  useEffect(() => {
+    if (milestoneEnabled) {
+      form.updateField("milestoneRewards", rewards);
+    } else {
+      form.updateField("milestoneRewards", []);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rewards, milestoneEnabled]);
 
   const handleMilestoneToggle = useCallback(
     (checked: boolean) => {
@@ -145,11 +193,12 @@ export default function OnboardingStep3() {
 
       if (milestoneEnabled) {
         const emptyRewards = rewards
-          .map((r, i) => (!r.value.trim() ? i : -1))
+          .map((r, i) => (!r.label.trim() ? i : -1))
           .filter((i) => i >= 0);
         if (emptyRewards.length > 0) {
           const errors = emptyRewards.map(
-            (i) => `Reward for "${rewards[i].name}" is required`
+            (i) =>
+              `Reward for "Refer ${rewards[i].threshold} friends" is required`
           );
           setMilestoneErrors(errors);
           return;
@@ -256,6 +305,30 @@ export default function OnboardingStep3() {
         <label className="mb-1 block text-xs text-muted-foreground">
           Brand Color
         </label>
+        {/* Preset swatches */}
+        <div className="mb-2 flex flex-wrap gap-2">
+          {PRESET_COLORS.map((color) => (
+            <button
+              key={color.hex}
+              type="button"
+              title={color.label}
+              onClick={() => {
+                setBrandColor(color.hex);
+                setBrandColorInput(color.hex);
+                setBrandColorError(null);
+                form.updateField("brandColor", color.hex);
+              }}
+              className={`h-8 w-8 rounded-lg border-2 transition-all ${
+                brandColor === color.hex
+                  ? "border-white scale-110 ring-1 ring-black/20"
+                  : "border-border hover:scale-105"
+              }`}
+              style={{ backgroundColor: color.hex }}
+              disabled={isSubmitting}
+            />
+          ))}
+        </div>
+        {/* Hex input */}
         <div className="flex items-center gap-3">
           <div
             className="h-15 w-15 shrink-0 rounded-(--radius-lg) border border-border"
@@ -330,6 +403,7 @@ export default function OnboardingStep3() {
           subheadline={subheadline}
           ctaText={ctaText}
           slug={form.slug}
+          brandColor={brandColor}
         />
       </div>
 
@@ -344,20 +418,77 @@ export default function OnboardingStep3() {
         {milestoneEnabled && (
           <div className="mt-3 flex flex-col gap-3">
             {rewards.map((reward, index) => (
-              <div key={index}>
-                <p className="mb-1 text-xs font-medium text-foreground">
-                  {reward.name}
-                </p>
-                <input
-                  type="text"
-                  value={reward.value}
-                  onChange={(e) => handleRewardChange(index, e.target.value)}
-                  placeholder={MILESTONE_REWARD_PLACEHOLDERS[index]}
-                  disabled={isSubmitting}
-                  className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-15 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
-                />
+              <div key={index} className="flex items-start gap-2">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-muted-foreground">
+                    Refer
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={reward.threshold || ""}
+                    onChange={(e) =>
+                      handleThresholdChange(index, e.target.value)
+                    }
+                    placeholder="3"
+                    disabled={isSubmitting}
+                    className="w-16 rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm text-center placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-muted-foreground">
+                    friends → reward
+                  </label>
+                  <input
+                    type="text"
+                    value={reward.label}
+                    onChange={(e) => handleRewardChange(index, e.target.value)}
+                    placeholder={
+                      MILESTONE_REWARD_PLACEHOLDERS[index] ||
+                      "e.g. Special reward"
+                    }
+                    disabled={isSubmitting}
+                    className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-15 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
+                {rewards.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTier(index)}
+                    disabled={isSubmitting}
+                    className="mt-6 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Remove tier"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path
+                        d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </button>
+                )}
               </div>
             ))}
+            {rewards.length < 5 && (
+              <button
+                type="button"
+                onClick={handleAddTier}
+                disabled={isSubmitting}
+                className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path
+                    d="M7 3V11M3 7H11"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                Add tier
+              </button>
+            )}
             {milestoneErrors.length > 0 && (
               <div className="flex flex-col gap-1">
                 {milestoneErrors.map((error, i) => (

@@ -161,10 +161,22 @@ export default function OnboardingStep1() {
           return;
         }
 
+        // Clear any old persisted state before setting new values
         form.setWaitlistId(data.id);
         form.updateField("slug", slug);
         form.updateField("headline", headline);
         form.updateField("subheadline", subheadline);
+        // Reset to defaults for new onboarding
+        form.updateField("template", "minimal");
+        form.updateField("brandColor", "#0F7A5E");
+        form.updateField("logoUrl", null);
+        form.updateField("ctaText", "Join Waitlist");
+        form.updateField("milestoneRewards", []);
+        form.updateField("qualificationEnabled", false);
+        form.updateField("questions", []);
+        form.updateField("emailSubject", "");
+        form.updateField("emailSenderName", "");
+        form.updateField("emailBody", "");
         router.push("/onboarding/2");
       } catch {
         setSubmitError("Something went wrong. Please try again.");

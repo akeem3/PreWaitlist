@@ -156,5 +156,99 @@ export async function PATCH(request: NextRequest) {
     }
   }
 
+  // Upsert milestone_rewards if provided
+  if (Array.isArray(milestone_rewards)) {
+    // Delete existing rewards for this waitlist
+    await supabase.from("milestone_rewards").delete().eq("waitlist_id", id);
+
+    // Insert new rewards
+    if (milestone_rewards.length > 0) {
+      const rewardRows = milestone_rewards.map(
+        (r: { threshold: number; label: string }) => ({
+          waitlist_id: id,
+          tier_referrals: r.threshold,
+          reward_label: r.label,
+        })
+      );
+
+      const { error: rewardsError } = await supabase
+        .from("milestone_rewards")
+        .insert(rewardRows);
+
+      if (rewardsError) {
+        console.error("Failed to save milestone rewards:", rewardsError);
+        return NextResponse.json(
+          { error: rewardsError.message },
+          { status: 400 }
+        );
+      }
+    }
+  }
+
   return NextResponse.json({ success: true });
+}
+
+export async function GET() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Get the founder's waitlist
+  const { data: waitlist, error: waitlistError } = await supabase
+    .from("waitlists")
+    .select("*")
+    .eq("founder_id", user.id)
+    .single();
+
+  if (waitlistError || !waitlist) {
+    return NextResponse.json({ error: "No waitlist found" }, { status: 404 });
+  }
+
+  // Get milestone rewards
+  const { data: rewards } = await supabase
+    .from("milestone_rewards")
+    .select("tier_referrals, reward_label")
+    .eq("waitlist_id", waitlist.id)
+    .order("tier_referrals", { ascending: true });
+
+  // Get qualification questions
+  const { data: questions } = await supabase
+    .from("qualification_questions")
+    .select("question_text, question_type, sort_order")
+    .eq("waitlist_id", waitlist.id)
+    .order("sort_order", { ascending: true });
+
+  return NextResponse.json({
+    waitlistId: waitlist.id,
+    slug: waitlist.subdomain || "",
+    headline: waitlist.headline || "",
+    subheadline: waitlist.subheadline || "",
+    template: waitlist.template || "minimal",
+    brandColor: waitlist.brand_color || "#0F7A5E",
+    logoUrl: waitlist.logo_url || null,
+    ctaText: waitlist.cta_text || "Join Waitlist",
+    milestoneRewards: rewards
+      ? rewards.map((r) => ({
+          threshold: r.tier_referrals,
+          label: r.reward_label,
+        }))
+      : [],
+    qualificationEnabled: waitlist.qualification_enabled || false,
+    questions: questions
+      ? questions.map((q) => ({
+          text: q.question_text,
+          required: q.question_type === "free_text",
+        }))
+      : [],
+    emailSubject: waitlist.email_subject || "",
+    emailSenderName: waitlist.email_sender_name || "",
+    emailBody: waitlist.email_body || "",
+  });
 }

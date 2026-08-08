@@ -8,7 +8,6 @@ import { Input } from "../../../../components/ui/input";
 
 interface Question {
   text: string;
-  required: boolean;
 }
 
 function get_max_questions(tier: string): number {
@@ -26,12 +25,7 @@ export default function OnboardingStep4a() {
   const router = useRouter();
   const form = useOnboardingForm();
   const [questions, setQuestions] = useState<Question[]>(
-    form.questions.length > 0
-      ? form.questions
-      : [
-          { text: "", required: false },
-          { text: "", required: false },
-        ]
+    form.questions.length > 0 ? form.questions : [{ text: "" }, { text: "" }]
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -59,17 +53,14 @@ export default function OnboardingStep4a() {
       router.push("/dashboard?upgrade=true");
       return;
     }
-    setQuestions((prev) => [...prev, { text: "", required: false }]);
+    setQuestions((prev) => [...prev, { text: "" }]);
   }, [at_cap, router]);
 
-  const handle_update_question = useCallback(
-    (index: number, field: keyof Question, value: string | boolean) => {
-      setQuestions((prev) =>
-        prev.map((q, i) => (i === index ? { ...q, [field]: value } : q))
-      );
-    },
-    []
-  );
+  const handle_update_question = useCallback((index: number, value: string) => {
+    setQuestions((prev) =>
+      prev.map((q, i) => (i === index ? { text: value } : q))
+    );
+  }, []);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -108,12 +99,12 @@ export default function OnboardingStep4a() {
       {/* Page header */}
       <div className="mb-2">
         <p className="text-xs font-medium text-accent">Step 4 of 5</p>
-        <p className="text-sm text-muted-foreground">Name your waitlist</p>
+        <p className="text-sm text-muted-foreground">Qualification questions</p>
       </div>
 
-      <h1 className="mb-2 text-h2">What are you building?</h1>
+      <h1 className="mb-2 text-h2">Qualify your leads</h1>
       <p className="mb-6 text-body text-muted-foreground">
-        Your page goes live as you type.
+        Ask questions to understand who&apos;s serious about your product.
       </p>
 
       {/* Tier badge */}
@@ -134,30 +125,12 @@ export default function OnboardingStep4a() {
               Question {index + 1}
             </span>
             <Input
-              placeholder="Type your question..."
+              placeholder='e.g. "What are you currently using?"'
               value={question.text}
-              onChange={(e) =>
-                handle_update_question(index, "text", e.target.value)
-              }
+              onChange={(e) => handle_update_question(index, e.target.value)}
               disabled={isSubmitting}
             />
-            <div className="flex items-center gap-2">
-              <select
-                value={question.required ? "required" : "optional"}
-                onChange={(e) =>
-                  handle_update_question(
-                    index,
-                    "required",
-                    e.target.value === "required"
-                  )
-                }
-                disabled={isSubmitting}
-                className="rounded-md border border-border bg-card px-3 py-1.5 text-sm text-foreground focus:border-accent focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="optional">Multiple Choice</option>
-                <option value="required">Free Text</option>
-              </select>
-            </div>
+            <span className="text-xs text-warning">(optional)</span>
           </div>
         ))}
 
@@ -168,7 +141,7 @@ export default function OnboardingStep4a() {
           disabled={isSubmitting}
           className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-accent py-3 text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
         >
-          + Add new question — Upgrade to Pro for up to 5 →
+          + Add new question — Free tier: 2 max
         </button>
       </div>
 
@@ -177,7 +150,7 @@ export default function OnboardingStep4a() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex h-14.75 w-full items-center justify-center rounded--md bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50 md:w-114.5"
+          className="inline-flex h-14.75 w-full items-center justify-center rounded-[13px] bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50 md:w-114.5"
         >
           {isSubmitting ? (
             <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />

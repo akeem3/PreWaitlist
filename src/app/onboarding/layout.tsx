@@ -1,8 +1,23 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { LivePreview } from "../../../components/onboarding/live-preview";
+import dynamic from "next/dynamic";
 import { OnboardingFormProvider, useOnboardingForm } from "./context";
+
+const LivePreview = dynamic(
+  () =>
+    import("../../../components/onboarding/live-preview").then(
+      (mod) => mod.LivePreview
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-64 items-center justify-center rounded-lg border border-border bg-card">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+      </div>
+    ),
+  }
+);
 
 const STEPS = [
   { num: 1, label: "Name", href: "/onboarding/1" },

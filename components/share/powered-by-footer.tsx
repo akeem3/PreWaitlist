@@ -5,9 +5,13 @@ type Template = "minimal" | "bold" | "dark";
 
 interface PoweredByFooterProps {
   template: Template;
+  brandColor?: string;
 }
 
-export function PoweredByFooter({ template }: PoweredByFooterProps) {
+export function PoweredByFooter({
+  template,
+  brandColor,
+}: PoweredByFooterProps) {
   const isDark = template === "dark";
 
   return (
@@ -18,7 +22,10 @@ export function PoweredByFooter({ template }: PoweredByFooterProps) {
           : "border-t border-border"
       }`}
     >
-      <Link href="/" className="inline-flex items-center gap-1 no-underline">
+      <Link
+        href="/?ref=powered-by"
+        className="inline-flex items-center gap-1 no-underline"
+      >
         <span
           className={isDark ? "text-muted-foreground" : "text-muted-foreground"}
         >
@@ -26,12 +33,11 @@ export function PoweredByFooter({ template }: PoweredByFooterProps) {
         </span>
         <Image
           src="/PreWaitlist-logo.svg"
-          alt=""
-          width={16}
-          height={16}
+          alt="PreWaitlist"
+          width={90}
+          height={31}
           className="inline-block"
         />
-        <span className="font-medium text-accent">PreWaitlist</span>
       </Link>
     </div>
   );
