@@ -22,23 +22,29 @@ export function PoweredByFooter({
           : "border-t border-border"
       }`}
     >
-      <Link
-        href="/?ref=powered-by"
-        className="inline-flex items-center gap-1 no-underline"
-      >
-        <span
-          className={isDark ? "text-muted-foreground" : "text-muted-foreground"}
+      <span className="inline-flex items-center gap-1">
+        <Link
+          href="/?ref=powered-by"
+          className="inline-flex items-center gap-1 no-underline"
         >
-          Powered by
-        </span>
-        <Image
-          src="/PreWaitlist-logo.svg"
-          alt="PreWaitlist"
-          width={90}
-          height={31}
-          className="inline-block"
-        />
-      </Link>
+          <span
+            className={
+              isDark ? "text-muted-foreground" : "text-muted-foreground"
+            }
+          >
+            Powered by
+          </span>
+        </Link>
+        <Link href="/" className="inline-flex items-center no-underline">
+          <Image
+            src="/PreWaitlist-logo.svg"
+            alt="PreWaitlist"
+            width={90}
+            height={31}
+            className="inline-block"
+          />
+        </Link>
+      </span>
     </div>
   );
 }

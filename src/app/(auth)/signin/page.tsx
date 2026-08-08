@@ -78,14 +78,31 @@ export default function SigninPage() {
 
     const { data: waitlist } = await supabase
       .from("waitlists")
-      .select("id")
+      .select("id, subdomain, headline, template, brand_color, email_subject")
       .eq("founder_id", data.user.id)
       .single();
 
-    if (waitlist) {
-      router.push("/dashboard");
-    } else {
+    if (!waitlist) {
       router.push("/onboarding/1");
+      return;
+    }
+
+    // Check if onboarding is complete
+    const hasSlug = Boolean(waitlist.subdomain);
+    const hasHeadline = Boolean(waitlist.headline);
+    const hasTemplate = Boolean(waitlist.template);
+    const hasBrandColor = Boolean(waitlist.brand_color);
+    const hasEmailSetup = Boolean(waitlist.email_subject);
+
+    if (!hasSlug || !hasHeadline || !hasTemplate || !hasBrandColor) {
+      // Onboarding not complete — resume from step 1
+      router.push("/onboarding/1");
+    } else if (!hasEmailSetup) {
+      // Email setup not complete — go to step 5
+      router.push("/onboarding/5");
+    } else {
+      // All onboarding complete — go to dashboard
+      router.push("/dashboard");
     }
   }
 
