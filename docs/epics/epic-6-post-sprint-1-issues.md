@@ -40,27 +40,34 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 **Design Refs:** `docs/design/High-fidelity-svgs/Step 3 - Make it Yours.svg`
 **Story:** As the founder, I want users to experience my product before signing up (Hopkins' sampling) and display a real-time signup counter for social proof, so that conversion is maximized through product experience and social proof.
 
+**Key clarification — Signup Counter behavior:**
+
+- The counter displays the **real number of actual signups** from the database — it is NOT a target or goal
+- The founder sets a **threshold** for when to START displaying it (e.g., "show when I have 10+ signups") to avoid showing embarrassing low numbers on day one
+- The public sees the real count (e.g., "1,189 people in line") — this is social proof based on actual demand, not a fabricated number
+- The counter updates as people actually sign up — no fake/padded/estimated numbers ever
+
 **Acceptance Criteria (EARS):**
 
 - AC1: Steps 1-3 (Name, Template, Customise) shall run without authentication, storing state in localStorage only.
 - AC2: After Step 3, the system shall display a "Create an account to save your progress" prompt before proceeding to Step 4.
 - AC3: On signup/login, the system shall flush localStorage state to the API and continue from the appropriate step.
 - AC4: The signup counter shall be a founder toggle in Step 3 (Make It Yours), OFF by default.
-- AC5: When enabled, the signup counter shall display the real subscriber count on the public waitlist page.
-- AC6: The counter shall hide when count is below 10 (avoid embarrassing low numbers).
-- AC7: The counter must always show real data — never seeded, padded, or estimated.
+- AC5: The founder shall be able to set a display threshold (e.g., 10, 50, 100) — the counter only appears when real signups meet or exceed this number.
+- AC6: When enabled and threshold is met, the signup counter shall display the real subscriber count on the public waitlist page (e.g., "1,189 people in line").
+- AC7: The counter must always show real data from the database — never seeded, padded, estimated, or fabricated.
 - AC8: The counter endpoint shall be rate-limited (60 req/min per IP) and server-side only.
 - AC9: Lint and build shall pass with zero errors.
 
 **Tasks:** T1 (AC1-AC3) Implement Hopkins' sampling flow · T2 (AC4-AC8) Implement signup counter · T3 (AC9) Run lint + build
 
-**Out of scope:** Real-time counter updates via WebSocket (use polling), fake/social proof numbers, visual copying of reference image (red accent/slider).
+**Out of scope:** Real-time counter updates via WebSocket (use polling), fake/social proof numbers, visual copying of reference image (red accent/slider), target/goal counters (this is a display-only counter of real signups).
 
 **Dev Notes:**
 
 - T1: Hopkins' sampling — Steps 1-3 store in localStorage only, no API calls. After Step 3, show signup prompt. On signup, flush localStorage to API. Login redirect checks: if no waitlist → Step 1, if incomplete → resume step. Files: `src/app/onboarding/context.tsx`, `src/app/onboarding/1/page.tsx`, `src/app/onboarding/2/page.tsx`, `src/app/onboarding/3/page.tsx`, `src/app/onboarding/4/page.tsx`, `src/app/(auth)/signup/page.tsx`, `src/app/auth/callback/route.ts`.
-- T2: Signup counter — Toggle in Step 3 next to milestone rewards. GET /api/waitlist/count endpoint. Atomic counter in database. Rate limiting. Hide when <10. Files: `src/app/onboarding/3/page.tsx`, `src/app/api/waitlist/route.ts`, `src/app/(public)/[subdomain]/page.tsx`, `components/onboarding/live-preview.tsx`.
-- T3: Database: Add `signup_counter_enabled` column to waitlists table.
+- T2: Signup counter — Toggle in Step 3 next to milestone rewards. Threshold input (positive integer) for minimum display count. GET /api/waitlist/count endpoint returns real count from database. Counter only visible when `count >= threshold`. Rate limiting (60 req/min per IP). Atomic counter in same transaction as insert. Files: `src/app/onboarding/3/page.tsx`, `src/app/api/waitlist/route.ts`, `src/app/(public)/[subdomain]/page.tsx`, `components/onboarding/live-preview.tsx`.
+- T3: Database: Add `signup_counter_enabled` (boolean, default false) and `signup_counter_threshold` (integer, default 10) columns to waitlists table.
 
 ---
 
