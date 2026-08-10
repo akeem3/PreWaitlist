@@ -54,19 +54,27 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - AC3: On signup/login, the system shall flush localStorage state to the API and continue from the appropriate step.
 - AC4: The signup counter shall be a founder toggle in Step 3 (Make It Yours), OFF by default.
 - AC5: The founder shall be able to set a display threshold (e.g., 10, 50, 100) — the counter only appears when real signups meet or exceed this number.
-- AC6: When enabled and threshold is met, the signup counter shall display the real subscriber count on the public waitlist page (e.g., "1,189 people in line").
+- AC6: When enabled and threshold is met, the signup counter shall display the real subscriber count on the public waitlist page (e.g., "1,189 people in line"). The endpoint shall return `{count, visible}` where `visible` is true only when `count >= threshold`.
 - AC7: The counter must always show real data from the database — never seeded, padded, estimated, or fabricated.
 - AC8: The counter endpoint shall be rate-limited (60 req/min per IP) and server-side only.
 - AC9: Lint and build shall pass with zero errors.
 
-**Tasks:** T1 (AC1-AC3) Implement Hopkins' sampling flow · T2 (AC4-AC8) Implement signup counter · T3 (AC9) Run lint + build
+**Tasks:** T1 (AC1-AC3) Implement Hopkins' sampling flow with OAuthFlush · T2 (AC4-AC8) Implement signup counter with threshold · T3 (AC9) Run lint + build
 
 **Out of scope:** Real-time counter updates via WebSocket (use polling), fake/social proof numbers, visual copying of reference image (red accent/slider), target/goal counters (this is a display-only counter of real signups).
 
+**Architecture Decisions:**
+
+1. **Signup Counter — No Subscribers Table Yet:** Count from `subscribers` table when it exists (Sprint 2), return `{count: 0, visible: false}` when it doesn't. Don't add a denormalized counter column — creates sync bugs. The endpoint queries `subscribers` table; when Sprint 2 creates it, the query works automatically with no migration needed. Rate limit: 60 req/min per IP. Return `visible: false` when count < threshold so frontend never interprets thresholds.
+
+2. **OAuth Flush — Client-Side:** Client-side `OAuthFlush` component in onboarding layout. OAuth Callback (server) sets session cookie → redirects to `/onboarding/4` → `OAuthFlush` component (client) reads localStorage → POSTs to API → clears storage. If flush fails, localStorage preserved for retry. Place in `src/app/onboarding/layout.tsx`.
+
+3. **Deferred Record Creation:** localStorage-only Steps 1-3, flush on auth. Steps 1-3 never call API — just store in localStorage via context. After Step 3, show signup prompt. On signup, set cookie `auth_redirect_to=/onboarding/4`. OAuthFlush component reads localStorage, POSTs to API, clears storage. Flow: Step 1 → localStorage → Step 2 → localStorage → Step 3 → localStorage → Signup Prompt → OAuth → Auth Callback → OAuthFlush → API.
+
 **Dev Notes:**
 
-- T1: Hopkins' sampling — Steps 1-3 store in localStorage only, no API calls. After Step 3, show signup prompt. On signup, flush localStorage to API. Login redirect checks: if no waitlist → Step 1, if incomplete → resume step. Files: `src/app/onboarding/context.tsx`, `src/app/onboarding/1/page.tsx`, `src/app/onboarding/2/page.tsx`, `src/app/onboarding/3/page.tsx`, `src/app/onboarding/4/page.tsx`, `src/app/(auth)/signup/page.tsx`, `src/app/auth/callback/route.ts`.
-- T2: Signup counter — Toggle in Step 3 next to milestone rewards. Threshold input (positive integer) for minimum display count. GET /api/waitlist/count endpoint returns real count from database. Counter only visible when `count >= threshold`. Rate limiting (60 req/min per IP). Atomic counter in same transaction as insert. Files: `src/app/onboarding/3/page.tsx`, `src/app/api/waitlist/route.ts`, `src/app/(public)/[subdomain]/page.tsx`, `components/onboarding/live-preview.tsx`.
+- T1: Hopkins' sampling — Steps 1-3 store in localStorage only, no API calls. After Step 3, show signup prompt. On signup, flush localStorage to API via OAuthFlush component. Login redirect checks: if no waitlist → Step 1, if incomplete → resume step. Files: `src/app/onboarding/context.tsx`, `src/app/onboarding/1/page.tsx`, `src/app/onboarding/2/page.tsx`, `src/app/onboarding/3/page.tsx`, `src/app/onboarding/4/page.tsx`, `src/app/(auth)/signup/page.tsx`, `src/app/auth/callback/route.ts`, `src/app/onboarding/layout.tsx`, `src/components/auth/oauth-flush.tsx` (new).
+- T2: Signup counter — Toggle in Step 3 next to milestone rewards. Threshold input (positive integer) for minimum display count. GET /api/waitlist/count endpoint returns real count from subscribers table. Counter only visible when `count >= threshold`. Rate limiting (60 req/min per IP). Atomic counter in same transaction as insert. Files: `src/app/onboarding/3/page.tsx`, `src/app/api/waitlist/route.ts`, `src/app/api/waitlist/count/route.ts` (new), `src/app/(public)/[subdomain]/page.tsx`, `components/onboarding/live-preview.tsx`.
 - T3: Database: Add `signup_counter_enabled` (boolean, default false) and `signup_counter_threshold` (integer, default 10) columns to waitlists table.
 
 ---
