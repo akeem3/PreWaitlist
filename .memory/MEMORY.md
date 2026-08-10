@@ -697,3 +697,89 @@ canonical. The API routes (`POST /api/updates`) and auth callback logic
 | 12  | Milestone knob right                                                                                         | Open     | —                                                                                                                                                                                                                                                         |
 | 13  | Optional questions visible                                                                                   | Open     | —                                                                                                                                                                                                                                                         |
 | 14  | Email customisation GIF (needs design asset)                                                                 | Open     | —                                                                                                                                                                                                                                                         |
+| 15  | Move signup to after Step 3 (Hopkins' sampling)                                                              | **New**  | `src/app/onboarding/context.tsx`, `src/app/(auth)/signup/page.tsx`, `src/app/auth/callback/route.ts`                                                                                                                                                      |
+| 16  | Signup counter bar (social proof)                                                                            | **New**  | `src/app/(public)/[subdomain]/page.tsx`, `components/onboarding/live-preview.tsx`, `src/app/onboarding/3/page.tsx`                                                                                                                                        |
+
+### Issue #15: Move Signup to After Step 3 (Hopkins' Sampling) — 2026-08-10
+
+**Status:** NEW — High Priority
+
+**The Problem:** Current flow asks for signup before user experiences the product. This violates Hopkins' rule of sampling — users should experience the product first, making signup a natural action.
+
+**The Solution (practical middle path):**
+
+- Don't rebuild the whole flow — just move where the signup wall sits
+- Steps 1-3 (name, template, customize) run WITHOUT auth using localStorage
+- Prompt signup BEFORE Step 4 — framed as "create an account to save this and keep going"
+- Step 4+ (qualification, email setup) needs auth because tier-gated
+
+**Why it works:**
+
+- Hopkins' principle: "Let the product sell itself through free trials"
+- Data: 47% of consumers who try via sampling end up purchasing
+- Early access converts 30-50% vs waitlist's 5-15%
+- Tally example: "Create a free form — No signup required" → 500K+ users
+
+**Implementation approach:**
+
+1. Steps 1-3 store state in localStorage only (no API calls)
+2. After Step 3, show "Save your progress" → Signup/Login
+3. On signup, flush localStorage to API
+4. Continue with Step 4-5 (requires auth)
+5. Login redirect checks: if no waitlist → Step 1, if incomplete → resume step
+
+**Risk:** User abandons after Step 3 but before signup (localStorage only, no DB record). Mitigation: show "You'll lose progress" warning.
+
+**Files to modify:**
+
+- `src/app/onboarding/context.tsx` — localStorage-only mode for Steps 1-3
+- `src/app/onboarding/1/page.tsx` — Skip API call, store in localStorage
+- `src/app/onboarding/2/page.tsx` — Skip API call, store in localStorage
+- `src/app/onboarding/3/page.tsx` — Skip API call, store in localStorage
+- `src/app/onboarding/4/page.tsx` — Add signup prompt before continuing
+- `src/app/(auth)/signup/page.tsx` — Handle localStorage flush on signup
+- `src/app/auth/callback/route.ts` — Handle localStorage flush on OAuth
+
+### Issue #16: Signup Counter Bar (Social Proof) — 2026-08-10
+
+**Status:** NEW — High Priority
+
+**The Research:** Live signup counters outperform vague claims. Proof placed next to signup form reduces "is this real?" hesitation at the moment of decision. Low build cost — data pipeline already exists.
+
+**Key Guardrails (from Claude chat advice):**
+
+1. **Cold-start problem:** A brand-new waitlist showing "3 people in line" actively hurts. Make it a founder toggle, OFF by default — founder chooses when to turn it on.
+
+2. **Must be real, always:** Never seed, pad, or estimate. Fake counters are "detectable in three seconds by anyone who's seen one before." This is Hopkins' rule restated.
+
+3. **Don't copy the reference literally:** Red accent and slider don't belong (conflicts with single-jade-accent rule). Treat as "confirms the concept is worth having," not visual reference.
+
+4. **Queue-position display** ("You're #157 in line") is already built post-signup — that's the higher-leverage mechanic. Total-count counter is the smaller, easier piece.
+
+**Implementation approach:**
+
+- Toggle in Step 3 (Make It Yours), next to milestone rewards toggle, OFF by default
+- Pull live count from same subscriber data backing post-signup position display
+- Hide when <10 signups (avoid embarrassing low numbers)
+- Server-side only endpoint: `GET /api/waitlist/count`
+- Atomic counter in database (increment on insert)
+- Rate limit: 60 req/min per IP
+- Cache count (don't COUNT(*) on every request)
+
+**Security layers:**
+
+1. Server-side only count endpoint (never expose Supabase directly)
+2. Atomic counter in same transaction as insert
+3. Honeypot field + timestamp validation (reject <2s submissions)
+4. Rate limiting (5-10 signups per IP per hour)
+5. Email validation (syntax + disposable blocklist + MX check)
+
+**Files to modify:**
+
+- `src/app/onboarding/3/page.tsx` — Add counter toggle (next to milestone rewards)
+- `src/app/api/waitlist/route.ts` — Add GET /api/waitlist/count endpoint
+- `src/app/(public)/[subdomain]/page.tsx` — Display counter on public waitlist page
+- `components/onboarding/live-preview.tsx` — Show counter in preview when enabled
+- Database: Add `signup_counter_enabled` column to waitlists table
+
+**PRD ref:** New requirement — worth writing up as REQ-6.8.x (counter toggle in Step 3).
