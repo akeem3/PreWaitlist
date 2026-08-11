@@ -187,8 +187,9 @@ export function LocalOnboardingProvider({
     return initialState;
   });
 
-  // Persist to localStorage on every change
+  // Persist to localStorage on every change (skip if server owns the data)
   useEffect(() => {
+    if (state.waitlistId) return; // flushToAPI set the ID — server is authoritative
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersisted(state)));
     } catch {

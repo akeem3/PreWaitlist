@@ -34,8 +34,8 @@ export default function OnboardingStep1() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [usedFallback, setUsedFallback] = useState(false);
 
-  // Compute resume prompt state during initial render (no effect needed)
-  const [resumeState] = useState(() => {
+  // Compute resume prompt state during initial render
+  const [resumeState, setResumeState] = useState(() => {
     if (hasStaleDraft()) {
       try {
         const raw = localStorage.getItem("prewaitlist_onboarding");
@@ -204,11 +204,12 @@ export default function OnboardingStep1() {
     slug && slugStatus !== "checking" && slugStatus !== "unavailable";
 
   const handleResume = useCallback(() => {
+    setResumeState((s) => ({ ...s, show: false }));
     // Session flag is already set by LocalOnboardingProvider on mount
-    // Prompt dismissal handled by CSS (resumeState.show is immutable)
   }, []);
 
   const handleStartFresh = useCallback(() => {
+    setResumeState((s) => ({ ...s, show: false }));
     if ("clearDraft" in form) {
       form.clearDraft();
     }
