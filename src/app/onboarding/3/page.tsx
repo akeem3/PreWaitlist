@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useOnboardingForm } from "../context";
 import { Toggle } from "../../../../components/ui/toggle";
 import MetaPreview from "../../../../components/onboarding/meta-preview";
+import { createClient } from "../../../../src/lib/supabase/client";
 
 const DEFAULT_REWARDS = [
   { threshold: 3, label: "" },
@@ -36,6 +37,7 @@ export default function OnboardingStep3() {
   const router = useRouter();
   const form = useOnboardingForm();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const supabase = createClient();
 
   const [headline, setHeadline] = useState(form.headline);
   const [subheadline, setSubheadline] = useState(form.subheadline);
@@ -241,7 +243,34 @@ export default function OnboardingStep3() {
         form.updateField("milestoneRewards", milestoneEnabled ? rewards : []);
         form.updateField("signupCounterEnabled", signupCounterEnabled);
         form.updateField("signupCounterThreshold", signupCounterThreshold);
-        // Redirect to signup prompt (Hopkins' sampling — experience first, signup after)
+
+        // Check if user is already authenticated
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          // Already authenticated — flush directly to server, skip signup
+          if ("flushToAPI" in form) {
+            const waitlistId = await form.flushToAPI();
+            if (waitlistId) {
+              router.push("/onboarding/4");
+              return;
+            }
+          }
+          // Flush failed — try direct server check
+          try {
+            const res = await fetch("/api/waitlist");
+            if (res.ok) {
+              router.push("/onboarding/4");
+              return;
+            }
+          } catch {
+            // Fall through to signup
+          }
+        }
+
+        // Not authenticated — go to signup page
         router.push("/onboarding/signup");
       } catch {
         setIsSubmitting(false);
@@ -261,6 +290,7 @@ export default function OnboardingStep3() {
       signupCounterEnabled,
       signupCounterThreshold,
       router,
+      supabase,
     ]
   );
 

@@ -51,17 +51,19 @@ function mapServerToState(
  * FlushGate resolves server state once on mount, then renders children inside
  * AuthedOnboardingProvider.
  *
- * - If localStorage has data: POST it to create the waitlist, then GET the
- *   full record, then clear localStorage.
- * - If localStorage is empty: GET the existing waitlist.
- * - If 404: redirect to Step 1 (deleted account edge case).
- * - Shows a skeleton while resolving.
+ * Ordering: POST (if local data) → confirm 2xx → GET full record → confirm
+ * success → only then clear localStorage. Any failure preserves local data
+ * and shows a retry UI.
+ *
+ * - If 404 from GET with no local data: redirect to Step 1 (truly fresh).
+ * - Shows a branded spinner while resolving, retry button on failure.
  */
 export function FlushGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [serverState, setServerState] = useState<OnboardingFormState | null>(
     null
   );
+  const [status, setStatus] = useState<"loading" | "error">("loading");
 
   useEffect(() => {
     let cancelled = false;
@@ -73,10 +75,8 @@ export function FlushGate({ children }: { children: React.ReactNode }) {
         (stored.slug || stored.headline || stored.template !== "minimal");
 
       try {
-        let res: Response;
-
+        // Step 1: POST local data to server (if any)
         if (hasLocalData) {
-          // Phase A → Phase B: flush localStorage to server
           const { waitlistId: _, loading: __, ...edits } = stored;
           void _;
           void __;
@@ -104,43 +104,54 @@ export function FlushGate({ children }: { children: React.ReactNode }) {
             }),
           });
 
-          if (!cancelled) {
-            localStorage.removeItem(STORAGE_KEY);
-          }
+          if (cancelled) return;
 
           if (!postRes.ok) {
-            // POST failed — try GET as fallback (waitlist may already exist)
-            res = await fetch("/api/waitlist");
-          } else {
-            // POST succeeded — GET the full record (POST only returns { id })
-            res = await fetch("/api/waitlist");
+            // POST failed — show retry, local data preserved
+            if (!cancelled) setStatus("error");
+            return;
           }
-        } else {
-          // No local data — fetch existing server state
-          res = await fetch("/api/waitlist");
         }
+
+        // Step 2: GET the full record (works for both flushed and existing)
+        const getRes = await fetch("/api/waitlist");
 
         if (cancelled) return;
 
-        if (res.status === 404) {
+        // 404 with no local data → truly fresh user, go to Step 1
+        if (getRes.status === 404 && !hasLocalData) {
           router.replace("/onboarding/1");
           return;
         }
 
-        if (!res.ok) {
-          // Fail open — render with empty state
-          setServerState(initialState);
+        // 404 with local data → POST failed to create (shouldn't happen, but handle)
+        if (getRes.status === 404) {
+          if (!cancelled) setStatus("error");
           return;
         }
 
-        const record = await res.json();
+        if (!getRes.ok) {
+          if (!cancelled) setStatus("error");
+          return;
+        }
+
+        const record = await getRes.json();
+
+        // Step 3: Only clear localStorage after both POST+GET succeeded
+        if (hasLocalData && !cancelled) {
+          try {
+            localStorage.removeItem(STORAGE_KEY);
+          } catch {
+            // Ignore — worst case data is duplicated, not lost
+          }
+        }
+
         if (!cancelled) {
           setServerState(mapServerToState(record));
         }
       } catch {
         if (!cancelled) {
-          // Fail open
-          setServerState(initialState);
+          setStatus("error");
         }
       }
     }
@@ -150,7 +161,28 @@ export function FlushGate({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (status === "error") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+        <p className="text-sm text-muted-foreground">
+          Something went wrong loading your waitlist.
+        </p>
+        <button
+          onClick={() => {
+            setStatus("loading");
+            // Re-trigger effect by toggling a key — simplest approach
+            window.location.reload();
+          }}
+          className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
 
   if (!serverState) {
     return (
@@ -166,25 +198,3 @@ export function FlushGate({ children }: { children: React.ReactNode }) {
     </AuthedOnboardingProvider>
   );
 }
-
-// Fallback state for error cases
-const initialState: OnboardingFormState = {
-  waitlistId: null,
-  slug: "",
-  headline: "",
-  subheadline: "",
-  template: "minimal",
-  brandColor: "#0F7A5E",
-  logoUrl: null,
-  ctaText: "Join Waitlist",
-  milestoneRewards: [],
-  qualificationEnabled: false,
-  questions: [],
-  signupCounterEnabled: false,
-  signupCounterThreshold: 10,
-  emailSubject: "",
-  emailSenderName: "",
-  emailBody: "",
-  tier: "free",
-  loading: false,
-};

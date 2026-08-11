@@ -57,6 +57,7 @@ interface LocalOnboardingFormContextValue extends OnboardingFormState {
   setLoading: (loading: boolean) => void;
   flushToAPI: () => Promise<string | null>;
   clearPersisted: () => void;
+  clearDraft: () => void;
 }
 
 // Methods available on AuthedOnboardingProvider (Phase B)
@@ -77,6 +78,7 @@ type OnboardingFormContextValue =
 // ---------------------------------------------------------------------------
 
 const STORAGE_KEY = "prewaitlist_onboarding";
+const SESSION_FLAG_KEY = "prewaitlist_onboarding_active";
 const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 const initialState: OnboardingFormState = {
@@ -127,6 +129,34 @@ function toPersisted(state: OnboardingFormState) {
   return { ...rest, _ts: Date.now() };
 }
 
+// Session flag: tracks whether user is actively in onboarding in this tab.
+// If localStorage has data but no session flag → cold landing with stale draft.
+function setSessionFlag() {
+  try {
+    sessionStorage.setItem(SESSION_FLAG_KEY, "1");
+  } catch {
+    // Ignore
+  }
+}
+
+export function hasActiveSession(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return sessionStorage.getItem(SESSION_FLAG_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function hasStaleDraft(): boolean {
+  if (typeof window === "undefined") return false;
+  const stored = readStoredData();
+  if (!stored) return false;
+  const hasData =
+    stored.slug || stored.headline || stored.template !== "minimal";
+  return Boolean(hasData) && !hasActiveSession();
+}
+
 // ---------------------------------------------------------------------------
 // Context
 // ---------------------------------------------------------------------------
@@ -150,6 +180,8 @@ export function LocalOnboardingProvider({
   const [state, setState] = useState<OnboardingFormState>(() => {
     const stored = readStoredData();
     if (stored) {
+      // Mark this tab as actively in onboarding
+      setSessionFlag();
       return { ...initialState, ...stored, loading: false };
     }
     return initialState;
@@ -163,6 +195,31 @@ export function LocalOnboardingProvider({
       // Silent fail
     }
   }, [state]);
+
+  // Cross-tab sync: re-hydrate when another tab writes to the same key
+  useEffect(() => {
+    function handleStorage(e: StorageEvent) {
+      if (e.key !== STORAGE_KEY) return;
+      if (e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          const { waitlistId: _, loading: __, _ts: ___, ...data } = parsed;
+          void _;
+          void __;
+          void ___;
+          setState((s) => ({ ...s, ...data }));
+        } catch {
+          // Ignore malformed data from other tab
+        }
+      } else {
+        // Key was removed in another tab
+        setState(initialState);
+      }
+    }
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
 
   const updateField = useCallback(
     <K extends keyof OnboardingFormState>(
@@ -252,6 +309,17 @@ export function LocalOnboardingProvider({
     setState(initialState);
   }, []);
 
+  const clearDraft = useCallback(() => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(SESSION_FLAG_KEY);
+    } catch {
+      // Ignore
+    }
+    setState(initialState);
+  }, []);
+
   const value = useMemo(
     () => ({
       ...state,
@@ -260,8 +328,17 @@ export function LocalOnboardingProvider({
       setLoading,
       flushToAPI,
       clearPersisted,
+      clearDraft,
     }),
-    [state, updateField, setWaitlistId, setLoading, flushToAPI, clearPersisted]
+    [
+      state,
+      updateField,
+      setWaitlistId,
+      setLoading,
+      flushToAPI,
+      clearPersisted,
+      clearDraft,
+    ]
   );
 
   return (

@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useOnboardingForm } from "../context";
+import { useOnboardingForm, hasStaleDraft } from "../context";
+import { createClient } from "../../../../src/lib/supabase/client";
 
 type SlugStatus = "idle" | "checking" | "available" | "unavailable" | "error";
 
@@ -22,6 +23,7 @@ function generateFallbackSlug(): string {
 export default function OnboardingStep1() {
   const router = useRouter();
   const form = useOnboardingForm();
+  const supabase = createClient();
 
   const [headline, setHeadline] = useState(form.headline);
   const [subheadline, setSubheadline] = useState(form.subheadline);
@@ -32,8 +34,49 @@ export default function OnboardingStep1() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [usedFallback, setUsedFallback] = useState(false);
 
+  // Compute resume prompt state during initial render (no effect needed)
+  const [resumeState] = useState(() => {
+    if (hasStaleDraft()) {
+      try {
+        const raw = localStorage.getItem("prewaitlist_onboarding");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const name = parsed.headline || parsed.slug || "";
+          return { show: true, staleName: name };
+        }
+      } catch {
+        // Ignore
+      }
+    }
+    return { show: false, staleName: "" };
+  });
+
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  // Auth check: if logged in with existing waitlist, redirect to dashboard
+  useEffect(() => {
+    async function checkAuth() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // User is authenticated — check if they have a waitlist
+      try {
+        const res = await fetch("/api/waitlist");
+        if (res.ok) {
+          // Has a waitlist → already set up, go to dashboard
+          router.replace("/dashboard");
+        }
+        // 404 → no waitlist, let them start fresh
+      } catch {
+        // API error → let them continue
+      }
+    }
+    checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -160,8 +203,58 @@ export default function OnboardingStep1() {
   const isValid =
     slug && slugStatus !== "checking" && slugStatus !== "unavailable";
 
+  const handleResume = useCallback(() => {
+    // Session flag is already set by LocalOnboardingProvider on mount
+    // Prompt dismissal handled by CSS (resumeState.show is immutable)
+  }, []);
+
+  const handleStartFresh = useCallback(() => {
+    if ("clearDraft" in form) {
+      form.clearDraft();
+    }
+    // Reset local state
+    setHeadline("");
+    setSubheadline("");
+    setSlugInput("");
+    setSlug("");
+    setSlugStatus("idle");
+    setSlugError(null);
+    setUsedFallback(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col">
+      {/* Resume prompt — shown when stale draft detected on cold landing */}
+      {resumeState.show && (
+        <div className="mb-6 rounded-lg border border-accent/30 bg-accent/5 p-4">
+          <p className="text-sm font-medium text-foreground">
+            {resumeState.staleName
+              ? `You have an in-progress setup for "${resumeState.staleName}"`
+              : "You have an in-progress setup"}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Would you like to continue where you left off?
+          </p>
+          <div className="mt-3 flex gap-3">
+            <button
+              type="button"
+              onClick={handleResume}
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+            >
+              Continue
+            </button>
+            <button
+              type="button"
+              onClick={handleStartFresh}
+              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Start fresh
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Page header */}
       <div className="mb-2">
         <p className="text-xs font-medium text-accent">Step 1 of 5</p>
