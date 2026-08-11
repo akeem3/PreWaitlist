@@ -11,6 +11,8 @@ export default function OnboardingSuccess() {
 
   useEffect(() => {
     form.setLoading(false);
+    // Onboarding complete — clear localStorage so fresh sessions start clean
+    form.clearPersisted();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -37,7 +39,7 @@ export default function OnboardingSuccess() {
   }
 
   return (
-    <div className="-mt-14 flex min-h-dvh flex-col items-center overflow-hidden px-6 pb-8 pt-14 text-center">
+    <div className="-mt-14 flex min-h-dvh flex-col items-center overflow-auto px-6 pb-8 pt-14 text-center">
       {/* Green checkmark */}
       <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-accent">
         <svg width="32" height="32" viewBox="0 0 32 32" fill="none">

@@ -116,7 +116,7 @@ export function PricingSection() {
 
                     <div className="flex-1" />
 
-                    <Link href="/signup" className="mt-auto">
+                    <Link href="/onboarding/1" className="mt-auto">
                       <Button
                         variant={tier.variant}
                         size="lg"

@@ -111,7 +111,7 @@ function Header() {
             Sign in
           </Link>
           <Link
-            href="/signup"
+            href="/onboarding/1"
             className="inline-flex h-10 items-center rounded-[var(--button-radius)] bg-accent px-4 text-body-sm text-accent-foreground transition-colors duration-normal hover:bg-accent-hover"
           >
             Build it free
@@ -201,7 +201,7 @@ function Header() {
                 Sign in
               </Link>
               <Link
-                href="/signup"
+                href="/onboarding/1"
                 onClick={() => setMenuOpen(false)}
                 className="inline-flex h-10 items-center justify-center rounded-[var(--button-radius)] bg-accent px-4 text-body text-accent-foreground transition-colors duration-normal hover:bg-accent-hover"
               >

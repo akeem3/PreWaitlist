@@ -39,7 +39,7 @@ function HeroContent() {
             </FadeIn>
 
             <FadeIn delay={0.3}>
-              <Link href="/signup">
+              <Link href="/onboarding/1">
                 <Button size="lg" className="px-8 py-4 text-lg">
                   Build it free — live in 4 mins →
                 </Button>
@@ -70,7 +70,7 @@ function HeroContent() {
           </FadeIn>
 
           <FadeIn delay={0.2}>
-            <Link href="/signup">
+            <Link href="/onboarding/1">
               <Button size="lg" className="px-8 py-4 text-lg">
                 Build it free — live in 4 mins →
               </Button>

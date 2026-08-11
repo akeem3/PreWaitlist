@@ -247,6 +247,8 @@ export async function GET() {
           required: q.question_type === "free_text",
         }))
       : [],
+    signupCounterEnabled: waitlist.signup_counter_enabled || false,
+    signupCounterThreshold: waitlist.signup_counter_threshold || 10,
     emailSubject: waitlist.email_subject || "",
     emailSenderName: waitlist.email_sender_name || "",
     emailBody: waitlist.email_body || "",

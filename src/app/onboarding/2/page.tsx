@@ -72,12 +72,6 @@ export default function OnboardingStep2() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (!form.waitlistId) {
-      router.replace("/onboarding/1");
-    }
-  }, [form.waitlistId, router]);
-
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -87,19 +81,7 @@ export default function OnboardingStep2() {
       form.setLoading(true);
 
       try {
-        const res = await fetch("/api/waitlist", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: form.waitlistId,
-            template: selected,
-          }),
-        });
-
-        if (!res.ok) {
-          throw new Error("Failed to save template");
-        }
-
+        // Store in context/localStorage only — no API call yet
         form.updateField("template", selected);
         router.push("/onboarding/3");
       } catch {

@@ -71,12 +71,6 @@ export default function OnboardingStep4() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (!form.waitlistId) {
-      router.replace("/onboarding/1");
-    }
-  }, [form.waitlistId, router]);
-
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -86,6 +80,15 @@ export default function OnboardingStep4() {
       form.setLoading(true);
 
       try {
+        // Ensure waitlist exists on server — flush localStorage if needed
+        if (!form.waitlistId) {
+          const flushed = await form.flushToAPI();
+          if (!flushed || !form.waitlistId) {
+            router.replace("/onboarding/1");
+            return;
+          }
+        }
+
         const res = await fetch("/api/waitlist", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

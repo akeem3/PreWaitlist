@@ -52,6 +52,12 @@ export default function OnboardingStep3() {
   const [rewards, setRewards] = useState(
     form.milestoneRewards.length > 0 ? form.milestoneRewards : DEFAULT_REWARDS
   );
+  const [signupCounterEnabled, setSignupCounterEnabled] = useState(
+    form.signupCounterEnabled
+  );
+  const [signupCounterThreshold, setSignupCounterThreshold] = useState(
+    form.signupCounterThreshold
+  );
   const [milestoneErrors, setMilestoneErrors] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -59,12 +65,6 @@ export default function OnboardingStep3() {
     form.setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (!form.waitlistId) {
-      router.replace("/onboarding/1");
-    }
-  }, [form.waitlistId, router]);
 
   const handleBrandColorBlur = useCallback(() => {
     if (brandColorInput && !HEX_REGEX.test(brandColorInput)) {
@@ -186,6 +186,29 @@ export default function OnboardingStep3() {
     [form, rewards]
   );
 
+  const handleCounterToggle = useCallback(
+    (checked: boolean) => {
+      setSignupCounterEnabled(checked);
+      form.updateField("signupCounterEnabled", checked);
+      if (checked && signupCounterThreshold <= 0) {
+        setSignupCounterThreshold(10);
+        form.updateField("signupCounterThreshold", 10);
+      }
+    },
+    [form, signupCounterThreshold]
+  );
+
+  const handleThresholdInput = useCallback(
+    (value: string) => {
+      const num = parseInt(value, 10);
+      if (!isNaN(num) && num > 0) {
+        setSignupCounterThreshold(num);
+        form.updateField("signupCounterThreshold", num);
+      }
+    },
+    [form]
+  );
+
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -209,31 +232,17 @@ export default function OnboardingStep3() {
       form.setLoading(true);
 
       try {
-        const res = await fetch("/api/waitlist", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: form.waitlistId,
-            headline,
-            subheadline,
-            brand_color: brandColor,
-            logo_url: logoUrl,
-            cta_text: ctaText,
-            milestone_rewards: milestoneEnabled ? rewards : [],
-          }),
-        });
-
-        if (!res.ok) {
-          throw new Error("Failed to save branding");
-        }
-
+        // Store in context/localStorage only — no API call yet
         form.updateField("headline", headline);
         form.updateField("subheadline", subheadline);
         form.updateField("brandColor", brandColor);
         form.updateField("logoUrl", logoUrl);
         form.updateField("ctaText", ctaText);
         form.updateField("milestoneRewards", milestoneEnabled ? rewards : []);
-        router.push("/onboarding/4");
+        form.updateField("signupCounterEnabled", signupCounterEnabled);
+        form.updateField("signupCounterThreshold", signupCounterThreshold);
+        // Redirect to signup prompt (Hopkins' sampling — experience first, signup after)
+        router.push("/onboarding/signup");
       } catch {
         setIsSubmitting(false);
         form.setLoading(false);
@@ -249,6 +258,8 @@ export default function OnboardingStep3() {
       ctaText,
       milestoneEnabled,
       rewards,
+      signupCounterEnabled,
+      signupCounterThreshold,
       router,
     ]
   );
@@ -498,6 +509,39 @@ export default function OnboardingStep3() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* Signup Counter */}
+      <div className="mb-3">
+        <Toggle
+          checked={signupCounterEnabled}
+          onCheckedChange={handleCounterToggle}
+          label="Signup counter"
+          disabled={isSubmitting}
+        />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Show a real-time signup count on your public waitlist page for social
+          proof.
+        </p>
+        {signupCounterEnabled && (
+          <div className="mt-3 flex items-center gap-3">
+            <label className="text-xs text-muted-foreground">
+              Show when I have
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={signupCounterThreshold || ""}
+              onChange={(e) => handleThresholdInput(e.target.value)}
+              placeholder="10"
+              disabled={isSubmitting}
+              className="w-20 rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm text-center placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+            />
+            <label className="text-xs text-muted-foreground">
+              or more signups
+            </label>
           </div>
         )}
       </div>

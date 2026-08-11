@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { OnboardingFormProvider, useOnboardingForm } from "./context";
+import { OAuthFlush } from "../../components/auth/oauth-flush";
 
 const LivePreview = dynamic(
   () =>
@@ -115,6 +116,7 @@ function TwoPaneLayout({
               logoUrl={form.logoUrl}
               ctaText={form.ctaText}
               milestoneRewards={form.milestoneRewards}
+              signupCounterEnabled={form.signupCounterEnabled}
               questions={form.questions}
               showQuestions={showQuestions}
               tier={form.tier}
@@ -177,6 +179,7 @@ export default function OnboardingLayout({
 }) {
   return (
     <OnboardingFormProvider>
+      <OAuthFlush />
       <OnboardingLayoutInner>{children}</OnboardingLayoutInner>
     </OnboardingFormProvider>
   );

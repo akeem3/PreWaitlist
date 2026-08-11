@@ -15,7 +15,7 @@ export default async function DashboardPage() {
 
   const { data: waitlist } = await supabase
     .from("waitlists")
-    .select("id, name, subdomain, template, status, logo_url")
+    .select("id, headline, subdomain, template, status, logo_url")
     .eq("founder_id", user.id)
     .single();
 
@@ -28,7 +28,7 @@ export default async function DashboardPage() {
   return (
     <DashboardClient
       liveUrl={liveUrl}
-      waitlistName={waitlist.name}
+      waitlistName={waitlist.headline}
       logoUrl={waitlist.logo_url}
     />
   );

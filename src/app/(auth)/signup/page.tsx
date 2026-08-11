@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
-import { useCallback, useRef, useState } from "react";
+import { Suspense, useCallback, useRef, useState } from "react";
 import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
 import { PasswordInput } from "../../../../components/ui/password-input";
@@ -16,6 +16,14 @@ const MAX_SUBMIT_ATTEMPTS = 5;
 const SUBMIT_COOLDOWN_MS = 60_000;
 
 export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupPageContent />
+    </Suspense>
+  );
+}
+
+function SignupPageContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +33,8 @@ export default function SignupPage() {
   const submitAttempts = useRef(0);
   const lastSubmitTime = useRef(0);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next");
   const supabase = createClient();
 
   const passwordValid = password.length >= 8;
@@ -64,6 +74,11 @@ export default function SignupPage() {
 
     setLoading(true);
 
+    // If next param present, set cookie so callback knows where to redirect
+    if (next) {
+      document.cookie = `auth_redirect_to=${next}; path=/; max-age=300`;
+    }
+
     const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
@@ -96,6 +111,11 @@ export default function SignupPage() {
   async function handleGoogleOAuth() {
     setError(null);
     setLoading(true);
+
+    // If next param present, set cookie so callback knows where to redirect
+    if (next) {
+      document.cookie = `auth_redirect_to=${next}; path=/; max-age=300`;
+    }
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",

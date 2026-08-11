@@ -31,6 +31,7 @@ interface LivePreviewProps {
   logoUrl: string | null;
   ctaText: string;
   milestoneRewards: MilestoneReward[];
+  signupCounterEnabled?: boolean;
   questions?: Question[];
   showQuestions?: boolean;
   tier?: Tier;
@@ -113,6 +114,35 @@ function BrowserFrame({
   );
 }
 
+function SignupCounter({
+  brandColor,
+  isDark,
+}: {
+  brandColor: string;
+  isDark?: boolean;
+}) {
+  return (
+    <div
+      style={{
+        fontSize: "var(--text-sm, 0.875rem)",
+        fontWeight: "var(--font-medium, 500)",
+        color: isDark ? "#A8A29E" : "#666",
+        marginTop: 8,
+      }}
+    >
+      <span
+        style={{
+          color: isDark ? "#FAFAFA" : "#1A1A1A",
+          fontWeight: "var(--font-semibold, 600)",
+        }}
+      >
+        1,189
+      </span>{" "}
+      people in line
+    </div>
+  );
+}
+
 function MinimalTemplate({
   headline,
   subheadline,
@@ -120,6 +150,7 @@ function MinimalTemplate({
   logoUrl,
   ctaText,
   milestoneRewards,
+  signupCounterEnabled,
   questions,
   showQuestions,
   isMobile,
@@ -211,6 +242,7 @@ function MinimalTemplate({
           </button>
         </div>
       )}
+      {signupCounterEnabled && <SignupCounter brandColor={brandColor} />}
       {showQuestions && (
         <>
           <input
@@ -286,6 +318,7 @@ function MinimalTemplate({
           >
             {ctaText || "Join Waitlist"}
           </button>
+          {signupCounterEnabled && <SignupCounter brandColor={brandColor} />}
         </>
       )}
       {milestoneRewards.length > 0 && (
@@ -366,6 +399,7 @@ function BoldTemplate({
   logoUrl,
   ctaText,
   milestoneRewards,
+  signupCounterEnabled,
   questions,
   showQuestions,
   isMobile,
@@ -459,6 +493,7 @@ function BoldTemplate({
           </button>
         </div>
       )}
+      {signupCounterEnabled && <SignupCounter brandColor={brandColor} />}
       {showQuestions && (
         <>
           <input
@@ -534,6 +569,7 @@ function BoldTemplate({
           >
             {ctaText || "Join Waitlist"}
           </button>
+          {signupCounterEnabled && <SignupCounter brandColor={brandColor} />}
         </>
       )}
       {milestoneRewards.length > 0 && (
@@ -614,6 +650,7 @@ function DarkTemplate({
   logoUrl,
   ctaText,
   milestoneRewards,
+  signupCounterEnabled,
   questions,
   showQuestions,
   isMobile,
@@ -706,6 +743,7 @@ function DarkTemplate({
           </button>
         </div>
       )}
+      {signupCounterEnabled && <SignupCounter brandColor={brandColor} isDark />}
       {showQuestions && (
         <>
           <input
@@ -782,6 +820,9 @@ function DarkTemplate({
           >
             {ctaText || "Join Waitlist"}
           </button>
+          {signupCounterEnabled && (
+            <SignupCounter brandColor={brandColor} isDark />
+          )}
         </>
       )}
       {milestoneRewards.length > 0 && (
@@ -869,6 +910,7 @@ export function LivePreview({
   logoUrl,
   ctaText,
   milestoneRewards,
+  signupCounterEnabled,
   questions,
   showQuestions,
   tier = "free",
@@ -883,6 +925,7 @@ export function LivePreview({
   const deferredLogoUrl = useDeferredValue(logoUrl);
   const deferredCtaText = useDeferredValue(ctaText);
   const deferredRewards = useDeferredValue(milestoneRewards);
+  const deferredSignupCounter = useDeferredValue(signupCounterEnabled);
   const deferredSlug = useDeferredValue(slug);
   const deferredQuestions = useDeferredValue(questions);
   const deferredShowQuestions = useDeferredValue(showQuestions);
@@ -962,6 +1005,7 @@ export function LivePreview({
                   logoUrl={deferredLogoUrl}
                   ctaText={deferredCtaText}
                   milestoneRewards={deferredRewards}
+                  signupCounterEnabled={deferredSignupCounter}
                   questions={deferredQuestions}
                   showQuestions={deferredShowQuestions}
                   isMobile={isMobile}

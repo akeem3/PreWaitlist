@@ -8,6 +8,7 @@ import { Input } from "../../../../components/ui/input";
 
 interface Question {
   text: string;
+  required: boolean;
 }
 
 function get_max_questions(tier: string): number {
@@ -25,7 +26,12 @@ export default function OnboardingStep4a() {
   const router = useRouter();
   const form = useOnboardingForm();
   const [questions, setQuestions] = useState<Question[]>(
-    form.questions.length > 0 ? form.questions : [{ text: "" }, { text: "" }]
+    form.questions.length > 0
+      ? form.questions
+      : [
+          { text: "", required: false },
+          { text: "", required: false },
+        ]
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,12 +39,6 @@ export default function OnboardingStep4a() {
     form.setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (!form.waitlistId) {
-      router.replace("/onboarding/1");
-    }
-  }, [form.waitlistId, router]);
 
   useEffect(() => {
     form.updateField("questions", questions);
@@ -53,12 +53,14 @@ export default function OnboardingStep4a() {
       router.push("/dashboard?upgrade=true");
       return;
     }
-    setQuestions((prev) => [...prev, { text: "" }]);
+    setQuestions((prev) => [...prev, { text: "", required: false }]);
   }, [at_cap, router]);
 
   const handle_update_question = useCallback((index: number, value: string) => {
     setQuestions((prev) =>
-      prev.map((q, i) => (i === index ? { text: value } : q))
+      prev.map((q, i) =>
+        i === index ? { text: value, required: q.required } : q
+      )
     );
   }, []);
 
@@ -71,6 +73,15 @@ export default function OnboardingStep4a() {
       form.setLoading(true);
 
       try {
+        // Ensure waitlist exists on server — flush localStorage if needed
+        if (!form.waitlistId) {
+          const flushed = await form.flushToAPI();
+          if (!flushed || !form.waitlistId) {
+            router.replace("/onboarding/1");
+            return;
+          }
+        }
+
         const res = await fetch("/api/waitlist", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

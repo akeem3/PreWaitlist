@@ -20,12 +20,6 @@ export default function OnboardingStep5() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (!form.waitlistId) {
-      router.replace("/onboarding/1");
-    }
-  }, [form.waitlistId, router]);
-
   const handleLaunch = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -35,9 +29,13 @@ export default function OnboardingStep5() {
       form.setLoading(true);
 
       try {
+        // Ensure waitlist exists on server — flush localStorage if needed
         if (!form.waitlistId) {
-          router.replace("/onboarding/1");
-          return;
+          const flushed = await form.flushToAPI();
+          if (!flushed || !form.waitlistId) {
+            router.replace("/onboarding/1");
+            return;
+          }
         }
 
         if (!form.slug) {
@@ -148,7 +146,7 @@ export default function OnboardingStep5() {
             {/* Upgrade CTA */}
             <button
               type="button"
-              onClick={() => router.push("/pricing")}
+              onClick={() => window.open("/#pricing", "_blank")}
               className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-accent py-3 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
             >
               <span>Upgrade to Pro to customise</span>
@@ -178,6 +176,13 @@ export default function OnboardingStep5() {
             standard template. Your product name and the subscriber&apos;s info
             are included automatically.
           </p>
+          <div className="rounded-lg border border-border bg-muted/50 px-4 py-3">
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">Pro features:</span>{" "}
+              custom sender name, subject line, message body, and send from your
+              own domain for better deliverability.
+            </p>
+          </div>
         </div>
       )}
 
@@ -369,7 +374,7 @@ export default function OnboardingStep5() {
         </button>
 
         <Link
-          href="/onboarding/4a"
+          href="/onboarding/4"
           className="inline-flex items-center justify-center gap-1 text-body-sm text-muted-foreground transition-colors duration-normal hover:text-foreground"
         >
           <svg

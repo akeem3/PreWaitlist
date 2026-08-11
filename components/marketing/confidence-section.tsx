@@ -21,7 +21,7 @@ export function ConfidenceSection() {
               segmented broadcast below $29/month. This product gives all four,{" "}
               <strong>free</strong>, up to <strong>500</strong> signups.
             </p>
-            <Link href="/signup" className="shrink-0">
+            <Link href="/onboarding/1" className="shrink-0">
               <Button size="md">Build it free &rarr;</Button>
             </Link>
           </div>

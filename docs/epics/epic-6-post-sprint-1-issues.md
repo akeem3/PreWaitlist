@@ -36,7 +36,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 ### Story 6.0 — Hopkins' Sampling + Signup Counter
 
-**Status:** ready
+**Status:** done
 **Design Refs:** `docs/design/High-fidelity-svgs/Step 3 - Make it Yours.svg`
 **Story:** As the founder, I want users to experience my product before signing up (Hopkins' sampling) and display a real-time signup counter for social proof, so that conversion is maximized through product experience and social proof.
 
@@ -81,7 +81,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 ### Story 6.1 — Dashboard UI Fixes
 
-**Status:** ready
+**Status:** done
 **Design Refs:** `docs/design/High-fidelity-svgs/Empty Dashboard skeleton.svg`
 **Story:** As the founder, I want the dashboard to correctly display my product name and have proper styling, so that the dashboard feels polished and personalized.
 
@@ -104,7 +104,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 ### Story 6.2 — Onboarding Polish
 
-**Status:** ready
+**Status:** done
 **Design Refs:** `docs/design/High-fidelity-svgs/Step 4 - Qualification Decision.svg`, `docs/design/High-fidelity-svgs/Success Screen.svg`
 **Story:** As the founder, I want the onboarding flow to be polished and explain features clearly, so that I understand what I'm configuring and the experience feels professional.
 

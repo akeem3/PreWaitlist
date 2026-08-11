@@ -89,7 +89,7 @@ export default function DashboardClient({
                 </svg>
               </div>
             )}
-            <span className="text-body-sm font-medium text-foreground">
+            <span className="text-body-sm font-semibold text-foreground">
               {waitlistName || "PreWaitlist"}
             </span>
             <svg
