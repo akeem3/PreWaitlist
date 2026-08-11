@@ -72,7 +72,7 @@ function Header() {
 
   return (
     <header
-      className={`sticky top-0 z-[var(--z-sticky)] bg-background/80 backdrop-blur-md transition-colors duration-normal ${
+      className={`sticky top-0 z-(--z-sticky) bg-background/80 backdrop-blur-md transition-colors duration-normal ${
         scrolled ? "" : "border-b border-border"
       }`}
       {...(isHome ? { "data-transparent": "" } : {})}
@@ -112,7 +112,7 @@ function Header() {
           </Link>
           <Link
             href="/onboarding/1"
-            className="inline-flex h-10 items-center rounded-[var(--button-radius)] bg-accent px-4 text-body-sm text-accent-foreground transition-colors duration-normal hover:bg-accent-hover"
+            className="inline-flex h-10 items-center rounded-(--button-radius) bg-accent px-4 text-body-sm text-accent-foreground transition-colors duration-normal hover:bg-accent-hover"
           >
             Build it free
           </Link>
@@ -203,7 +203,7 @@ function Header() {
               <Link
                 href="/onboarding/1"
                 onClick={() => setMenuOpen(false)}
-                className="inline-flex h-10 items-center justify-center rounded-[var(--button-radius)] bg-accent px-4 text-body text-accent-foreground transition-colors duration-normal hover:bg-accent-hover"
+                className="inline-flex h-10 items-center justify-center rounded-(--button-radius) bg-accent px-4 text-body text-accent-foreground transition-colors duration-normal hover:bg-accent-hover"
               >
                 Build it free
               </Link>
