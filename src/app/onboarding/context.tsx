@@ -6,9 +6,13 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
-  useSyncExternalStore,
 } from "react";
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
 
 type Tier = "free" | "pro" | "growth";
 
@@ -22,7 +26,7 @@ interface Question {
   required: boolean;
 }
 
-interface OnboardingFormState {
+export interface OnboardingFormState {
   waitlistId: string | null;
   slug: string;
   headline: string;
@@ -43,7 +47,8 @@ interface OnboardingFormState {
   loading: boolean;
 }
 
-interface OnboardingFormContextValue extends OnboardingFormState {
+// Methods available on LocalOnboardingProvider (Phase A)
+interface LocalOnboardingFormContextValue extends OnboardingFormState {
   updateField: <K extends keyof OnboardingFormState>(
     key: K,
     value: OnboardingFormState[K]
@@ -54,8 +59,24 @@ interface OnboardingFormContextValue extends OnboardingFormState {
   clearPersisted: () => void;
 }
 
+// Methods available on AuthedOnboardingProvider (Phase B)
+interface AuthedOnboardingFormContextValue extends OnboardingFormState {
+  updateField: <K extends keyof OnboardingFormState>(
+    key: K,
+    value: OnboardingFormState[K]
+  ) => void;
+  setLoading: (loading: boolean) => void;
+  patchWaitlist: (data: Record<string, unknown>) => Promise<void>;
+}
+
+type OnboardingFormContextValue =
+  LocalOnboardingFormContextValue | AuthedOnboardingFormContextValue;
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
 const STORAGE_KEY = "prewaitlist_onboarding";
-const DONE_KEY = "prewaitlist_onboarding_done";
 const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 const initialState: OnboardingFormState = {
@@ -79,46 +100,10 @@ const initialState: OnboardingFormState = {
   loading: false,
 };
 
-// Persist data fields only — excludes loading, waitlistId (server-owned)
-function toPersisted(state: OnboardingFormState) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { loading, waitlistId, ...rest } = state;
-  return { ...rest, _ts: Date.now() };
-}
+// ---------------------------------------------------------------------------
+// localStorage helpers (Phase A only)
+// ---------------------------------------------------------------------------
 
-// External store for useSyncExternalStore
-let listeners: Array<() => void> = [];
-
-function emitChange() {
-  for (const listener of listeners) {
-    listener();
-  }
-}
-
-function subscribe(callback: () => void) {
-  listeners = [...listeners, callback];
-  return () => {
-    listeners = listeners.filter((l) => l !== callback);
-  };
-}
-
-function getSnapshot(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function getServerSnapshot(): string | null {
-  return null;
-}
-
-// Read + validate persisted data from localStorage. Returns null when absent
-// or expired. Strips server-owned / signal fields. localStorage is the
-// authoritative source across full-page loads (e.g. the OAuth redirect back
-// to Step 4), because context state is empty on the first client render.
 function readStoredData(): Partial<OnboardingFormState> | null {
   if (typeof window === "undefined") return null;
   try {
@@ -136,149 +121,80 @@ function readStoredData(): Partial<OnboardingFormState> | null {
   }
 }
 
+function toPersisted(state: OnboardingFormState) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { loading, waitlistId, ...rest } = state;
+  return { ...rest, _ts: Date.now() };
+}
+
+// ---------------------------------------------------------------------------
+// Context
+// ---------------------------------------------------------------------------
+
 const OnboardingFormContext = createContext<
   OnboardingFormContextValue | undefined
 >(undefined);
 
-export function OnboardingFormProvider({
+// ---------------------------------------------------------------------------
+// Phase A: LocalOnboardingProvider (Steps 1–3, unauthenticated)
+//
+// useState + localStorage. No network calls. Authoritative source is
+// localStorage — React state is a local mirror.
+// ---------------------------------------------------------------------------
+
+export function LocalOnboardingProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const rawPersisted = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot
-  );
-
-  // Parse localStorage — TTL check happens in useEffect below
-  const persistedState = useMemo(() => {
-    if (!rawPersisted) return initialState;
-    try {
-      const parsed = JSON.parse(rawPersisted);
-      // Never restore waitlistId from localStorage — it's server-owned
-      // Never restore completed flag — it's a signal only
-      const { waitlistId: _, completed: __, _ts: ___, ...data } = parsed;
-      void _;
-      void __;
-      void ___;
-      return { ...initialState, ...data, loading: false };
-    } catch {
-      return initialState;
+  const [state, setState] = useState<OnboardingFormState>(() => {
+    const stored = readStoredData();
+    if (stored) {
+      return { ...initialState, ...stored, loading: false };
     }
-  }, [rawPersisted]);
+    return initialState;
+  });
 
-  // On mount (a full page load): start fresh when the previous onboarding
-  // finished (DONE_KEY or legacy `completed` flag), or when data is stale (TTL).
+  // Persist to localStorage on every change
   useEffect(() => {
-    if (typeof window === "undefined") return;
     try {
-      if (localStorage.getItem(DONE_KEY)) {
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(DONE_KEY);
-        emitChange();
-      } else {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (
-            parsed.completed ||
-            (parsed._ts && Date.now() - parsed._ts > TTL_MS)
-          ) {
-            localStorage.removeItem(STORAGE_KEY);
-            emitChange();
-          }
-        }
-      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersisted(state)));
     } catch {
-      // Ignore parse errors
+      // Silent fail
     }
-  }, []);
-
-  const [overrides, setOverrides] = useState<Partial<OnboardingFormState>>({});
-
-  const state = useMemo(
-    () => ({
-      ...initialState,
-      ...persistedState,
-      ...overrides,
-    }),
-    [persistedState, overrides]
-  );
-
-  const persist = useCallback((next: OnboardingFormState) => {
-    if (typeof window === "undefined") return;
-    try {
-      const toSave = toPersisted(next);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-      setTimeout(() => {
-        emitChange();
-      }, 0);
-    } catch {
-      // Silently fail
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) emitChange();
-    };
-
-    window.addEventListener("storage", onStorage);
-    return () => {
-      window.removeEventListener("storage", onStorage);
-    };
-  }, []);
-
-  useEffect(() => {
-    // Skip persisting during hydration: on the first client render
-    // `persistedState` is still the empty initialState reference (getServerSnapshot
-    // returns null), so writing it would clobber real localStorage data. Only
-    // persist once the store has produced real data or the user has made edits.
-    const hasEdits = Object.keys(overrides).length > 0;
-    if (persistedState === initialState && !hasEdits) return;
-    persist(state);
-  }, [state, persist, persistedState, overrides]);
+  }, [state]);
 
   const updateField = useCallback(
     <K extends keyof OnboardingFormState>(
       key: K,
       value: OnboardingFormState[K]
     ) => {
-      setOverrides((prev) => ({ ...prev, [key]: value }));
+      setState((s) => ({ ...s, [key]: value }));
     },
     []
   );
 
   const setWaitlistId = useCallback((id: string) => {
-    setOverrides((prev) => ({ ...prev, waitlistId: id }));
+    setState((s) => ({ ...s, waitlistId: id }));
   }, []);
 
   const setLoading = useCallback((loading: boolean) => {
-    setOverrides((prev) => ({ ...prev, loading }));
+    setState((s) => ({ ...s, loading }));
   }, []);
 
-  // Flush persisted data to API. Returns waitlistId on success, null on failure.
+  // Flush localStorage to API. Returns waitlistId on success.
   const flushToAPI = useCallback(async (): Promise<string | null> => {
     if (typeof window === "undefined") return null;
 
-    // Server-owned — short-circuit once a waitlist exists
-    if (overrides.waitlistId) return overrides.waitlistId;
-
-    // Authoritative source is localStorage (survives full-page loads / OAuth
-    // redirects, when context state is still empty on first client render).
-    // Layer in-memory overrides on top for edits made since the last persist.
     const stored = readStoredData();
     if (!stored) return null;
 
-    const { waitlistId: _, loading: __, ...edits } = overrides;
+    // Merge current in-memory state on top of localStorage
+    const { waitlistId: _, loading: __, ...edits } = state;
     void _;
     void __;
     const data = { ...stored, ...edits };
 
-    // subdomain is NOT NULL on waitlists — a slug is required
     const slug = data.slug;
     if (!slug) return null;
 
@@ -308,48 +224,151 @@ export function OnboardingFormProvider({
       if (!res.ok) return null;
 
       const result = await res.json();
-      setOverrides((prev) => ({ ...prev, waitlistId: result.id }));
-      // Clear localStorage after successful flush — server now has the data
+      const id = result.id as string;
+
+      // Update local state with server-owned ID
+      setState((s) => ({ ...s, waitlistId: id }));
+
+      // Clear localStorage — server now has the data
       try {
         localStorage.removeItem(STORAGE_KEY);
       } catch {
         // Ignore
       }
-      return result.id as string;
+
+      return id;
     } catch {
       return null;
     }
-  }, [overrides]);
+  }, [state]);
 
   const clearPersisted = useCallback(() => {
     if (typeof window === "undefined") return;
-    // Mark onboarding as finished in a SEPARATE key — `persist` only ever
-    // writes STORAGE_KEY, so the flag survives until the next session's mount
-    // effect clears both and starts fresh. STORAGE_KEY data is left in place
-    // so the success page can still render the live preview from context.
     try {
-      localStorage.setItem(DONE_KEY, "1");
+      localStorage.removeItem(STORAGE_KEY);
     } catch {
       // Ignore
     }
-    setOverrides({});
+    setState(initialState);
   }, []);
 
+  const value = useMemo(
+    () => ({
+      ...state,
+      updateField,
+      setWaitlistId,
+      setLoading,
+      flushToAPI,
+      clearPersisted,
+    }),
+    [state, updateField, setWaitlistId, setLoading, flushToAPI, clearPersisted]
+  );
+
   return (
-    <OnboardingFormContext.Provider
-      value={{
-        ...state,
-        updateField,
-        setWaitlistId,
-        setLoading,
-        flushToAPI,
-        clearPersisted,
-      }}
-    >
+    <OnboardingFormContext.Provider value={value}>
       {children}
     </OnboardingFormContext.Provider>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Phase B: AuthedOnboardingProvider (Steps 4–5, authenticated)
+//
+// useState seeded from server state. Updates via debounced PATCH.
+// No localStorage code — structurally impossible to read or write.
+// ---------------------------------------------------------------------------
+
+export function AuthedOnboardingProvider({
+  initial,
+  children,
+}: {
+  initial: OnboardingFormState;
+  children: React.ReactNode;
+}) {
+  const [state, setState] = useState<OnboardingFormState>(initial);
+  const pendingRef = useRef<Record<string, unknown>>({});
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flush = useCallback(async () => {
+    if (Object.keys(pendingRef.current).length === 0) return;
+    const payload = { ...pendingRef.current, id: state.waitlistId };
+    pendingRef.current = {};
+    try {
+      await fetch("/api/waitlist", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      // Silent fail — will retry on next update
+    }
+  }, [state.waitlistId]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const updateField = useCallback(
+    <K extends keyof OnboardingFormState>(
+      key: K,
+      value: OnboardingFormState[K]
+    ) => {
+      setState((s) => ({ ...s, [key]: value }));
+
+      // Debounce PATCH to server
+      const apiKey = key === "brandColor" ? "brand_color" : key;
+      pendingRef.current[apiKey] = value;
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        flush();
+      }, 500);
+    },
+    [flush]
+  );
+
+  const setLoading = useCallback((loading: boolean) => {
+    setState((s) => ({ ...s, loading }));
+  }, []);
+
+  // Explicit PATCH for launch handler (Step 5)
+  const patchWaitlist = useCallback(
+    async (data: Record<string, unknown>) => {
+      try {
+        await fetch("/api/waitlist", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...data, id: state.waitlistId }),
+        });
+      } catch {
+        // Silent fail
+      }
+    },
+    [state.waitlistId]
+  );
+
+  const value = useMemo(
+    () => ({
+      ...state,
+      updateField,
+      setLoading,
+      patchWaitlist,
+    }),
+    [state, updateField, setLoading, patchWaitlist]
+  );
+
+  return (
+    <OnboardingFormContext.Provider value={value}>
+      {children}
+    </OnboardingFormContext.Provider>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
 
 export function useOnboardingForm() {
   const context = useContext(OnboardingFormContext);

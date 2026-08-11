@@ -2,8 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
-import { OnboardingFormProvider, useOnboardingForm } from "./context";
-import { OAuthFlush } from "../../components/auth/oauth-flush";
+import { LocalOnboardingProvider, useOnboardingForm } from "./context";
+import { FlushGate } from "../../components/auth/flush-gate";
 
 const LivePreview = dynamic(
   () =>
@@ -43,6 +43,9 @@ const TWO_PANE_ROUTES = [
   "/onboarding/3",
   "/onboarding/4a",
 ];
+
+// Phase B routes — authenticated, API is authoritative
+const AUTHED_ROUTES = ["/onboarding/4", "/onboarding/4a", "/onboarding/5"];
 
 function getCurrentStep(pathname: string): number {
   return STEP_ROUTES[pathname] ?? 1;
@@ -140,7 +143,7 @@ function CenteredLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-col items-center">
-      <div className="w-full max-w-2xl px-6 py-14">
+      <div className="w-full max-w-2xl px-6 py-6">
         <ProgressDots currentStep={currentStep} showDots={showDots} centered />
         <div className="flex flex-col">{children}</div>
       </div>
@@ -177,10 +180,18 @@ export default function OnboardingLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const isAuthed = AUTHED_ROUTES.includes(pathname);
+
   return (
-    <OnboardingFormProvider>
-      <OAuthFlush />
-      <OnboardingLayoutInner>{children}</OnboardingLayoutInner>
-    </OnboardingFormProvider>
+    <LocalOnboardingProvider>
+      {isAuthed ? (
+        <FlushGate>
+          <OnboardingLayoutInner>{children}</OnboardingLayoutInner>
+        </FlushGate>
+      ) : (
+        <OnboardingLayoutInner>{children}</OnboardingLayoutInner>
+      )}
+    </LocalOnboardingProvider>
   );
 }

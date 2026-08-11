@@ -25,10 +25,22 @@ export default function OnboardingSignup() {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        // Already logged in — flush and continue
-        const waitlistId = await form.flushToAPI();
-        if (waitlistId) {
-          router.push("/onboarding/4");
+        // Already logged in — try flushing localStorage, then check server
+        if ("flushToAPI" in form) {
+          const waitlistId = await form.flushToAPI();
+          if (waitlistId) {
+            router.push("/onboarding/4");
+            return;
+          }
+        }
+        // No localStorage data — check if waitlist exists on server
+        try {
+          const res = await fetch("/api/waitlist");
+          if (res.ok) {
+            router.push("/onboarding/4");
+          }
+        } catch {
+          // Stay on signup page
         }
       }
     }

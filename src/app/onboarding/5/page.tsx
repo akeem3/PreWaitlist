@@ -29,14 +29,11 @@ export default function OnboardingStep5() {
       form.setLoading(true);
 
       try {
-        // Ensure waitlist exists on server — flush localStorage if needed
-        let waitlistId = form.waitlistId;
+        // FlushGate already resolved server state — waitlistId is guaranteed
+        const waitlistId = form.waitlistId;
         if (!waitlistId) {
-          waitlistId = await form.flushToAPI();
-          if (!waitlistId) {
-            router.replace("/onboarding/1");
-            return;
-          }
+          router.replace("/onboarding/1");
+          return;
         }
 
         if (!form.slug) {
@@ -75,82 +72,74 @@ export default function OnboardingStep5() {
   return (
     <form onSubmit={handleLaunch} className="flex flex-col">
       {/* Page header */}
-      <div className="mb-2 text-center">
+      <div className="mb-1 text-center">
         <p className="text-xs font-medium text-accent">Step 5 of 5</p>
         <p className="text-sm text-muted-foreground">
           Set up your confirmation email
         </p>
       </div>
 
-      <h1 className="mb-2 text-center text-h2">
+      <h1 className="mb-1 text-center text-h2">
         Your subscribers get a confirmation email
       </h1>
-      <p className="mb-8 text-center text-body text-muted-foreground">
+      <p className="mb-4 text-center text-body text-muted-foreground">
         it includes their position and referral link automatically
       </p>
 
-      {/* Free tier — email preview card */}
+      {/* Free tier — comparison card + email mock */}
       {!isPro && (
-        <div className="mb-8 flex flex-col gap-5">
-          <div className="rounded-xl border border-border bg-card p-6">
-            {/* From line */}
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">From:</span> [Your
-                name]
-              </p>
-              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                <svg
-                  width="10"
-                  height="10"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M8 1L10 5.5L15 6.2L11.5 9.6L12.4 14.5L8 12.1L3.6 14.5L4.5 9.6L1 6.2L6 5.5L8 1Z"
-                    fill="currentColor"
-                  />
-                </svg>
-                PRO
-              </span>
+        <div className="mb-4 flex flex-col gap-3">
+          <div className="rounded-xl border border-border bg-card p-5">
+            <h3 className="mb-3 text-sm font-semibold text-foreground">
+              What your subscribers receive
+            </h3>
+
+            {/* Email mock */}
+            <div className="rounded-lg border border-border bg-background p-3.5">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">From:</span>{" "}
+                  {form.headline || "Your Product"} via PreWaitlist
+                </p>
+                <span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                  auto-sent
+                </span>
+              </div>
+              <div className="mb-2">
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">Subject:</span>{" "}
+                  You&apos;re in! Position #1 on the{" "}
+                  {form.headline || "your product"} waitlist
+                </p>
+              </div>
+              <div className="space-y-1 border-t border-border pt-2">
+                <p className="text-xs text-muted-foreground">Hey there,</p>
+                <p className="text-xs text-muted-foreground">
+                  You&apos;re signed up for the{" "}
+                  {form.headline || "your product"} waitlist — position #1.
+                  Share your referral link to move up:
+                </p>
+                <div className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-1.5">
+                  <span className="flex-1 truncate font-mono text-[10px] text-muted-foreground">
+                    {form.slug
+                      ? `${form.slug}.prewaitlist.com/?ref=abc123`
+                      : "your-page.prewaitlist.com/?ref=abc123"}
+                  </span>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  The earlier you sign up, the higher your position.
+                </p>
+              </div>
             </div>
 
-            {/* Subject line */}
-            <div className="mt-3 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">Subject:</span>{" "}
-                [Customise on Pro]
-              </p>
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="text-muted-foreground"
-              >
-                <path
-                  d="M12 7H4V5C4 3.34 5.34 2 7 2C8.66 2 10 3.34 10 5V6H11C11.55 6 12 6.45 12 7V14H4V7H12ZM7 12C8.1 12 9 11.1 9 10C9 8.9 8.1 8 7 8C5.9 8 5 8.9 5 10C5 11.1 5.9 12 7 12Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </div>
-
-            {/* Body placeholder lines */}
-            <div className="mt-5 flex flex-col gap-2.5">
-              <div className="h-2 w-full rounded-full bg-muted" />
-              <div className="h-2 w-3/4 rounded-full bg-muted" />
-              <div className="h-2 w-1/2 rounded-full bg-muted" />
-            </div>
-
-            {/* Upgrade CTA */}
-            <button
-              type="button"
-              onClick={() => window.open("/#pricing", "_blank")}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-accent py-3 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+            {/* Upgrade button — inside card, below email mock */}
+            <a
+              href="/#pricing"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[var(--button-radius)] bg-accent text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
             >
-              <span>Upgrade to Pro to customise</span>
+              <span>Upgrade to customise emails</span>
               <svg
                 width="14"
                 height="14"
@@ -167,29 +156,128 @@ export default function OnboardingStep5() {
                   strokeLinejoin="round"
                 />
               </svg>
-            </button>
-          </div>
+            </a>
 
-          {/* Helper text */}
-          <p className="text-sm text-muted-foreground">
-            On the free plan, emails send from{" "}
-            <span className="font-medium text-accent">PreWaitlist</span> with a
-            standard template. Your product name and the subscriber&apos;s info
-            are included automatically.
-          </p>
-          <div className="rounded-lg border border-border bg-muted/50 px-4 py-3">
-            <p className="text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">Pro features:</span>{" "}
-              custom sender name, subject line, message body, and send from your
-              own domain for better deliverability.
-            </p>
+            {/* Comparison: Free vs Pro */}
+            <div className="mt-3 grid grid-cols-2 gap-2.5">
+              <div className="rounded-lg border border-border bg-muted/50 p-3">
+                <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Free
+                </p>
+                <ul className="space-y-1">
+                  <li className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <svg
+                      className="mt-0.5 h-3 w-3 shrink-0 text-accent"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                    >
+                      <path
+                        d="M3 8l3.5 3.5L13 5"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    Confirmation email
+                  </li>
+                  <li className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <svg
+                      className="mt-0.5 h-3 w-3 shrink-0 text-accent"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                    >
+                      <path
+                        d="M3 8l3.5 3.5L13 5"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    Position tracking
+                  </li>
+                  <li className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <svg
+                      className="mt-0.5 h-3 w-3 shrink-0 text-accent"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                    >
+                      <path
+                        d="M3 8l3.5 3.5L13 5"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    Referral links
+                  </li>
+                </ul>
+              </div>
+              <div className="rounded-lg border border-border bg-muted/50 p-3">
+                <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Pro
+                </p>
+                <ul className="space-y-1">
+                  <li className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <svg
+                      className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground/50"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                    >
+                      <path
+                        d="M3 8l3.5 3.5L13 5"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    Custom sender name
+                  </li>
+                  <li className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <svg
+                      className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground/50"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                    >
+                      <path
+                        d="M3 8l3.5 3.5L13 5"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    Custom subject + body
+                  </li>
+                  <li className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <svg
+                      className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground/50"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                    >
+                      <path
+                        d="M3 8l3.5 3.5L13 5"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    Send from your domain
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
       {/* Pro tier — editable email fields */}
       {isPro && (
-        <div className="mb-8 flex flex-col gap-5">
+        <div className="mb-4 flex flex-col gap-3">
           {/* Sender Name */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-foreground">
@@ -343,11 +431,11 @@ export default function OnboardingStep5() {
       )}
 
       {/* Launch button */}
-      <div className="sticky bottom-0 flex w-full flex-col gap-4 bg-background pb-14 pt-4 md:static md:px-0 md:pb-0 md:pt-0">
+      <div className="sticky bottom-0 flex w-full flex-col gap-3 bg-background pb-10 pt-3 md:static md:px-0 md:pb-0 md:pt-0">
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex h-14.75 w-full items-center justify-center gap-2 rounded-(--radius-md) bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50 md:w-161"
+          className="inline-flex h-14.75 w-full items-center justify-center gap-2 rounded-(--radius-md) bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50"
         >
           {isSubmitting ? (
             <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />

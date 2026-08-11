@@ -22,13 +22,13 @@ All 8 remaining issues (#4, #7, #8, #9, #10, #12, #13, #14) plus 2 new high-prio
 
 ## Story Index
 
-| ID  | Title                              | Depends on | Status |
-| --- | ---------------------------------- | ---------- | ------ |
-| 6.0 | Hopkins' Sampling + Signup Counter | —          | ready  |
-| 6.1 | Dashboard UI Fixes                 | —          | ready  |
-| 6.2 | Onboarding Polish                  | 6.0        | ready  |
-| 6.3 | Email Customisation GIF            | —          | ready  |
-| 6.4 | State Persistence (Revisit)        | 6.0        | ready  |
+| ID  | Title                               | Depends on | Status |
+| --- | ----------------------------------- | ---------- | ------ |
+| 6.0 | Hopkins' Sampling + Signup Counter  | —          | ready  |
+| 6.1 | Dashboard UI Fixes                  | —          | ready  |
+| 6.2 | Onboarding Polish                   | 6.0        | ready  |
+| 6.3 | Step 5 Redesign + Email Mock + Sync | —          | done   |
+| 6.4 | State Persistence (Revisit)         | 6.0        | ready  |
 
 Work through these in dependency order, one at a time. Each has a `status` you should update as you go (`ready` → `in-progress` → `blocked` or `done`). A story marked `blocked` stays blocked until manually cleared — don't silently re-attempt it next session.
 
@@ -130,26 +130,51 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 ---
 
-### Story 6.3 — Email Customisation GIF
+### Story 6.3 — Step 5 Redesign + Email Mock + localStorage Sync Fix
 
-**Status:** ready
-**Design Refs:** — (needs design asset)
-**Story:** As the founder, I want a visual guide (GIF) showing how to customise email settings, so that I understand the email setup process.
+**Status:** done
+**Design Refs:** —
+**Story:** As the founder, I want Step 5 to clearly show what my subscribers receive and launch my waitlist, so that I feel confident going live on the Free tier.
+
+**Key design decisions:**
+
+- **Layout:** Comparison card — "What your subscribers receive on Free" vs "What Pro unlocks"
+- **Upgrade link:** `/#pricing` (PRD-correct for Sprint 1), secondary text link below the comparison card
+- **Email preview:** Mock of a real confirmation email (From, Subject, Body) — not abstract placeholders
+- **Pro helper box:** Removed — the comparison card already covers that information, reduces visual noise
+- **Email mock copy:** "You're in! Position #X on the [product] waitlist" — aligns with existing Step 5 copy and PRD standing decisions (email-only signup, no name)
+- **localStorage validation timing:** Check on every mount (safe, ~100ms latency) — recommended over cached or SPA-only approaches
 
 **Acceptance Criteria (EARS):**
 
-- AC1: An email customisation GIF shall be displayed in Step 5 (Email Setup) to guide founders through the process.
-- AC2: The GIF shall be hosted locally (not external CDN) for performance and privacy.
-- AC3: Lint and build shall pass with zero errors.
+- AC1: Step 5 Free tier shall show a comparison card: "What your subscribers receive" (Free features) vs "What Pro unlocks" (custom branding, sender domain)
+- AC2: The "Launch my waitlist" button shall be the only primary CTA on Step 5
+- AC3: The upgrade link shall be secondary (small text link, not a green button) and navigate to `/#pricing`
+- AC4: Step 5 Free tier shall show a realistic email mock (From, Subject, Body) so the founder sees exactly what subscribers receive
+- AC5: Step 5 Pro tier shall show editable email fields (existing behavior, unchanged)
+- AC6: On mount, if authenticated and a saved waitlist exists, the system shall validate it against the server
+- AC7: If the server returns 404 (deleted account), localStorage shall be cleared and the founder redirected to Step 1
+- AC8: If the server returns 200, server data shall merge into context (server wins for waitlistId + saved fields)
+- AC9: Lint and build shall pass with zero errors
 
-**Tasks:** T1 (AC1-AC2) Add email customisation GIF · T2 (AC3) Run lint + build
+**Tasks:** T1 (AC1-AC3) Step 5 comparison card + upgrade link · T2 (AC4-AC5) Email preview mock · T3 (AC6-AC8) localStorage sync fix · T4 (AC9) Run lint + build
 
-**Out of scope:** GIF creation (needs design asset), email sending logic (Sprint 3).
+**Out of scope:** Pro tier implementation (Sprint 3), real email sending (Sprint 3), GIF creation.
+
+**Architecture Decisions:**
+
+1. **Comparison card replaces locked preview:** The current "locked email preview + upgrade button" layout is replaced. The comparison card shows two columns: Free features (what subscribers receive now) and Pro features (what they unlock later). This makes the Free tier feel complete and reduces upgrade friction by showing the gap clearly.
+
+2. **Email mock shows subscriber experience:** A realistic confirmation email mock is embedded in the comparison card. From: "[Founder's product name] via PreWaitlist". Subject: "You're in! Position #X on the [product] waitlist". Body: standard confirmation copy (position, referral link placeholder). This gives the founder confidence that subscribers get a professional experience on Free.
+
+3. **localStorage sync — OAuthFlush handles post-OAuth sync:** Server validation on mount was removed because it races with OAuthFlush's POST (both fire on mount after OAuth redirect). OAuthFlush handles the initial sync via POST. localStorage is current for regular page loads. Stale data is cleared on mount via DONE_KEY / TTL checks.
 
 **Dev Notes:**
 
-- T1: Email customisation GIF — Add GIF component in Step 5. Requires design asset creation first. Files: `src/app/onboarding/5/page.tsx`, `public/` for GIF asset.
-- T2: Lint + build pass.
+- T1: Comparison card — Replace current Step 5 layout. Two-column card: Free features vs Pro features. "Launch my waitlist" as primary CTA (green, full-width). Upgrade as secondary link below (`/#pricing`). Remove the separate Pro helper text box (already covered by comparison). Files: `src/app/onboarding/5/page.tsx`.
+- T2: Email mock — Realistic subscriber-facing email inside the comparison card. From: `[headline] via PreWaitlist`. Subject: `You're in! Position #X on the [headline] waitlist`. Body: standard confirmation copy. Use `form.headline` for dynamic values. Files: `src/app/onboarding/5/page.tsx`.
+- T3: localStorage sync fix — Mount-time server validation was removed due to race condition with OAuthFlush. The mount effect now only handles stale data cleanup (DONE_KEY, legacy completed, TTL expiry). OAuthFlush (already in onboarding layout) handles the post-OAuth sync via POST. Files: `src/app/onboarding/context.tsx`.
+- T4: Lint + build pass.
 
 ---
 

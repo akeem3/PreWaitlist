@@ -12,7 +12,9 @@ export default function OnboardingSuccess() {
   useEffect(() => {
     form.setLoading(false);
     // Onboarding complete — clear localStorage so fresh sessions start clean
-    form.clearPersisted();
+    if ("clearPersisted" in form) {
+      form.clearPersisted();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -39,10 +41,10 @@ export default function OnboardingSuccess() {
   }
 
   return (
-    <div className="-mt-14 flex min-h-dvh flex-col items-center overflow-auto px-6 pb-8 pt-14 text-center">
+    <div className="flex min-h-dvh flex-col items-center overflow-auto px-6 pb-6 pt-4 text-center">
       {/* Green checkmark */}
-      <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-accent">
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-accent">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
           <path
             d="M8 16L14 22L24 10"
             stroke="white"
@@ -54,28 +56,28 @@ export default function OnboardingSuccess() {
       </div>
 
       {/* Heading */}
-      <h1 className="mb-2 text-h1">Your waitlist is live!</h1>
+      <h1 className="mb-1 text-h2">Your waitlist is live!</h1>
 
       {/* URL + copy link pill */}
-      <div className="mb-4 flex items-center gap-3">
+      <div className="mb-3 flex items-center gap-3">
         <span className="font-medium text-foreground">{liveUrl}</span>
         <button
           type="button"
           onClick={handleCopy}
-          className="inline-flex items-center rounded-full border border-border px-4 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted"
+          className="inline-flex items-center rounded-full border border-border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted"
         >
           {copied ? "Copied!" : "copy link"}
         </button>
       </div>
 
       {/* Share card */}
-      <div className="mb-4 w-full max-w-lg rounded-xl border border-border p-4">
-        <p className="mb-3 text-sm text-muted-foreground">
+      <div className="mb-3 w-full max-w-lg rounded-xl border border-border p-4">
+        <p className="mb-2 text-sm text-muted-foreground">
           Share it now while the momentum is fresh
         </p>
 
         {/* Meta Preview */}
-        <div className="mb-4">
+        <div className="mb-3">
           <MetaPreview
             headline={form.headline}
             subheadline={form.subheadline}
@@ -90,29 +92,26 @@ export default function OnboardingSuccess() {
           <button
             type="button"
             onClick={handleShare}
-            className="flex-1 rounded-lg bg-accent py-3 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+            className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
           >
             Share
           </button>
           <button
             type="button"
             onClick={handleCopy}
-            className="flex-1 rounded-lg border border-foreground py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+            className="flex-1 rounded-lg border border-foreground py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
           >
             Copy link
           </button>
         </div>
       </div>
 
-      {/* Divider */}
-      <div className="mb-4 w-full max-w-lg border-t border-border" />
-
       {/* What will happen next */}
-      <div className="mb-4 w-full max-w-lg">
-        <p className="mb-3 text-center text-sm font-medium text-foreground">
+      <div className="mb-3 w-full max-w-lg">
+        <p className="mb-2 text-center text-sm font-medium text-foreground">
           What will happen next?
         </p>
-        <ol className="list-inside list-decimal space-y-1.5 text-center text-sm text-muted-foreground">
+        <ol className="list-inside list-decimal space-y-1 text-center text-sm text-muted-foreground">
           <li>
             Share the link — your first signups will come in the next 24 hours
           </li>
@@ -126,15 +125,15 @@ export default function OnboardingSuccess() {
         </ol>
       </div>
 
-      {/* Dashboard link */}
+      {/* Dashboard link — prominent button */}
       <Link
         href="/dashboard"
-        className="inline-flex items-center gap-1 text-sm !font-semibold text-accent transition-colors hover:text-accent-hover"
+        className="inline-flex h-12 w-full max-w-lg items-center justify-center gap-2 rounded-[var(--button-radius)] bg-accent text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
       >
-        Or, go to my dashboard
+        Go to my dashboard
         <svg
-          width="16"
-          height="16"
+          width="14"
+          height="14"
           viewBox="0 0 16 16"
           fill="none"
           aria-hidden="true"

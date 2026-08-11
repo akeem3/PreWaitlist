@@ -80,14 +80,11 @@ export default function OnboardingStep4() {
       form.setLoading(true);
 
       try {
-        // Ensure waitlist exists on server — flush localStorage if needed
-        let waitlistId = form.waitlistId;
+        // FlushGate already resolved server state — waitlistId is guaranteed
+        const waitlistId = form.waitlistId;
         if (!waitlistId) {
-          waitlistId = await form.flushToAPI();
-          if (!waitlistId) {
-            router.replace("/onboarding/1");
-            return;
-          }
+          router.replace("/onboarding/1");
+          return;
         }
 
         const res = await fetch("/api/waitlist", {
