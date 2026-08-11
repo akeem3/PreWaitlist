@@ -473,6 +473,26 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 ## Gotchas / Corrected Assumptions
 
+- **Onboarding hydration + OAuth reroute to Step 1 (2026-08-11):** `useSyncExternalStore`
+  returns `getServerSnapshot()` during SSR _and_ the first client hydration render. So on a
+  full page load the onboarding context's `state` is the empty `initialState` for the first
+  commit. Anything that runs on mount and reads context state (e.g. `OAuthFlush` →
+  `flushToAPI`) sees empty data, and the `persist(state)` effect will overwrite the real
+  localStorage Steps 1-3 data with that empty state. **Rule:** after a full-page load,
+  localStorage is the authoritative source — read it directly, never context `state` — and
+  gate `persist` on `persistedState === initialState` (skip writing during hydration).
+  `flushToAPI` in `src/app/onboarding/context.tsx` now does exactly this and hard-requires a
+  non-empty `slug` (subdomain is NOT NULL in `waitlists`; the old
+  `!slug && !headline && !template` guard was useless because `template` defaults to
+  `"minimal"`, truthy).
+- **Completed/cleared-flag must live in its own localStorage key (2026-08-11):** storing
+  the onboarding `completed` marker inside the persisted form object fails — the next
+  `persist` overwrites it. Use a separate key (`prewaitlist_onboarding_done`) that `persist`
+  never writes; the mount effect clears both keys on the next full page load. Legacy
+  `completed: true` inside the form object is still honored by the mount effect.
+- **`react-hooks/set-state-in-effect` (ESLint):** calling `setState` synchronously in an
+  effect body is an error in this config. A "hasHydrated" style flag must be implemented
+  without it (here: reference-compare `persistedState === initialState` to gate `persist`).
 - **Tailwind v4 scans ALL project files** — including `.md` files. If documentation contains text like `text-[length:var(...)]` or `text-[var(--badge-font-size)]` (even in backtick code spans), Tailwind generates broken CSS utilities from them. Fix: add `@source not "../../docs"` and `@source not "../../.memory"` to `globals.css`.
 - **`--text-*` tokens in `@theme` conflict with Tailwind's `text-` utility namespace** — Tailwind v4 auto-generates utilities from `@theme` token names. Tokens starting with `--text-` get interpreted as color utilities, not font-size. Use direct Tailwind classes (`text-xs`, `text-sm`) instead of `text-[var(--text-xs)]`.
 

@@ -26,8 +26,8 @@ export default function OnboardingSignup() {
       } = await supabase.auth.getUser();
       if (user) {
         // Already logged in — flush and continue
-        const success = await form.flushToAPI();
-        if (success) {
+        const waitlistId = await form.flushToAPI();
+        if (waitlistId) {
           router.push("/onboarding/4");
         }
       }

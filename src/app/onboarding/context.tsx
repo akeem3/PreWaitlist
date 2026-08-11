@@ -50,11 +50,12 @@ interface OnboardingFormContextValue extends OnboardingFormState {
   ) => void;
   setWaitlistId: (id: string) => void;
   setLoading: (loading: boolean) => void;
-  flushToAPI: () => Promise<boolean>;
+  flushToAPI: () => Promise<string | null>;
   clearPersisted: () => void;
 }
 
 const STORAGE_KEY = "prewaitlist_onboarding";
+const DONE_KEY = "prewaitlist_onboarding_done";
 const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 const initialState: OnboardingFormState = {
@@ -114,6 +115,27 @@ function getServerSnapshot(): string | null {
   return null;
 }
 
+// Read + validate persisted data from localStorage. Returns null when absent
+// or expired. Strips server-owned / signal fields. localStorage is the
+// authoritative source across full-page loads (e.g. the OAuth redirect back
+// to Step 4), because context state is empty on the first client render.
+function readStoredData(): Partial<OnboardingFormState> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed._ts && Date.now() - parsed._ts > TTL_MS) return null;
+    const { waitlistId: _, completed: __, _ts: ___, ...data } = parsed;
+    void _;
+    void __;
+    void ___;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 const OnboardingFormContext = createContext<
   OnboardingFormContextValue | undefined
 >(undefined);
@@ -136,31 +158,37 @@ export function OnboardingFormProvider({
       const parsed = JSON.parse(rawPersisted);
       // Never restore waitlistId from localStorage — it's server-owned
       // Never restore completed flag — it's a signal only
-      const { waitlistId: _, completed: __, ...data } = parsed;
+      const { waitlistId: _, completed: __, _ts: ___, ...data } = parsed;
       void _;
       void __;
+      void ___;
       return { ...initialState, ...data, loading: false };
     } catch {
       return initialState;
     }
   }, [rawPersisted]);
 
-  // TTL: clear stale localStorage on mount. Also clear if `completed` flag is set
-  // (means a previous onboarding finished — start fresh).
+  // On mount (a full page load): start fresh when the previous onboarding
+  // finished (DONE_KEY or legacy `completed` flag), or when data is stale (TTL).
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (parsed.completed) {
+      if (localStorage.getItem(DONE_KEY)) {
         localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(DONE_KEY);
         emitChange();
-        return;
-      }
-      if (parsed._ts && Date.now() - parsed._ts > TTL_MS) {
-        localStorage.removeItem(STORAGE_KEY);
-        emitChange();
+      } else {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (
+            parsed.completed ||
+            (parsed._ts && Date.now() - parsed._ts > TTL_MS)
+          ) {
+            localStorage.removeItem(STORAGE_KEY);
+            emitChange();
+          }
+        }
       }
     } catch {
       // Ignore parse errors
@@ -205,8 +233,14 @@ export function OnboardingFormProvider({
   }, []);
 
   useEffect(() => {
+    // Skip persisting during hydration: on the first client render
+    // `persistedState` is still the empty initialState reference (getServerSnapshot
+    // returns null), so writing it would clobber real localStorage data. Only
+    // persist once the store has produced real data or the user has made edits.
+    const hasEdits = Object.keys(overrides).length > 0;
+    if (persistedState === initialState && !hasEdits) return;
     persist(state);
-  }, [state, persist]);
+  }, [state, persist, persistedState, overrides]);
 
   const updateField = useCallback(
     <K extends keyof OnboardingFormState>(
@@ -226,40 +260,34 @@ export function OnboardingFormProvider({
     setOverrides((prev) => ({ ...prev, loading }));
   }, []);
 
-  // Flush localStorage data to API
-  const flushToAPI = useCallback(async (): Promise<boolean> => {
-    if (typeof window === "undefined") return false;
+  // Flush persisted data to API. Returns waitlistId on success, null on failure.
+  const flushToAPI = useCallback(async (): Promise<string | null> => {
+    if (typeof window === "undefined") return null;
 
-    // If waitlistId already set (from OAuthFlush or previous flush), nothing to do
-    if (overrides.waitlistId) return true;
+    // Server-owned — short-circuit once a waitlist exists
+    if (overrides.waitlistId) return overrides.waitlistId;
 
-    // Read from context state (latest data, survives OAuth redirect)
-    const data = {
-      slug: state.slug,
-      headline: state.headline,
-      subheadline: state.subheadline,
-      template: state.template,
-      brandColor: state.brandColor,
-      logoUrl: state.logoUrl,
-      ctaText: state.ctaText,
-      milestoneRewards: state.milestoneRewards,
-      qualificationEnabled: state.qualificationEnabled,
-      signupCounterEnabled: state.signupCounterEnabled,
-      signupCounterThreshold: state.signupCounterThreshold,
-      questions: state.questions,
-      emailSubject: state.emailSubject,
-      emailSenderName: state.emailSenderName,
-      emailBody: state.emailBody,
-    };
+    // Authoritative source is localStorage (survives full-page loads / OAuth
+    // redirects, when context state is still empty on first client render).
+    // Layer in-memory overrides on top for edits made since the last persist.
+    const stored = readStoredData();
+    if (!stored) return null;
 
-    if (!data.slug && !data.headline && !data.template) return true;
+    const { waitlistId: _, loading: __, ...edits } = overrides;
+    void _;
+    void __;
+    const data = { ...stored, ...edits };
+
+    // subdomain is NOT NULL on waitlists — a slug is required
+    const slug = data.slug;
+    if (!slug) return null;
 
     try {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          subdomain: data.slug || undefined,
+          subdomain: slug,
           headline: data.headline || undefined,
           subheadline: data.subheadline || undefined,
           template: data.template || undefined,
@@ -277,7 +305,7 @@ export function OnboardingFormProvider({
         }),
       });
 
-      if (!res.ok) return false;
+      if (!res.ok) return null;
 
       const result = await res.json();
       setOverrides((prev) => ({ ...prev, waitlistId: result.id }));
@@ -287,29 +315,24 @@ export function OnboardingFormProvider({
       } catch {
         // Ignore
       }
-      return true;
+      return result.id as string;
     } catch {
-      return false;
+      return null;
     }
-  }, [overrides.waitlistId, state]);
+  }, [overrides]);
 
   const clearPersisted = useCallback(() => {
     if (typeof window === "undefined") return;
-    // Mark onboarding as completed — mount effect will clear on next visit
+    // Mark onboarding as finished in a SEPARATE key — `persist` only ever
+    // writes STORAGE_KEY, so the flag survives until the next session's mount
+    // effect clears both and starts fresh. STORAGE_KEY data is left in place
+    // so the success page can still render the live preview from context.
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({ ...parsed, completed: true })
-        );
-      }
+      localStorage.setItem(DONE_KEY, "1");
     } catch {
       // Ignore
     }
     setOverrides({});
-    emitChange();
   }, []);
 
   return (

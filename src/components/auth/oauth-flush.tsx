@@ -23,7 +23,9 @@ export function OAuthFlush() {
       } = await supabase.auth.getUser();
       if (!user || cancelled) return;
 
-      // Use the context's flushToAPI which reads from in-memory state
+      // flushToAPI reads persisted data from localStorage, which is the
+      // authoritative source right after a full-page OAuth redirect (context
+      // state is still empty on first client render).
       await flushToAPIRef.current();
     }
 

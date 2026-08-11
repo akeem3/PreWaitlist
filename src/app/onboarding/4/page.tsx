@@ -81,9 +81,10 @@ export default function OnboardingStep4() {
 
       try {
         // Ensure waitlist exists on server — flush localStorage if needed
-        if (!form.waitlistId) {
-          const flushed = await form.flushToAPI();
-          if (!flushed || !form.waitlistId) {
+        let waitlistId = form.waitlistId;
+        if (!waitlistId) {
+          waitlistId = await form.flushToAPI();
+          if (!waitlistId) {
             router.replace("/onboarding/1");
             return;
           }
@@ -93,7 +94,7 @@ export default function OnboardingStep4() {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            id: form.waitlistId,
+            id: waitlistId,
             qualification_enabled: selected === "yes",
           }),
         });
