@@ -1,6 +1,6 @@
 # Epic 6 — Post-Sprint-1 Issue Resolution
 
-**Status:** ready
+**Status:** done
 **Source:** Post-Sprint-1 issue list (2026-08-10), MEMORY.md
 
 ## Design References
@@ -18,17 +18,17 @@ Resolve all remaining post-Sprint-1 issues, including two high-impact features: 
 
 ## Definition of Done
 
-All 8 remaining issues (#4, #7, #8, #9, #10, #12, #13, #14) plus 2 new high-priority features (#15, #16) are resolved. Onboarding flow follows Hopkins' sampling principle (signup after Step 3). Signup counter is available as founder toggle. Dashboard and onboarding polish are complete. Lint and build pass.
+All issues resolved. Onboarding flow follows Hopkins' sampling principle (signup after Step 3). Signup counter is available as founder toggle. Dashboard and onboarding polish are complete. Onboarding state persistence is hardened with proper lifecycle management. Lint and build pass.
 
 ## Story Index
 
-| ID  | Title                               | Depends on | Status |
-| --- | ----------------------------------- | ---------- | ------ |
-| 6.0 | Hopkins' Sampling + Signup Counter  | —          | ready  |
-| 6.1 | Dashboard UI Fixes                  | —          | ready  |
-| 6.2 | Onboarding Polish                   | 6.0        | ready  |
-| 6.3 | Step 5 Redesign + Email Mock + Sync | —          | done   |
-| 6.4 | State Persistence (Revisit)         | 6.0        | ready  |
+| ID  | Title                                       | Depends on | Status |
+| --- | ------------------------------------------- | ---------- | ------ |
+| 6.0 | Hopkins' Sampling + Signup Counter          | —          | done   |
+| 6.1 | Dashboard UI Fixes                          | —          | done   |
+| 6.2 | Onboarding Polish                           | 6.0        | done   |
+| 6.3 | Step 5 Redesign + Email Mock + Architecture | —          | done   |
+| 6.4 | State Persistence Hardening                 | 6.3        | done   |
 
 Work through these in dependency order, one at a time. Each has a `status` you should update as you go (`ready` → `in-progress` → `blocked` or `done`). A story marked `blocked` stays blocked until manually cleared — don't silently re-attempt it next session.
 
@@ -130,11 +130,11 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 ---
 
-### Story 6.3 — Step 5 Redesign + Email Mock + localStorage Sync Fix
+### Story 6.3 — Step 5 Redesign + Email Mock + Onboarding Architecture Overhaul
 
 **Status:** done
 **Design Refs:** —
-**Story:** As the founder, I want Step 5 to clearly show what my subscribers receive and launch my waitlist, so that I feel confident going live on the Free tier.
+**Story:** As the founder, I want Step 5 to clearly show what my subscribers receive and launch my waitlist, so that I feel confident going live on the Free tier. Additionally, the onboarding state management needed a complete architectural overhaul to fix deep-rooted persistence bugs.
 
 **Key design decisions:**
 
@@ -143,7 +143,6 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - **Email preview:** Mock of a real confirmation email (From, Subject, Body) — not abstract placeholders
 - **Pro helper box:** Removed — the comparison card already covers that information, reduces visual noise
 - **Email mock copy:** "You're in! Position #X on the [product] waitlist" — aligns with existing Step 5 copy and PRD standing decisions (email-only signup, no name)
-- **localStorage validation timing:** Check on every mount (safe, ~100ms latency) — recommended over cached or SPA-only approaches
 
 **Acceptance Criteria (EARS):**
 
@@ -163,42 +162,69 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 **Architecture Decisions:**
 
-1. **Comparison card replaces locked preview:** The current "locked email preview + upgrade button" layout is replaced. The comparison card shows two columns: Free features (what subscribers receive now) and Pro features (what they unlock later). This makes the Free tier feel complete and reduces upgrade friction by showing the gap clearly.
+1. **Two-Provider Split:** The single `OnboardingProvider` was split into two independent providers:
+   - `LocalOnboardingProvider` (Phase A, Steps 1-3): React `useState` + `localStorage`. No network calls. Authoritative source is localStorage. Provides `updateField`, `setWaitlistId`, `setLoading`, `flushToAPI`, `clearPersisted`, `clearDraft`.
+   - `AuthedOnboardingProvider` (Phase B, Steps 4-5): React `useState` seeded from server state. Updates via debounced PATCH. No localStorage code — structurally impossible to read or write. Provides `updateField`, `setLoading`, `patchWaitlist`.
 
-2. **Email mock shows subscriber experience:** A realistic confirmation email mock is embedded in the comparison card. From: "[Founder's product name] via PreWaitlist". Subject: "You're in! Position #X on the [product] waitlist". Body: standard confirmation copy (position, referral link placeholder). This gives the founder confidence that subscribers get a professional experience on Free.
+2. **FlushGate Component:** Replaced `OAuthFlush`. Resolves server state once on mount, then renders children inside `AuthedOnboardingProvider`. Ordering: POST (if local data) → confirm 2xx → GET full record → confirm success → only then clear localStorage. Any failure preserves local data and shows a retry UI. If 404 from GET with no local data → redirect to Step 1 (truly fresh).
 
-3. **localStorage sync — OAuthFlush handles post-OAuth sync:** Server validation on mount was removed because it races with OAuthFlush's POST (both fire on mount after OAuth redirect). OAuthFlush handles the initial sync via POST. localStorage is current for regular page loads. Stale data is cleared on mount via DONE_KEY / TTL checks.
+3. **Layout Structure:** `LocalOnboardingProvider` (always mounted, outer wrapper) → Phase A routes render directly → Phase B routes wrapped in `FlushGate` → `AuthedOnboardingProvider`.
+
+4. **Step 3 Auth Check:** If user is already authenticated when completing Step 3, skip the signup page entirely and flush directly to server via `flushToAPI`, then route to Step 4.
+
+5. **Step 1 Auth Check:** On mount, checks if user is authenticated with an existing waitlist → redirects to dashboard. Prevents duplicate flows when user already has a live waitlist.
+
+6. **Session-Flag Resume Prompt:** `sessionStorage` flag (`prewaitlist_onboarding_active`) set when data loads from localStorage. On cold landing (localStorage has data but no session flag), shows "You have an in-progress setup for '{name}' — Continue or Start Fresh?" prompt.
+
+7. **Cross-Tab Sync:** `storage` event listener in `LocalOnboardingProvider` re-hydrates React state when another tab writes to the same key. Last-write-wins (acceptable for solo onboarding form).
+
+8. **Persist Guard:** Persist effect skips writing when `waitlistId` is set (server owns data), preventing `flushToAPI`'s localStorage clear from being overwritten by the persist effect.
 
 **Dev Notes:**
 
-- T1: Comparison card — Replace current Step 5 layout. Two-column card: Free features vs Pro features. "Launch my waitlist" as primary CTA (green, full-width). Upgrade as secondary link below (`/#pricing`). Remove the separate Pro helper text box (already covered by comparison). Files: `src/app/onboarding/5/page.tsx`.
+- T1: Comparison card — Replace current Step 5 layout. Two-column card: Free features vs Pro features. "Launch my waitlist" as primary CTA (green, full-width). Upgrade as secondary link below (`/#pricing`). Remove the separate Pro helper text box. Files: `src/app/onboarding/5/page.tsx`.
 - T2: Email mock — Realistic subscriber-facing email inside the comparison card. From: `[headline] via PreWaitlist`. Subject: `You're in! Position #X on the [headline] waitlist`. Body: standard confirmation copy. Use `form.headline` for dynamic values. Files: `src/app/onboarding/5/page.tsx`.
-- T3: localStorage sync fix — Mount-time server validation was removed due to race condition with OAuthFlush. The mount effect now only handles stale data cleanup (DONE_KEY, legacy completed, TTL expiry). OAuthFlush (already in onboarding layout) handles the post-OAuth sync via POST. Files: `src/app/onboarding/context.tsx`.
+- T3: Architecture overhaul — Split `OnboardingProvider` into `LocalOnboardingProvider` + `AuthedOnboardingProvider`. New `FlushGate` component. Updated layout, Steps 4/4a (removed `flushToAPI` calls), signup page (auth check fallback), success page (`clearPersisted` type guard). Deleted `OAuthFlush` component. Files: `src/app/onboarding/context.tsx`, `src/components/auth/flush-gate.tsx` (new), `src/components/auth/oauth-flush.tsx` (deleted), `src/app/onboarding/layout.tsx`, `src/app/onboarding/4/page.tsx`, `src/app/onboarding/4a/page.tsx`, `src/app/onboarding/signup/page.tsx`, `src/app/onboarding/success/page.tsx`.
 - T4: Lint + build pass.
 
 ---
 
-### Story 6.4 — State Persistence (Revisit)
+### Story 6.4 — Onboarding State Persistence Hardening
 
-**Status:** ready
+**Status:** done
 **Design Refs:** —
-**Story:** As the founder, I want my onboarding progress to persist across page refreshes, so that I don't lose my work if I accidentally close the browser.
+**Story:** As the founder, I want my onboarding data to be properly lifecycle-managed — stale drafts detected, cross-tab sync working, and data never lost on failure — so that the onboarding experience is robust and reliable.
+
+**Background:** After the Story 6.3 architecture overhaul, a localStorage persistence audit identified 8 holes where stale data could survive across sessions, causing users to never see a fresh Step 1 even after their server data was deleted.
 
 **Acceptance Criteria (EARS):**
 
-- AC1: Onboarding state shall persist to localStorage on every change.
-- AC2: On page refresh, the system shall restore state from localStorage without flash of default content.
-- AC3: The system shall fetch fresh data from API on mount and merge with localStorage.
-- AC4: The system shall redirect to the appropriate step based on data completeness.
-- AC5: localStorage shall be cleared on success page after onboarding completes.
-- AC6: No infinite loops or React errors shall occur during state persistence.
-- AC7: Lint and build shall pass with zero errors.
+- AC1: FlushGate shall only clear localStorage after confirmed POST + GET success. Any failure shall preserve local data and show a retry UI.
+- AC2: Step 1 shall check auth state on mount. If user is authenticated with an existing waitlist, redirect to dashboard.
+- AC3: Step 3 shall check auth state before routing. If already authenticated, skip signup page and flush directly to server.
+- AC4: A sessionStorage flag shall distinguish "cold landing with stale draft" from "mid-flow navigation". Cold landings shall show a resume prompt.
+- AC5: The resume prompt shall allow the user to "Continue" (restore draft) or "Start Fresh" (clear localStorage + session flag).
+- AC6: Cross-tab sync shall re-hydrate React state from localStorage when another tab writes.
+- AC7: The persist effect shall not write to localStorage when `waitlistId` is set (server owns the data).
+- AC8: Lint and build shall pass with zero errors.
 
-**Tasks:** T1 (AC1-AC6) Implement state persistence without loops · T2 (AC7) Run lint + build
+**Tasks:** T1 (AC1) FlushGate ordering fix · T2 (AC2-AC3) Auth checks · T3 (AC4-AC5) Resume prompt · T4 (AC6-AC7) Cross-tab sync + persist guard · T5 (AC8) Run lint + build
 
-**Out of scope:** Real-time sync across tabs, server-side state persistence.
+**Out of scope:** Logout clear (no sign-out handler exists yet), server-side unique constraint on `user_id` (database migration, Sprint 2), incognito/cross-device resume (different feature scope).
+
+**Audit Findings (from Claude Chat analysis):**
+
+1. **Abandon + return within TTL** — `LocalOnboardingProvider` restored data unconditionally on cold landing. Fixed with session-flag resume prompt.
+2. **FlushGate data loss on failure** — localStorage was cleared before confirming POST+GET success. Fixed with ordering fix.
+3. **flushToAPI persistence race** — `setState` inside `flushToAPI` triggered the persist effect, re-writing data to localStorage after clear. Fixed with persist guard (skip when `waitlistId` set).
+4. **Authenticated user re-entering Phase A** — No check for existing waitlist. Fixed with Step 1 auth check + Step 3 conditional boundary.
+5. **Cross-tab blindness** — Tabs were fully independent. Fixed with `storage` event listener.
+6. **Resume prompt immovable** — Initial implementation used immutable `useState` initializer. Fixed with mutable `setResumeState`.
 
 **Dev Notes:**
 
-- T1: State persistence — Previous implementation caused infinite loops. Key insights from research: (1) `getSnapshot` must return a primitive string, not parsed object. (2) Writes must be imperative from setters, not via useEffect. (3) Use `useSyncExternalStore` with `getServerSnapshot` returning initialState. Files: `src/app/onboarding/context.tsx`, `src/app/api/waitlist/route.ts` (GET endpoint).
-- T2: Lint + build pass.
+- T1: FlushGate — Restructure to: POST → confirm 2xx → GET → confirm success → clear localStorage. Error state shows retry button. Only redirect to Step 1 when GET 404 with no local data. Files: `src/components/auth/flush-gate.tsx`.
+- T2: Auth checks — Step 1: `supabase.auth.getUser()` → if user + waitlist exists → redirect to dashboard. Step 3: Same check → if authenticated, call `flushToAPI` directly and route to Step 4 instead of signup. Files: `src/app/onboarding/1/page.tsx`, `src/app/onboarding/3/page.tsx`.
+- T3: Resume prompt — `SESSION_FLAG_KEY` in sessionStorage, set by `LocalOnboardingProvider` on mount with restored data. `hasStaleDraft()` exported from context. Step 1 lazy initializer checks and shows prompt. `clearDraft()` clears both localStorage + session flag. Files: `src/app/onboarding/context.tsx`, `src/app/onboarding/1/page.tsx`.
+- T4: Cross-tab — `storage` event listener merges data from other tabs. Persist guard — `useEffect` returns early when `state.waitlistId` is truthy. Files: `src/app/onboarding/context.tsx`.
+- T5: Lint + build pass.

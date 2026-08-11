@@ -372,14 +372,14 @@ Implementation order:
 
 ## Layout Structure
 
-| File                                       | Purpose                                                       |
-| ------------------------------------------ | ------------------------------------------------------------- |
-| `src/app/layout.tsx`                       | Root layout — wraps children in `<MarketingLayout>`           |
-| `src/app/(marketing)/layout.tsx`           | Passthrough `<>{children}</>`                                 |
-| `src/app/(auth)/layout.tsx`                | Passthrough `<>{children}</>`                                 |
-| `src/app/onboarding/layout.tsx`            | Split-pane layout — progress bar, back nav, mobile responsive |
-| `src/app/api/waitlist/route.ts`            | POST (create) + PATCH (update) waitlist records               |
-| `src/app/api/waitlist/check-slug/route.ts` | GET slug availability check                                   |
+| File                                       | Purpose                                                                  |
+| ------------------------------------------ | ------------------------------------------------------------------------ |
+| `src/app/layout.tsx`                       | Root layout — wraps children in `<MarketingLayout>`                      |
+| `src/app/(marketing)/layout.tsx`           | Passthrough `<>{children}</>`                                            |
+| `src/app/(auth)/layout.tsx`                | Passthrough `<>{children}</>`                                            |
+| `src/app/onboarding/layout.tsx`            | Split-pane layout — LocalOnboardingProvider outer, FlushGate for Phase B |
+| `src/app/api/waitlist/route.ts`            | POST (create) + PATCH (update) + GET (read) waitlist records             |
+| `src/app/api/waitlist/check-slug/route.ts` | GET slug availability check                                              |
 
 ## Testing
 
@@ -473,26 +473,8 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 ## Gotchas / Corrected Assumptions
 
-- **Onboarding hydration + OAuth reroute to Step 1 (2026-08-11):** `useSyncExternalStore`
-  returns `getServerSnapshot()` during SSR _and_ the first client hydration render. So on a
-  full page load the onboarding context's `state` is the empty `initialState` for the first
-  commit. Anything that runs on mount and reads context state (e.g. `OAuthFlush` →
-  `flushToAPI`) sees empty data, and the `persist(state)` effect will overwrite the real
-  localStorage Steps 1-3 data with that empty state. **Rule:** after a full-page load,
-  localStorage is the authoritative source — read it directly, never context `state` — and
-  gate `persist` on `persistedState === initialState` (skip writing during hydration).
-  `flushToAPI` in `src/app/onboarding/context.tsx` now does exactly this and hard-requires a
-  non-empty `slug` (subdomain is NOT NULL in `waitlists`; the old
-  `!slug && !headline && !template` guard was useless because `template` defaults to
-  `"minimal"`, truthy).
-- **Completed/cleared-flag must live in its own localStorage key (2026-08-11):** storing
-  the onboarding `completed` marker inside the persisted form object fails — the next
-  `persist` overwrites it. Use a separate key (`prewaitlist_onboarding_done`) that `persist`
-  never writes; the mount effect clears both keys on the next full page load. Legacy
-  `completed: true` inside the form object is still honored by the mount effect.
-- **`react-hooks/set-state-in-effect` (ESLint):** calling `setState` synchronously in an
-  effect body is an error in this config. A "hasHydrated" style flag must be implemented
-  without it (here: reference-compare `persistedState === initialState` to gate `persist`).
+- **Onboarding architecture overhaul (2026-08-11):** The single `OnboardingProvider` with `useSyncExternalStore` was replaced by a two-provider split: `LocalOnboardingProvider` (Phase A, Steps 1-3, localStorage) + `AuthedOnboardingProvider` (Phase B, Steps 4-5, API). `FlushGate` handles the transition. This eliminated the hydration race, persist-effect-overwrite, and `DONE_KEY` issues entirely. The old gotcha about `useSyncExternalStore` returning `getServerSnapshot()` during hydration is no longer relevant — the new architecture uses plain `useState` with a lazy initializer that reads localStorage directly.
+- **`react-hooks/set-state-in-effect` (ESLint):** calling `setState` synchronously in an effect body is an error in this config. Workaround: use lazy `useState` initializer for localStorage reads, or `useRef` for values that don't need to trigger renders.
 - **Tailwind v4 scans ALL project files** — including `.md` files. If documentation contains text like `text-[length:var(...)]` or `text-[var(--badge-font-size)]` (even in backtick code spans), Tailwind generates broken CSS utilities from them. Fix: add `@source not "../../docs"` and `@source not "../../.memory"` to `globals.css`.
 - **`--text-*` tokens in `@theme` conflict with Tailwind's `text-` utility namespace** — Tailwind v4 auto-generates utilities from `@theme` token names. Tokens starting with `--text-` get interpreted as color utilities, not font-size. Use direct Tailwind classes (`text-xs`, `text-sm`) instead of `text-[var(--text-xs)]`.
 
@@ -512,9 +494,10 @@ Design specs use hex values that don't always match the token system exactly. Ma
 12. ~~Story 4.3 — Step 3 (Make It Yours)~~ ✅ Done + Meta Preview OG-card + milestone rewards + live sync
 13. ~~Story 4.4 — Step 4 (Qualification Decision)~~ ✅ Done
 14. ~~Story 4.5 — Step 4a (Configure Questions)~~ ✅ Done
-15. **Story 4.6 — Step 5 (Email Setup + Launch)** ← NEXT
-16. Story 4.7 — Success Screen
-17. Create Epic 5 branch from dev — Dashboard + Store Features
+15. ~~Story 4.6 — Step 5 (Email Setup + Launch)~~ ✅ Done (part of Epic 6)
+16. ~~Story 4.7 — Success Screen~~ ✅ Done (part of Epic 6)
+17. ~~Epic 6 — Post-Sprint-1 Issues~~ ✅ Done (all 5 stories, incl. architecture overhaul)
+18. Create Epic 7 branch from dev — Dashboard + Store Features (Sprint 2)
 
 ## Decision + bug fix: "Powered by PreWaitlist" footer (2026-07)
 
@@ -699,7 +682,7 @@ canonical. The API routes (`POST /api/updates`) and auth callback logic
 
 ### Post-Sprint-1 Issue List (2026-08-08)
 
-**Status:** 8 done, 6 remaining
+**Status:** All done (Epic 6 complete)
 
 | #   | Issue                                                                                                        | Status   | File(s)                                                                                                                                                                                                                                                   |
 | --- | ------------------------------------------------------------------------------------------------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -707,22 +690,22 @@ canonical. The API routes (`POST /api/updates`) and auth callback logic
 | 2   | Color picker with 8 preset swatches + hex input                                                              | **Done** | `src/app/onboarding/3/page.tsx`                                                                                                                                                                                                                           |
 | 3   | Milestone rewards — editable thresholds, add/remove tiers, subscriber preview                                | **Done** | `src/app/onboarding/3/page.tsx`, `components/onboarding/live-preview.tsx`, `src/app/api/waitlist/route.ts`, `docs/stories/epic0.story03-supabase-schema.sql`                                                                                              |
 | 4   | Loading slowness + state persistence — font fix, localStorage, GET endpoint, loading skeletons, lazy preview | **Done** | `src/app/layout.tsx`, `src/app/globals.css`, `src/app/onboarding/context.tsx`, `src/app/api/waitlist/route.ts`, `src/app/onboarding/loading.tsx`, `src/app/dashboard/loading.tsx`, `src/app/onboarding/layout.tsx`, `src/app/onboarding/success/page.tsx` |
-| 5   | Qualification step dropdown broken                                                                           | Open     | `src/app/onboarding/4a/page.tsx`                                                                                                                                                                                                                          |
+| 5   | Qualification step dropdown broken                                                                           | **Done** | `src/app/onboarding/4a/page.tsx`                                                                                                                                                                                                                          |
 | 6   | Powered by footer uses brand color + full logo                                                               | **Done** | `components/share/powered-by-footer.tsx`                                                                                                                                                                                                                  |
 | 7   | Pro preview explanation                                                                                      | **Done** | `src/app/onboarding/5/page.tsx` (replaced by comparison card in Story 6.3)                                                                                                                                                                                |
-| 8   | Success page scrollable                                                                                      | Open     | `src/app/onboarding/success/page.tsx`                                                                                                                                                                                                                     |
-| 9   | Dashboard link semi-bold                                                                                     | Open     | `src/app/dashboard/client.tsx`                                                                                                                                                                                                                            |
-| 10  | Dashboard fallback name shows "PreWaitlist" instead of founder's product                                     | Open     | `src/app/dashboard/client.tsx`                                                                                                                                                                                                                            |
+| 8   | Success page scrollable                                                                                      | **Done** | `src/app/onboarding/success/page.tsx`                                                                                                                                                                                                                     |
+| 9   | Dashboard link semi-bold                                                                                     | **Done** | `src/app/dashboard/client.tsx`                                                                                                                                                                                                                            |
+| 10  | Dashboard fallback name shows "PreWaitlist" instead of founder's product                                     | **Done** | `src/app/dashboard/client.tsx`                                                                                                                                                                                                                            |
 | 11  | Meta preview CTA uses user's brand color                                                                     | **Done** | `src/app/onboarding/3/page.tsx`, `src/app/onboarding/success/page.tsx`                                                                                                                                                                                    |
-| 12  | Milestone knob right                                                                                         | Open     | —                                                                                                                                                                                                                                                         |
-| 13  | Optional questions visible                                                                                   | Open     | —                                                                                                                                                                                                                                                         |
+| 12  | Milestone knob right                                                                                         | **Done** | —                                                                                                                                                                                                                                                         |
+| 13  | Optional questions visible                                                                                   | **Done** | —                                                                                                                                                                                                                                                         |
 | 14  | Email customisation GIF → replaced by email mock in Story 6.3                                                | **Done** | `src/app/onboarding/5/page.tsx`                                                                                                                                                                                                                           |
 | 15  | Move signup to after Step 3 (Hopkins' sampling)                                                              | **New**  | `src/app/onboarding/context.tsx`, `src/app/(auth)/signup/page.tsx`, `src/app/auth/callback/route.ts`                                                                                                                                                      |
 | 16  | Signup counter bar (social proof)                                                                            | **New**  | `src/app/(public)/[subdomain]/page.tsx`, `components/onboarding/live-preview.tsx`, `src/app/onboarding/3/page.tsx`                                                                                                                                        |
 
 ### Issue #15: Move Signup to After Step 3 (Hopkins' Sampling) — 2026-08-10
 
-**Status:** NEW — High Priority
+**Status:** Done (Story 6.0 + 6.3)
 
 **The Problem:** Current flow asks for signup before user experiences the product. This violates Hopkins' rule of sampling — users should experience the product first, making signup a natural action.
 
@@ -762,7 +745,7 @@ canonical. The API routes (`POST /api/updates`) and auth callback logic
 
 ### Issue #16: Signup Counter Bar (Social Proof) — 2026-08-10
 
-**Status:** NEW — High Priority
+**Status:** Done (Story 6.0)
 
 **The Research:** Live signup counters outperform vague claims. Proof placed next to signup form reduces "is this real?" hesitation at the moment of decision. Low build cost — data pipeline already exists.
 
