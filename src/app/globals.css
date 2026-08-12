@@ -29,6 +29,11 @@
   --color-info: #2563eb;
   --color-info-foreground: #ffffff;
 
+  /* Design System v2.0 — Warmth Status Colors */
+  --color-status-hot: #d0492f;
+  --color-status-warm: #c7841a;
+  --color-status-cold: #3b6fa6;
+
   /* Dark Template Tokens */
   --color-dark-template-bg: #1c1917;
   --color-dark-template-text: #faf8f4;

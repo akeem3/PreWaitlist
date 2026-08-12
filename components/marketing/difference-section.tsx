@@ -37,16 +37,18 @@ export function DifferenceSection() {
                 <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-accent" />
                 <p className="text-body-lg">
                   <strong className="text-accent">Sarah</strong>
-                  {"\u00A0"}— Hot. Opened every email. Told you what tool
-                  she&apos;s using now.
+                  {"\u00A0"}—{" "}
+                  <span className="text-status-hot font-semibold">Hot</span>.
+                  Opened every email. Told you what tool she&apos;s using now.
                 </p>
               </div>
               <div className="flex items-start gap-3">
-                <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-muted-foreground/40" />
+                <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-accent" />
                 <p className="text-body-lg">
-                  <strong className="text-muted-foreground">James</strong>
-                  {"\u00A0"}— Cold. Signed up three months ago. Hasn&apos;t
-                  opened one since.
+                  <strong className="text-accent">James</strong>
+                  {"\u00A0"}—{" "}
+                  <span className="text-status-cold font-semibold">Cold</span>.
+                  Signed up three months ago. Hasn&apos;t opened one since.
                 </p>
               </div>
             </div>
