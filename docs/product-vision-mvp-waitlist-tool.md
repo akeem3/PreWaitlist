@@ -4,7 +4,7 @@
 **Product:** Pre-Launch Waitlist Tool
 **Prepared By:** Abdul-Hakeem Hassan
 **Date:** June 2026
-**Version:** 4.0 — Sprint breakdown added. Build timeline restructured into 4 sprints with screen lists, exit conditions, and design-build sequencing. Synced with User Flow v4.3.
+**Version:** 4.2 — 2026-08-13: Dashboard navigation restructured from Sprint 1's top tabs to a left sidebar + top bar, per dashboard-layout research; full dashboard design content split into a dedicated `dashboard-design-spec.md`, referenced from Module 5 and Sprint 2. Sprint 2's "what gets built" now itemizes the shell restructure, the locked/empty warmth placeholder, and the dual-location (onboarding + Settings) signup-counter threshold. Previous sync (v4.1, same date): signup counter threshold config added to Module 1 + Pricing; qualification-question display timing corrected to inline/pre-submit; Sprint 2 screen list updated to retire S-B2a and add S-B5 Public Leaderboard page; leaderboard anonymous-subscriber display convention added.
 **Follows From:** Problem Brief v2 · User Profile v2 · JTBD v2 · Field Research Report v1
 
 ---
@@ -78,21 +78,21 @@ The response: own the one dimension nobody has at the free or $15/month tier —
 
 _The founder's first artifact. The public face of their product before it exists. Design quality is the competitive edge while Presignup's builder is in beta._
 
-| Feature                                                    | User                                 | Grade     | Why                                                                                                                                                                                                                       |
-| ---------------------------------------------------------- | ------------------------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Page editor: headline, subheadline, logo, CTA text, colour | [Founder]                            | 🔵 Core   | Without this there is no page                                                                                                                                                                                             |
-| 3 starter templates (minimal, bold, dark)                  | [Founder]                            | 🔵 Core   | Covers the aesthetic preferences of 90% of target audience. Presignup's builder is in beta — this is the window                                                                                                           |
-| Mobile-responsive output                                   | [Subscriber]                         | 🔵 Core   | Most visitors arrive on mobile via a shared Twitter/X link. Non-negotiable                                                                                                                                                |
-| Live preview while editing                                 | [Founder]                            | 🔵 Core   | Instant feedback kills the hesitation that makes founders second-guess and abandon                                                                                                                                        |
-| Shareable subdomain (yourproduct.toolname.com)             | [Founder] + [Subscriber]             | 🔵 Core   | Live the moment the page is saved. Free tier gets this. Also the organic flywheel — every shared link is a free ad                                                                                                        |
-| Social meta tags (og:title, og:image, og:description)      | [Subscriber]                         | 🔵 Core   | Auto-generated from page content. If the Twitter link preview looks bad, the founder stops using the tool and the subscriber never clicks through                                                                         |
-| Founder updates feed on the page                           | [Founder] posts · [Subscriber] reads | 🔵 Core   | Short public posts: "Just hit 200 signups. Here's what we're building." No competitor has this. Drives subscriber return visits, which feeds Warmth Tracking. First step toward community without the infrastructure cost |
-| Live signup count display ("Join 247 others")              | [Subscriber]                         | 🟢 Should | Research-proven conversion lift. Toggleable — founders with low counts can hide it early                                                                                                                                  |
-| Countdown timer to launch                                  | [Subscriber]                         | ⚪ v1.1   | Useful for founders with a hard launch date. Not universally needed. Add based on requests                                                                                                                                |
-| Video embed section                                        | [Subscriber]                         | ⚪ v1.1   | Some founders want to show a demo. Adds complexity. Defer                                                                                                                                                                 |
-| More templates (5+)                                        | [Founder]                            | ⚪ v1.1   | Startup, creator, mobile app, game, SaaS variants. Expand after core 3 are validated                                                                                                                                      |
-| Custom fonts                                               | [Founder]                            | ⚪ v1.1   | Design-sensitive creators want this. Not needed for v1                                                                                                                                                                    |
-| Custom domain (user's own domain)                          | [Founder] + [Subscriber]             | ⚪ v1.1   | High-demand. Most technically complex (DNS, SSL). Ship after first paying users                                                                                                                                           |
+| Feature                                                    | User                                 | Grade     | Why                                                                                                                                                                                                                                                                                                                                             |
+| ---------------------------------------------------------- | ------------------------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Page editor: headline, subheadline, logo, CTA text, colour | [Founder]                            | 🔵 Core   | Without this there is no page                                                                                                                                                                                                                                                                                                                   |
+| 3 starter templates (minimal, bold, dark)                  | [Founder]                            | 🔵 Core   | Covers the aesthetic preferences of 90% of target audience. Presignup's builder is in beta — this is the window                                                                                                                                                                                                                                 |
+| Mobile-responsive output                                   | [Subscriber]                         | 🔵 Core   | Most visitors arrive on mobile via a shared Twitter/X link. Non-negotiable                                                                                                                                                                                                                                                                      |
+| Live preview while editing                                 | [Founder]                            | 🔵 Core   | Instant feedback kills the hesitation that makes founders second-guess and abandon                                                                                                                                                                                                                                                              |
+| Shareable subdomain (yourproduct.toolname.com)             | [Founder] + [Subscriber]             | 🔵 Core   | Live the moment the page is saved. Free tier gets this. Also the organic flywheel — every shared link is a free ad                                                                                                                                                                                                                              |
+| Social meta tags (og:title, og:image, og:description)      | [Subscriber]                         | 🔵 Core   | Auto-generated from page content. If the Twitter link preview looks bad, the founder stops using the tool and the subscriber never clicks through                                                                                                                                                                                               |
+| Founder updates feed on the page                           | [Founder] posts · [Subscriber] reads | 🔵 Core   | Short public posts: "Just hit 200 signups. Here's what we're building." No competitor has this. Drives subscriber return visits, which feeds Warmth Tracking. First step toward community without the infrastructure cost                                                                                                                       |
+| Live signup count display ("1,189 people in line")         | [Subscriber]                         | 🟢 Should | Research-proven conversion lift. Founder-toggleable, with a configurable threshold — "show once I have N or more signups" — so founders with a low early count can delay visibility rather than hide it outright. Free tier feature, same category as the referral leaderboard, not gated to paid tiers. [CONFIRMED BUILT — Sprint 1, Epic 6.0] |
+| Countdown timer to launch                                  | [Subscriber]                         | ⚪ v1.1   | Useful for founders with a hard launch date. Not universally needed. Add based on requests                                                                                                                                                                                                                                                      |
+| Video embed section                                        | [Subscriber]                         | ⚪ v1.1   | Some founders want to show a demo. Adds complexity. Defer                                                                                                                                                                                                                                                                                       |
+| More templates (5+)                                        | [Founder]                            | ⚪ v1.1   | Startup, creator, mobile app, game, SaaS variants. Expand after core 3 are validated                                                                                                                                                                                                                                                            |
+| Custom fonts                                               | [Founder]                            | ⚪ v1.1   | Design-sensitive creators want this. Not needed for v1                                                                                                                                                                                                                                                                                          |
+| Custom domain (user's own domain)                          | [Founder] + [Subscriber]             | ⚪ v1.1   | High-demand. Most technically complex (DNS, SSL). Ship after first paying users                                                                                                                                                                                                                                                                 |
 
 ---
 
@@ -108,7 +108,7 @@ _The engine. The referral loop drives growth. The qualification layer is the dif
 | Position tracking (where am I in the queue)                                                                                                         | [Subscriber]                              | 🔵 Core   | "You're #47 in line" creates urgency and social proof. Shown on thank-you page and in confirmation email                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Position recalculation on referral                                                                                                                  | [Subscriber]                              | 🔵 Core   | When someone you referred signs up, you move up automatically. Real-time                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Thank-you page with referral link + share buttons + milestone rewards                                                                               | [Subscriber]                              | 🔵 Core   | Highest-intent screen in the entire funnel — subscriber is at peak motivation the moment they sign up. What they see in the next 15 seconds determines whether they share the link or close the tab. Must contain: position number, referral link, pre-filled tweet (removes blank-page problem), copy/share buttons, milestone reward ladder (configured by founder — see below). Build this first within the referral sprint, not last — the referral loop cannot be tested end-to-end until it exists                             |
-| Public leaderboard (referral count + quality score)                                                                                                 | [Subscriber] sees · [Founder] monitors    | 🔵 Core   | Two columns: raw referral count AND engagement-weighted quality score. Creates competition. No competitor shows both                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Public leaderboard (referral count + quality score)                                                                                                 | [Subscriber] sees · [Founder] monitors    | 🔵 Core   | Two columns: raw referral count AND engagement-weighted quality score. Creates competition. No competitor shows both. Display name is optional — captured post-signup on the thank-you page ("What should we call you?"), not at initial email capture. Subscribers who skip it are shown as a masked email (e.g., "j••••n") rather than a generic "Subscriber #142" — keeps the leaderboard human without exposing the full address. [DECIDED — 2026-08-13]                                                                         |
 | Pre-filled share messages (Twitter, copy link)                                                                                                      | [Subscriber]                              | 🔵 Core   | Removes the blank-page problem — subscriber knows exactly what to post                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Referral event log                                                                                                                                  | [Founder]                                 | 🔵 Core   | Which signup came from which link. Foundation for analytics and position recalculation                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Referral quality score                                                                                                                              | [Founder]                                 | 🔵 Core   | Calculated from how many of a referrer's signups completed a qualification question, returned to the page, or opened an email. Simple weighted calculation — no AI. Shows alongside raw count in the leaderboard. "John: 50 referrals / 18 qualified." No competitor has this                                                                                                                                                                                                                                                        |
@@ -158,8 +158,6 @@ _No tool below $29/month gives broadcast email. Adding warmth-segmented sending 
 
 _The founder's control room. Qualification breakdown, warmth distribution, and referral quality make this dashboard meaningfully better than anything in the market._
 
-> **Sprint 1 note:** The dashboard implemented in Epic 5 is a **functional placeholder** — stat cards show em-dashes, nav tabs are visual-only, checklist is basic. This satisfies the Sprint 1 exit condition (founder lands on a working page after onboarding) but all dashboard UI will be **torn down and replaced** in Sprint 2 when real subscriber data, analytics, and settings ship. The API routes (`POST /api/updates`) and acquisition capture logic are permanent — only the dashboard UI is placeholder.
-
 | Feature                                                                                                                                                                                                         | User      | Grade   | Why                                                                                                                                                                          |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Total signups counter                                                                                                                                                                                           | [Founder] | 🔵 Core | First thing every founder checks after posting                                                                                                                               |
@@ -175,6 +173,8 @@ _The founder's control room. Qualification breakdown, warmth distribution, and r
 | Device breakdown (mobile vs desktop)                                                                                                                                                                            | [Founder] | ⚪ v1.1 | Context, not action. Not useful at pre-launch scale                                                                                                                          |
 | Conversion rate (visitors to signups)                                                                                                                                                                           | [Founder] | ⚪ v1.1 | Requires visitor tracking layer. Adds complexity. Post-MVP                                                                                                                   |
 | A/B testing                                                                                                                                                                                                     | [Founder] | 🔴 Out  | Pre-launch traffic too low for statistical significance. Not this product                                                                                                    |
+
+**[UPDATED — 2026-08-13]** Navigation architecture: left sidebar (Overview, Subscribers, Qualification, Leaderboard, Warmth, Updates, Broadcast, Settings) + top bar for global actions (live URL/copy, share shortcut, notifications), replacing Sprint 1's top-tab shell. Warmth distribution ships as a locked/empty placeholder in Sprint 2 (real engine in Sprint 3, per the sprint breakdown below). Top referrers/leaderboard: subscribers who skip the optional post-signup name field display as a masked email rather than a bare identifier. Full panel-by-panel content and copy for all four dashboard states (empty / active / warning / pre-launch) is specified in `dashboard-design-spec.md` — this table stays the feature-grading reference, that document is the design source of truth.
 
 ---
 
@@ -236,28 +236,29 @@ Each tier is designed for a specific buyer, not assembled arbitrarily. The test 
 
 The fence between Pro and Growth is automation + team. A solo founder does not need either. A small team does, and will pay for it without hesitation.
 
-|                                     | Free            | Pro — $15/mo   | Growth — $29/mo                                        |
-| ----------------------------------- | --------------- | -------------- | ------------------------------------------------------ |
-| **Waitlists**                       | 1               | Unlimited      | Unlimited                                              |
-| **Signups per waitlist**            | 500             | Unlimited      | Unlimited                                              |
-| **Templates**                       | 3               | 3 + new ones   | 3 + new ones                                           |
-| **Referral system**                 | ✅              | ✅             | ✅                                                     |
-| **Qualification questions**         | 2 max           | 5 max          | Unlimited                                              |
-| **Qualification dashboard**         | Basic aggregate | Full breakdown | Full breakdown + filterable export                     |
-| **Warmth tracking (view)**          | ✅              | ✅             | ✅                                                     |
-| **Automated warmth alerts**         | ❌              | ❌             | ✅ — tool emails founder when cold % crosses threshold |
-| **Founder updates feed**            | ✅              | ✅             | ✅                                                     |
-| **Confirmation + "moved up" email** | ✅              | ✅             | ✅                                                     |
-| **Broadcast email**                 | ❌              | ✅             | ✅                                                     |
-| **Warmth-segmented broadcast**      | ❌              | ✅             | ✅                                                     |
-| **Email customisation**             | ❌              | ✅             | ✅                                                     |
-| **CSV export (all columns)**        | ✅              | ✅             | ✅                                                     |
-| **Custom subdomain**                | ✅              | ✅             | ✅                                                     |
-| **Custom domain**                   | ❌              | ✅ (v1.1)      | ✅ (v1.1)                                              |
-| **"Powered by" footer**             | Shows           | Removed        | Removed                                                |
-| **Dashboard analytics**             | Basic           | Full           | Full + referral tree visualisation (v1.1)              |
-| **Team member access**              | ❌              | ❌             | ✅ — up to 3 members (v1.1)                            |
-| **Priority support**                | ❌              | ❌             | ✅ — 24hr response guarantee                           |
+|                                     | Free                                   | Pro — $15/mo   | Growth — $29/mo                                        |
+| ----------------------------------- | -------------------------------------- | -------------- | ------------------------------------------------------ |
+| **Waitlists**                       | 1                                      | Unlimited      | Unlimited                                              |
+| **Signups per waitlist**            | 500                                    | Unlimited      | Unlimited                                              |
+| **Templates**                       | 3                                      | 3 + new ones   | 3 + new ones                                           |
+| **Referral system**                 | ✅                                     | ✅             | ✅                                                     |
+| **Live signup counter**             | ✅ — founder sets visibility threshold | ✅             | ✅                                                     |
+| **Qualification questions**         | 2 max                                  | 5 max          | Unlimited                                              |
+| **Qualification dashboard**         | Basic aggregate                        | Full breakdown | Full breakdown + filterable export                     |
+| **Warmth tracking (view)**          | ✅                                     | ✅             | ✅                                                     |
+| **Automated warmth alerts**         | ❌                                     | ❌             | ✅ — tool emails founder when cold % crosses threshold |
+| **Founder updates feed**            | ✅                                     | ✅             | ✅                                                     |
+| **Confirmation + "moved up" email** | ✅                                     | ✅             | ✅                                                     |
+| **Broadcast email**                 | ❌                                     | ✅             | ✅                                                     |
+| **Warmth-segmented broadcast**      | ❌                                     | ✅             | ✅                                                     |
+| **Email customisation**             | ❌                                     | ✅             | ✅                                                     |
+| **CSV export (all columns)**        | ✅                                     | ✅             | ✅                                                     |
+| **Custom subdomain**                | ✅                                     | ✅             | ✅                                                     |
+| **Custom domain**                   | ❌                                     | ✅ (v1.1)      | ✅ (v1.1)                                              |
+| **"Powered by" footer**             | Shows                                  | Removed        | Removed                                                |
+| **Dashboard analytics**             | Basic                                  | Full           | Full + referral tree visualisation (v1.1)              |
+| **Team member access**              | ❌                                     | ❌             | ✅ — up to 3 members (v1.1)                            |
+| **Priority support**                | ❌                                     | ❌             | ✅ — 24hr response guarantee                           |
 
 **Why automated warmth alerts are the Growth fence feature:** A solo founder checks their dashboard manually. A small team cannot — they are coordinating multiple launch tasks. The alert — "40% of your list has gone cold, action recommended" — sent automatically to the founder's email is the feature that makes the tool manage itself rather than requiring supervision. It has wide appeal to Profile 3 and zero appeal to the price-sensitive Profile 1 who would rather stay on Pro. That is a textbook fence attribute.
 
@@ -269,7 +270,7 @@ The fence between Pro and Growth is automation + team. A solo founder does not n
 
 | Layer               | Tool                    | Cost at MVP            |
 | ------------------- | ----------------------- | ---------------------- |
-| Frontend + backend  | Next.js 14 (App Router) | Free                   |
+| Frontend + backend  | Next.js 14 (App Router) | Free                   | <!-- [CORRECTED 2026-08-06]: superseded — actual build uses Next.js 16, required for `proxy.ts` wildcard-subdomain routing (`middleware.ts` is deprecated). See PRD-Sprint-1.md §7.1 and §9. --> |
 | Database + auth     | Supabase                | Free tier              |
 | Transactional email | Resend                  | Free (100 emails/day)  |
 | Payments            | Paddle (MoR)            | 5% + $0.50/transaction |
@@ -316,7 +317,8 @@ The build is structured in four sprints. Each sprint has a clear scope, a define
 - Subdomain routing (yourproduct.[tool].com live on save in Step 1)
 - Live preview in page editor (Step 3)
 - Social meta tag auto-generation
-- Milestone rewards configuration panel (Step 3)
+- Milestone rewards configuration panel (Step 3) — multi-tier ladder (add/remove tiers, referral count → reward text per tier)
+- Signup counter toggle + visibility threshold configuration (Step 3) — [ADDED, built in Epic 6.0, not in original Sprint 1 screen scope]
 - Qualification questions configuration (Step 4a)
 - Email setup screen with tier-locked state (Step 5)
 - Success screen with sharing tools (F-C6)
@@ -335,32 +337,39 @@ The build is structured in four sprints. Each sprint has a clear scope, a define
 
 **Screens to wireframe and design before building:**
 
-| Screen                                                    | Node     | Priority |
-| --------------------------------------------------------- | -------- | -------- |
-| Public waitlist page                                      | S-B1     | 🔵 Core  |
-| Qualification questions — subscriber view                 | S-B2a    | 🔵 Core  |
-| Thank-you page — direct signup (with milestone rewards)   | S-B4a    | 🔵 Core  |
-| Thank-you page — referred signup (with milestone rewards) | S-B4b    | 🔵 Core  |
-| Duplicate email message                                   | S-B3-DUP | 🔵 Core  |
-| Dashboard — active state (full panels, real data)         | F-G2     | 🔵 Core  |
+| Screen                                                                                      | Node     | Priority |
+| ------------------------------------------------------------------------------------------- | -------- | -------- |
+| Public waitlist page (qualification questions shown inline, pre-submit — see note)          | S-B1     | 🔵 Core  |
+| Thank-you page — direct signup (with milestone rewards)                                     | S-B4a    | 🔵 Core  |
+| Thank-you page — referred signup (with milestone rewards)                                   | S-B4b    | 🔵 Core  |
+| Duplicate email message                                                                     | S-B3-DUP | 🔵 Core  |
+| Public leaderboard page ("See where you rank")                                              | S-B5     | 🔵 Core  |
+| Dashboard — active state (full panels, real data; warmth panel locked/empty — see Sprint 3) | F-G2     | 🔵 Core  |
+
+**[UPDATED — 2026-08-13]** S-B2a is retired as a standalone node. Sprint 1's build showed qualification questions as inline optional fields on the same form as S-B1, displayed pre-submit — matching PRD-Sprint-1 Standing Decision #2, not the "post-email-capture" sequence this table previously implied. No separate screen or wireframe is needed for it. S-B5 (public leaderboard) is added — it was already listed under "What gets built" below and referenced by the thank-you page's "See where you rank" link, but had never been given its own screen node.
+
+**[UPDATED — 2026-08-13] F-G2 is now a shell restructure, not just new panels.** Sprint 1 built the dashboard shell with top nav tabs (Epic 5.1). Per dashboard-layout research, Sprint 2 replaces this with a left sidebar (Overview, Subscribers, Qualification, Leaderboard, Warmth, Updates, Broadcast, Settings) plus a top bar for global actions (live URL/copy, share shortcut, notifications, account). Full IA, panel-by-panel content, and copy for all four dashboard states now live in a dedicated document, `dashboard-design-spec.md` — this section summarizes only what changed.
 
 **What gets built:**
 
 - Public waitlist page (responsive, 3 template variants rendering correctly)
 - Email capture form with duplicate check
-- Qualification questions display (subscriber view — optional, shown post email capture)
-- Thank-you page — direct variant (position, referral link, milestone rewards ladder, share buttons)
+- Qualification questions display — optional fields inline on the signup form itself, shown pre-submit [CORRECTED — 2026-08-13: was "post email capture," matches Sprint 1 build and PRD-Sprint-1 Standing Decision #2]
+- Thank-you page — direct variant (position, referral link, "What should we call you?" optional name field, milestone rewards ladder, share buttons)
 - Thank-you page — referred variant (acknowledges referrer, same reward ladder)
 - Unique referral link generation per subscriber
 - Position tracking and real-time recalculation on referral
-- Public leaderboard (referral count + quality score)
+- Public leaderboard page — S-B5 (referral count + quality score; subscribers who skipped the optional name field display as a masked email, e.g. "j••••n", not a generic "Subscriber #142")
 - Confirmation email via Resend (position + referral link)
 - "You moved up" trigger email
-- Dashboard active state: total count, velocity, chart, qualification breakdown, warmth distribution, referral leaderboard, subscriber list, CSV export
+- Dashboard shell restructure — top tabs → left sidebar + top bar [ADDED — 2026-08-13, see `dashboard-design-spec.md`]
+- Dashboard active state: total signups, referral %, today, signups-over-time chart, qualification breakdown, referral leaderboard, subscriber list, CSV export
+- Warmth distribution panel — **locked/empty placeholder for Sprint 2** (greyed real layout, not hidden and not fake data) — live engine ships Sprint 3 [DECIDED — 2026-08-13]
+- Signup-counter visibility threshold — editable from both onboarding Step 3 and dashboard Settings, one underlying field [DECIDED — 2026-08-13]
 - Real-time dashboard update on new signup (Supabase realtime)
 - Founder updates feed — display on public page (posting was built in Sprint 1)
 
-**Exit condition:** Full referral loop works end to end. New subscriber signs up → thank-you page → shares referral link → another person signs up → original subscriber receives "you moved up" email → dashboard shows both subscribers with correct data.
+**Exit condition:** Full referral loop works end to end. New subscriber signs up → thank-you page → shares referral link → another person signs up → original subscriber receives "you moved up" email → dashboard (new sidebar shell) shows both subscribers with correct data → either subscriber can view their rank on the public leaderboard page.
 
 ---
 
