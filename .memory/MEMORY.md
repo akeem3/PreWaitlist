@@ -1,4 +1,4 @@
-# Project Memory — Durable Decisions
+## Project Memory — Durable Decisions
 
 ## Project Path
 
@@ -108,12 +108,53 @@
 - **Keys:** API key, client token, webhook secret — all in .env.local
 - **Not done:** Client module not yet written (setup-only story)
 
-### Vercel (Story 0.6)
+### Vercase (Story 0.6)
 
 - **Project:** `waitlist-build` on Vercel
 - **Domain:** `prewaitlist.com` + `www.prewaitlist.com` added
 - **DNS:** Nameservers updated in GoDaddy to Vercel's
 - **Wildcard:** `*.prewaitlist.com` not yet added via "Add Existing" in Vercel Domains
+
+## Design System Token Reference
+
+**Source of truth:** `src/app/globals.css` — all colors, typography, spacing, and component tokens.
+
+### Colors (CSS Custom Properties)
+
+| Token                      | Hex Value | Tailwind Class             | Use Case                     |
+| -------------------------- | --------- | -------------------------- | ---------------------------- |
+| `--color-background`       | `#FAF8F4` | `bg-background`            | Page background (warm ivory) |
+| `--color-card`             | `#FFFFFF` | `bg-card`                  | Elevated cards, inputs       |
+| `--color-accent`           | `#0F7A5E` | `bg-accent`, `text-accent` | Brand green, CTAs            |
+| `--color-foreground`       | `#1A1A1A` | `text-foreground`          | Primary text                 |
+| `--color-border`           | `#CCC9C3` | `border-border`            | Input borders, dividers      |
+| `--color-muted-foreground` | `#6B6459` | `text-muted-foreground`    | Secondary text               |
+| `--color-destructive`      | `#DC2626` | `text-destructive`         | Error states                 |
+
+### Typography (Tailwind Classes)
+
+**Font:** Inter (variable weight 100-900)
+
+| Token         | Size | Tailwind Class | Use Case               |
+| ------------- | ---- | -------------- | ---------------------- |
+| `--text-xs`   | 12px | `text-xs`      | Captions, metadata     |
+| `--text-sm`   | 14px | `text-sm`      | UI labels, helper text |
+| `--text-base` | 16px | `text-base`    | Body text              |
+| `--text-lg`   | 18px | `text-lg`      | Lead paragraphs        |
+| `--text-xl`   | 20px | `text-xl`      | Section headings (H4)  |
+| `--text-2xl`  | 24px | `text-2xl`     | Page headings (H3)     |
+| `--text-3xl`  | 28px | `text-3xl`     | Dashboard titles (H2)  |
+| `--text-4xl`  | 35px | `text-4xl`     | Hero headings (H1)     |
+
+**Typography Presets:** `.text-display`, `.text-h1` through `.text-h4`, `.text-body*`, `.text-caption`, `.text-label`, `.text-overline`
+
+### Enforcement Rules
+
+- **Never use hardcoded hex values** — always reference CSS custom properties via Tailwind utility classes
+- **Never use arbitrary font-size values** — use Tailwind's built-in `text-xs`, `text-sm`, etc.
+- **Never use inline styles** — use Tailwind utility classes and design system tokens
+- **Component tokens** (button, input, card, badge, toggle, select) use `var()` syntax: `rounded-[var(--button-radius)]`
+- Run `pnpm lint` before committing any UI changes
 
 ## Decision: Resend email architecture (2026-07)
 
@@ -165,6 +206,33 @@ picking up a paying customer.
 **Design Reference:** 17 high-fidelity SVGs in `docs/design/High-fidelity-svgs/` — every screen must reference its SVG.
 
 **Data Model:** 5 tables (founder_profiles, waitlists, qualification_questions, milestone_rewards, founder_updates) with RLS.
+
+## Sprint 2 Scope (from PRD §2a)
+
+**Goal:** Public waitlist page live and accepting signups. Founders can see subscribers, manage qualification questions, track referral progress. Dashboard restructured with left sidebar.
+
+**7 Screens in Scope:**
+
+1. Public waitlist page — `/:subdomain`
+2. Thank you (direct signup) — `/:subdomain/thank-you`
+3. Thank you (referred signup) — `/:subdomain/thank-you`
+4. Public leaderboard — `/:subdomain/leaderboard`
+5. Dashboard (empty state) — `/dashboard`
+6. Dashboard (active state) — `/dashboard`
+7. Dashboard subscriber detail — `/dashboard/subscribers/:id`
+
+**Key Features:**
+
+- Email capture (email-only signup, inline qual questions)
+- Referral system (unique codes, position tracking, milestone rewards)
+- Public leaderboard (ranked by referral count, milestone badges)
+- Dashboard restructure (left sidebar, stat cards, subscriber table)
+- CSV export (Pro tier)
+- Founder updates display on public page
+
+**New Table:** `subscribers` (email, referral_code, referrer_id, position, qual_answers, created_at)
+
+**Design Reference:** 5 high-fidelity SVGs in `docs/design/High-fidelity-Sprit2/`
 
 ## Epic 0 Progress (All 12 Stories Done)
 

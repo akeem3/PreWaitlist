@@ -1,7 +1,7 @@
 # Epic 2 — Foundation & Auth
 
 **Status:** done
-**Source:** [PRD S6.3 Account Creation](docs/PRD-Sprint-1.md#63-account-creation-f-b1), [PRD S6.4 Sign In](docs/PRD-Sprint-1.md#64-sign-in-f-b1-sign-in-variant), [PRD S6.5 Email Verification](docs/PRD-Sprint-1.md#65-email-verification-new), [PRD S7.3 Auth Implementation](docs/PRD-Sprint-1.md#73-auth--implementation-detail), [PRD S7.4 Data Model](docs/PRD-Sprint-1.md#74-data-model--implementation-grade), [PRD S7.5 Route/Handler List](docs/PRD-Sprint-1.md#75-route--handler-list-sprint-1)
+**Source:** [PRD S6.3 Account Creation](../PRD.md#63-account-creation-f-b1), [PRD S6.4 Sign In](../PRD.md#64-sign-in-f-b1-sign-in-variant), [PRD S6.5 Email Verification](../PRD.md#65-email-verification-new), [PRD S7.3 Auth Implementation](../PRD.md#73-auth--implementation-detail), [PRD S7.4 Data Model](../PRD.md#74-data-model--implementation-grade), [PRD S7.5 Route/Handler List](../PRD.md#75-route--handler-list-sprint-1)
 
 ## Design References
 

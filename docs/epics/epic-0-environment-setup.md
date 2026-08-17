@@ -1,7 +1,7 @@
 # Epic 0 — Environment Setup
 
 **Status:** done
-**Source:** [PRD S7 Technical Architecture](../PRD-Sprint-1.md#7-technical-architecture), [PRD S12 Epic & Story Template Standard](../PRD-Sprint-1.md#12-epic--story-template-standard)
+**Source:** [PRD S7 Technical Architecture](../PRD.md#7-technical-architecture), [PRD S12 Epic & Story Template Standard](../PRD.md#12-epic--story-template-standard)
 
 ## Goal
 
@@ -141,7 +141,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 - AC1: The system shall create a root `AGENTS.md` under 150 lines, structured as Commands / Boundaries (Always do, Ask first, Never do) / Project Structure, with no content duplicated from `package.json` or the PRD.
 - AC2: The system shall seed `.memory/MEMORY.md` with the tech-stack decisions from PRD S7.1, including the reasoning (not just the conclusion) for each.
-- AC3: The system shall place `PRD-Sprint-1.md` and `Epic-0-Environment-Setup.md` in the repository at consistent, referenced paths.
+- AC3: The system shall place `PRD.md` and `Epic-0-Environment-Setup.md` in the repository at consistent, referenced paths.
 - AC4: The system shall express Design System v2.0's colors, type scale, spacing, and radii as a Tailwind theme extension, not as values to be eyeballed from a document per component.
 - AC5: All of the above shall be committed together as a single scaffolding commit.
 
@@ -153,7 +153,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 
 - T1: Copied `docs/AGENTS.md` (48 lines) to root. Structured as Commands / Boundaries / Project Structure. No duplication from package.json or PRD.
 - T2: `.memory/MEMORY.md` created in Story 0.7 with tech-stack decisions (Next.js 16, Supabase via @supabase/ssr, pnpm, memsearch) and reasoning for each.
-- T3: `docs/PRD-Sprint-1.md` and `docs/epics/epic-0-environment-setup.md` already placed in previous stories.
+- T3: `docs/PRD.md` and `docs/epics/epic-0-environment-setup.md` already placed in previous stories.
 - T4: `src/app/globals.css` rewritten with Tailwind v4 `@theme inline` block containing Design System v2.0 tokens: colors (`#FAF8F4` background, `#FFFFFF` card, `#0F7A5E` accent), Inter font, 8px grid spacing, three radii (sm/md/lg), single floating shadow token, success gradient. Build passes clean.
 - T5: Single commit with all scaffolding changes.
 

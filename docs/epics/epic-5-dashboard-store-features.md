@@ -2,7 +2,7 @@
 
 **Status:** done
 **Note:** This epic's dashboard UI is a **functional placeholder** — built to satisfy Sprint 1's exit condition (founder lands on a working dashboard after onboarding). The stat cards, checklist, nav tabs, and layout will be **torn down and replaced** with properly designed implementations in Sprint 2+ when real subscriber data, analytics, and settings pages ship. Do not treat these screens as final design.
-**Source:** [PRD S6.13 Empty Dashboard](../PRD-Sprint-1.md#613-empty-dashboard-f-g1), [PRD S6.14 Founder Acquisition Source Capture](../PRD-Sprint-1.md#614-founder-acquisition-source-capture), [PRD S6.15 Founder Updates Feed](../PRD-Sprint-1.md#615-founder-updates-feed--posting-only)
+**Source:** [PRD S6.13 Empty Dashboard](../PRD.md#613-empty-dashboard-f-g1), [PRD S6.14 Founder Acquisition Source Capture](../PRD.md#614-founder-acquisition-source-capture), [PRD S6.15 Founder Updates Feed](../PRD.md#615-founder-updates-feed--posting-only)
 
 ## Design References
 

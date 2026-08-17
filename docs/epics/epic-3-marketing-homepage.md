@@ -1,7 +1,7 @@
 # Epic 3 — Marketing Homepage
 
 **Status:** done
-**Source:** [PRD S6.1 Marketing Homepage — Cold Visitor](../PRD-Sprint-1.md#61-marketing-homepage--cold-visitor-f-a2), [PRD S6.2 Marketing Homepage — "Powered by" Visitor](../PRD-Sprint-1.md#62-marketing-homepage--powered-by-visitor-f-a3)
+**Source:** [PRD S6.1 Marketing Homepage — Cold Visitor](../PRD.md#61-marketing-homepage--cold-visitor-f-a2), [PRD S6.2 Marketing Homepage — "Powered by" Visitor](../PRD.md#62-marketing-homepage--powered-by-visitor-f-a3)
 
 ## Design References
 

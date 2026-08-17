@@ -5,7 +5,7 @@ Before sending this, make sure the following are present in the project director
 - `AGENTS.md` (root)
 - `.memory/MEMORY.md`
 - `docs/epics/epic-4-onboarding-wizard.md`
-- `docs/PRD-Sprint-1.md`
+- `docs/PRD.md`
 - `docs/PROMPTS.md`
 
 ---

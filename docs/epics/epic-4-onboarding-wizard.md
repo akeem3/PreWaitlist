@@ -1,7 +1,7 @@
 # Epic 4 — Onboarding Wizard
 
 **Status:** done
-**Source:** [PRD S6.6 Onboarding Step 1](../PRD-Sprint-1.md#66-onboarding-step-1--name-your-waitlist-f-c1), [PRD S6.7 Onboarding Step 2](../PRD-Sprint-1.md#67-onboarding-step-2--choose-a-template-f-c2), [PRD S6.8 Onboarding Step 3](../PRD-Sprint-1.md#68-onboarding-step-3--make-it-yours-f-c3), [PRD S6.9 Onboarding Step 4](../PRD-Sprint-1.md#69-onboarding-step-4--qualification-decision-f-c4), [PRD S6.10 Onboarding Step 4a](../PRD-Sprint-1.md#610-onboarding-step-4a--configure-qualification-questions-f-c4a), [PRD S6.11 Onboarding Step 5](../PRD-Sprint-1.md#611-onboarding-step-5--email-setup-f-c5), [PRD S6.12 Success Screen](../PRD-Sprint-1.md#612-success-screen-f-c6), [PRD S6.12a Powered-By Footer](../PRD-Sprint-1.md#612a-powered-by-prewaitlist-footer--onboarding-preview--public-pages)
+**Source:** [PRD S6.6 Onboarding Step 1](../PRD.md#66-onboarding-step-1--name-your-waitlist-f-c1), [PRD S6.7 Onboarding Step 2](../PRD.md#67-onboarding-step-2--choose-a-template-f-c2), [PRD S6.8 Onboarding Step 3](../PRD.md#68-onboarding-step-3--make-it-yours-f-c3), [PRD S6.9 Onboarding Step 4](../PRD.md#69-onboarding-step-4--qualification-decision-f-c4), [PRD S6.10 Onboarding Step 4a](../PRD.md#610-onboarding-step-4a--configure-qualification-questions-f-c4a), [PRD S6.11 Onboarding Step 5](../PRD.md#611-onboarding-step-5--email-setup-f-c5), [PRD S6.12 Success Screen](../PRD.md#612-success-screen-f-c6), [PRD S6.12a Powered-By Footer](../PRD.md#612a-powered-by-prewaitlist-footer--onboarding-preview--public-pages)
 
 ## Design Analysis Reference
 

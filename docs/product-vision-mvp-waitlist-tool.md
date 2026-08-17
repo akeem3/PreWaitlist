@@ -270,7 +270,7 @@ The fence between Pro and Growth is automation + team. A solo founder does not n
 
 | Layer               | Tool                    | Cost at MVP            |
 | ------------------- | ----------------------- | ---------------------- |
-| Frontend + backend  | Next.js 14 (App Router) | Free                   | <!-- [CORRECTED 2026-08-06]: superseded — actual build uses Next.js 16, required for `proxy.ts` wildcard-subdomain routing (`middleware.ts` is deprecated). See PRD-Sprint-1.md §7.1 and §9. --> |
+| Frontend + backend  | Next.js 14 (App Router) | Free                   | <!-- [CORRECTED 2026-08-06]: superseded — actual build uses Next.js 16, required for `proxy.ts` wildcard-subdomain routing (`middleware.ts` is deprecated). See PRD.md §7.1 and §9. --> |
 | Database + auth     | Supabase                | Free tier              |
 | Transactional email | Resend                  | Free (100 emails/day)  |
 | Payments            | Paddle (MoR)            | 5% + $0.50/transaction |

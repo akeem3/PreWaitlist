@@ -1,17 +1,23 @@
-# Product Requirements Document — Sprint 1
+# Product Requirements Document
 
-**Product:** Pre-Launch Waitlist Tool ("Buildly" used as placeholder brand throughout)
-**Sprint:** 1 of 4 — Foundation: Marketing, Auth, Onboarding, Empty Dashboard
+**Product:** Pre-Launch Waitlist Tool ("PreWaitlist")
+**Sprints:** 4 total — Sprint 1 (Foundation) ✅ Complete, Sprint 2 (Public Page & Dashboard) In Progress, Sprint 3 (Email & Warmth), Sprint 4 (Billing & Growth)
 **Prepared by:** Abdul-Hakeem Hassan, with Claude
-**Date:** July 2026 (v2 — expanded technical depth + Epic/Story Template Standard)
-**Status:** Ready for implementation
-**Traces back to:** Problem Brief v2, User Profile v2, JTBD v2, Product Vision & MVP v4.0, Marketing Strategy v3.0, User Flow (diagram export), Design System v2.0, Onboarding Steps 1–3 Reference Guide, the finished Sprint 1 Figma files, and v1 of this PRD
+**Date:** July 2026 (v3 — multi-sprint scalable structure)
+**Status:** Sprint 1 complete, Sprint 2 active
+**Traces back to:** Problem Brief v2, User Profile v2, JTBD v2, Product Vision & MVP v4.2, Marketing Strategy v3.0, User Flow (diagram export), Design System v2.0, Onboarding Steps 1–3 Reference Guide, the finished Sprint 1 Figma files, and v1 of this PRD
 
 ---
 
 ## 0. How to use this document
 
-This PRD is the single authoritative build spec for Sprint 1. Where it disagrees with an older document, **this PRD wins.**
+This PRD is the single authoritative build spec for PreWaitlist. Where it disagrees with an older document, **this PRD wins.**
+
+**Structure:** Each sprint has its own section (Sprint 1, Sprint 2, etc.) containing screens, requirements, and technical details specific to that sprint. Shared sections (Product Summary, Users, Standing Decisions, Technical Architecture, Data Model) apply across all sprints and are updated as the product evolves.
+
+**Sprint 1 status:** Complete — all 14 screens implemented, 48/48 stories done across Epics 0–6.
+
+**Sprint 2 status:** Active — public waitlist page, email capture, qualification questions, thank-you pages, leaderboard, dashboard restructure.
 
 **Changed from v1 of this PRD:** Sections 7 (Technical Architecture) and 8 (Data Model) are now implementation-grade, not sketches — real column types, real constraints, real RLS policy SQL, a real route list, a real component tree. Section 12 is new: a researched standard for how epics and stories should be written and filed so an LLM coding agent can work from them without re-reading everything on every turn. Epic-0 and all of Epic-0's stories have been rewritten to follow that standard, filed separately from this PRD (see Section 12.5 for the file map).
 
@@ -27,13 +33,63 @@ A pre-launch waitlist tool for bootstrapped indie hackers, solo founders, and ea
 
 ---
 
-## 2. Sprint 1 Goal & Exit Condition
+## 2. Sprint 1 — Foundation (Complete)
 
 **Goal:** A founder can discover the product, create an account, complete onboarding in under 4 minutes, and arrive at a live (but empty) waitlist page with a shareable subdomain URL.
 
 **Exit condition:** Founder signs up, completes onboarding in under 4 minutes, sees their live URL, and arrives at a dashboard with skeleton panels. The public page exists at their subdomain. No signups have arrived yet — that's Sprint 2.
 
+**Status:** ✅ Complete — 48/48 stories across Epics 0–6 (2026-07-26 → 2026-08-12)
+
 **Explicitly not in Sprint 1:** the public waitlist page as a live, signup-accepting surface (Sprint 2), warmth tracking, broadcast email sending, Paddle billing enforcement (env/account setup only), referral mechanics beyond the config UI, domain-verification backend logic (Section 6.11).
+
+---
+
+## 2a. Sprint 2 — Public Page & Dashboard (Active)
+
+**Goal:** The public waitlist page is live and accepting signups. Founders can see their subscriber list, manage qualification questions, and track referral progress. Dashboard restructured with left sidebar navigation.
+
+**Exit condition:** A visitor can sign up via the public waitlist page, answer qualification questions, receive a thank-you page with referral link, and see their position on a public leaderboard. Founders can view subscribers, export CSV, and see real-time stats on a restructured dashboard.
+
+**Status:** 🔄 Active — scanning and planning phase
+
+**Screens in Scope (Sprint 2):**
+
+| #   | Screen                        | Route                        | Description                                        |
+| --- | ----------------------------- | ---------------------------- | -------------------------------------------------- |
+| 1   | Public waitlist page          | `/:subdomain`                | Email capture + qual questions + social proof      |
+| 2   | Thank you — direct signup     | `/:subdomain/thank-you`      | Position, referral link, milestone progress        |
+| 3   | Thank you — referred signup   | `/:subdomain/thank-you`      | Position, referrer attribution, milestone progress |
+| 4   | Public leaderboard            | `/:subdomain/leaderboard`    | Ranked list, milestones, anonymized emails         |
+| 5   | Dashboard — empty state       | `/dashboard`                 | Left sidebar, stat cards, subscriber table (empty) |
+| 6   | Dashboard — active state      | `/dashboard`                 | Real subscriber data, CSV export, activity feed    |
+| 7   | Dashboard — subscriber detail | `/dashboard/subscribers/:id` | Individual subscriber view, qual answers           |
+
+**Key Features:**
+
+- **Email capture:** Email-only signup (Standing Decision 1), inline qualification questions (optional, pre-submit)
+- **Referral system:** Unique referral links, position tracking, milestone rewards
+- **Public leaderboard:** Ranked by referral count, milestone badges, anonymized emails
+- **Dashboard restructure:** Left sidebar navigation (replaces top tabs), stat cards, subscriber table with search/filter
+- **CSV export:** Subscriber data export for Pro tier
+- **Founder updates:** Display feed of updates on public page
+
+**Technical Scope:**
+
+- **New table:** `subscribers` (email, referral_code, referrer_id, position, qual_answers, created_at)
+- **New routes:** `/:subdomain`, `/:subdomain/thank-you`, `/:subdomain/leaderboard`
+- **Dashboard restructure:** Left sidebar layout, stat cards, subscriber table
+- **Referral mechanics:** Unique codes, position tracking, milestone unlocking
+- **Email integration:** Resend transactional emails (confirmation, moved-up notifications)
+
+**Explicitly not in Sprint 2:**
+
+- Warmth tracking (Sprint 3)
+- Broadcast email sending (Sprint 3)
+- Paddle billing enforcement (Sprint 3)
+- Real SPF/DKIM verification (Sprint 3)
+- Pro-tier subscriber limits enforcement (Sprint 3)
+- Domain verification backend (Sprint 3)
 
 ---
 
@@ -313,6 +369,21 @@ create table public.founder_updates (
   body text not null,
   created_at timestamptz not null default now()
 );
+
+-- Sprint 2: subscribers table for public waitlist page
+create table public.subscribers (
+  id uuid primary key default gen_random_uuid(),
+  waitlist_id uuid not null references public.waitlists(id) on delete cascade,
+  email text not null,
+  referral_code text not null unique,
+  referrer_id uuid references public.subscribers(id) on delete set null,
+  position integer not null,
+  qual_answers jsonb,
+  created_at timestamptz not null default now(),
+  constraint email_format check (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+);
+create unique index subscribers_waitlist_email_idx on public.subscribers(waitlist_id, email);
+create index subscribers_referral_code_idx on public.subscribers(referral_code);
 ```
 
 **Row-Level Security -- enable on every table above, policy pattern:**
@@ -330,11 +401,26 @@ create policy "founders manage own waitlist's questions"
   on public.qualification_questions for all
   using (waitlist_id in (select id from public.waitlists where founder_id = auth.uid()))
   with check (waitlist_id in (select id from public.waitlists where founder_id = auth.uid()));
+
+-- Sprint 2: subscribers table
+alter table public.subscribers enable row level security;
+
+create policy "founders manage own waitlist's subscribers"
+  on public.subscribers for all
+  using (waitlist_id in (select id from public.waitlists where founder_id = auth.uid()))
+  with check (waitlist_id in (select id from public.waitlists where founder_id = auth.uid()));
+
+-- Public read access for leaderboard (anon users can view subscribers for a waitlist)
+create policy "public read access for leaderboard"
+  on public.subscribers for select
+  using (true);
 ```
 
 Repeat the child-table pattern for milestone_rewards and founder_updates. This is Epic-0 Story 0.3 scope, not deferred.
 
-### 7.5 Route / Handler List (Sprint 1)
+### 7.5 Route / Handler List
+
+#### Sprint 1 Routes (Complete)
 
 | Route                                          | Type                                                         | Purpose                                                         |
 | ---------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------- |
@@ -347,7 +433,22 @@ Repeat the child-table pattern for milestone_rewards and founder_updates. This i
 | /api/waitlist/check-slug                       | Route Handler                                                | REQ-6.6.1 debounced availability check                          |
 | /api/waitlist                                  | Route Handler (POST/PATCH)                                   | Create/update the waitlist record across onboarding steps       |
 
+#### Sprint 2 Routes (Active)
+
+| Route                       | Type                 | Purpose                                                     |
+| --------------------------- | -------------------- | ----------------------------------------------------------- |
+| /:subdomain                 | Page (RSC)           | Public waitlist page — email capture + qual questions       |
+| /:subdomain/thank-you       | Page                 | Post-signup thank you — position, referral link, milestones |
+| /:subdomain/leaderboard     | Page (RSC)           | Public leaderboard — ranked list, milestones                |
+| /dashboard                  | Page (restructured)  | Left sidebar layout, stat cards, subscriber table           |
+| /dashboard/subscribers/:id  | Page                 | Individual subscriber view, qual answers                    |
+| /api/subscribers            | Route Handler (POST) | Create subscriber (public signup)                           |
+| /api/subscribers/export     | Route Handler (GET)  | CSV export (Pro tier)                                       |
+| /api/leaderboard/:subdomain | Route Handler (GET)  | Leaderboard data for public page                            |
+
 ### 7.6 Component Tree (high level)
+
+#### Sprint 1 Components (Complete)
 
 ```
 app/
@@ -361,11 +462,38 @@ app/
 │   ├── 1/page.tsx  2/page.tsx  3/page.tsx  4/page.tsx  4a/page.tsx  5/page.tsx
 │   └── success/page.tsx
 ├── dashboard/page.tsx
-└── (public)/[subdomain]/...          -> Sprint 2, skeleton route only this sprint
 components/
 ├── ui/                               -> design-system primitives (Button, Card, Badge, etc.)
 ├── onboarding/live-preview.tsx        -> shared across steps 1-3 per Onboarding Ref Guide's "design once" note
 └── share/share-copy-link.tsx          -> shared Web Share + Copy Link component (used on success screen + dashboard)
+```
+
+#### Sprint 2 Components (Active)
+
+```
+app/
+├── (public)/[subdomain]/
+│   ├── page.tsx                      -> public waitlist page — email capture + qual questions
+│   ├── thank-you/page.tsx            -> post-signup thank you — position, referral link
+│   └── leaderboard/page.tsx          -> public leaderboard — ranked list, milestones
+├── dashboard/
+│   ├── layout.tsx                    -> left sidebar layout (replaces top tabs)
+│   ├── page.tsx                      -> stat cards + subscriber table
+│   └── subscribers/[id]/page.tsx     -> individual subscriber view
+components/
+├── public/
+│   ├── email-capture-form.tsx        -> email-only signup form + inline qual questions
+│   ├── social-proof-counter.tsx      -> "X people ahead of you" display
+│   ├── milestone-progress.tsx        -> referral milestone tracking
+│   └── leaderboard-table.tsx         -> ranked subscriber list
+├── dashboard/
+│   ├── sidebar.tsx                   -> left sidebar navigation
+│   ├── stat-cards.tsx                -> real-time stats (subscribers, referrals, position)
+│   ├── subscriber-table.tsx          -> subscriber list with search/filter
+│   └── csv-export-button.tsx         -> CSV export (Pro tier)
+└── share/
+    ├── referral-link.tsx             -> unique referral link display + copy
+    └── share-buttons.tsx             -> Web Share + Copy Link (referral)
 ```
 
 share-copy-link.tsx existing as one shared component, not reimplemented per screen, is what makes Standing Decision 3 actually enforceable in code rather than just in review.
@@ -424,9 +552,16 @@ A single giant PRD/epic file works fine for a human skimming it once. It works b
 
 ```
 docs/
-├── PRD-Sprint1.md                          <- this file -- the spec, rarely re-read in full
+├── PRD.md                                  <- this file -- the spec, rarely re-read in full
 ├── epics/
-│   └── epic-0-environment-setup.md         <- goal + story table + links only, no restated requirements
+│   ├── epic-0-environment-setup.md         <- goal + story table + links only, no restated requirements
+│   ├── epic-1-design-system-layout-shell.md
+│   ├── epic-2-foundation-auth.md
+│   ├── epic-3-marketing-homepage.md
+│   ├── epic-4-onboarding-wizard.md
+│   ├── epic-5-dashboard-store-features.md
+│   ├── epic-6-post-sprint-1-issues.md
+│   └── epic-7-public-page-dashboard.md    <- Sprint 2 epic
 └── stories/
     ├── epic0.story01-toolchain.md
     ├── epic0.story02-nextjs-init.md
@@ -449,7 +584,7 @@ Every story file uses this exact shape, in this order, so both the agent and Kee
     ---
 
     ## Source
-    [PRD S7.1](../PRD-Sprint1.md#71-stack)
+    [PRD S7.1](../PRD.md#71-stack)
     <!-- Cite the source section, don't restate its content. This is the single biggest
          token-efficiency and drift-prevention move available: the requirement lives in
          exactly one place. -->

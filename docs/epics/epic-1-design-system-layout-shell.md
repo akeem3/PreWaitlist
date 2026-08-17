@@ -1,7 +1,7 @@
 # Epic 1 — Design System & Layout Shell
 
 **Status:** ready
-**Source:** [PRD S5 Standing Product Decisions](../PRD-Sprint1.md#5-standing-product-decisions-do-not-relitigate), [PRD S6 Functional Requirements](../PRD-Sprint1.md#6-functional-requirements), [PRD S7 Technical Architecture](../PRD-Sprint1.md#7-technical-architecture)
+**Source:** [PRD S5 Standing Product Decisions](../PRD.md#5-standing-product-decisions-do-not-relitigate), [PRD S6 Functional Requirements](../PRD.md#6-functional-requirements), [PRD S7 Technical Architecture](../PRD.md#7-technical-architecture)
 
 ## Design References
 

@@ -1,7 +1,7 @@
 # Sprint 1 — Epic Structure
 
 **Last updated:** 2026-07-29
-**Source:** [PRD-Sprint-1.md](../PRD-Sprint-1.md), [Product Vision MVP](../product-vision-mvp-waitlist-tool.md)
+**Source:** [PRD.md](../PRD.md), [Product Vision MVP](../product-vision-mvp-waitlist-tool.md)
 
 ---
 
@@ -280,5 +280,5 @@ From the PRD (Section 3):
 | `docs/epics/epic-4-onboarding-wizard.md`          | Epic 4 — 8 stories, ready                                         |
 | `docs/epics/epic-5-dashboard-store-features.md`   | Epic 5 — 3 stories, ready                                         |
 | `docs/epics/Epic-structure.md`                    | This file — Sprint 1 master index                                 |
-| `docs/PRD-Sprint-1.md`                            | Product requirements (14 screens, REQ-6.1–6.15, 7.x architecture) |
+| `docs/PRD.md`                                     | Product requirements (14 screens, REQ-6.1–6.15, 7.x architecture) |
 | `docs/product-vision-mvp-waitlist-tool.md`        | Product vision, feature grading, MVP boundary                     |

@@ -50,7 +50,7 @@ Per-project isolation is automatic (collection keyed off project path) — this 
 
 - `MEMORY.md`: the _why_ behind decisions (e.g., "chose Next.js 16 over 14 because subdomain routing needs `proxy.ts`"), schema decisions once tables actually exist, anything corrected mid-build that a spec got slightly wrong.
 - Daily logs: everything else, written as it happens — these get search-recall automatically, so they don't need to be curated the way `MEMORY.md` does.
-- Neither should duplicate what's already in `docs/PRD-Sprint1.md` or a story file — duplication is exactly what caused this project's earlier user-flow-document drift, and it's just as possible to recreate that problem inside memory files as inside spec files.
+- Neither should duplicate what's already in `docs/PRD.md` or a story file — duplication is exactly what caused this project's earlier user-flow-document drift, and it's just as possible to recreate that problem inside memory files as inside spec files.
 
 ## 3. `AGENTS.md`: what it is and isn't
 
@@ -59,7 +59,7 @@ Per-project isolation is automatic (collection keyed off project path) — this 
 **Practical rules adopted here, and enforced in the companion `AGENTS.md` file itself:**
 
 - Under 150 lines. If it's tempted to grow past that, the fix is almost always to delete, not to add a section.
-- Structure: **Commands** (exact, copy-pasteable), **Boundaries** in three tiers (Always do / Ask first / Never do), **Project Structure** (a flat map, not prose), and a pointer into `docs/PRD-Sprint1.md` and `docs/stories/` for anything requiring depth.
+- Structure: **Commands** (exact, copy-pasteable), **Boundaries** in three tiers (Always do / Ask first / Never do), **Project Structure** (a flat map, not prose), and a pointer into `docs/PRD.md` and `docs/stories/` for anything requiring depth.
 - Hand-written, not agent-generated. An agent-generated `AGENTS.md` tends to restate what's already obvious from the repo, which is exactly the pattern shown to hurt performance.
 - Fork-agnostic by construction — nothing in it should reference MiMoCode-specific features, since the whole point of this rewrite is that the fork can change without the project's operating rules changing.
 
