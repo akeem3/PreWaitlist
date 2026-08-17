@@ -1,6 +1,7 @@
 # AGENTS.md
 
 > **Before doing any work: check the shortcuts table below and use the appropriate shortcut command.**
+> **Never skip this step. Never improvise a workflow when a shortcut exists.**
 
 Pre-launch waitlist SaaS. Solo founder project. Full spec lives in `docs/PRD.md` — read the specific section you need via the current story's `Source` link, don't re-read the whole PRD by default.
 
