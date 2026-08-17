@@ -1,51 +1,101 @@
 import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
+import { WaitlistPageContent } from "../../../../components/public/waitlist-page-content";
+import { EmailCaptureForm } from "../../../../components/public/email-capture-form";
 
 type Props = { params: Promise<{ subdomain: string }> };
 
 export default async function PublicSubdomainPage({ params }: Props) {
   const { subdomain } = await params;
-
   const supabase = await createClient();
 
   const { data: waitlist } = await supabase
     .from("waitlists")
-    .select("id, signup_counter_enabled, signup_counter_threshold, headline")
+    .select(
+      `
+      id, subdomain, template, headline, subheadline, cta_text,
+      logo_url, brand_color, qualification_enabled, milestone_rewards_enabled,
+      signup_counter_enabled, signup_counter_threshold,
+      founder_profiles!inner ( tier )
+    `
+    )
     .eq("subdomain", subdomain)
     .single();
 
-  let signupCount = 0;
-  let counterVisible = false;
-
-  if (waitlist?.signup_counter_enabled) {
-    try {
-      const { count } = await supabase
-        .from("subscribers")
-        .select("id", { count: "exact", head: true })
-        .eq("waitlist_id", waitlist.id);
-
-      signupCount = count ?? 0;
-      counterVisible = signupCount >= (waitlist.signup_counter_threshold || 10);
-    } catch {
-      // subscribers table doesn't exist yet
-    }
+  if (!waitlist) {
+    notFound();
   }
 
+  const founderProfile = Array.isArray(waitlist.founder_profiles)
+    ? waitlist.founder_profiles[0]
+    : waitlist.founder_profiles;
+  const tier = founderProfile?.tier || "free";
+
+  const [milestonesResult, questionsResult, countResult] = await Promise.all([
+    waitlist.milestone_rewards_enabled
+      ? supabase
+          .from("milestone_rewards")
+          .select("tier_referrals, reward_label")
+          .eq("waitlist_id", waitlist.id)
+          .order("tier_referrals", { ascending: true })
+      : Promise.resolve({ data: [] }),
+    waitlist.qualification_enabled
+      ? supabase
+          .from("qualification_questions")
+          .select("id, question_text, question_type, sort_order")
+          .eq("waitlist_id", waitlist.id)
+          .order("sort_order", { ascending: true })
+      : Promise.resolve({ data: [] }),
+    waitlist.signup_counter_enabled
+      ? supabase
+          .from("subscribers")
+          .select("id", { count: "exact", head: true })
+          .eq("waitlist_id", waitlist.id)
+      : Promise.resolve({ count: 0 }),
+  ]);
+
+  const milestoneRewards = (milestonesResult.data || []).map((r) => ({
+    threshold: r.tier_referrals,
+    label: r.reward_label,
+  }));
+
+  const questions = (questionsResult.data || []).map((q) => ({
+    id: q.id,
+    text: q.question_text,
+    type: q.question_type as "free_text",
+  }));
+
+  const signupCount = countResult.count ?? 0;
+  const signupCounterVisible =
+    waitlist.signup_counter_enabled &&
+    signupCount >= (waitlist.signup_counter_threshold || 10);
+
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-h2 mb-2">{waitlist?.headline || subdomain}</h1>
-        <p className="text-body-lg text-muted-foreground mb-4">
-          Public waitlist page — Sprint 2
-        </p>
-        {counterVisible && (
-          <p className="text-sm text-muted-foreground">
-            <span className="font-semibold text-foreground">
-              {signupCount.toLocaleString()}
-            </span>{" "}
-            people in line
-          </p>
-        )}
-      </div>
-    </div>
+    <WaitlistPageContent
+      template={waitlist.template as "minimal" | "bold" | "dark"}
+      headline={waitlist.headline}
+      subheadline={waitlist.subheadline}
+      logoUrl={waitlist.logo_url}
+      ctaText={waitlist.cta_text}
+      brandColor={waitlist.brand_color}
+      tier={tier}
+      signupCounter={signupCount}
+      signupCounterVisible={signupCounterVisible}
+      milestoneRewards={milestoneRewards}
+      qualificationEnabled={waitlist.qualification_enabled}
+      questions={questions}
+      emailCaptureForm={
+        <EmailCaptureForm
+          waitlistId={waitlist.id}
+          subdomain={waitlist.subdomain}
+          ctaText={waitlist.cta_text || "Join Waitlist"}
+          brandColor={waitlist.brand_color}
+          template={waitlist.template as "minimal" | "bold" | "dark"}
+          tier={tier}
+          questions={questions}
+          qualificationEnabled={waitlist.qualification_enabled}
+        />
+      }
+    />
   );
 }

@@ -131,13 +131,13 @@ export async function PATCH(request: NextRequest) {
       .delete()
       .eq("waitlist_id", id);
 
-    // Insert new questions
+    // Insert new questions (all questions are free_text on public page)
     if (questions.length > 0) {
       const questionRows = questions.map(
         (q: { text: string; required: boolean }, index: number) => ({
           waitlist_id: id,
           question_text: q.text,
-          question_type: q.required ? "free_text" : "multiple_choice",
+          question_type: "free_text" as const,
           sort_order: index,
         })
       );

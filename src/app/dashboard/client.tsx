@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import ShareCopyLink from "../../../components/share/share-copy-link";
@@ -51,9 +52,16 @@ export default function DashboardClient({
   logoUrl,
 }: DashboardClientProps) {
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+  const router = useRouter();
 
   function handleShareOrCopy() {
     setCheckedItems((prev) => new Set(prev).add("share"));
+  }
+
+  async function handleSignOut() {
+    await fetch("/api/auth/signout", { method: "POST" });
+    router.push("/signin");
+    router.refresh();
   }
 
   return (
@@ -108,25 +116,34 @@ export default function DashboardClient({
               />
             </svg>
           </div>
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              className="text-muted-foreground"
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="text-body-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              <path
-                d="M8 8C9.65685 8 11 6.65685 11 5C11 3.34315 9.65685 2 8 2C6.34315 2 5 3.34315 5 5C5 6.65685 6.34315 8 8 8Z"
-                fill="currentColor"
-              />
-              <path
-                d="M3 13C3 10.7909 5.23858 9 8 9C10.7614 9 13 10.7909 13 13"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </svg>
+              Sign out
+            </button>
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                className="text-muted-foreground"
+              >
+                <path
+                  d="M8 8C9.65685 8 11 6.65685 11 5C11 3.34315 9.65685 2 8 2C6.34315 2 5 3.34315 5 5C5 6.65685 6.34315 8 8 8Z"
+                  fill="currentColor"
+                />
+                <path
+                  d="M3 13C3 10.7909 5.23858 9 8 9C10.7614 9 13 10.7909 13 13"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
           </div>
         </div>
 

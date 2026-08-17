@@ -19,16 +19,16 @@ The `/:subdomain` route renders the founder's waitlist page using their chosen t
 
 ## Story Index
 
-| ID  | Title                          | Depends on | Status |
-| --- | ------------------------------ | ---------- | ------ |
-| 7.0 | Subscribers Table & API        | —          | ready  |
-| 7.1 | Public Waitlist Page Route     | 7.0        | ready  |
-| 7.2 | Email Capture Form             | 7.0        | ready  |
-| 7.3 | Inline Qualification Questions | 7.0        | ready  |
-| 7.4 | Duplicate Email Handling       | 7.0        | ready  |
-| 7.5 | Public Leaderboard Page        | 7.0        | ready  |
-| 7.6 | Founder Updates Feed Display   | 7.0        | ready  |
-| 7.7 | Epic 7 Tests                   | 7.0–7.6    | ready  |
+| ID  | Title                          | Depends on | Status | Story File                                                          |
+| --- | ------------------------------ | ---------- | ------ | ------------------------------------------------------------------- |
+| 7.0 | Subscribers Table & API        | —          | ready  | [story-7.0](../stories/story-7.0-subscribers-table-api.md)          |
+| 7.1 | Public Waitlist Page Route     | 7.0        | ready  | [story-7.1](../stories/story-7.1-public-waitlist-page-route.md)     |
+| 7.2 | Email Capture Form             | 7.0        | ready  | [story-7.2](../stories/story-7.2-email-capture-form.md)             |
+| 7.3 | Inline Qualification Questions | 7.0        | ready  | [story-7.3](../stories/story-7.3-inline-qualification-questions.md) |
+| 7.4 | Duplicate Email Handling       | 7.0        | ready  | [story-7.4](../stories/story-7.4-duplicate-email-handling.md)       |
+| 7.5 | Public Leaderboard Page        | 7.0        | ready  | [story-7.5](../stories/story-7.5-public-leaderboard-page.md)        |
+| 7.6 | Founder Updates Feed Display   | 7.0        | ready  | [story-7.6](../stories/story-7.6-founder-updates-feed.md)           |
+| 7.7 | Epic 7 Tests                   | 7.0–7.6    | ready  | [story-7.7](../stories/story-7.7-epic7-tests.md)                    |
 
 Work through these in dependency order, one at a time. Story 7.0 must be complete before 7.1–7.6 begin. Stories 7.1–7.6 can be worked in any order after 7.0 is done. Story 7.7 must be the last story — it tests everything built in 7.0–7.6. Each has a `status` you should update as you go (`ready` → `in-progress` → `blocked` or `done`). A story marked `blocked` stays blocked until manually cleared — don't silently re-attempt it next session.
 
@@ -131,7 +131,7 @@ Work through these in dependency order, one at a time. Story 7.0 must be complet
 **Acceptance Criteria (EARS):**
 
 - AC1: The system shall fetch qualification questions for the waitlist and display them inline on the signup form, below the email field.
-- AC2: Each question shall render as either a text input (free_text) or a dropdown (multiple_choice) based on question_type.
+- AC2: Each question shall render as a text input (`free_text` only — `multiple_choice` excluded from public page).
 - AC3: Questions marked as optional shall display "(optional)" in the design system's secondary text color.
 - AC4: The system shall enforce tier-based question caps: Free = 2 questions, Pro = 5, Growth = unlimited (read from founder's tier field, not hardcoded).
 - AC5: The system shall collect answers as a JSON object and store them in the subscriber's qual_answers column.
@@ -249,7 +249,7 @@ Work through these in dependency order, one at a time. Story 7.0 must be complet
 **Acceptance Criteria (EARS):**
 
 - AC1: The system shall have component tests for the email capture form (`components/public/email-capture-form.tsx`) covering: renders email input, validates email format, shows loading state during submission, displays error on duplicate email, calls onSubmit with email value.
-- AC2: The system shall have component tests for the qualification questions component (`components/public/qual-questions.tsx`) covering: renders text input for free_text questions, renders dropdown for multiple_choice questions, shows "(optional)" label for optional questions, enforces tier-based question caps.
+- AC2: The system shall have component tests for the qualification questions component covering: renders text input for free_text questions, shows "(optional)" label for optional questions, enforces tier-based question caps.
 - AC3: The system shall have component tests for the leaderboard table (`components/public/leaderboard-table.tsx`) covering: renders ranked list, sorts by referral count descending, anonymizes emails correctly, displays milestone badges.
 - AC4: The system shall have component tests for the social proof counter (`components/public/social-proof-counter.tsx`) covering: displays subscriber count, displays "X people ahead of you" text.
 - AC5: The system shall have API route tests for `POST /api/subscribers` covering: creates subscriber with valid data, returns 409 on duplicate email, generates unique referral_code, assigns sequential position.

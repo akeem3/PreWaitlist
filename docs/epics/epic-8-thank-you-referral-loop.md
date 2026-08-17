@@ -20,16 +20,16 @@ A subscriber who signs up on `/:subdomain` is redirected to `/:subdomain/thank-y
 
 ## Story Index
 
-| ID  | Title                                | Depends on | Status |
-| --- | ------------------------------------ | ---------- | ------ |
-| 8.0 | Thank-You Page Route                 | 7.0        | ready  |
-| 8.1 | Referral Link Generation             | 8.0        | ready  |
-| 8.2 | Referral Tracking                    | 8.0        | ready  |
-| 8.3 | Share Buttons Integration            | 8.0        | ready  |
-| 8.4 | Dashboard Subscriber Referral Column | 8.2        | ready  |
-| 8.5 | Epic 8 Tests                         | 8.0–8.4    | ready  |
+| ID  | Title                                | Depends on | Status | Story File                                                       |
+| --- | ------------------------------------ | ---------- | ------ | ---------------------------------------------------------------- |
+| 8.0 | Thank-You Page Route                 | 7.0, 7.2   | ready  | [story-8.0](../stories/story-8.0-thank-you-page-route.md)        |
+| 8.1 | Referral Link & Share Buttons        | 8.0        | ready  | [story-8.1](../stories/story-8.1-referral-link-share-buttons.md) |
+| 8.2 | Referral Tracking in Subscriber API  | 7.0        | ready  | [story-8.2](../stories/story-8.2-referral-tracking-api.md)       |
+| 8.3 | Referred Subscriber Variant          | 8.0, 8.2   | ready  | [story-8.3](../stories/story-8.3-referred-subscriber-variant.md) |
+| 8.4 | Dashboard Subscriber Referral Column | 8.2        | ready  | [story-8.4](../stories/story-8.4-dashboard-referral-column.md)   |
+| 8.5 | Epic 8 Tests                         | 8.0–8.4    | ready  | [story-8.5](../stories/story-8.5-epic8-tests.md)                 |
 
-Work through these in dependency order, one at a time. Story 8.0 must be complete before 8.1–8.3 begin. Story 8.2 must be complete before 8.4 begins. Story 8.5 must be the last story — it tests everything built in 8.0–8.4.
+Work through these in dependency order, one at a time. Story 8.0 must be complete before 8.1 and 8.3 begin. Story 8.2 must be complete before 8.3 and 8.4 begin. Story 8.5 must be the last story — it tests everything built in 8.0–8.4.
 
 ---
 

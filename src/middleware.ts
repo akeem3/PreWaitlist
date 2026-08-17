@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { updateSession } from "./src/lib/supabase/middleware";
+import { updateSession } from "./lib/supabase/middleware";
 
 const RESERVED_SLUGS = [
   "app",
@@ -20,46 +20,24 @@ const RESERVED_SLUGS = [
 ];
 
 function getSubdomain(host: string): string | null {
-  // Strip port if present
   const hostname = host.split(":")[0];
-
-  // localhost: just return null (no subdomain routing on localhost)
   if (hostname === "localhost") return null;
-
-  // lvh.me: any *.lvh.me resolves to 127.0.0.1
   if (hostname.endsWith(".lvh.me")) {
     return hostname.split(".")[0];
   }
-
-  // Production: *.prewaitlist.com or *.vercel.app
   const parts = hostname.split(".");
   if (parts.length >= 3) {
     return parts[0];
   }
-
   return null;
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all paths except:
-     * - /api/* (API routes)
-     * - /_next/* (Next.js internals)
-     * - /auth/* (auth routes — signin, signup, callback)
-     * - Static files (favicon.ico, images, etc.)
-     *
-     * NOTE: /onboarding/* and /dashboard ARE included so the auth guard
-     * can protect them. The subdomain rewrite logic skips reserved slugs.
-     */
-    "/((?!api/|_next/|auth/|favicon.ico|.*\\..*).*)",
-  ],
+  matcher: ["/((?!api/|_next/|auth/|favicon.ico|.*\\..*).*)"],
 };
 
 function captureAcquisition(request: NextRequest): NextResponse | null {
   const url = request.nextUrl;
-
-  // Only capture on the marketing homepage
   if (url.pathname !== "/") return null;
 
   const ref = url.searchParams.get("ref");
@@ -69,7 +47,6 @@ function captureAcquisition(request: NextRequest): NextResponse | null {
   const utmTerm = url.searchParams.get("utm_term");
   const utmContent = url.searchParams.get("utm_content");
 
-  // If no acquisition params present, do nothing
   if (
     !ref &&
     !utmSource &&
@@ -91,7 +68,7 @@ function captureAcquisition(request: NextRequest): NextResponse | null {
 
   const response = NextResponse.next();
   response.cookies.set("mw_acquisition", JSON.stringify(acquisition), {
-    maxAge: 60 * 60 * 24 * 30, // 30 days
+    maxAge: 60 * 60 * 24 * 30,
     path: "/",
     sameSite: "lax",
   });
@@ -99,17 +76,17 @@ function captureAcquisition(request: NextRequest): NextResponse | null {
   return response;
 }
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const host = request.headers.get("host") ?? "";
   const subdomain = getSubdomain(host);
+  console.log(
+    `[middleware] host=${host} subdomain=${subdomain} pathname=${request.nextUrl.pathname}`
+  );
 
-  // Capture acquisition params on marketing homepage
   const acquisitionResponse = captureAcquisition(request);
 
-  // No subdomain on localhost or apex domain — apply auth guard
   if (!subdomain) {
     const sessionResponse = await updateSession(request);
-    // Merge acquisition cookie if it was set
     if (acquisitionResponse) {
       for (const cookie of acquisitionResponse.cookies.getAll()) {
         sessionResponse.cookies.set(cookie);
@@ -118,7 +95,6 @@ export async function proxy(request: NextRequest) {
     return sessionResponse;
   }
 
-  // Reserved slugs — serve the app's own pages, apply auth guard
   if (RESERVED_SLUGS.includes(subdomain)) {
     const sessionResponse = await updateSession(request);
     if (acquisitionResponse) {
@@ -129,8 +105,8 @@ export async function proxy(request: NextRequest) {
     return sessionResponse;
   }
 
-  // Rewrite to the [subdomain] dynamic route (no auth guard for tenant pages)
   const url = request.nextUrl.clone();
   url.pathname = `/${subdomain}${url.pathname}`;
+  console.log(`[middleware] rewriting to ${url.pathname}`);
   return NextResponse.rewrite(url);
 }
