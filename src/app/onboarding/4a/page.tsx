@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useOnboardingForm } from "../context";
-import { Input } from "../../../../components/ui/input";
 
 interface Question {
   text: string;
@@ -25,14 +24,13 @@ function get_max_questions(tier: string): number {
 export default function OnboardingStep4a() {
   const router = useRouter();
   const form = useOnboardingForm();
-  const [questions, setQuestions] = useState<Question[]>(
-    form.questions.length > 0
-      ? form.questions
-      : [
-          { text: "", required: false },
-          { text: "", required: false },
-        ]
-  );
+  const [questions, setQuestions] = useState<Question[]>(() => {
+    if (form.questions.length > 0) {
+      const filtered = form.questions.filter((q) => q.text.trim().length > 0);
+      return filtered.length > 0 ? filtered : [{ text: "", required: false }];
+    }
+    return [{ text: "", required: false }];
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,12 +49,16 @@ export default function OnboardingStep4a() {
   const hasAtLeastOneQuestion = questions.some((q) => q.text.trim().length > 0);
 
   const handle_add_question = useCallback(() => {
-    if (at_cap) {
-      router.push("/dashboard?upgrade=true");
-      return;
-    }
+    if (at_cap) return;
     setQuestions((prev) => [...prev, { text: "", required: false }]);
-  }, [at_cap, router]);
+  }, [at_cap]);
+
+  const handle_remove_question = useCallback((index: number) => {
+    setQuestions((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      return next.length > 0 ? next : [{ text: "", required: false }];
+    });
+  }, []);
 
   const handle_update_question = useCallback(
     (index: number, value: string) => {
@@ -85,19 +87,22 @@ export default function OnboardingStep4a() {
       setError(null);
 
       try {
-        // FlushGate already resolved server state — waitlistId is guaranteed
         const waitlistId = form.waitlistId;
         if (!waitlistId) {
           router.replace("/onboarding/1");
           return;
         }
 
+        const validQuestions = questions.filter(
+          (q) => q.text.trim().length > 0
+        );
+
         const res = await fetch("/api/waitlist", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             id: waitlistId,
-            questions: questions,
+            questions: validQuestions,
           }),
         });
 
@@ -105,7 +110,7 @@ export default function OnboardingStep4a() {
           throw new Error("Failed to save questions");
         }
 
-        form.updateField("questions", questions);
+        form.updateField("questions", validQuestions);
         router.push("/onboarding/5");
       } catch {
         setIsSubmitting(false);
@@ -117,7 +122,6 @@ export default function OnboardingStep4a() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col">
-      {/* Page header */}
       <div className="mb-2">
         <p className="text-xs font-medium text-accent">Step 4 of 5</p>
         <p className="text-sm text-muted-foreground">Qualification questions</p>
@@ -128,45 +132,75 @@ export default function OnboardingStep4a() {
         Ask questions to understand who&apos;s serious about your product.
       </p>
 
-      {/* Tier badge */}
       <div className="mb-6">
         <span className="inline-flex items-center rounded-full border border-accent bg-accent/10 px-4 py-1.5 text-xs font-medium text-accent">
           FREE — 2 questions max
         </span>
       </div>
 
-      {/* Questions list */}
       <div className="mb-6 flex flex-col gap-4">
         {questions.map((question, index) => (
           <div
             key={index}
             className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5"
           >
-            <span className="text-sm font-medium text-foreground">
-              Question {index + 1}
-            </span>
-            <Input
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-foreground">
+                Question {index + 1}
+              </span>
+              {questions.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => handle_remove_question(index)}
+                  disabled={isSubmitting}
+                  className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label={`Remove question ${index + 1}`}
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path
+                      d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              )}
+            </div>
+            <input
+              type="text"
               placeholder='e.g. "What are you currently using?"'
               value={question.text}
               onChange={(e) => handle_update_question(index, e.target.value)}
               disabled={isSubmitting}
+              className="flex h-10 w-full rounded-[var(--input-radius)] border border-border bg-card px-[var(--input-padding-x)] py-[var(--input-padding-y)] text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-[var(--input-border-color-focus)] disabled:cursor-not-allowed disabled:opacity-50"
             />
-            <span className="text-xs text-warning">(optional)</span>
+            <span className="text-xs text-muted-foreground">(optional)</span>
           </div>
         ))}
 
-        {/* Add question button — always clickable, triggers upgrade flow at cap */}
-        <button
-          type="button"
-          onClick={handle_add_question}
-          disabled={isSubmitting}
-          className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-accent py-3 text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          + Add new question — Free tier: 2 max
-        </button>
+        {questions.length < max_questions ? (
+          <button
+            type="button"
+            onClick={handle_add_question}
+            disabled={isSubmitting}
+            className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-accent py-3 text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            + Add new question
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard?upgrade=true")}
+            disabled={isSubmitting}
+            className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-accent bg-accent/5 py-3 text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Upgrade to add more questions
+          </button>
+        )}
       </div>
 
-      {/* Submit button */}
       <div className="sticky bottom-0 flex w-full flex-col gap-4 bg-background pb-14 pt-4 md:static md:px-0 md:pb-0 md:pt-0">
         {error && (
           <p className="text-sm text-destructive" role="alert">

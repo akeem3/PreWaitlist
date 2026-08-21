@@ -51,7 +51,9 @@ export function EmailCaptureForm({
   const isBold = template === "bold";
 
   const visibleQuestions = qualificationEnabled
-    ? questions.slice(0, MAX_QUESTIONS[tier] || 2)
+    ? questions
+        .filter((q) => q.text.trim().length > 0)
+        .slice(0, MAX_QUESTIONS[tier] || 2)
     : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -168,7 +170,11 @@ export function EmailCaptureForm({
                 key={q.id}
                 className={`flex justify-between items-center rounded-[var(--radius-md)] ${cardBorder} px-3.5 py-2.5 ${textSize} ${cardText}`}
               >
-                <span>{q.text}</span>
+                <span>
+                  {q.text.trim().endsWith("?")
+                    ? q.text.trim()
+                    : `${q.text.trim()}?`}
+                </span>
                 <span className={`text-xs ${cardText}`}>(optional)</span>
               </div>
             ))}

@@ -8,11 +8,6 @@ type Template = "minimal" | "bold" | "dark";
 type ViewMode = "desktop" | "mobile";
 type Tier = "free" | "pro" | "growth";
 
-const DEFAULT_QUESTION_TEXTS = [
-  "What are you currently using?",
-  "What is your role?",
-];
-
 interface MilestoneReward {
   threshold: number;
   label: string;
@@ -223,38 +218,46 @@ function PreviewQuestionForm({
     : "text-muted-foreground";
   const cardGap = isBold ? "gap-2.5" : "gap-2";
 
+  const questionSlots =
+    questions && questions.length > 0
+      ? questions
+      : [{ text: "", required: false }];
+
   return (
-    <>
+    <div className="flex flex-col gap-3 w-full max-w-md">
       <input
         type="email"
         placeholder="Email address"
         readOnly
-        className={`${inputHeight} w-full max-w-md rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none`}
+        className={`${inputHeight} w-full rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none`}
       />
-      <div className={`flex flex-col ${cardGap} w-full max-w-md`}>
-        {[0, 1].map((i) => {
-          const q = questions?.[i];
-          return (
-            <div
-              key={i}
-              className={`flex justify-between items-center rounded-[var(--radius-md)] ${cardBorder} px-3.5 py-2.5 ${textSize} ${cardText}`}
-            >
-              <span>{q?.text || DEFAULT_QUESTION_TEXTS[i]}</span>
-              {!q?.required && (
-                <span className={`text-xs ${cardText}`}>(optional)</span>
-              )}
-            </div>
-          );
-        })}
+      <div className={`flex flex-col ${cardGap}`}>
+        {questionSlots.map((q, i) => (
+          <div
+            key={i}
+            className={`flex justify-between items-center rounded-[var(--radius-md)] ${cardBorder} px-3.5 py-2.5 ${textSize} ${cardText}`}
+          >
+            <span>
+              {q.text
+                ? q.text.trim().endsWith("?")
+                  ? q.text.trim()
+                  : `${q.text.trim()}?`
+                : "Your question here"}
+            </span>
+            {!q.required && (
+              <span className={`text-xs ${cardText}`}>(optional)</span>
+            )}
+          </div>
+        ))}
       </div>
       <button
         type="button"
         style={{ backgroundColor: brandColor }}
-        className={`inline-flex items-center justify-center ${btnHeight} w-full max-w-md ${btnPadding} rounded-[var(--button-radius)] ${btnText} text-white transition-colors`}
+        className={`inline-flex items-center justify-center ${btnHeight} w-full ${btnPadding} rounded-[var(--button-radius)] ${btnText} text-white transition-colors`}
       >
         {ctaText || "Join Waitlist"}
       </button>
-    </>
+    </div>
   );
 }
 
