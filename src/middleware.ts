@@ -106,7 +106,8 @@ export async function middleware(request: NextRequest) {
   }
 
   const url = request.nextUrl.clone();
-  url.pathname = `/${subdomain}${url.pathname}`;
+  const path = url.pathname === "/" ? "" : url.pathname.replace(/\/$/, "");
+  url.pathname = `/${subdomain}${path}`;
   console.log(`[middleware] rewriting to ${url.pathname}`);
   return NextResponse.rewrite(url);
 }

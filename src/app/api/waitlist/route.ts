@@ -48,13 +48,28 @@ export async function POST(request: NextRequest) {
 
   if (existing) {
     // Update existing waitlist with new values
+    const updatePayload: Record<string, unknown> = {
+      subdomain: body.subdomain,
+      headline: body.headline ?? null,
+      subheadline: body.subheadline ?? null,
+    };
+    if (body.template !== undefined) updatePayload.template = body.template;
+    if (body.brand_color !== undefined)
+      updatePayload.brand_color = body.brand_color;
+    if (body.logo_url !== undefined) updatePayload.logo_url = body.logo_url;
+    if (body.cta_text !== undefined) updatePayload.cta_text = body.cta_text;
+    if (body.signup_counter_enabled !== undefined)
+      updatePayload.signup_counter_enabled = body.signup_counter_enabled;
+    if (body.signup_counter_threshold !== undefined)
+      updatePayload.signup_counter_threshold = body.signup_counter_threshold;
+    if (Array.isArray(body.milestone_rewards)) {
+      updatePayload.milestone_rewards_enabled =
+        body.milestone_rewards.length > 0;
+    }
+
     const { error: updateError } = await supabase
       .from("waitlists")
-      .update({
-        subdomain: body.subdomain,
-        headline: body.headline ?? null,
-        subheadline: body.subheadline ?? null,
-      })
+      .update(updatePayload)
       .eq("id", existing.id);
 
     if (updateError) {
@@ -62,17 +77,68 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: updateError.message }, { status: 400 });
     }
 
+    // Upsert milestone_rewards if provided
+    if (Array.isArray(body.milestone_rewards)) {
+      await supabase
+        .from("milestone_rewards")
+        .delete()
+        .eq("waitlist_id", existing.id);
+      if (body.milestone_rewards.length > 0) {
+        const rewardRows = body.milestone_rewards.map(
+          (r: { threshold: number; label: string }) => ({
+            waitlist_id: existing.id,
+            tier_referrals: r.threshold,
+            reward_label: r.label,
+          })
+        );
+        await supabase.from("milestone_rewards").insert(rewardRows);
+      }
+    }
+
+    // Upsert qualification_questions if provided
+    if (Array.isArray(body.questions)) {
+      await supabase
+        .from("qualification_questions")
+        .delete()
+        .eq("waitlist_id", existing.id);
+      if (body.questions.length > 0) {
+        const questionRows = body.questions.map(
+          (q: { text: string; required: boolean }, index: number) => ({
+            waitlist_id: existing.id,
+            question_text: q.text,
+            question_type: "free_text" as const,
+            sort_order: index,
+          })
+        );
+        await supabase.from("qualification_questions").insert(questionRows);
+      }
+    }
+
     return NextResponse.json({ id: existing.id }, { status: 200 });
+  }
+
+  const insertPayload: Record<string, unknown> = {
+    founder_id: user.id,
+    subdomain: body.subdomain,
+    headline: body.headline ?? null,
+    subheadline: body.subheadline ?? null,
+  };
+  if (body.template !== undefined) insertPayload.template = body.template;
+  if (body.brand_color !== undefined)
+    insertPayload.brand_color = body.brand_color;
+  if (body.logo_url !== undefined) insertPayload.logo_url = body.logo_url;
+  if (body.cta_text !== undefined) insertPayload.cta_text = body.cta_text;
+  if (body.signup_counter_enabled !== undefined)
+    insertPayload.signup_counter_enabled = body.signup_counter_enabled;
+  if (body.signup_counter_threshold !== undefined)
+    insertPayload.signup_counter_threshold = body.signup_counter_threshold;
+  if (Array.isArray(body.milestone_rewards)) {
+    insertPayload.milestone_rewards_enabled = body.milestone_rewards.length > 0;
   }
 
   const { data, error } = await supabase
     .from("waitlists")
-    .insert({
-      founder_id: user.id,
-      subdomain: body.subdomain,
-      headline: body.headline ?? null,
-      subheadline: body.subheadline ?? null,
-    })
+    .insert(insertPayload)
     .select("id")
     .single();
 
@@ -84,7 +150,37 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ id: data.id }, { status: 201 });
+  const waitlistId = data.id;
+
+  // Upsert milestone_rewards if provided
+  if (
+    Array.isArray(body.milestone_rewards) &&
+    body.milestone_rewards.length > 0
+  ) {
+    const rewardRows = body.milestone_rewards.map(
+      (r: { threshold: number; label: string }) => ({
+        waitlist_id: waitlistId,
+        tier_referrals: r.threshold,
+        reward_label: r.label,
+      })
+    );
+    await supabase.from("milestone_rewards").insert(rewardRows);
+  }
+
+  // Upsert qualification_questions if provided
+  if (Array.isArray(body.questions) && body.questions.length > 0) {
+    const questionRows = body.questions.map(
+      (q: { text: string; required: boolean }, index: number) => ({
+        waitlist_id: waitlistId,
+        question_text: q.text,
+        question_type: "free_text" as const,
+        sort_order: index,
+      })
+    );
+    await supabase.from("qualification_questions").insert(questionRows);
+  }
+
+  return NextResponse.json({ id: waitlistId }, { status: 201 });
 }
 
 export async function PATCH(request: NextRequest) {

@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Input } from "../ui/input";
-import { Button } from "../ui/button";
 import { Spinner } from "../ui/spinner";
 
 interface Question {
@@ -49,8 +47,6 @@ export function EmailCaptureForm({
   const [emailError, setEmailError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-
   const isDark = template === "dark";
   const isBold = template === "bold";
 
@@ -77,10 +73,6 @@ export function EmailCaptureForm({
     setLoading(true);
 
     try {
-      const qualAnswers = Object.fromEntries(
-        Object.entries(answers).filter(([, value]) => value.trim() !== "")
-      );
-
       const body: Record<string, unknown> = {
         waitlist_id: waitlistId,
         email: email.trim().toLowerCase(),
@@ -88,10 +80,6 @@ export function EmailCaptureForm({
 
       if (referrerId) {
         body.referrer_id = referrerId;
-      }
-
-      if (Object.keys(qualAnswers).length > 0) {
-        body.qual_answers = qualAnswers;
       }
 
       const res = await fetch("/api/subscribers", {
@@ -122,80 +110,124 @@ export function EmailCaptureForm({
     }
   };
 
+  const hasQuestions = visibleQuestions.length > 0;
+
+  // Template-specific styling to match onboarding preview exactly
+  const inputHeight = isBold ? "h-11" : "h-10";
+  const inputBorder = isBold
+    ? "border-2 border-foreground"
+    : isDark
+      ? "border border-dark-template-border"
+      : "border border-border";
+  const inputBg = isDark ? "bg-dark-template-input" : "bg-card";
+  const inputText = isDark ? "text-dark-template-text" : "text-foreground";
+  const inputPlaceholder = isDark
+    ? "placeholder:text-dark-template-muted"
+    : "placeholder:text-muted-foreground";
+  const textSize = isBold ? "text-base" : "text-sm";
+  const btnHeight = isBold ? "h-11" : "h-10";
+  const btnPadding = isBold ? "px-7" : "px-4";
+  const btnText = isBold ? "text-base font-semibold" : "text-sm font-medium";
+  const cardBorder = isBold
+    ? "border-2 border-foreground"
+    : isDark
+      ? "border border-dark-template-border"
+      : "border border-border";
+  const cardText = isDark
+    ? "text-dark-template-muted"
+    : "text-muted-foreground";
+  const cardGap = isBold ? "gap-2.5" : "gap-2";
+
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-md mt-2">
-      <div className="flex gap-2">
-        <Input
-          type="email"
-          placeholder="Email address"
-          value={email}
-          onChange={(e) => {
-            setEmail(e.target.value);
-            if (apiError) setApiError(null);
-          }}
-          error={emailError || undefined}
-          disabled={loading}
-          autoComplete="email"
-          className={`flex-1 min-w-0 ${
-            isDark
-              ? "border-dark-template-border bg-dark-template-input text-dark-template-foreground"
-              : isBold
-                ? "border-foreground"
-                : "border-border bg-card text-foreground"
-          }`}
-        />
-        <Button
-          type="submit"
-          disabled={loading}
-          style={{ backgroundColor: brandColor }}
-          className="text-white whitespace-nowrap"
-        >
-          {loading ? (
-            <span className="flex items-center gap-2">
-              <Spinner className="h-4 w-4" />
-              Joining...
-            </span>
-          ) : (
-            ctaText || "Join Waitlist"
+      {hasQuestions ? (
+        <>
+          <input
+            type="email"
+            placeholder="Email address"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (apiError) setApiError(null);
+              if (emailError) setEmailError(null);
+            }}
+            disabled={loading}
+            autoComplete="email"
+            aria-invalid={!!emailError}
+            className={`${inputHeight} w-full rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none focus-visible:border-[var(--input-border-color-focus)] disabled:cursor-not-allowed disabled:opacity-50`}
+          />
+          {emailError && (
+            <p className="mt-1.5 text-xs text-destructive" role="alert">
+              {emailError}
+            </p>
           )}
-        </Button>
-      </div>
 
-      {apiError && (
-        <p className="text-xs text-error mt-2" role="alert">
-          {apiError}
-        </p>
+          <div className={`flex flex-col ${cardGap} mt-4`}>
+            {visibleQuestions.map((q) => (
+              <div
+                key={q.id}
+                className={`flex justify-between items-center rounded-[var(--radius-md)] ${cardBorder} px-3.5 py-2.5 ${textSize} ${cardText}`}
+              >
+                <span>{q.text}</span>
+                <span className={`text-xs ${cardText}`}>(optional)</span>
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{ backgroundColor: brandColor }}
+            className={`inline-flex items-center justify-center ${btnHeight} w-full ${btnPadding} rounded-[var(--button-radius)] ${btnText} text-white transition-colors mt-4 disabled:pointer-events-none disabled:opacity-50`}
+          >
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <Spinner className="h-4 w-4" />
+                Joining...
+              </span>
+            ) : (
+              ctaText || "Join Waitlist"
+            )}
+          </button>
+        </>
+      ) : (
+        <div className="flex gap-2">
+          <input
+            type="email"
+            placeholder="Email address"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (apiError) setApiError(null);
+              if (emailError) setEmailError(null);
+            }}
+            disabled={loading}
+            autoComplete="email"
+            aria-invalid={!!emailError}
+            className={`${inputHeight} flex-1 min-w-0 rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none focus-visible:border-[var(--input-border-color-focus)] disabled:cursor-not-allowed disabled:opacity-50`}
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            style={{ backgroundColor: brandColor }}
+            className={`inline-flex items-center justify-center ${btnHeight} ${btnPadding} rounded-[var(--button-radius)] ${btnText} text-white transition-colors whitespace-nowrap disabled:pointer-events-none disabled:opacity-50`}
+          >
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <Spinner className="h-4 w-4" />
+                Joining...
+              </span>
+            ) : (
+              ctaText || "Join Waitlist"
+            )}
+          </button>
+        </div>
       )}
 
-      {visibleQuestions.length > 0 && (
-        <div className="flex flex-col gap-2 mt-4">
-          {visibleQuestions.map((q) => (
-            <div key={q.id}>
-              <label className="text-sm font-medium text-foreground">
-                {q.text}
-                <span className="text-caption text-muted-foreground ml-1">
-                  (optional)
-                </span>
-              </label>
-              <Input
-                type="text"
-                placeholder={q.text}
-                value={answers[q.id] || ""}
-                onChange={(e) =>
-                  setAnswers({ ...answers, [q.id]: e.target.value })
-                }
-                disabled={loading}
-                className={
-                  isDark
-                    ? "border-dark-template-border bg-dark-template-input text-dark-template-foreground"
-                    : isBold
-                      ? "border-foreground"
-                      : "border-border bg-card text-foreground"
-                }
-              />
-            </div>
-          ))}
-        </div>
+      {apiError && (
+        <p className="text-xs text-destructive mt-2" role="alert">
+          {apiError}
+        </p>
       )}
     </form>
   );

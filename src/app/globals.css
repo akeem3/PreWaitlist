@@ -39,6 +39,7 @@
   --color-dark-template-text: #faf8f4;
   --color-dark-template-muted: #a8a29e;
   --color-dark-template-border: #57534e;
+  --color-dark-template-input: #292524;
   /* PLACEHOLDER: secondary text on dark bg — needs real token decision */
   --color-dark-template-secondary: rgba(250, 248, 244, 0.7);
 

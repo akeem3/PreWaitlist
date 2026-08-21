@@ -2,21 +2,55 @@
 
 > **CRITICAL: When the user types a shortcut command, you MUST load `docs/PROMPTS.md` and execute the corresponding prompt in full — not a manual interpretation, not a partial version. No exceptions.**
 
+> **EXECUTION RULE: Every prompt has hard gates between phases. You MUST complete each phase's required output before proceeding. Do not skip phases. Do not jump to conclusions. Do not report findings without doing the work.**
+
 Pre-launch waitlist SaaS. Solo founder project. Full spec: `docs/PRD.md`.
 
 ## Prompt Shortcuts
 
-| Shortcut          | Action                                       |
-| ----------------- | -------------------------------------------- |
-| `scan [story]`    | Load `docs/PROMPTS.md` → Execute Prompt #1   |
-| `execute [story]` | Load `docs/PROMPTS.md` → Execute Prompt #2   |
-| `audit [story]`   | Load `docs/PROMPTS.md` → Execute Prompt #3   |
-| `epic-check`      | Load `docs/PROMPTS.md` → Execute Prompt #4   |
-| `create-epic [N]` | Load `docs/PROMPTS.md` → Execute Prompt #5   |
-| `align-epic [N]`  | Load `docs/PROMPTS.md` → Execute Prompt #6   |
-| `analyze [N.S]`   | Load `docs/PROMPTS.md` → Execute Prompt #7   |
-| `commit-push`     | Stage, commit with auto-message, push        |
-| `merge-clean`     | Merge epic→dev, resolve conflicts, lint+test |
+| Shortcut             | Action                                       |
+| -------------------- | -------------------------------------------- |
+| `scan [story]`       | Load `docs/PROMPTS.md` → Execute Prompt #1   |
+| `execute [story]`    | Load `docs/PROMPTS.md` → Execute Prompt #2   |
+| `audit [story]`      | Load `docs/PROMPTS.md` → Execute Prompt #3   |
+| `epic-check`         | Load `docs/PROMPTS.md` → Execute Prompt #4   |
+| `create-epic [N]`    | Load `docs/PROMPTS.md` → Execute Prompt #5   |
+| `align-epic [N]`     | Load `docs/PROMPTS.md` → Execute Prompt #6   |
+| `align-design [N.S]` | Load `docs/PROMPTS.md` → Execute Prompt #7   |
+| `investigate [ ]`    | Load `docs/PROMPTS.md` → Execute Prompt #8   |
+| `commit-push`        | Stage, commit with auto-message, push        |
+| `merge-clean`        | Merge epic→dev, resolve conflicts, lint+test |
+
+## Prompt Nesting
+
+Prompts can compose inline. The inner prompt runs first, completes fully, and its output feeds the outer prompt.
+
+**Syntax:** `outer [inner]` — inner executes inside outer's flow.
+
+**Execution order:** Inside-out. The deepest nested prompt runs first. With multiple nestings, rightmost-innermost wins.
+
+```
+execute [investigate [align-design 7.1]]
+                ↑ runs first
+        ↑ runs second (gets align-design output)
+↑ runs last (gets investigate output)
+```
+
+**Linear chains** use `→` and run left-to-right:
+
+```
+scan [story 7.1] → execute [story 7.1] → audit [story 7.1]
+```
+
+**When nesting triggers:** The outer prompt's workflow hits a sub-task matching a nested prompt's purpose. Load and execute the nested prompt in full — never partially interpret.
+
+| Prompt       | Nests into                     | Trigger                                           |
+| ------------ | ------------------------------ | ------------------------------------------------- |
+| `scan`       | `align-design`                 | Design SVGs exist for the story                   |
+| `execute`    | `investigate`                  | Blocker: code doesn't work, can't find root cause |
+| `audit`      | `investigate`                  | Audit finds a bug — investigate before re-audit   |
+| `epic-check` | `investigate` + `align-design` | Gaps or mismatches found in epic                  |
+| `align-epic` | `align-design`                 | Need to compare design SVGs to implementation     |
 
 ## Commands
 

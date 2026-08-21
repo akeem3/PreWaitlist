@@ -4,6 +4,20 @@ Reusable prompts for story and epic workflow.
 
 ---
 
+## Global Execution Rules
+
+**These rules apply to ALL prompts. They are not optional.**
+
+1. **Complete every phase in order.** Do not skip phases. Do not jump ahead.
+2. **Show proof of work.** Each phase has a required output. You MUST produce it before proceeding.
+3. **Hard gate = stop.** If a phase says "STOP and do X", you stop. You do not continue until X is done.
+4. **Web research = actual web searches.** When a phase says "search the web", you run web searches. You do not rely on training data or memory.
+5. **Confidence below 100% = go back.** If you cannot honestly say 100%, return to the phase that's weak. Do not fake confidence.
+6. **Phase output goes to the user.** Report your findings/completions to the user after each phase. Do not silently proceed.
+7. **Do not narrate — execute.** Say what you're doing, do it, show the result. Do not explain what you're about to do.
+
+---
+
 ## Table of Contents
 
 | #   | Prompt                                                   | Purpose                                                                |
@@ -14,7 +28,8 @@ Reusable prompts for story and epic workflow.
 | 4   | [Epic-Level Verification](#4-epic-level-verification)    | Final release audit of entire epic                                     |
 | 5   | [Epic Document Creation](#5-epic-document-creation)      | Create a structured epic document with stories and acceptance criteria |
 | 6   | [Epic Alignment Check](#6-epic-alignment-check)          | Verify epic document matches current implementation                    |
-| 7   | [Analyze Design](#7-analyze-design-screen-by-screen)     | Screen-by-screen design analysis before epic execution                 |
+| 7   | [Align Design](#7-align-design-screen-by-screen)         | Screen-by-screen design analysis before epic execution                 |
+| 8   | [Investigate & Solve](#8-investigate--solve-problem)     | Deep investigation of bugs, mismatches, or unexpected behavior         |
 
 ---
 
@@ -370,14 +385,14 @@ If all Dev Notes are accurately annotated, confirm the epic document is aligned 
 
 ---
 
-## 7. Analyze Design (Screen-by-Screen)
+## 7. Align Design (Screen-by-Screen)
 
 **Use when:** Before executing an epic, to verify designs match PRD requirements and current implementation. Produces a detailed analysis recorded in `docs/design/design-analysis.md`.
 
-**Shortcut:** Type `analyze [epic-number].[screen]` (e.g. `analyze 4.1`) to analyze a single screen, or `analyze [epic-number]` (e.g. `analyze 4`) to analyze all screens in an epic.
+**Shortcut:** Type `align-design [epic-number].[screen]` (e.g. `align-design 4.1`) to analyze a single screen, or `align-design [epic-number]` (e.g. `align-design 4`) to analyze all screens in an epic.
 
 ```
-Analyze [epic-number].[screen] — [Screen Name]
+Align [epic-number].[screen] — [Screen Name]
 
 You are a senior UI/UX engineer with deep production experience conducting a design-to-implementation analysis. You do not guess, you do not assume, and you do not skip details. You are the last line of defense before stories are written from these designs. Apply that standard to everything that follows.
 
@@ -559,4 +574,118 @@ Report back with:
 - A clear statement that you are 100% confident in the analysis, or a list of what still needs resolution
 
 Do not begin implementation or epic updates until instructed.
+```
+
+---
+
+## 8. Investigate & Solve Problem
+
+**Use when:** You encounter a bug, test failure, unexpected behavior, UI mismatch, or ambiguous issue that needs to be understood and resolved.
+
+```
+You have encountered a problem. Do not rush to fix it. Follow this process rigorously until you have 100% confidence in both the problem and the solution.
+
+### Phase 1: Deep Investigation
+
+Read every file directly involved — not just the file where the symptom appears. Trace the full call chain from symptom back to root cause.
+
+For UI issues: compare the implementation against the design SVG or preview component that serves as source of truth. Read both files side by side. Document every visual/structural difference.
+For data issues: trace the query from the component through the API route to Supabase. Check what the server component sees vs. what a direct REST call returns.
+For routing issues: check middleware.ts rewrite logic, trailing slash behavior, and whether the dynamic segment receives the correct params.
+
+Project-specific checks (apply as relevant):
+- Supabase: PostgREST returns 400 for queries referencing non-existent columns. Verify the column exists in the actual DB schema, not just in code.
+- Supabase: The SSR client reads cookies(). If no auth cookies exist, it acts as anon. Verify RLS policies allow the anon role.
+- Tailwind v4: @theme inline does NOT create CSS custom properties. Use utility class names (bg-card), NOT var() arbitrary values (bg-[--color-card]).
+- Design tokens: Never use hardcoded hex. All colors must reference CSS custom properties via Tailwind utility classes.
+- Next.js 16: Server Components run on the server. Client Components ("use client") cannot access cookies/headers.
+- Middleware: On Windows, use middleware.ts at src/middleware.ts for subdomain routing (not proxy.ts).
+- Story ACs: The story's acceptance criteria are the source of truth. If the implementation deviates from the AC, that's a bug.
+
+HARD GATE — Before proceeding to Phase 2, you MUST:
+- List every file you read (file path + what you found)
+- State the root cause in one sentence
+- Show the evidence chain: symptom → file → line → cause
+
+If you cannot do this, you have not investigated deeply enough. Go back.
+
+### Phase 2: Research
+
+Search the web to learn the best way to fix this specific problem. Do not rely on training data or memory.
+
+- Search for the exact error message, symptom, or behavior — not generic solutions
+- Read official documentation for the libraries/frameworks involved (Next.js, Supabase, Tailwind v4, Vitest, etc.)
+- Look for known issues, GitHub discussions, and Stack Overflow threads with real solutions
+- Prioritize recent, production-proven patterns over outdated or generic advice
+- Understand WHY a recommended fix works, not just WHAT to change
+
+HARD GATE — Before proceeding to Phase 3, you MUST:
+- Show the web search queries you ran (at least 2)
+- Summarize what you found (not "I already knew this" — show actual results)
+- Name the specific approach you'll use and cite where you found it
+
+If you skipped web search, STOP. Go back and search. Do not proceed on training data alone.
+
+### Phase 3: Impact Analysis
+
+Ensure the fix will not break existing functionality.
+
+- Identify every part of the codebase that could be affected by the proposed change
+- Read those areas and confirm the fix won't cause regressions
+- Check existing tests — understand what they cover and what they don't
+- Check the design system: will the fix introduce new colors, spacing, or patterns outside the tokens in globals.css?
+- Think adversarially: what could break if this change is wrong?
+
+HARD GATE — Before proceeding to Phase 4, you MUST:
+- List every file that could be affected (file path + why)
+- State whether existing tests exist for the affected area
+- Name the worst-case regression scenario
+
+If you are not 100% confident the fix is safe, return to Phase 1 or Phase 2 with deeper focus.
+
+### Phase 4: Solution Planning
+
+Draft a well-structured plan. The plan MUST include:
+
+- Root cause: what exactly is causing the problem and why
+- Affected files: every file that needs to change (exact file paths)
+- Changes: specific, concrete changes for each file (not vague descriptions like "restructure the component")
+- Verification: how to confirm the fix works (manual test steps, test commands)
+- Rollback awareness: what to undo if the fix causes new issues
+
+HARD GATE — Before proceeding to Phase 5, you MUST:
+- Show the complete plan with exact file paths and specific changes
+- Show verification steps the user can follow
+
+If your plan has vague descriptions like "restructure" or "refactor", STOP. Be specific.
+
+### Phase 5: Confidence Check
+
+Before executing, verify you have 100% confidence. Answer each question with "yes" or "no" — do not skip any:
+
+1. Do I fully understand the problem? Could I explain it to someone else?
+2. Do I fully understand the root cause?
+3. Is my fix based on research, not assumptions?
+4. Have I considered all affected areas?
+5. Am I confident this won't break existing tests or functionality?
+
+HARD GATE — If ANY answer is "no", STOP. Return to the phase that's weak. Do not proceed until ALL answers are "yes".
+
+If you cannot honestly say 100%, state what's holding you back. Do not fake confidence.
+
+### Phase 6: Create Todos and Execute
+
+Once 100% confidence is gained:
+
+- Create todos from the plan
+- Execute each step meticulously
+- Verify after each change before moving to the next
+- Run pnpm lint and pnpm build at the end to confirm nothing is broken
+- If tests exist for the affected area, run them too
+
+### Ambiguity and Manual Intervention
+
+If there are ambiguities at any point — STOP. Do not guess or make assumptions. Ask the user for clarification before proceeding.
+
+If manual intervention is required from the user (e.g., running a SQL migration, checking the dev server terminal, verifying UI behavior in the browser, providing Supabase credentials), STOP and write a clear, step-by-step guide of exactly what the user needs to do, what to expect, and what information to report back.
 ```

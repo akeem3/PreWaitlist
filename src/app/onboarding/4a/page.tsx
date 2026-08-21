@@ -34,6 +34,7 @@ export default function OnboardingStep4a() {
         ]
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     form.setLoading(false);
@@ -47,6 +48,7 @@ export default function OnboardingStep4a() {
 
   const max_questions = get_max_questions(form.tier);
   const at_cap = questions.length >= max_questions;
+  const hasAtLeastOneQuestion = questions.some((q) => q.text.trim().length > 0);
 
   const handle_add_question = useCallback(() => {
     if (at_cap) {
@@ -56,21 +58,31 @@ export default function OnboardingStep4a() {
     setQuestions((prev) => [...prev, { text: "", required: false }]);
   }, [at_cap, router]);
 
-  const handle_update_question = useCallback((index: number, value: string) => {
-    setQuestions((prev) =>
-      prev.map((q, i) =>
-        i === index ? { text: value, required: q.required } : q
-      )
-    );
-  }, []);
+  const handle_update_question = useCallback(
+    (index: number, value: string) => {
+      setQuestions((prev) =>
+        prev.map((q, i) =>
+          i === index ? { text: value, required: q.required } : q
+        )
+      );
+      if (error) setError(null);
+    },
+    [error]
+  );
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
       if (isSubmitting) return;
 
+      if (!hasAtLeastOneQuestion) {
+        setError("Add at least one question before continuing.");
+        return;
+      }
+
       setIsSubmitting(true);
       form.setLoading(true);
+      setError(null);
 
       try {
         // FlushGate already resolved server state — waitlistId is guaranteed
@@ -100,7 +112,7 @@ export default function OnboardingStep4a() {
         form.setLoading(false);
       }
     },
-    [isSubmitting, form, questions, router]
+    [isSubmitting, form, questions, router, hasAtLeastOneQuestion]
   );
 
   return (
@@ -156,9 +168,14 @@ export default function OnboardingStep4a() {
 
       {/* Submit button */}
       <div className="sticky bottom-0 flex w-full flex-col gap-4 bg-background pb-14 pt-4 md:static md:px-0 md:pb-0 md:pt-0">
+        {error && (
+          <p className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        )}
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !hasAtLeastOneQuestion}
           className="inline-flex h-14.75 w-full items-center justify-center rounded-[13px] bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50 md:w-114.5"
         >
           {isSubmitting ? (
