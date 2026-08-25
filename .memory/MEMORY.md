@@ -230,7 +230,12 @@ picking up a paying customer.
 - CSV export (Pro tier)
 - Founder updates display on public page
 
-**New Table:** `subscribers` (email, referral_code, referrer_id, position, qual_answers, created_at)
+**New Tables:**
+
+- `subscribers` (email, referral_code, referrer_id, position, qual_answers, created_at)
+- `milestones_earned` (subscriber_id, tier_referrals, notified_at) — tracks milestone fulfillment
+- `page_views` (subdomain, viewer_ip_hash, referrer, viewed_at) — warmth tracking foundation
+- `email_events` (subscriber_id, event_type, event_data, event_at) — engagement tracking foundation
 
 **Design Reference:** 5 high-fidelity SVGs in `docs/design/High-fidelity-Sprit2/`
 
@@ -512,6 +517,9 @@ Implementation order:
 - Design-heavy epics must reference high-fidelity SVGs by file path.
 - Every story has `status` field: `ready` → `in-progress` → `blocked` or `done`.
 - **Never use inline styles (`style={{ ... }}`).** Use Tailwind utility classes and design system tokens from `src/app/globals.css` exclusively. All colors must reference CSS custom properties (`--color-*`), never hardcoded hex values. This applies to all new code and must be enforced during refactoring.
+- **Platform is a tracker + notifier for milestone rewards, not a fulfiller.** Founder handles reward delivery. Only automatable: email notification + position boost for "skip the line". No Paddle integration, swag fulfillment, or webhook-based custom fulfillment.
+- **Email is the primary engagement channel.** On-page updates are a secondary social-proof surface, not a primary engagement mechanism. Email nurture has 35-50% open rate, 5-12% CTR. On-page updates have zero proven engagement data. Every major waitlist platform (KickoffLabs, Viral Loops, Prefinery, LaunchList) uses email exclusively.
+- **What is designed/previewed in onboarding MUST be EXACTLY what is shown on the public waitlist page.** Agent must REUSE the shared rendering component (`components/share/waitlist-template-content.tsx`). Never build a second implementation of template display.
 
 ## Design System — Color Mapping (Design Spec → Tokens)
 
@@ -533,6 +541,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 | rgba(250,248,244,0.7) | `--color-dark-template-secondary` | `text-dark-template-secondary`                      | Dark template secondary text (PLACEHOLDER) |
 | `#A8A29E`             | `--color-dark-template-muted`     | `bg-dark-template-muted`/`text-dark-template-muted` | Dark template inactive elements            |
 | `#57534E`             | `--color-dark-template-border`    | `border-dark-template-border`                       | Dark template borders                      |
+| `#292524`             | `--color-dark-template-input`     | `bg-dark-template-input`                            | Dark template input fields                 |
 
 **Gap notes:**
 
@@ -545,6 +554,49 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - **`react-hooks/set-state-in-effect` (ESLint):** calling `setState` synchronously in an effect body is an error in this config. Workaround: use lazy `useState` initializer for localStorage reads, or `useRef` for values that don't need to trigger renders.
 - **Tailwind v4 scans ALL project files** — including `.md` files. If documentation contains text like `text-[length:var(...)]` or `text-[var(--badge-font-size)]` (even in backtick code spans), Tailwind generates broken CSS utilities from them. Fix: add `@source not "../../docs"` and `@source not "../../.memory"` to `globals.css`.
 - **`--text-*` tokens in `@theme` conflict with Tailwind's `text-` utility namespace** — Tailwind v4 auto-generates utilities from `@theme` token names. Tokens starting with `--text-` get interpreted as color utilities, not font-size. Use direct Tailwind classes (`text-xs`, `text-sm`) instead of `text-[var(--text-xs)]`.
+- **`components/` directory is at project root, NOT under `src/`** — Files at `components/` cannot be imported with `@/components/` from `src/` files. Use relative paths (`../../components/...`) or move shared components to `src/components/`. Only `src/components/auth/` exists under `src/`.
+- **`anonymizeEmail` extracted to `src/lib/format.ts`** — Both leaderboard page and API route import from `@/lib/format`. Don't duplicate the function.
+- **Social proof counter is inline in `WaitlistTemplateContent`** — Not a separate component. Lives at lines 70-85 of `components/share/waitlist-template-content.tsx`.
+- **`milestone_rewards` table schema:** `{ id, waitlist_id, tier_referrals (int), reward_label (text) }`. Default tiers in onboarding are 3/10/25 (being changed to 1/5/10/25). PRD has stale `check (tier_referrals in (3,10,25))` — needs update to `> 0`.
+- **`founder_updates` table:** `{ id, waitlist_id, body, created_at }`. Post/insert exists, public read RLS exists. No edit/delete. Plain text only.
+- **Warmth tracking:** Zero implementation — no schema, no signals, no scoring formula. Being created in Story 7.6.
+- **Email-first engagement data:** Email nurture 35-50% open rate, 5-12% CTR. On-page updates have zero proven engagement data. Every major waitlist platform uses email exclusively.
+- **Milestone fulfillment research:** KickoffLabs, Viral Loops, Prefinery, SparkLoop, Morning Brew all follow tracker+notifier model. No platform fulfills rewards.
+
+## Epic 7 Progress (Public Waitlist Page)
+
+| Story | Status   | Summary                                                                                                                               |
+| ----- | -------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 7.0   | ✅ done  | SQL migration (subscribers table, RLS, functions), POST /api/subscribers, GET /api/leaderboard/[subdomain], GET /api/subscribers/[id] |
+| 7.1   | ✅ done  | `[subdomain]/page.tsx`, WaitlistPageContent, placeholder slots (updates, milestones, leaderboard CTA), PoweredByFooter                |
+| 7.2   | ✅ done  | Email Capture Form — email-only, honeypot, timestamp check, 2s minimum, 5/hour rate limit, position display, social proof counter     |
+| 7.3   | ✅ done  | Inline Qualification Questions — dynamic free-text questions, optional toggle, live preview sync                                      |
+| 7.4   | ✅ done  | Duplicate Email Handling — 409 status, "already on waitlist" message, position display for existing                                   |
+| 7.5   | ✅ done  | Public Leaderboard Page — rank/email/referral columns, sticky footer CTA, anonymized emails, mobile responsive, 13 ACs met            |
+| 7.6   | 🔲 ready | Email-First Updates + Milestone Hybrid + Warmth Foundation + Doc Alignment — 36 ACs, 17 tasks, 4 work streams                         |
+| 7.7   | 🔲 ready | Founder Updates Feed — verify updates on public page (depends on 7.6)                                                                 |
+| 7.8   | 🔲 ready | Epic 7 Tests — unit + integration + e2e tests (depends on all prior)                                                                  |
+
+**Key architecture decisions (Story 7.6):**
+
+- `WaitlistTemplateContent` is the shared rendering component for both preview and public page
+- `EmailCaptureForm` uses raw HTML elements (not design system Input/Button) for exact preview match
+- `anonymizeEmail` extracted to `src/lib/format.ts`
+- `LatestUpdateCard` replaces full UpdatesFeed — shows only most recent update
+- `milestones_earned` and `milestones_notified` columns on subscribers table for fulfillment tracking
+- `src/lib/milestones.ts` handles threshold checks + congratulatory email dispatch
+- Warmth tracking: `page_views` table, `view_count`/`unique_viewers`/`last_viewed_at` columns on waitlists
+- `GET /api/warmth/[subdomain]` returns distribution breakdown (organic vs referred vs direct)
+- Social proof counter is inline in `WaitlistTemplateContent` (not a separate component)
+
+**Blocked items:**
+
+- "You're #12" position banner — needs viewer identification mechanism (no auth/cookie on public page)
+- Founder updates compose UI — no dashboard UI to create updates (deferred to Epic 10)
+- Founder updates styling — no design SVG exists (needs design pass)
+- Dashboard panels — deferred to Sprint 2 dashboard restructure (Epic 10)
+
+**Branch:** `epic-7` (pushed to origin, last commit `cb0af05`)
 
 ## Next Steps
 
@@ -565,7 +617,19 @@ Design specs use hex values that don't always match the token system exactly. Ma
 15. ~~Story 4.6 — Step 5 (Email Setup + Launch)~~ ✅ Done (part of Epic 6)
 16. ~~Story 4.7 — Success Screen~~ ✅ Done (part of Epic 6)
 17. ~~Epic 6 — Post-Sprint-1 Issues~~ ✅ Done (all 5 stories, incl. architecture overhaul)
-18. Create Epic 7 branch from dev — Dashboard + Store Features (Sprint 2)
+18. ~~Create Epic 7 branch from dev~~ ✅ Done
+19. ~~Story 7.0 — SQL migration + API routes~~ ✅ Done
+20. ~~Story 7.1 — Public waitlist page shell~~ ✅ Done
+21. ~~Story 7.2 — Email Capture Form~~ ✅ Done
+22. ~~Story 7.3 — Inline Qualification Questions~~ ✅ Done
+23. ~~Story 7.4 — Duplicate Email Handling~~ ✅ Done
+24. ~~Story 7.5 — Public Leaderboard Page~~ ✅ Done
+25. Execute Story 7.6 — Email-First Updates + Milestone Hybrid + Warmth Foundation + Doc Alignment
+26. Execute Story 7.7 — Founder Updates Feed (depends on 7.6)
+27. Execute Story 7.8 — Epic 7 Tests (depends on all prior)
+28. Epic 7 Audit (Prompt #4) — Final release audit
+29. Merge epic-7 → dev
+30. Create Epic 8 branch — Dashboard + Store Features (Sprint 2)
 
 ## Decision + bug fix: "Powered by PreWaitlist" footer (2026-07)
 
