@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { WaitlistPageContent } from "../../../../components/public/waitlist-page-content";
 import { EmailCaptureForm } from "../../../../components/public/email-capture-form";
+import { UpdatesFeed } from "../../../../components/public/updates-feed";
 
 type Props = { params: Promise<{ subdomain: string }> };
 
@@ -31,28 +32,34 @@ export default async function PublicSubdomainPage({ params }: Props) {
     : waitlist.founder_profiles;
   const tier = founderProfile?.tier || "free";
 
-  const [milestonesResult, questionsResult, countResult] = await Promise.all([
-    waitlist.milestone_rewards_enabled
-      ? supabase
-          .from("milestone_rewards")
-          .select("tier_referrals, reward_label")
-          .eq("waitlist_id", waitlist.id)
-          .order("tier_referrals", { ascending: true })
-      : Promise.resolve({ data: [] }),
-    waitlist.qualification_enabled
-      ? supabase
-          .from("qualification_questions")
-          .select("id, question_text, question_type, sort_order")
-          .eq("waitlist_id", waitlist.id)
-          .order("sort_order", { ascending: true })
-      : Promise.resolve({ data: [] }),
-    waitlist.signup_counter_enabled
-      ? supabase
-          .from("subscribers")
-          .select("id", { count: "exact", head: true })
-          .eq("waitlist_id", waitlist.id)
-      : Promise.resolve({ count: 0 }),
-  ]);
+  const [milestonesResult, questionsResult, countResult, updatesResult] =
+    await Promise.all([
+      waitlist.milestone_rewards_enabled
+        ? supabase
+            .from("milestone_rewards")
+            .select("tier_referrals, reward_label")
+            .eq("waitlist_id", waitlist.id)
+            .order("tier_referrals", { ascending: true })
+        : Promise.resolve({ data: [] }),
+      waitlist.qualification_enabled
+        ? supabase
+            .from("qualification_questions")
+            .select("id, question_text, question_type, sort_order")
+            .eq("waitlist_id", waitlist.id)
+            .order("sort_order", { ascending: true })
+        : Promise.resolve({ data: [] }),
+      waitlist.signup_counter_enabled
+        ? supabase
+            .from("subscribers")
+            .select("id", { count: "exact", head: true })
+            .eq("waitlist_id", waitlist.id)
+        : Promise.resolve({ count: 0 }),
+      supabase
+        .from("founder_updates")
+        .select("id, body, created_at")
+        .eq("waitlist_id", waitlist.id)
+        .order("created_at", { ascending: false }),
+    ]);
 
   const milestoneRewards = (milestonesResult.data || []).map((r) => ({
     threshold: r.tier_referrals,
@@ -70,32 +77,39 @@ export default async function PublicSubdomainPage({ params }: Props) {
     waitlist.signup_counter_enabled &&
     signupCount >= (waitlist.signup_counter_threshold || 10);
 
+  const updates = updatesResult.data || [];
+
   return (
-    <WaitlistPageContent
-      template={waitlist.template as "minimal" | "bold" | "dark"}
-      headline={waitlist.headline}
-      subheadline={waitlist.subheadline}
-      logoUrl={waitlist.logo_url}
-      ctaText={waitlist.cta_text}
-      brandColor={waitlist.brand_color}
-      tier={tier}
-      signupCounter={signupCount}
-      signupCounterVisible={signupCounterVisible}
-      milestoneRewards={milestoneRewards}
-      qualificationEnabled={waitlist.qualification_enabled}
-      questions={questions}
-      emailCaptureForm={
-        <EmailCaptureForm
-          waitlistId={waitlist.id}
-          subdomain={waitlist.subdomain}
-          ctaText={waitlist.cta_text || "Join Waitlist"}
-          brandColor={waitlist.brand_color}
-          template={waitlist.template as "minimal" | "bold" | "dark"}
-          tier={tier}
-          questions={questions}
-          qualificationEnabled={waitlist.qualification_enabled}
-        />
-      }
-    />
+    <>
+      <WaitlistPageContent
+        template={waitlist.template as "minimal" | "bold" | "dark"}
+        headline={waitlist.headline}
+        subheadline={waitlist.subheadline}
+        logoUrl={waitlist.logo_url}
+        ctaText={waitlist.cta_text}
+        brandColor={waitlist.brand_color}
+        tier={tier}
+        signupCounter={signupCount}
+        signupCounterVisible={signupCounterVisible}
+        milestoneRewards={milestoneRewards}
+        qualificationEnabled={waitlist.qualification_enabled}
+        questions={questions}
+        emailCaptureForm={
+          <EmailCaptureForm
+            waitlistId={waitlist.id}
+            subdomain={waitlist.subdomain}
+            ctaText={waitlist.cta_text || "Join Waitlist"}
+            brandColor={waitlist.brand_color}
+            template={waitlist.template as "minimal" | "bold" | "dark"}
+            tier={tier}
+            questions={questions}
+            qualificationEnabled={waitlist.qualification_enabled}
+          />
+        }
+      />
+      <div className="flex justify-center">
+        <UpdatesFeed updates={updates} />
+      </div>
+    </>
   );
 }
