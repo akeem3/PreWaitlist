@@ -2,14 +2,14 @@
 id: epic7.story02
 epic: epic-7-public-waitlist-page
 title: Email Capture Form
-status: ready
+status: done
 depends_on: [epic7.story00]
 updated: 2026-08-17
 ---
 
 # Story 7.2 — Email Capture Form
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (no high-fidelity SVG for email capture yet)
 
 **Story:** As a visitor, I want to enter my email address on the public waitlist page so that I can join the waitlist.

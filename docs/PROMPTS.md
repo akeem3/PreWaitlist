@@ -675,13 +675,21 @@ If you cannot honestly say 100%, state what's holding you back. Do not fake conf
 
 ### Phase 6: Create Todos and Execute
 
-Once 100% confidence is gained:
+Once 100% confidence is gained — **execute immediately. Do not ask the user for permission. Do not say "shall I proceed" or "do you want me to fix this." Just do it.**
 
 - Create todos from the plan
 - Execute each step meticulously
 - Verify after each change before moving to the next
 - Run pnpm lint and pnpm build at the end to confirm nothing is broken
 - If tests exist for the affected area, run them too
+
+The only reasons to stop and ask are:
+
+1. **Ambiguities exist** — the plan has unresolved questions that require user input
+2. **Manual intervention required** — the user must do something (run SQL, check terminal, verify UI in browser)
+3. **Scope question** — the fix touches something outside the investigated problem
+
+If none of these apply, execute without asking. The investigation phases (1-5) are the checkpoint. If all hard gates pass, that IS the approval to proceed.
 
 ### Ambiguity and Manual Intervention
 

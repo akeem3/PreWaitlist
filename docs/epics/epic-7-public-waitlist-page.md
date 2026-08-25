@@ -1,6 +1,6 @@
 # Epic 7 — Public Waitlist Page & Foundation
 
-**Status:** ready
+**Status:** in-progress (7.0–7.4 done, 7.5–7.7 remaining)
 **Source:** [PRD S2a Sprint 2](../PRD.md#2a-sprint-2--public-page-dashboard-active), [PRD S7.4 Data Model](../PRD.md#74-data-model--implementation-grade), [PRD S7.5 Route/Handler List](../PRD.md#75-route--handler-list), [PRD S7.6 Component Tree](../PRD.md#76-component-tree-high-level)
 
 ## Design References
@@ -17,15 +17,78 @@ A visitor can land on a founder's public waitlist page, see the page rendered wi
 
 The `/:subdomain` route renders the founder's waitlist page using their chosen template (minimal/bold/dark). A visitor can enter their email, optionally answer qualification questions, and submit. The system creates a subscriber record with a unique referral code, assigns a position, prevents duplicate emails per waitlist, and redirects to the thank-you page. The public leaderboard route renders subscriber data ranked by referral count. The founder updates feed displays on the public page.
 
+## Additional Work Done (beyond original story scope)
+
+### Shared Template Component
+
+**File:** `components/share/waitlist-template-content.tsx`
+
+Single source of truth for rendering waitlist page content. Both the onboarding preview (`LivePreview`) and the public waitlist page (`WaitlistPageContent`) import this component. This ensures WYSIWYG — what the founder sees in preview is exactly what visitors see on the public page.
+
+**Props:** `waitlist`, `formSlot` (ReactNode for email capture form), `isPreview?`, `className?`
+
+**Renders:** Logo, headline, subheadline, form slot, social proof counter (conditional), milestone rewards (conditional). Handles all three templates (minimal, bold, dark) via conditional styling.
+
+### POST Handler Fix
+
+**File:** `src/app/api/waitlist/route.ts`
+
+The POST handler was updated to save ALL waitlist fields on insert and update, not just `subdomain`, `headline`, `subheadline`. Fields now saved: `template`, `brand_color`, `logo_url`, `cta_text`, `milestone_rewards` (as `milestone_rewards_enabled`), `qualification_questions`, `signup_counter_enabled`, `signup_counter_start`.
+
+### Dark Mode Fixes
+
+- **`WaitlistPageContent`** conditionally applies `bg-dark-template-bg` when template is "dark" — page background was rendering light
+- **New token:** `--color-dark-template-input: #292524` added to `globals.css` for dark template input backgrounds
+- **Shared component** uses utility class names (`bg-dark-template-bg`, `text-dark-template-text`, `border-dark-template-border`) — NOT `var()` arbitrary values (Tailwind v4 `@theme inline` does NOT create CSS custom properties)
+
+### EmailCaptureForm Rewrite
+
+**File:** `components/public/email-capture-form.tsx`
+
+Completely rewritten to use raw `<input>` / `<button>` elements instead of design system `Input` / `Button` components. Reason: the `Input` component wrapper adds `flex flex-col gap-1.5` which breaks the `flex-row` layout in the preview. The raw elements match the preview's exact sizing, spacing, and styling per template.
+
+**Template-specific classes passed as props:** `inputClasses`, `inputHeightClass`, `inputBorderColorClass`, `buttonClasses`
+
+### Qualification Questions — Add/Remove/Validation
+
+**File:** `src/app/onboarding/4a/page.tsx`
+
+- Starts with 1 question field (not 3)
+- "+ Add new question" button adds fields (up to tier cap)
+- "×" button removes individual questions
+- At tier cap: "Add" button transforms into "Upgrade to add more questions" (dashed border, navigates to `/dashboard?upgrade=true`)
+- Submit disabled when no questions have text — inline error shown
+- Error clears on typing
+- Raw `<input>` elements (not Input component) to match preview
+- Empty questions filtered before save
+
+### Auto Question Marks
+
+Both preview and public page append `?` to question text if it doesn't end with one. Ensures consistent display regardless of founder input.
+
+### Preview Question Spacing Fix
+
+**File:** `components/onboarding/live-preview.tsx`
+
+`PreviewQuestionForm` wrapped in `flex flex-col gap-3` so email, qualification questions, and CTA button have proper vertical spacing — previously they were flush together.
+
+### Upgrade Button Style (Step 4a + Step 5)
+
+Both use dashed border style: `border border-dashed border-accent bg-accent/5 text-accent`. This visual pattern is consistent across the onboarding flow for Pro tier upsells.
+
+### Bold Template Padding
+
+Shared component uses `py-10` for bold template, `py-8` for others — matches the design spec's taller bold template appearance.
+
 ## Story Index
 
 | ID  | Title                          | Depends on | Status | Story File                                                          |
 | --- | ------------------------------ | ---------- | ------ | ------------------------------------------------------------------- |
-| 7.0 | Subscribers Table & API        | —          | ready  | [story-7.0](../stories/story-7.0-subscribers-table-api.md)          |
-| 7.1 | Public Waitlist Page Route     | 7.0        | ready  | [story-7.1](../stories/story-7.1-public-waitlist-page-route.md)     |
-| 7.2 | Email Capture Form             | 7.0        | ready  | [story-7.2](../stories/story-7.2-email-capture-form.md)             |
-| 7.3 | Inline Qualification Questions | 7.0        | ready  | [story-7.3](../stories/story-7.3-inline-qualification-questions.md) |
-| 7.4 | Duplicate Email Handling       | 7.0        | ready  | [story-7.4](../stories/story-7.4-duplicate-email-handling.md)       |
+| 7.0 | Subscribers Table & API        | —          | done   | [story-7.0](../stories/story-7.0-subscribers-table-api.md)          |
+| 7.1 | Public Waitlist Page Route     | 7.0        | done   | [story-7.1](../stories/story-7.1-public-waitlist-page-route.md)     |
+| 7.2 | Email Capture Form             | 7.0        | done   | [story-7.2](../stories/story-7.2-email-capture-form.md)             |
+| 7.3 | Inline Qualification Questions | 7.0        | done   | [story-7.3](../stories/story-7.3-inline-qualification-questions.md) |
+| 7.4 | Duplicate Email Handling       | 7.0        | done   | [story-7.4](../stories/story-7.4-duplicate-email-handling.md)       |
 | 7.5 | Public Leaderboard Page        | 7.0        | ready  | [story-7.5](../stories/story-7.5-public-leaderboard-page.md)        |
 | 7.6 | Founder Updates Feed Display   | 7.0        | ready  | [story-7.6](../stories/story-7.6-founder-updates-feed.md)           |
 | 7.7 | Epic 7 Tests                   | 7.0–7.6    | ready  | [story-7.7](../stories/story-7.7-epic7-tests.md)                    |
@@ -36,7 +99,7 @@ Work through these in dependency order, one at a time. Story 7.0 must be complet
 
 ### Story 7.0 — Subscribers Table & API
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (no UI)
 
 **Story:** As the founder, I want a subscribers table and API routes so that visitors can sign up for my waitlist and I can manage subscriber data.
@@ -62,11 +125,16 @@ Work through these in dependency order, one at a time. Story 7.0 must be complet
 - T3: Leaderboard query: join subscribers with waitlists on subdomain, return email (anonymized), referral_code, position, qual_answers. Order by referral count descending.
 - T4: Simple lookup by id with founder ownership check via waitlists join.
 
+**Additional work done:**
+
+- POST handler (`src/app/api/waitlist/route.ts`) updated to save ALL fields on insert/update: `template`, `brand_color`, `logo_url`, `cta_text`, `milestone_rewards`, `qualification_questions`, `signup_counter_enabled`, `signup_counter_start` — previously only saved `subdomain`, `headline`, `subheadline`.
+- GET `/api/waitlist` endpoint added to return full waitlist state for onboarding persistence/resume.
+
 ---
 
 ### Story 7.1 — Public Waitlist Page Route
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (no high-fidelity SVG yet for public waitlist page)
 
 **Story:** As a visitor, I want to land on a founder's public waitlist page so that I can learn about their product and sign up.
@@ -91,11 +159,17 @@ Work through these in dependency order, one at a time. Story 7.0 must be complet
 - T2: Reuse template rendering logic from LivePreview component (`components/onboarding/live-preview.tsx`) — extract shared template rendering.
 - T4: Import PoweredByFooter from `components/share/powered-by-footer.tsx`. Render when `waitlist.founder_profiles.tier === 'free'`.
 
+**Additional work done:**
+
+- **Shared template component created** (`components/share/waitlist-template-content.tsx`) — single source of truth for logo, headline, subheadline, form slot, counter, milestones. Both `LivePreview` and `WaitlistPageContent` import this component.
+- **Dark mode fix:** `WaitlistPageContent` conditionally applies `bg-dark-template-bg` class when template is "dark" — page background was rendering light because the dark template background wasn't applied.
+- **Bold template padding:** Shared component uses `py-10` for bold template, `py-8` for others.
+
 ---
 
 ### Story 7.2 — Email Capture Form
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (no high-fidelity SVG yet for email capture)
 
 **Story:** As a visitor, I want to enter my email address on the public waitlist page so that I can join the waitlist.
@@ -119,11 +193,19 @@ Work through these in dependency order, one at a time. Story 7.0 must be complet
 - T1: Use existing `Input` component from `components/ui/input.tsx`. Email validation regex per PRD S7.4 constraint.
 - T3: Pass subscriber_id and referral_code as query params to thank-you page, or store in session/cookie for the redirect.
 
+**Additional work done:**
+
+- **Completely rewritten** to use raw `<input>` / `<button>` elements instead of design system `Input` / `Button` components. Reason: the `Input` component wrapper adds `flex flex-col gap-1.5` which breaks the `flex-row` layout in the preview.
+- **Template-specific styling** passed as props: `inputClasses`, `inputHeightClass`, `inputBorderColorClass`, `buttonClasses` — each template (minimal/bold/dark) has distinct input height, border, and button styles.
+- **Auto question marks:** Appends `?` to qualification question text if it doesn't end with one.
+- **Qualification questions rendered inline** below email field, above CTA button.
+- **Social proof counter** displayed below CTA when enabled and count ≥ 10.
+
 ---
 
 ### Story 7.3 — Inline Qualification Questions
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (no high-fidelity SVG yet for qual questions)
 
 **Story:** As a founder, I want to display optional qualification questions on my public waitlist page so that I can learn more about my subscribers before launch.
@@ -146,11 +228,22 @@ Work through these in dependency order, one at a time. Story 7.0 must be complet
 - T1: Fetch questions from `qualification_questions` table where waitlist_id matches. Render based on `question_type`.
 - T3: qual_answers format: `{ "question_id": "answer_text" }`. Store as JSONB in subscribers table.
 
+**Additional work done (onboarding Step 4a — `src/app/onboarding/4a/page.tsx`):**
+
+- **Starts with 1 question field** (not 3) — founder adds more as needed.
+- **"+ Add new question"** button adds fields, up to tier cap (Free=2, Pro=5, Growth=∞).
+- **"×" button** removes individual questions (minimum 1 question required).
+- **At tier cap:** "Add" button transforms into "Upgrade to add more questions" — dashed border style (`border border-dashed border-accent bg-accent/5 text-accent`), navigates to `/dashboard?upgrade=true`.
+- **Submit disabled** when no questions have text — inline error shown ("At least one question is required").
+- **Error clears** on typing in any question field.
+- **Raw `<input>` elements** (not Input component) to match preview styling.
+- **Empty questions filtered** before save — only questions with non-empty text are sent to the API.
+
 ---
 
 ### Story 7.4 — Duplicate Email Handling
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (no UI)
 
 **Story:** As a visitor, I want to see a clear error if I try to sign up with an email that's already on the waitlist, so that I know I'm already signed up.
@@ -171,6 +264,11 @@ Work through these in dependency order, one at a time. Story 7.0 must be complet
 
 - T1: Use the unique constraint on (waitlist_id, email) as the primary guard. Catch the unique violation error and return a friendly message.
 - T2: Use existing error styling from Input component (`error` prop).
+
+**Additional work done:**
+
+- Error display uses raw `<p>` element with `text-xs text-destructive` (not Input component's `error` prop) — consistent with the raw element rewrite of EmailCaptureForm.
+- Error clears when user modifies email input (`onChange` handler resets error state).
 
 ---
 
@@ -205,9 +303,11 @@ Work through these in dependency order, one at a time. Story 7.0 must be complet
 
 **Dev Notes:**
 
-- T1: Fetch from `GET /api/leaderboard/:subdomain` (Story 7.0). Display in a table/list format.
+- T1: Fetch from `GET /api/leaderboard/:subdomain` (Story 7.0). Display in a table/list format. Server Component (RSC) — query Supabase directly, don't call the API route.
 - T3: Primary sort: `referral_count DESC`. Secondary sort: `created_at ASC`.
 - T5: Email anonymization: take first char + `"••••"` + last char. Example: `"john@example.com"` → `"j••••m"`.
+- **Shared header/footer:** Use the same page shell as the main waitlist page (background, header bar) for visual consistency.
+- **RLS public read policy** already applied to `subscribers`, `milestone_rewards`, `waitlists` tables — leaderboard can query directly from RSC.
 
 ---
 
@@ -232,8 +332,11 @@ Work through these in dependency order, one at a time. Story 7.0 must be complet
 
 **Dev Notes:**
 
-- T1: Fetch from `founder_updates` table where waitlist_id matches. Render in a list/feed format.
+- T1: Fetch from `founder_updates` table where waitlist_id matches. Render in a list/feed format. Server Component — fetch alongside waitlist data in page.tsx.
 - T4: Conditional rendering — only show section if `updates.length > 0`.
+- **Integration point:** Updates section renders on `/:subdomain` page below the email capture form and above the leaderboard link. Use `WaitlistPageContent`'s children or a new slot for this.
+- **RLS public read policy** already applied to `founder_updates` table — can query directly from RSC.
+- **Design system:** Use `text-body` for update body, `text-caption text-muted-foreground` for timestamp. Section heading: `text-h4`.
 
 ---
 

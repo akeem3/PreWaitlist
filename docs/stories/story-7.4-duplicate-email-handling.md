@@ -9,7 +9,7 @@ updated: 2026-08-17
 
 # Story 7.4 — Duplicate Email Handling
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (no UI)
 
 **Story:** As a visitor, I want to see a clear error if I try to sign up with an email that's already on the waitlist, so that I know I'm already signed up.

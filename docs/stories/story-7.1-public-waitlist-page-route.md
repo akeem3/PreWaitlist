@@ -2,14 +2,14 @@
 id: epic7.story01
 epic: epic-7-public-waitlist-page
 title: Public Waitlist Page Route
-status: ready
+status: done
 depends_on: [epic7.story00]
 updated: 2026-08-17
 ---
 
 # Story 7.1 — Public Waitlist Page Route
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (no high-fidelity SVG for public waitlist page yet)
 
 **Story:** As a visitor, I want to land on a founder's public waitlist page so that I can learn about their product and sign up.

@@ -2,14 +2,14 @@
 id: epic7.story03
 epic: epic-7-public-waitlist-page
 title: Inline Qualification Questions
-status: ready
+status: done
 depends_on: [epic7.story00]
 updated: 2026-08-17
 ---
 
 # Story 7.3 — Inline Qualification Questions
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (no high-fidelity SVG for qual questions yet)
 
 **Story:** As a founder, I want to display optional qualification questions on my public waitlist page so that I can learn more about my subscribers before launch.

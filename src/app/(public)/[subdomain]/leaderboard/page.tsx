@@ -1,38 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { PoweredByFooter } from "../../../../../components/share/powered-by-footer";
+import { LeaderboardClient } from "./leaderboard-client";
 
 type Props = { params: Promise<{ subdomain: string }> };
 
-function anonymizeEmail(email: string): string {
-  const [local, domain] = email.split("@");
-  if (!domain) return email;
-  if (local.length <= 2) return `${local[0]}••••@${domain}`;
-  return `${local[0]}••••${local[local.length - 1]}@${domain}`;
-}
-
-function MilestoneBadges({
-  referralCount,
-  milestones,
-}: {
-  referralCount: number;
-  milestones: { tier_referrals: number; reward_label: string }[];
-}) {
-  const reached = milestones.filter((m) => referralCount >= m.tier_referrals);
-  if (reached.length === 0) return null;
-
-  return (
-    <div className="flex gap-2 mt-1">
-      {reached.map((m) => (
-        <span
-          key={m.tier_referrals}
-          className="inline-flex items-center rounded-md border border-dashed border-accent px-2 py-0.5 text-caption text-accent"
-        >
-          {m.reward_label}
-        </span>
-      ))}
-    </div>
-  );
+function maskName(email: string): string {
+  const local = email.split("@")[0];
+  if (local.length <= 3) return local;
+  return `${local[0]}•••${local[local.length - 1]}`;
 }
 
 export default async function LeaderboardPage({ params }: Props) {
@@ -47,113 +24,83 @@ export default async function LeaderboardPage({ params }: Props) {
 
   if (!waitlist) notFound();
 
-  const [subscribersResult, milestonesResult] = await Promise.all([
-    supabase
-      .from("subscribers")
-      .select("id, email, position, referral_code, created_at")
-      .eq("waitlist_id", waitlist.id)
-      .order("created_at", { ascending: true }),
-    waitlist.milestone_rewards_enabled
-      ? supabase
-          .from("milestone_rewards")
-          .select("tier_referrals, reward_label")
-          .eq("waitlist_id", waitlist.id)
-          .order("tier_referrals", { ascending: true })
-      : Promise.resolve({ data: [] }),
-  ]);
-
-  const subscribers = subscribersResult.data || [];
-  const milestones = milestonesResult.data || [];
-
-  const subscriberIds = subscribers.map((s) => s.id);
-  const { data: referralCounts } = await supabase
+  const { data: subscribers } = await supabase
     .from("subscribers")
-    .select("referrer_id")
-    .in("referrer_id", subscriberIds);
+    .select("id, email, referral_code, referrer_id, qual_answers, created_at")
+    .eq("waitlist_id", waitlist.id)
+    .order("created_at", { ascending: true });
 
-  const countMap = new Map<string, number>();
-  referralCounts?.forEach((r) => {
-    countMap.set(r.referrer_id, (countMap.get(r.referrer_id) || 0) + 1);
+  const rows = subscribers || [];
+
+  // Count referrals per subscriber
+  const referralCounts = new Map<string, number>();
+  const qualifiedCounts = new Map<string, number>();
+
+  rows.forEach((s) => {
+    if (s.referrer_id) {
+      referralCounts.set(
+        s.referrer_id,
+        (referralCounts.get(s.referrer_id) || 0) + 1
+      );
+      // Count qualified referrals (qual_answers is non-null, non-empty)
+      if (
+        s.qual_answers &&
+        typeof s.qual_answers === "object" &&
+        Object.keys(s.qual_answers).length > 0
+      ) {
+        qualifiedCounts.set(
+          s.referrer_id,
+          (qualifiedCounts.get(s.referrer_id) || 0) + 1
+        );
+      }
+    }
   });
 
-  const ranked = subscribers
+  // Sort and rank
+  const ranked = rows
     .map((s) => ({
-      ...s,
-      referral_count: countMap.get(s.id) || 0,
+      id: s.id,
+      name: maskName(s.email),
+      referral_count: referralCounts.get(s.id) || 0,
+      qualified_count: qualifiedCounts.get(s.id) || 0,
     }))
     .sort((a, b) => {
       if (b.referral_count !== a.referral_count)
         return b.referral_count - a.referral_count;
-      return (
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
+      return 0;
     })
     .map((s, i) => ({ ...s, rank: i + 1 }));
 
   return (
-    <main className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex h-[73px] max-w-4xl items-center justify-between px-4">
-          <h1 className="text-h3 text-foreground">
-            {waitlist.headline} — Leaderboard
-          </h1>
+    <main className="flex min-h-screen flex-col bg-background">
+      <div className="mx-auto max-w-2xl flex-1 px-4 py-12">
+        {/* Header */}
+        <h1 className="text-h2 text-foreground text-center">Leaderboard</h1>
+        <p className="text-body-lg text-muted-foreground text-center mt-2">
+          Top referrals for your waitlist
+        </p>
+
+        {/* Leaderboard table */}
+        <LeaderboardClient
+          rows={ranked}
+          totalCount={ranked.length}
+          subdomain={subdomain}
+        />
+
+        {/* Back link */}
+        <div className="mt-10 flex justify-center">
           <Link
             href={`/${subdomain}`}
-            className="text-body-sm text-accent hover:text-accent/80"
+            className="inline-flex items-center gap-2 text-body-lg font-semibold text-accent hover:text-accent/80"
           >
-            Back to waitlist
+            ← Back to waitlist
           </Link>
         </div>
-      </header>
+      </div>
 
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        {ranked.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-body text-muted-foreground">
-              No subscribers yet. Be the first to join!
-            </p>
-            <Link
-              href={`/${subdomain}`}
-              className="inline-block mt-4 text-body-sm text-accent hover:text-accent/80"
-            >
-              Join the waitlist
-            </Link>
-          </div>
-        ) : (
-          <div className="divide-y divide-border">
-            {ranked.map((subscriber) => (
-              <div
-                key={subscriber.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between py-4 px-6 gap-2"
-              >
-                <div className="flex items-center gap-4">
-                  <span className="text-body-sm text-muted-foreground w-8">
-                    #{subscriber.rank}
-                  </span>
-                  <div>
-                    <span className="text-body font-medium text-foreground">
-                      {anonymizeEmail(subscriber.email)}
-                    </span>
-                    {milestones.length > 0 && (
-                      <MilestoneBadges
-                        referralCount={subscriber.referral_count}
-                        milestones={milestones}
-                      />
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 sm:ml-auto">
-                  <span className="text-body-sm font-semibold text-foreground">
-                    {subscriber.referral_count}
-                  </span>
-                  <span className="text-caption text-muted-foreground">
-                    referrals
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+      {/* Footer — sticks to bottom when content is short */}
+      <div>
+        <PoweredByFooter template="minimal" />
       </div>
     </main>
   );

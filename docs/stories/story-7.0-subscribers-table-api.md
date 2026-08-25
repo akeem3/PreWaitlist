@@ -2,14 +2,14 @@
 id: epic7.story00
 epic: epic-7-public-waitlist-page
 title: Subscribers Table & API
-status: ready
+status: done
 depends_on: []
 updated: 2026-08-17
 ---
 
 # Story 7.0 — Subscribers Table & API
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (no UI)
 
 **Story:** As the founder, I want a subscribers table and API routes so that visitors can sign up for my waitlist and I can manage subscriber data.

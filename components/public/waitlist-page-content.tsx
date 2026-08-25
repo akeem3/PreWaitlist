@@ -43,7 +43,7 @@ export function WaitlistPageContent({
         isDark ? "bg-dark-template-bg" : "bg-background"
       }`}
     >
-      <div className="w-full max-w-lg">
+      <div className="w-full max-w-lg flex-1">
         <WaitlistTemplateContent
           template={template}
           headline={headline ?? ""}

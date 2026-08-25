@@ -14,6 +14,19 @@ updated: 2026-08-17
 
 **Story:** As a visitor, I want to see the founder's updates feed on the public waitlist page so that I can stay informed about the product's progress.
 
+## Current State
+
+- **Public page** (`src/app/(public)/[subdomain]/page.tsx`) is a Server Component that fetches waitlist data and renders `WaitlistPageContent`.
+- **`WaitlistPageContent`** (`components/public/waitlist-page-content.tsx`) uses `WaitlistTemplateContent` as the shared template. The updates feed will need to be rendered either as a child of `WaitlistTemplateContent` or as a separate section on the page.
+- **RLS public read policy** already applied to `founder_updates` table — can query directly from RSC.
+- **Updates data shape:** `{ id: string, body: string, created_at: string }` — from `founder_updates` table.
+- **Integration approach:** Fetch updates in `page.tsx` alongside waitlist data. Pass to `WaitlistPageContent` or render `UpdatesFeed` component directly in `page.tsx` below `WaitlistPageContent`.
+- **Design system tokens to use:**
+  - Section heading: `text-h4 text-foreground`
+  - Update body: `text-body text-foreground`
+  - Timestamp: `text-caption text-muted-foreground`
+  - Divider: `border-b border-border`
+
 ## Acceptance Criteria (EARS)
 
 - AC1: The system shall fetch `founder_updates` for the waitlist from the `founder_updates` table where `waitlist_id` matches, selecting `id`, `body`, `created_at`.
