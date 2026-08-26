@@ -19,6 +19,7 @@ type Tier = "free" | "pro" | "growth";
 interface MilestoneReward {
   threshold: number;
   label: string;
+  isDefault?: boolean;
 }
 
 interface Question {

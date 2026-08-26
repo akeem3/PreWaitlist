@@ -309,10 +309,10 @@ Right panel (live preview):
        when shared on Twitter"
 
 Milestone rewards (optional panel):
-  "What do subscribers earn for referring?"
-  Refer 3:  [              ] e.g. "Early access"
-  Refer 10: [              ] e.g. "Founding member"
-  Refer 25: [              ] e.g. "Free Pro 3 months"
+  "What are subscribers working toward?"
+  Tier 1: [              ] e.g. "Early access"
+  Tier 2: [              ] e.g. "Founding member"
+  Tier 3: [              ] e.g. "Free Pro 3 months"
   [Skip — no rewards]
   Note: rewards are shown on thank-you page
   above the share buttons.
@@ -320,7 +320,7 @@ Milestone rewards (optional panel):
 Progress bar: ●●●○○
 ```
 
-**Notes:** Gap 3a closed (social meta tags), Gap 14 closed ("Powered by" footer visible during setup — first upgrade trigger moment), and milestone rewards configuration added here per field research Findings 9 and 13. The og: preview is graded 🔵 Core. The milestone rewards configuration is graded 🟢 Should — if founder skips it, thank-you page shows referral link and share buttons without the reward ladder. If configured, the reward ladder appears above share buttons, giving subscribers a specific reason to share before the share ask is made.
+**Notes:** Gap 3a closed (social meta tags), Gap 14 closed ("Powered by" footer visible during setup — first upgrade trigger moment), and milestone rewards configuration added here per field research Findings 9 and 13. The og: preview is graded 🔵 Core. The milestone rewards configuration is graded 🟢 Should — if founder skips it, thank-you page shows referral link and share buttons without the milestone display. If configured, the milestone display appears above share buttons, giving subscribers a specific reason to share before the share ask is made.
 
 **Arrow:** Node F-C3 → Node F-C4 `(Next →)`
 
@@ -1194,11 +1194,12 @@ THANK-YOU PAGE — DIRECT SIGNUP
 Position: "You're #247 on the waitlist"
 
 Milestone rewards (if founder configured):
-  Shown BEFORE share buttons — give before ask
-  🎯 Refer 3  → Early access
-  🏅 Refer 10 → Founding member badge
-  🎁 Refer 25 → Free Pro for 3 months
-  "You're at 0 of 3 for early access."
+  Shown BEFORE share buttons — show reward commitment before ask
+  🎯 Refer 1  → Early access
+  🏅 Refer 5  → Free Pro plan for 1 month
+  🎁 Refer 10 → Lifetime 20% discount
+  🏆 Refer 25 → Founding member status
+  "You've referred 0 of 3 friends toward: Early access."
 
 Your referral link:
   [yourproduct.[tool].com?ref=XXXX]
@@ -1221,7 +1222,7 @@ Public leaderboard preview:
   [See where you rank →]
 ```
 
-**Notes:** Milestone rewards added per field research Findings 9 and 13. The reward ladder appears above the share buttons — the subscriber sees what they earn before they are asked to share. Shown only if the founder configured rewards during setup; if not configured, this section is absent and the page shows the referral link and share buttons directly. "You're at 0 of 3 for early access" is a progress indicator — it makes the goal specific and immediate.
+**Notes:** Milestone rewards added per field research Findings 9 and 13. The milestone display appears above the share buttons — the subscriber sees what they're working toward before they are asked to share. Shown only if the founder configured rewards during setup; if not configured, this section is absent and the page shows the referral link and share buttons directly. "You've referred 0 of 3 friends toward: Early access" is a progress indicator — it makes the goal specific and immediate.
 
 **Arrow:** Node S-B4a → Node S-C1 (Confirmation Email sent) `(Email queued)`
 **Arrow:** Node S-B4a → Node S-C2 (Referral Loop — subscriber shares) `(Subscriber shares link)`
@@ -1248,11 +1249,12 @@ Referral mechanic acknowledged:
    Now it's your turn to do the same."
 
 Milestone rewards (if founder configured):
-  Shown BEFORE share buttons — give before ask
-  🎯 Refer 3  → Early access
-  🏅 Refer 10 → Founding member badge
-  🎁 Refer 25 → Free Pro for 3 months
-  "You're at 0 of 3 for early access."
+  Shown BEFORE share buttons — show reward commitment before ask
+  🎯 Refer 1  → Early access
+  🏅 Refer 5  → Free Pro plan for 1 month
+  🎁 Refer 10 → Lifetime 20% discount
+  🏆 Refer 25 → Founding member status
+  "You've referred 0 of 3 friends toward: Early access."
 
 YOUR referral link:
   [yourproduct.[tool].com?ref=YYYY]
@@ -1267,7 +1269,7 @@ System action (invisible):
   → "You moved up" email queued to referrer
 ```
 
-**Notes:** Gap 7 closed fully here. Milestone rewards added per Findings 9 and 13 — same logic as direct variant. The referred subscriber arrives with the referral mechanic already acknowledged ("you helped [Referrer] move up") which primes them to understand and act on the same mechanic for themselves. The reward ladder reinforces the specific value of doing so.
+**Notes:** Gap 7 closed fully here. Milestone rewards added per Findings 9 and 13 — same logic as direct variant. The referred subscriber arrives with the referral mechanic already acknowledged ("you helped [Referrer] move up") which primes them to understand and act on the same mechanic for themselves. The milestone display reinforces the specific value of doing so.
 
 **Arrow:** Node S-B4b → Node S-C1 (Confirmation Email) `(Email queued)`
 **Arrow:** Node S-B4b → Node S-C2 (Referral Loop) `(Subscriber shares their own link)`

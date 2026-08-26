@@ -17,6 +17,7 @@ interface WaitlistTemplateContentProps {
   signupCounterVisible?: boolean;
   milestoneRewards: MilestoneReward[];
   emailCaptureForm: React.ReactNode;
+  latestUpdateSlot?: React.ReactNode;
 }
 
 export function WaitlistTemplateContent({
@@ -29,6 +30,7 @@ export function WaitlistTemplateContent({
   signupCounterVisible,
   milestoneRewards,
   emailCaptureForm,
+  latestUpdateSlot,
 }: WaitlistTemplateContentProps) {
   const isDark = template === "dark";
   const isBold = template === "bold";
@@ -64,6 +66,10 @@ export function WaitlistTemplateContent({
       <p className={`${subheadlineSize} max-w-md ${subheadlineColor}`}>
         {subheadline || "Your subheadline goes here"}
       </p>
+
+      {latestUpdateSlot && (
+        <div className="w-full max-w-md mt-2">{latestUpdateSlot}</div>
+      )}
 
       <div className="w-full max-w-md mt-2">{emailCaptureForm}</div>
 

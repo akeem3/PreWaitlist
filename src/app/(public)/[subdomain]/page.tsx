@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { WaitlistPageContent } from "../../../../components/public/waitlist-page-content";
 import { EmailCaptureForm } from "../../../../components/public/email-capture-form";
-import { UpdatesFeed } from "../../../../components/public/updates-feed";
+import { LatestUpdateCard } from "../../../../components/public/updates-feed";
 
 type Props = { params: Promise<{ subdomain: string }> };
 
@@ -32,7 +32,7 @@ export default async function PublicSubdomainPage({ params }: Props) {
     : waitlist.founder_profiles;
   const tier = founderProfile?.tier || "free";
 
-  const [milestonesResult, questionsResult, countResult, updatesResult] =
+  const [milestonesResult, questionsResult, countResult, latestUpdateResult] =
     await Promise.all([
       waitlist.milestone_rewards_enabled
         ? supabase
@@ -58,7 +58,9 @@ export default async function PublicSubdomainPage({ params }: Props) {
         .from("founder_updates")
         .select("id, body, created_at")
         .eq("waitlist_id", waitlist.id)
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
 
   const milestoneRewards = (milestonesResult.data || []).map((r) => ({
@@ -77,39 +79,37 @@ export default async function PublicSubdomainPage({ params }: Props) {
     waitlist.signup_counter_enabled &&
     signupCount >= (waitlist.signup_counter_threshold || 10);
 
-  const updates = updatesResult.data || [];
+  const latestUpdate = latestUpdateResult.data;
 
   return (
-    <>
-      <WaitlistPageContent
-        template={waitlist.template as "minimal" | "bold" | "dark"}
-        headline={waitlist.headline}
-        subheadline={waitlist.subheadline}
-        logoUrl={waitlist.logo_url}
-        ctaText={waitlist.cta_text}
-        brandColor={waitlist.brand_color}
-        tier={tier}
-        signupCounter={signupCount}
-        signupCounterVisible={signupCounterVisible}
-        milestoneRewards={milestoneRewards}
-        qualificationEnabled={waitlist.qualification_enabled}
-        questions={questions}
-        emailCaptureForm={
-          <EmailCaptureForm
-            waitlistId={waitlist.id}
-            subdomain={waitlist.subdomain}
-            ctaText={waitlist.cta_text || "Join Waitlist"}
-            brandColor={waitlist.brand_color}
-            template={waitlist.template as "minimal" | "bold" | "dark"}
-            tier={tier}
-            questions={questions}
-            qualificationEnabled={waitlist.qualification_enabled}
-          />
-        }
-      />
-      <div className="flex justify-center">
-        <UpdatesFeed updates={updates} />
-      </div>
-    </>
+    <WaitlistPageContent
+      template={waitlist.template as "minimal" | "bold" | "dark"}
+      headline={waitlist.headline}
+      subheadline={waitlist.subheadline}
+      logoUrl={waitlist.logo_url}
+      ctaText={waitlist.cta_text}
+      brandColor={waitlist.brand_color}
+      tier={tier}
+      signupCounter={signupCount}
+      signupCounterVisible={signupCounterVisible}
+      milestoneRewards={milestoneRewards}
+      qualificationEnabled={waitlist.qualification_enabled}
+      questions={questions}
+      emailCaptureForm={
+        <EmailCaptureForm
+          waitlistId={waitlist.id}
+          subdomain={waitlist.subdomain}
+          ctaText={waitlist.cta_text || "Join Waitlist"}
+          brandColor={waitlist.brand_color}
+          template={waitlist.template as "minimal" | "bold" | "dark"}
+          tier={tier}
+          questions={questions}
+          qualificationEnabled={waitlist.qualification_enabled}
+        />
+      }
+      latestUpdateSlot={
+        latestUpdate ? <LatestUpdateCard update={latestUpdate} /> : undefined
+      }
+    />
   );
 }

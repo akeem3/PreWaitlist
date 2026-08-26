@@ -5,19 +5,22 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useOnboardingForm } from "../context";
 import { Toggle } from "../../../../components/ui/toggle";
+import { Badge } from "../../../../components/ui/badge";
 import MetaPreview from "../../../../components/onboarding/meta-preview";
 import { createClient } from "../../../../src/lib/supabase/client";
 
 const DEFAULT_REWARDS = [
-  { threshold: 3, label: "" },
-  { threshold: 10, label: "" },
-  { threshold: 25, label: "" },
+  { threshold: 1, label: "Early access", isDefault: true },
+  { threshold: 5, label: "Free Pro plan for 1 month", isDefault: true },
+  { threshold: 10, label: "Lifetime 20% discount", isDefault: true },
+  { threshold: 25, label: "Founding member status", isDefault: true },
 ];
 
 const MILESTONE_REWARD_PLACEHOLDERS = [
   "e.g. Early access",
-  "e.g. Skip the line + free swag",
-  "e.g. Lifetime 50% off",
+  "e.g. Free Pro plan for 1 month",
+  "e.g. Lifetime 20% discount",
+  "e.g. Founding member status",
 ];
 
 const HEX_REGEX = /^#[0-9A-Fa-f]{6}$/;
@@ -133,7 +136,7 @@ export default function OnboardingStep3() {
   const handleRewardChange = useCallback((index: number, label: string) => {
     setRewards((prev) => {
       const next = [...prev];
-      next[index] = { ...next[index], label };
+      next[index] = { ...next[index], label, isDefault: false };
       return next;
     });
     setMilestoneErrors([]);
@@ -143,7 +146,11 @@ export default function OnboardingStep3() {
     const num = parseInt(value, 10);
     setRewards((prev) => {
       const next = [...prev];
-      next[index] = { ...next[index], threshold: isNaN(num) ? 0 : num };
+      next[index] = {
+        ...next[index],
+        threshold: isNaN(num) ? 0 : num,
+        isDefault: false,
+      };
       return next;
     });
     setMilestoneErrors([]);
@@ -509,6 +516,11 @@ export default function OnboardingStep3() {
                       />
                     </svg>
                   </button>
+                )}
+                {reward.isDefault && (
+                  <Badge variant="info" className="mt-6">
+                    Recommended
+                  </Badge>
                 )}
               </div>
             ))}

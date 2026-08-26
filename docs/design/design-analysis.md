@@ -269,7 +269,7 @@ Detailed screen-by-screen analysis of high-fidelity designs, cross-referenced wi
 
 - Dashed border variant: `stroke-dasharray="3.34 3.34"`
 - Contains upload icon and helper text
-- Below upload area: "Refer 3 friends" / "Refer 10 friends" / "Refer 25 friends" reward tiers (when toggle ON)
+- Below upload area: Milestone reward tiers (when toggle ON) — now editable thresholds, not fixed 3/10/25
 
 #### Toggle Section (Milestone Rewards)
 

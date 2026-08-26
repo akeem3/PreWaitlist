@@ -4,30 +4,22 @@ interface Update {
   created_at: string;
 }
 
-interface UpdatesFeedProps {
-  updates: Update[];
+interface LatestUpdateCardProps {
+  update: Update;
 }
 
-export function UpdatesFeed({ updates }: UpdatesFeedProps) {
-  if (updates.length === 0) return null;
-
+export function LatestUpdateCard({ update }: LatestUpdateCardProps) {
   return (
-    <section className="mt-12 w-full max-w-lg">
-      <h2 className="text-h4 text-foreground mb-4 text-center">Updates</h2>
-      <div className="space-y-4">
-        {updates.map((update) => (
-          <div key={update.id} className="border-b border-border pb-4">
-            <p className="text-body text-foreground">{update.body}</p>
-            <time className="text-caption text-muted-foreground mt-1 block">
-              {new Date(update.created_at).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </time>
-          </div>
-        ))}
-      </div>
-    </section>
+    <div className="rounded-[var(--card-radius)] border border-border bg-card p-4">
+      <p className="text-caption text-muted-foreground mb-1">Latest update</p>
+      <p className="text-body text-foreground">{update.body}</p>
+      <time className="text-caption text-muted-foreground mt-2 block">
+        {new Date(update.created_at).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })}
+      </time>
+    </div>
   );
 }

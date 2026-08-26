@@ -113,22 +113,36 @@ Warmth tracking has zero implementation — no schema, no signal collection, no 
 
 ## Tasks
 
-- T1 (AC1-AC2): Enhance POST /api/updates with Resend email dispatch
-- T2 (AC3): Add sent_at column to founder_updates table
-- T3 (AC4-AC6): Reduce on-page updates to "Latest update" card, remove from leaderboard
-- T4 (AC7): Lint + build verification (updates section)
-- T5 (AC8-AC9): Update milestone defaults to 1/5/10/25 with "Recommended" badge
-- T6 (AC10-AC12): Verify milestone edit/add/remove + preview
-- T7 (AC13-AC16): Add milestones_earned + milestones_notified columns, milestone trigger logic, "skip the line" position boost
-- T8 (AC17): Lint + build verification (milestones section)
-- T9 (AC18-AC20): Create warmth schema DDL
-- T10 (AC21): Create GET /api/warmth/:subdomain route handler
-- T11 (AC22): Lint + build verification (warmth section)
-- T12 (AC23-AC28): Update PRD (data model, REQ-6.8.3, REQ-6.15, screen table, route table, component tree) and product vision (Module 2, Module 3)
-- T13 (AC29-AC31): Update planning docs (user-flow, user-flow diagram, JTBD)
-- T14 (AC32-AC33): Update epic doc + verify story renumbering
-- T15 (AC34): Update MEMORY.md
-- T16 (AC35): Update remaining docs (epic-4, epic-6, epic-8, sprint-1-summary, story-7.5, story-7.1, story-7.8, story-8.2, story-8.3, design-analysis, prompts, sql-writeups, onboarding placeholders, template fallback)
+### Phase 1: Documentation Alignment (do first — no code dependencies)
+
+- T1 (AC23-AC28): Update PRD (data model, REQ-6.8.3, REQ-6.15, screen table, route table, component tree) and product vision (Module 2, Module 3)
+- T2 (AC29-AC31): Update planning docs (user-flow, user-flow diagram, JTBD)
+- T3 (AC32-AC33): Update epic doc + verify story renumbering
+- T4 (AC34): Update MEMORY.md
+- T5 (AC35): Update remaining docs (epic-4, epic-6, epic-8, sprint-1-summary, story-7.5, story-7.1, story-7.8, story-8.2, story-8.3, design-analysis, prompts, sql-writeups, onboarding placeholders, template fallback)
+
+### Phase 2: Email-First Updates
+
+- T6 (AC1-AC2): Enhance POST /api/updates with Resend email dispatch
+- T7 (AC3): Add sent_at column to founder_updates table
+- T8 (AC4-AC6): Reduce on-page updates to "Latest update" card, remove from leaderboard
+- T9 (AC7): Lint + build verification (updates section)
+
+### Phase 3: Milestone Hybrid + Fulfillment
+
+- T10 (AC8-AC9): Update milestone defaults to 1/5/10/25 with "Recommended" badge
+- T11 (AC10-AC12): Verify milestone edit/add/remove + preview
+- T12 (AC13-AC16): Add milestones_earned + milestones_notified columns, milestone trigger logic, "skip the line" position boost
+- T13 (AC17): Lint + build verification (milestones section)
+
+### Phase 4: Warmth Foundation
+
+- T14 (AC18-AC20): Create warmth schema DDL
+- T15 (AC21): Create GET /api/warmth/:subdomain route handler
+- T16 (AC22): Lint + build verification (warmth section)
+
+### Phase 5: Final Verification
+
 - T17 (AC36): Final lint + build verification
 
 ## Out of Scope
@@ -148,7 +162,104 @@ Warmth tracking has zero implementation — no schema, no signal collection, no 
 
 ## Dev Notes
 
-### T1 — Enhance POST /api/updates with Resend Email Dispatch
+### Phase 1: Documentation Alignment
+
+### T1 — Update PRD and Product Vision
+
+#### PRD §7.4 Data Model
+
+**File:** `docs/PRD.md`
+
+1. `milestone_rewards.tier_referrals`: change `check (tier_referrals in (3,10,25))` → `check (tier_referrals > 0)`. Add comment: "Default tiers: 1/5/10/25. Founder can customize."
+2. `founder_updates`: add `sent_at timestamptz`
+3. `subscribers`: add `warmth_score text check (warmth_score in ('hot','warm','cold'))`, `milestones_earned jsonb`, `milestones_notified jsonb`
+4. Add `page_views` table (full DDL from T14)
+5. Add `email_events` table (full DDL from T14)
+
+#### PRD §6.8.3 — Milestone Rewards Requirement
+
+**File:** `docs/PRD.md`
+
+Replace the "Scope: Sprint 1 is configuration only" note with:
+
+> "REQ-6.8.3: When the milestone-rewards toggle is switched ON, the system shall reveal 1-5 reward tiers (default: 4 tiers at 1, 5, 10, 25 referrals). Each tier has an editable referral threshold (positive integer) and an editable reward label (required). The founder can add tiers (up to 5) or remove tiers (minimum 1). The platform tracks which milestones each subscriber has reached (`milestones_earned` column), sends a congratulatory email when a threshold is reached, and shows a pending rewards dashboard. The founder handles actual reward delivery (discount codes, swag, access grants). For milestones where the reward label contains 'skip the line', the platform shall also boost the subscriber's position to the front of the queue."
+
+#### PRD §6.15 — Founder Updates
+
+**File:** `docs/PRD.md`
+
+Replace REQ-6.15.1 + add new REQs (same as current story — email-first delivery).
+
+#### PRD Screen Table (§2a), Route Table (§7.5), Component Tree (§7.6)
+
+- Screen table: "milestone progress" → "milestone threshold display"
+- Route table: "milestones" → "milestone display"
+- Component tree: `milestone-progress.tsx` → `milestone-display.tsx` (or clarify it's display-only)
+
+#### Product Vision §Module 2 (Referral System)
+
+**File:** `docs/product-vision-mvp-waitlist-tool.md`
+
+- Line 116: "[Subscriber] earns" → "[Subscriber] reaches threshold; platform notifies, founder delivers"
+- Line 110: "milestone reward ladder" → "milestone threshold display"
+- Update example rewards to note they're labels for founder-managed fulfillment
+
+#### Product Vision §Module 3 (Warmth Tracking)
+
+- Remove "page return visits (Supabase)" from warmth signals. Replace with "email clicks (Resend webhooks)".
+- Update warmth score description.
+
+### T2 — Update Planning Docs
+
+#### user-flow-waitlist-tool.md
+
+**File:** `docs/planning-docs/user-flow-waitlist-tool.md`
+
+- Line 1196, 1250: "give before ask" → "show reward commitment before ask"
+- Line 1201, 1255: "You're at 0 of 3 for early access" → "You've referred 0 of 3 friends toward: Early access"
+- Line 1224: "what they earn" → "what they're working toward"
+- Line 1270: "The reward ladder reinforces" → "The milestone display reinforces"
+
+#### Waitlist__User_Flow_Diagram_.md
+
+**File:** `docs/planning-docs/Waitlist__User_Flow_Diagram_.md`
+
+- Same framing changes as user-flow doc
+- Line 747: "progress bar" → "progress indicator" (the platform shows referral count vs threshold, not a progress bar)
+
+#### jtbd-waitlist-tool.md
+
+**File:** `docs/planning-docs/jtbd-waitlist-tool.md`
+
+- Line 60: "get rewarded for doing so" → "get recognized for doing so, with the founder delivering the reward"
+
+### T3 — Update Epic Doc + Verify Renumbering
+
+**File:** `docs/epics/epic-7-public-waitlist-page.md`
+
+- Update status, story index, definition of done
+- Verify story files 7.7 and 7.8 exist with correct frontmatter
+
+### T4 — Update MEMORY.md
+
+**File:** `.memory/MEMORY.md`
+
+Add/update:
+
+1. **Email-First Update Strategy** — email-first with on-page card
+2. **Milestone Platform Boundary** — tracker + notifier, not fulfiller. Platform tracks thresholds, sends congratulatory emails, shows pending rewards. Founder delivers actual rewards. "Skip the line" = position boost (automatable).
+3. **Hybrid Milestone Defaults** — 1/5/10/25, Recommended badge, first tier ≤3 non-negotiable
+4. **Warmth Foundation** — schema + signal tables + scoring formula
+5. **Story Numbering** — 7.6/7.7/7.8 renumbered
+6. **Standing Decision** — "Platform is a tracker + notifier for milestone rewards, not a fulfiller. Founder handles reward delivery."
+
+### T5 — Update Remaining Docs
+
+All files listed in AC35. For each, update the specific lines to align framing with the tracker+notifier boundary and hybrid milestone defaults.
+
+### Phase 2: Email-First Updates
+
+### T6 — Enhance POST /api/updates with Resend Email Dispatch
 
 **File:** `src/app/api/updates/route.ts`
 
@@ -190,7 +301,7 @@ if (subscribers && subscribers.length > 0) {
 
 **Error handling:** Email dispatch failure must NOT block the update insert. Wrap in try/catch, log error, set `sent_at` to null on failure.
 
-### T2 — Add sent_at Column
+### T7 — Add sent_at Column
 
 **File:** `docs/stories/sql-writeups/epic7-story6-email-updates.sql` (new)
 
@@ -202,7 +313,7 @@ comment on column public.founder_updates.sent_at
   is 'Timestamp when the update was emailed to subscribers. Null if not yet sent or send failed.';
 ```
 
-### T3 — Reduce On-Page Updates to "Latest Update" Card
+### T8 — Reduce On-Page Updates to "Latest Update" Card
 
 **File:** `components/public/updates-feed.tsx` — rewrite to `LatestUpdateCard`:
 
@@ -234,11 +345,13 @@ export function LatestUpdateCard({ update }: LatestUpdateCardProps) {
 - `components/public/waitlist-page-content.tsx` — add `latestUpdate` prop
 - `components/share/waitlist-template-content.tsx` — add `latestUpdate` slot above form
 
-### T4 — Lint + Build (Updates)
+### T9 — Lint + Build (Updates)
 
 Run `pnpm lint` and `pnpm build`.
 
-### T5 — Update Milestone Defaults
+### Phase 3: Milestone Hybrid + Fulfillment
+
+### T10 — Update Milestone Defaults
 
 **File:** `src/app/onboarding/3/page.tsx`
 
@@ -255,11 +368,11 @@ const DEFAULT_REWARDS = [
 
 Add "Recommended" badge (Badge variant `info`) that disappears when founder edits either threshold or label.
 
-### T6 — Verify Milestone Edit/Remove + Preview
+### T11 — Verify Milestone Edit/Remove + Preview
 
 Verify: add 5th tier (max), remove tiers (min 1), edit thresholds/labels, empty label validation, live preview sync, "Upgrade to add more" at cap (Free tier). Verification only.
 
-### T7 — Milestone Fulfillment (Tracker + Notifier)
+### T12 — Milestone Fulfillment (Tracker + Notifier)
 
 **This is the core milestone fulfillment work.** The platform tracks who hit which tier, sends congratulatory emails, and boosts position for "skip the line" rewards.
 
@@ -413,11 +526,13 @@ if (referrer_id) {
 }
 ```
 
-### T8 — Lint + Build (Milestones)
+### T13 — Lint + Build (Milestones)
 
 Run `pnpm lint` and `pnpm build`.
 
-### T9 — Warmth Schema DDL
+### Phase 4: Warmth Foundation
+
+### T14 — Warmth Schema DDL
 
 **File:** `docs/stories/sql-writeups/epic7-story6-warmth-schema.sql` (new)
 
@@ -479,106 +594,15 @@ create policy "founders manage own waitlist's email events"
 -- NO public insert — server-side only (Resend webhooks)
 ```
 
-### T10 — GET /api/warmth/:subdomain Route Handler
+### T15 — GET /api/warmth/:subdomain Route Handler
 
 **File:** `src/app/api/warmth/[subdomain]/route.ts` (new) — returns `{ hot, warm, cold, unscored, total }`.
 
-### T11 — Lint + Build (Warmth)
+### T16 — Lint + Build (Warmth)
 
 Run `pnpm lint` and `pnpm build`.
 
-### T12 — Update PRD and Product Vision
-
-#### PRD §7.4 Data Model
-
-**File:** `docs/PRD.md`
-
-1. `milestone_rewards.tier_referrals`: change `check (tier_referrals in (3,10,25))` → `check (tier_referrals > 0)`. Add comment: "Default tiers: 1/5/10/25. Founder can customize."
-2. `founder_updates`: add `sent_at timestamptz`
-3. `subscribers`: add `warmth_score text check (warmth_score in ('hot','warm','cold'))`, `milestones_earned jsonb`, `milestones_notified jsonb`
-4. Add `page_views` table (full DDL from T9)
-5. Add `email_events` table (full DDL from T9)
-
-#### PRD §6.8.3 — Milestone Rewards Requirement
-
-**File:** `docs/PRD.md`
-
-Replace the "Scope: Sprint 1 is configuration only" note with:
-
-> "REQ-6.8.3: When the milestone-rewards toggle is switched ON, the system shall reveal 1-5 reward tiers (default: 4 tiers at 1, 5, 10, 25 referrals). Each tier has an editable referral threshold (positive integer) and an editable reward label (required). The founder can add tiers (up to 5) or remove tiers (minimum 1). The platform tracks which milestones each subscriber has reached (`milestones_earned` column), sends a congratulatory email when a threshold is reached, and shows a pending rewards dashboard. The founder handles actual reward delivery (discount codes, swag, access grants). For milestones where the reward label contains 'skip the line', the platform shall also boost the subscriber's position to the front of the queue."
-
-#### PRD §6.15 — Founder Updates
-
-**File:** `docs/PRD.md`
-
-Replace REQ-6.15.1 + add new REQs (same as current story — email-first delivery).
-
-#### PRD Screen Table (§2a), Route Table (§7.5), Component Tree (§7.6)
-
-- Screen table: "milestone progress" → "milestone threshold display"
-- Route table: "milestones" → "milestone display"
-- Component tree: `milestone-progress.tsx` → `milestone-display.tsx` (or clarify it's display-only)
-
-#### Product Vision §Module 2 (Referral System)
-
-**File:** `docs/product-vision-mvp-waitlist-tool.md`
-
-- Line 116: "[Subscriber] earns" → "[Subscriber] reaches threshold; platform notifies, founder delivers"
-- Line 110: "milestone reward ladder" → "milestone threshold display"
-- Update example rewards to note they're labels for founder-managed fulfillment
-
-#### Product Vision §Module 3 (Warmth Tracking)
-
-- Remove "page return visits (Supabase)" from warmth signals. Replace with "email clicks (Resend webhooks)".
-- Update warmth score description.
-
-### T13 — Update Planning Docs
-
-#### user-flow-waitlist-tool.md
-
-**File:** `docs/planning-docs/user-flow-waitlist-tool.md`
-
-- Line 1196, 1250: "give before ask" → "show reward commitment before ask"
-- Line 1201, 1255: "You're at 0 of 3 for early access" → "You've referred 0 of 3 friends toward: Early access"
-- Line 1224: "what they earn" → "what they're working toward"
-- Line 1270: "The reward ladder reinforces" → "The milestone display reinforces"
-
-#### Waitlist__User_Flow_Diagram_.md
-
-**File:** `docs/planning-docs/Waitlist__User_Flow_Diagram_.md`
-
-- Same framing changes as user-flow doc
-- Line 747: "progress bar" → "progress indicator" (the platform shows referral count vs threshold, not a progress bar)
-
-#### jtbd-waitlist-tool.md
-
-**File:** `docs/planning-docs/jtbd-waitlist-tool.md`
-
-- Line 60: "get rewarded for doing so" → "get recognized for doing so, with the founder delivering the reward"
-
-### T14 — Update Epic Doc + Verify Renumbering
-
-**File:** `docs/epics/epic-7-public-waitlist-page.md`
-
-- Update status, story index, definition of done
-- Verify story files 7.7 and 7.8 exist with correct frontmatter
-
-### T15 — Update MEMORY.md
-
-**File:** `.memory/MEMORY.md`
-
-Add/update:
-
-1. **Email-First Update Strategy** — email-first with on-page card
-2. **Milestone Platform Boundary** — tracker + notifier, not fulfiller. Platform tracks thresholds, sends congratulatory emails, shows pending rewards. Founder delivers actual rewards. "Skip the line" = position boost (automatable).
-3. **Hybrid Milestone Defaults** — 1/5/10/25, Recommended badge, first tier ≤3 non-negotiable
-4. **Warmth Foundation** — schema + signal tables + scoring formula
-5. **Story Numbering** — 7.6/7.7/7.8 renumbered
-6. **Standing Decision** — "Platform is a tracker + notifier for milestone rewards, not a fulfiller. Founder handles reward delivery."
-
-### T16 — Update Remaining Docs
-
-All files listed in AC35. For each, update the specific lines to align framing with the tracker+notifier boundary and hybrid milestone defaults.
+### Phase 5: Final Verification
 
 ### T17 — Final Lint + Build
 

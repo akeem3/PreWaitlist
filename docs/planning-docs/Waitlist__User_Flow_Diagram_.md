@@ -150,10 +150,10 @@ og:image (auto-generated)
 when shared on Twitter"
 
 Milestone rewards (optional panel):
-"What do subscribers earn for referring?"
-Refer 3: [ ] e.g. "Early access"
-Refer 10: [ ] e.g. "Founding member"
-Refer 25: [ ] e.g. "Free Pro 3 months"
+"What are subscribers working toward?"
+Tier 1: [ ] e.g. "Early access"
+Tier 2: [ ] e.g. "Founding member"
+Tier 3: [ ] e.g. "Free Pro 3 months"
 [Skip — no rewards]
 Note: rewards are shown on thank-you page
 above the share buttons.
@@ -714,11 +714,12 @@ link — leaving it blank IS the skip. Feeds the same first-name
 column that used to be captured on the base signup form.
 
 Milestone rewards (if founder configured):
-Shown BEFORE share buttons — give before ask
-🎯 Refer 3 → Early access
-🏅 Refer 10 → Founding member badge
-🎁 Refer 25 → Free Pro for 3 months
-"You're at 0 of 3 for early access."
+Shown BEFORE share buttons — show reward commitment before ask
+🎯 Refer 1 → Early access
+🏅 Refer 5 → Free Pro plan for 1 month
+🎁 Refer 10 → Lifetime 20% discount
+🏆 Refer 25 → Founding member status
+"You've referred 0 of 3 friends toward: Early access."
 
 Your referral link:
 [yourproduct.[tool].com?ref=XXXX]
@@ -745,8 +746,8 @@ one spot. Automatically."
 
 [NOTE — 2026-07-19: the actual high-fidelity build simplifies this
 page further — milestone rewards condensed to one line instead of a
-boxed panel with a progress bar, and the "How it works" paragraph
-cut entirely since "refer 3 friends for early access" already states
+boxed panel with a progress indicator, and the "How it works" paragraph
+cut entirely since "refer 1 friend for early access" already states
 the mechanic. This is a design refinement made during high-fidelity
 work, not a correction of wrong information above — the fields and
 order here are still accurate, the visual treatment is lighter.]
@@ -771,11 +772,12 @@ moved up a spot automatically.
 Now it's your turn to do the same."
 
 Milestone rewards (if founder configured):
-Shown BEFORE share buttons — give before ask
-🎯 Refer 3 → Early access
-🏅 Refer 10 → Founding member badge
-🎁 Refer 25 → Free Pro for 3 months
-"You're at 0 of 3 for early access."
+Shown BEFORE share buttons — show reward commitment before ask
+🎯 Refer 1 → Early access
+🏅 Refer 5 → Free Pro plan for 1 month
+🎁 Refer 10 → Lifetime 20% discount
+🏆 Refer 25 → Founding member status
+"You've referred 0 of 3 friends toward: Early access."
 
 YOUR referral link:
 [yourproduct.[tool].com?ref=YYYY]

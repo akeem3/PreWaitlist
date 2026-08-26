@@ -557,25 +557,31 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - **`components/` directory is at project root, NOT under `src/`** — Files at `components/` cannot be imported with `@/components/` from `src/` files. Use relative paths (`../../components/...`) or move shared components to `src/components/`. Only `src/components/auth/` exists under `src/`.
 - **`anonymizeEmail` extracted to `src/lib/format.ts`** — Both leaderboard page and API route import from `@/lib/format`. Don't duplicate the function.
 - **Social proof counter is inline in `WaitlistTemplateContent`** — Not a separate component. Lives at lines 70-85 of `components/share/waitlist-template-content.tsx`.
-- **`milestone_rewards` table schema:** `{ id, waitlist_id, tier_referrals (int), reward_label (text) }`. Default tiers in onboarding are 3/10/25 (being changed to 1/5/10/25). PRD has stale `check (tier_referrals in (3,10,25))` — needs update to `> 0`.
-- **`founder_updates` table:** `{ id, waitlist_id, body, created_at }`. Post/insert exists, public read RLS exists. No edit/delete. Plain text only.
-- **Warmth tracking:** Zero implementation — no schema, no signals, no scoring formula. Being created in Story 7.6.
+- **`milestone_rewards` table schema:** `{ id, waitlist_id, tier_referrals (int), reward_label (text) }`. Default tiers in onboarding being changed from 3/10/25 to 1/5/10/25. PRD check constraint updated to `> 0` (was `in (3,10,25)`).
+- **`founder_updates` table:** `{ id, waitlist_id, body, sent_at (nullable, added Story 7.6), created_at }`. Post/insert exists, public read RLS exists. No edit/delete. Plain text only.
+- **`sent_at` column on founder_updates:** Nullable timestamptz. NULL = email not yet sent. Updated after Resend batch send completes. Not used for on-page display ordering (use `created_at`).
+- **`subscribers` table additions (Story 7.6):** `warmth_score` (text, nullable, check: in hot/warm/cold), `milestones_earned` (jsonb, nullable — format: `[{ threshold, label, earned_at }]`), `milestones_notified` (jsonb, nullable — format: `[5, 10, 25]`). All for Sprint 3 scoring + milestone trigger tracking.
+- **`page_views` table (Story 7.6):** `{ id, subscriber_id (FK, nullable), waitlist_id (FK), path (text), created_at }`. For warmth tracking foundation. No real-time scoring yet. RLS: founders manage own, public insert for anonymous visitors.
+- **`email_events` table (Story 7.6):** `{ id, subscriber_id (FK), waitlist_id (FK), event_type (text, check: in sent/delivered/opened/clicked/bounced), created_at }`. For warmth tracking foundation. RLS: founders manage own only (no public insert — server-side only).
+- **Warmth tracking:** Schema created in Story 7.6. Runtime scoring deferred to Sprint 3.
 - **Email-first engagement data:** Email nurture 35-50% open rate, 5-12% CTR. On-page updates have zero proven engagement data. Every major waitlist platform uses email exclusively.
 - **Milestone fulfillment research:** KickoffLabs, Viral Loops, Prefinery, SparkLoop, Morning Brew all follow tracker+notifier model. No platform fulfills rewards.
+- **Resend SDK:** `resend` package installed (v6.23.0). API key in .env.local. Client at `src/lib/resend.ts`. Batch API: `resend.batch.send([...])`, max 100/batch.
+- **Milestone trigger scope:** In Story 7.6, `src/lib/milestones.ts` checks + notifies (sends congratulatory email) + auto-boosts position to 1 for "skip the line" rewards. Accumulator pattern prevents stale array bugs.
 
 ## Epic 7 Progress (Public Waitlist Page)
 
-| Story | Status   | Summary                                                                                                                               |
-| ----- | -------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 7.0   | ✅ done  | SQL migration (subscribers table, RLS, functions), POST /api/subscribers, GET /api/leaderboard/[subdomain], GET /api/subscribers/[id] |
-| 7.1   | ✅ done  | `[subdomain]/page.tsx`, WaitlistPageContent, placeholder slots (updates, milestones, leaderboard CTA), PoweredByFooter                |
-| 7.2   | ✅ done  | Email Capture Form — email-only, honeypot, timestamp check, 2s minimum, 5/hour rate limit, position display, social proof counter     |
-| 7.3   | ✅ done  | Inline Qualification Questions — dynamic free-text questions, optional toggle, live preview sync                                      |
-| 7.4   | ✅ done  | Duplicate Email Handling — 409 status, "already on waitlist" message, position display for existing                                   |
-| 7.5   | ✅ done  | Public Leaderboard Page — rank/email/referral columns, sticky footer CTA, anonymized emails, mobile responsive, 13 ACs met            |
-| 7.6   | 🔲 ready | Email-First Updates + Milestone Hybrid + Warmth Foundation + Doc Alignment — 36 ACs, 17 tasks, 4 work streams                         |
-| 7.7   | 🔲 ready | Founder Updates Feed — verify updates on public page (depends on 7.6)                                                                 |
-| 7.8   | 🔲 ready | Epic 7 Tests — unit + integration + e2e tests (depends on all prior)                                                                  |
+| Story | Status         | Summary                                                                                                                               |
+| ----- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 7.0   | ✅ done        | SQL migration (subscribers table, RLS, functions), POST /api/subscribers, GET /api/leaderboard/[subdomain], GET /api/subscribers/[id] |
+| 7.1   | ✅ done        | `[subdomain]/page.tsx`, WaitlistPageContent, placeholder slots (updates, milestones, leaderboard CTA), PoweredByFooter                |
+| 7.2   | ✅ done        | Email Capture Form — email-only, honeypot, timestamp check, 2s minimum, 5/hour rate limit, position display, social proof counter     |
+| 7.3   | ✅ done        | Inline Qualification Questions — dynamic free-text questions, optional toggle, live preview sync                                      |
+| 7.4   | ✅ done        | Duplicate Email Handling — 409 status, "already on waitlist" message, position display for existing                                   |
+| 7.5   | ✅ done        | Public Leaderboard Page — rank/email/referral columns, sticky footer CTA, anonymized emails, mobile responsive, 13 ACs met            |
+| 7.6   | 🔲 in-progress | Email-First Updates + Milestone Hybrid + Warmth Foundation + Doc Alignment — 36 ACs, 17 tasks, 4 work streams                         |
+| 7.7   | 🔲 ready       | Founder Updates Feed — verify updates on public page (depends on 7.6)                                                                 |
+| 7.8   | 🔲 ready       | Epic 7 Tests — unit + integration + e2e tests (depends on all prior)                                                                  |
 
 **Key architecture decisions (Story 7.6):**
 
@@ -624,7 +630,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 22. ~~Story 7.3 — Inline Qualification Questions~~ ✅ Done
 23. ~~Story 7.4 — Duplicate Email Handling~~ ✅ Done
 24. ~~Story 7.5 — Public Leaderboard Page~~ ✅ Done
-25. Execute Story 7.6 — Email-First Updates + Milestone Hybrid + Warmth Foundation + Doc Alignment
+25. ~~Execute Story 7.6 — Email-First Updates + Milestone Hybrid + Warmth Foundation + Doc Alignment~~ ✅ In Progress
 26. Execute Story 7.7 — Founder Updates Feed (depends on 7.6)
 27. Execute Story 7.8 — Epic 7 Tests (depends on all prior)
 28. Epic 7 Audit (Prompt #4) — Final release audit

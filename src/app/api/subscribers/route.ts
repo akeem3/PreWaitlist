@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { checkAndFulfillMilestones } from "@/lib/milestones";
 
 function generateReferralCode(): string {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 8);
@@ -70,6 +71,15 @@ export async function POST(request: NextRequest) {
       { error: error.message, details: error.details, hint: error.hint },
       { status: 400 }
     );
+  }
+
+  if (referrer_id) {
+    const { count } = await supabase
+      .from("subscribers")
+      .select("id", { count: "exact", head: true })
+      .eq("referrer_id", referrer_id);
+
+    await checkAndFulfillMilestones(referrer_id, waitlist_id, count || 0);
   }
 
   return NextResponse.json(

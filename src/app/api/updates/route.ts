@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { resend } from "@/lib/resend";
 
 const MAX_BODY_LENGTH = 2000;
 
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
 
   const { data: waitlist, error: waitlistError } = await supabase
     .from("waitlists")
-    .select("id")
+    .select("id, subdomain, name")
     .eq("founder_id", user.id)
     .single();
 
@@ -39,21 +40,57 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No waitlist found" }, { status: 400 });
   }
 
-  const { data, error } = await supabase
+  const { data: update, error: insertError } = await supabase
     .from("founder_updates")
     .insert({
       waitlist_id: waitlist.id,
       body: text,
     })
-    .select("id")
+    .select("id, created_at")
     .single();
 
-  if (error) {
+  if (insertError) {
     return NextResponse.json(
-      { error: error.message, details: error.details, hint: error.hint },
+      {
+        error: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint,
+      },
       { status: 400 }
     );
   }
 
-  return NextResponse.json({ id: data.id }, { status: 201 });
+  const { data: subscribers } = await supabase
+    .from("subscribers")
+    .select("id, email")
+    .eq("waitlist_id", waitlist.id);
+
+  if (subscribers && subscribers.length > 0) {
+    const BATCH_SIZE = 100;
+    const batchEmails = [];
+
+    for (let i = 0; i < subscribers.length; i += BATCH_SIZE) {
+      const batch = subscribers.slice(i, i + BATCH_SIZE);
+      const emails = batch.map((sub) => ({
+        from: `${waitlist.name || waitlist.subdomain} <updates@prewaitlist.com>`,
+        to: sub.email,
+        subject: `Update from ${waitlist.name || waitlist.subdomain}`,
+        text: text,
+      }));
+      batchEmails.push(...emails);
+    }
+
+    try {
+      await resend.batch.send(batchEmails);
+
+      await supabase
+        .from("founder_updates")
+        .update({ sent_at: new Date().toISOString() })
+        .eq("id", update.id);
+    } catch {
+      console.error("Failed to send update emails");
+    }
+  }
+
+  return NextResponse.json({ id: update.id }, { status: 201 });
 }

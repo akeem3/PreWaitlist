@@ -57,7 +57,7 @@
 
 ### Job 3 — The Amplification Job
 
-> **"When someone signs up for my waitlist, I want to give them a way to share it with others and get rewarded for doing so, so I can grow my list beyond my own audience without spending money on ads."**
+> **"When someone signs up for my waitlist, I want to give them a way to share it with others and get recognized for doing so, with the founder delivering the reward, so I can grow my list beyond my own audience without spending money on ads."**
 
 **Functional job:** Automate word-of-mouth through a referral mechanic that incentivises sharing.
 

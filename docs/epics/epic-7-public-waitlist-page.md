@@ -1,6 +1,6 @@
 # Epic 7 — Public Waitlist Page & Foundation
 
-**Status:** in-progress (7.0–7.4 done, 7.5–7.7 remaining)
+**Status:** in-progress (7.0–7.5 done, 7.6 in-progress, 7.7–7.8 remaining)
 **Source:** [PRD S2a Sprint 2](../PRD.md#2a-sprint-2--public-page-dashboard-active), [PRD S7.4 Data Model](../PRD.md#74-data-model--implementation-grade), [PRD S7.5 Route/Handler List](../PRD.md#75-route--handler-list), [PRD S7.6 Component Tree](../PRD.md#76-component-tree-high-level)
 
 ## Design References
@@ -82,18 +82,19 @@ Shared component uses `py-10` for bold template, `py-8` for others — matches t
 
 ## Story Index
 
-| ID  | Title                          | Depends on | Status | Story File                                                          |
-| --- | ------------------------------ | ---------- | ------ | ------------------------------------------------------------------- |
-| 7.0 | Subscribers Table & API        | —          | done   | [story-7.0](../stories/story-7.0-subscribers-table-api.md)          |
-| 7.1 | Public Waitlist Page Route     | 7.0        | done   | [story-7.1](../stories/story-7.1-public-waitlist-page-route.md)     |
-| 7.2 | Email Capture Form             | 7.0        | done   | [story-7.2](../stories/story-7.2-email-capture-form.md)             |
-| 7.3 | Inline Qualification Questions | 7.0        | done   | [story-7.3](../stories/story-7.3-inline-qualification-questions.md) |
-| 7.4 | Duplicate Email Handling       | 7.0        | done   | [story-7.4](../stories/story-7.4-duplicate-email-handling.md)       |
-| 7.5 | Public Leaderboard Page        | 7.0        | ready  | [story-7.5](../stories/story-7.5-public-leaderboard-page.md)        |
-| 7.6 | Founder Updates Feed Display   | 7.0        | ready  | [story-7.6](../stories/story-7.6-founder-updates-feed.md)           |
-| 7.7 | Epic 7 Tests                   | 7.0–7.6    | ready  | [story-7.7](../stories/story-7.7-epic7-tests.md)                    |
+| ID  | Title                                     | Depends on | Status      | Story File                                                                |
+| --- | ----------------------------------------- | ---------- | ----------- | ------------------------------------------------------------------------- |
+| 7.0 | Subscribers Table & API                   | —          | done        | [story-7.0](../stories/story-7.0-subscribers-table-api.md)                |
+| 7.1 | Public Waitlist Page Route                | 7.0        | done        | [story-7.1](../stories/story-7.1-public-waitlist-page-route.md)           |
+| 7.2 | Email Capture Form                        | 7.0        | done        | [story-7.2](../stories/story-7.2-email-capture-form.md)                   |
+| 7.3 | Inline Qualification Questions            | 7.0        | done        | [story-7.3](../stories/story-7.3-inline-qualification-questions.md)       |
+| 7.4 | Duplicate Email Handling                  | 7.0        | done        | [story-7.4](../stories/story-7.4-duplicate-email-handling.md)             |
+| 7.5 | Public Leaderboard Page                   | 7.0        | done        | [story-7.5](../stories/story-7.5-public-leaderboard-page.md)              |
+| 7.6 | Email-First Updates + Milestones + Warmth | 7.0–7.5    | in-progress | [story-7.6](../stories/story-7.6-email-first-updates-milestone-hybrid.md) |
+| 7.7 | Founder Updates Feed                      | 7.6        | ready       | [story-7.7](../stories/story-7.7-founder-updates-feed.md)                 |
+| 7.8 | Epic 7 Tests                              | 7.0–7.7    | ready       | [story-7.8](../stories/story-7.8-epic7-tests.md)                          |
 
-Work through these in dependency order, one at a time. Story 7.0 must be complete before 7.1–7.6 begin. Stories 7.1–7.6 can be worked in any order after 7.0 is done. Story 7.7 must be the last story — it tests everything built in 7.0–7.6. Each has a `status` you should update as you go (`ready` → `in-progress` → `blocked` or `done`). A story marked `blocked` stays blocked until manually cleared — don't silently re-attempt it next session.
+Work through these in dependency order, one at a time. Story 7.0 must be complete before 7.1–7.8 begin. Stories 7.1–7.5 can be worked in any order after 7.0 is done. Story 7.6 depends on 7.0–7.5. Story 7.7 depends on 7.6. Story 7.8 must be the last story — it tests everything built in 7.0–7.7. Each has a `status` you should update as you go (`ready` → `in-progress` → `blocked` or `done`). A story marked `blocked` stays blocked until manually cleared — don't silently re-attempt it next session.
 
 ---
 
@@ -311,7 +312,44 @@ Work through these in dependency order, one at a time. Story 7.0 must be complet
 
 ---
 
-### Story 7.6 — Founder Updates Feed Display
+### Story 7.6 — Email-First Updates + Milestone Hybrid + Warmth Foundation + Doc Alignment
+
+**Status:** in-progress
+**Design Refs:** — (no new UI; modifies existing components)
+
+**Story:** As the founder, I want email-first updates delivery, a tracker+notifier milestone model, and a warmth scoring foundation so that subscribers are engaged through email, milestone rewards are correctly tracked, and the warmth foundation is laid for Sprint 3.
+
+**Acceptance Criteria (EARS):**
+
+- AC1-AC22: See story file `docs/stories/story-7.6-email-first-updates-milestone-hybrid.md` (36 ACs total)
+- AC23-AC28: Documentation alignment (PRD, product vision, planning docs)
+- AC29-AC31: Planning doc updates (user-flow, JTBD)
+- AC32-AC33: Epic doc updates + story renumbering
+- AC34: MEMORY.md updates
+- AC35: Remaining doc updates (30+ files)
+- AC36: Final lint + build
+
+**Tasks:** T1-T5 (Documentation) · T6-T9 (Email-first updates) · T10-T13 (Milestone hybrid) · T14-T16 (Warmth foundation) · T17 (Final verification)
+
+**Out of scope:** Runtime warmth scoring (Sprint 3), broadcast email sending (Sprint 3), founder updates compose UI (Epic 10), founder updates styling (needs design pass).
+
+**Dev Notes:**
+
+- **Platform is a tracker + notifier, not a fulfiller.** Founder handles reward delivery. Only automatable: email notification + position boost for "skip the line".
+- **Email is the primary engagement channel.** On-page updates are a secondary social-proof surface.
+- **What is designed/previewed in onboarding MUST be EXACTLY what is shown on the public waitlist page.**
+- **Shared component:** `WaitlistTemplateContent` is the single source of truth for both preview and public page.
+- **Milestone rewards:** Changed from fixed 3/10/25 to editable 1/5/10/25 defaults. Founder can set any positive integer threshold.
+- **Warmth foundation:** Schema DDL only in this story. Runtime scoring deferred to Sprint 3.
+- **Resend SDK:** Not installed yet — needs `pnpm add resend`. API key exists in .env.local.
+- **`founder_updates` table:** Now has `sent_at` column (nullable, added in this story).
+- **`subscribers` table:** Now has `warmth_score`, `milestones_earned`, `milestones_notified` columns.
+- **New tables:** `page_views`, `email_events` (created in this story).
+- **New API route:** `GET /api/warmth/:subdomain` (created in this story).
+
+---
+
+### Story 7.7 — Founder Updates Feed
 
 **Status:** ready
 **Design Refs:** — (no high-fidelity SVG yet for updates feed)
@@ -340,7 +378,7 @@ Work through these in dependency order, one at a time. Story 7.0 must be complet
 
 ---
 
-### Story 7.7 — Epic 7 Tests
+### Story 7.8 — Epic 7 Tests
 
 **Status:** ready
 **Design Refs:** — (no UI)

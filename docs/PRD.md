@@ -55,36 +55,36 @@ A pre-launch waitlist tool for bootstrapped indie hackers, solo founders, and ea
 
 **Screens in Scope (Sprint 2):**
 
-| #   | Screen                        | Route                        | Description                                        |
-| --- | ----------------------------- | ---------------------------- | -------------------------------------------------- |
-| 1   | Public waitlist page          | `/:subdomain`                | Email capture + qual questions + social proof      |
-| 2   | Thank you — direct signup     | `/:subdomain/thank-you`      | Position, referral link, milestone progress        |
-| 3   | Thank you — referred signup   | `/:subdomain/thank-you`      | Position, referrer attribution, milestone progress |
-| 4   | Public leaderboard            | `/:subdomain/leaderboard`    | Ranked list, milestones, anonymized emails         |
-| 5   | Dashboard — empty state       | `/dashboard`                 | Left sidebar, stat cards, subscriber table (empty) |
-| 6   | Dashboard — active state      | `/dashboard`                 | Real subscriber data, CSV export, activity feed    |
-| 7   | Dashboard — subscriber detail | `/dashboard/subscribers/:id` | Individual subscriber view, qual answers           |
+| #   | Screen                        | Route                        | Description                                                 |
+| --- | ----------------------------- | ---------------------------- | ----------------------------------------------------------- |
+| 1   | Public waitlist page          | `/:subdomain`                | Email capture + qual questions + social proof               |
+| 2   | Thank you — direct signup     | `/:subdomain/thank-you`      | Position, referral link, milestone threshold display        |
+| 3   | Thank you — referred signup   | `/:subdomain/thank-you`      | Position, referrer attribution, milestone threshold display |
+| 4   | Public leaderboard            | `/:subdomain/leaderboard`    | Ranked list, milestone display, anonymized emails           |
+| 5   | Dashboard — empty state       | `/dashboard`                 | Left sidebar, stat cards, subscriber table (empty)          |
+| 6   | Dashboard — active state      | `/dashboard`                 | Real subscriber data, CSV export, activity feed             |
+| 7   | Dashboard — subscriber detail | `/dashboard/subscribers/:id` | Individual subscriber view, qual answers                    |
 
 **Key Features:**
 
 - **Email capture:** Email-only signup (Standing Decision 1), inline qualification questions (optional, pre-submit)
-- **Referral system:** Unique referral links, position tracking, milestone rewards
-- **Public leaderboard:** Ranked by referral count, milestone badges, anonymized emails
+- **Referral system:** Unique referral links, position tracking, milestone threshold display
+- **Public leaderboard:** Ranked by referral count, milestone display, anonymized emails
 - **Dashboard restructure:** Left sidebar navigation (replaces top tabs), stat cards, subscriber table with search/filter
 - **CSV export:** Subscriber data export for Pro tier
-- **Founder updates:** Display feed of updates on public page
+- **Founder updates:** Email-first delivery via Resend; on-page shows latest update card only
 
 **Technical Scope:**
 
-- **New table:** `subscribers` (email, referral_code, referrer_id, position, qual_answers, created_at)
-- **New routes:** `/:subdomain`, `/:subdomain/thank-you`, `/:subdomain/leaderboard`
+- **New tables:** `subscribers` (email, referral_code, referrer_id, position, qual_answers, warmth_score, milestones_earned, milestones_notified), `page_views`, `email_events`
+- **New routes:** `/:subdomain`, `/:subdomain/thank-you`, `/:subdomain/leaderboard`, `/api/warmth/:subdomain`
 - **Dashboard restructure:** Left sidebar layout, stat cards, subscriber table
-- **Referral mechanics:** Unique codes, position tracking, milestone unlocking
-- **Email integration:** Resend transactional emails (confirmation, moved-up notifications)
+- **Referral mechanics:** Unique codes, position tracking, milestone threshold display
+- **Email integration:** Resend transactional emails (confirmation, moved-up notifications, milestone congratulations, founder updates)
 
 **Explicitly not in Sprint 2:**
 
-- Warmth tracking (Sprint 3)
+- Warmth scoring algorithm execution (schema + foundation built in Story 7.6, runtime scoring Sprint 3)
 - Broadcast email sending (Sprint 3)
 - Paddle billing enforcement (Sprint 3)
 - Real SPF/DKIM verification (Sprint 3)
@@ -203,7 +203,7 @@ _(Unchanged in substance from PRD v1 — repeated here at the level needed for b
 
 - REQ-6.8.1: The Meta Preview panel shall update live from Headline/Sub-headline/brand-color and shall be persisted as the future og:title/og:description/og:image source data.
 - REQ-6.8.2: While the milestone-rewards toggle is OFF, the system shall render no reward-tier configuration UI at all, not even collapsed.
-- REQ-6.8.3: When the milestone-rewards toggle is switched ON, the system shall reveal 1-5 reward tiers (default: 3 tiers at 3, 10, 25 referrals). Each tier has an editable referral threshold (positive integer) and an editable reward label (e.g. "Early access", "Skip the line + free swag", "Lifetime 50% off"). The founder can add tiers (up to 5) or remove tiers (minimum 1). The reward_label is required (not null) when the toggle is on — if a founder leaves any tier's reward blank and attempts to proceed, the system shall show an inline validation error and block submission. The live preview shows a simulated subscriber view with position, progress toward milestones, and locked/unlocked states. Scope: Sprint 1 is configuration only; no referral-counting or reward-fulfillment logic.
+- REQ-6.8.3: When the milestone-rewards toggle is switched ON, the system shall reveal 1-5 reward tiers (default: 4 tiers at 1, 5, 10, 25 referrals). Each tier has an editable referral threshold (positive integer) and an editable reward label (required). The founder can add tiers (up to 5) or remove tiers (minimum 1). The platform tracks which milestones each subscriber has reached (`milestones_earned` column), sends a congratulatory email when a threshold is reached, and shows a pending rewards dashboard. The founder handles actual reward delivery (discount codes, swag, access grants). For milestones where the reward label contains "skip the line", the platform shall also boost the subscriber's position to the front of the queue. The live preview shows a simulated subscriber view with position, progress toward milestones, and locked/unlocked states.
 - REQ-6.8.4: The system shall accept logo uploads in PNG or SVG only, up to 2MB, stored in Supabase Storage.
 - REQ-6.8.5: The brand-color field shall validate as a well-formed hex value before it can be saved; default value is #0F7A5E.
 - REQ-6.8.6: The Meta Preview panel shall render as an OG-card mock (simulating how the waitlist URL appears when shared on social media / messaging apps). It shall contain: (a) a browser-chrome header with three dots matching the main live-preview panel style; (b) inside the card: the headline (bold), subheadline (grey), a mini email input field, and a mini "Join waitlist" button — a miniature version of the actual waitlist page; (c) below a divider line: the domain in small grey text (e.g. "acme.prewaitlist.com"), a bold line reading "[Headline] — Join the waitlist", and a grey description line repeating the subheadline text. This component represents the og:title / og:description / og:image source data and is not a generic content preview.
@@ -266,9 +266,12 @@ _(Unchanged in substance from PRD v1 — repeated here at the level needed for b
 
 - REQ-6.14.1: The system shall capture and persist ref/utm_* values per REQ-6.1.4/6.3.4 with no dashboard/reporting UI in Sprint 1 -- store only, don't display yet.
 
-### 6.15 Founder Updates Feed -- Posting Only
+### 6.15 Founder Updates — Email-First Delivery
 
-- REQ-6.15.1: The system shall provide a compose/create action and a founder_updates write path in Sprint 1, with no public read/display surface until Sprint 2.
+- REQ-6.15.1: The system shall provide a compose/create action for founder updates. When a founder posts an update, the system shall dispatch an email to all subscribers of that waitlist via Resend, using the founder's product name as the sender.
+- REQ-6.15.2: The `founder_updates` table shall include a `sent_at` column (nullable) set after email dispatch completes. If email dispatch fails, `sent_at` remains null.
+- REQ-6.15.3: The on-page updates section shall display only the most recent update as a single "Latest update" card above the email capture form. If no updates exist, the card shall not render.
+- REQ-6.15.4: The leaderboard page shall not display founder updates.
 
 ---
 
@@ -358,7 +361,7 @@ create table public.qualification_questions (
 create table public.milestone_rewards (
   id uuid primary key default gen_random_uuid(),
   waitlist_id uuid not null references public.waitlists(id) on delete cascade,
-  tier_referrals smallint not null check (tier_referrals in (3,10,25)),
+  tier_referrals smallint not null check (tier_referrals > 0),
   reward_label text not null,
   unique (waitlist_id, tier_referrals)
 );
@@ -367,6 +370,7 @@ create table public.founder_updates (
   id uuid primary key default gen_random_uuid(),
   waitlist_id uuid not null references public.waitlists(id) on delete cascade,
   body text not null,
+  sent_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -379,9 +383,40 @@ create table public.subscribers (
   referrer_id uuid references public.subscribers(id) on delete set null,
   position integer not null,
   qual_answers jsonb,
+  warmth_score text check (warmth_score in ('hot', 'warm', 'cold')),
+  milestones_earned jsonb,
+  milestones_notified jsonb,
   created_at timestamptz not null default now(),
   constraint email_format check (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
 );
+
+-- Sprint 2: page views for warmth tracking
+create table public.page_views (
+  id uuid primary key default gen_random_uuid(),
+  subscriber_id uuid references public.subscribers(id) on delete set null,
+  waitlist_id uuid not null references public.waitlists(id) on delete cascade,
+  path text not null default '/',
+  created_at timestamptz not null default now()
+);
+
+create index page_views_waitlist_id_idx on public.page_views(waitlist_id);
+create index page_views_subscriber_id_idx on public.page_views(subscriber_id);
+create index page_views_created_at_idx on public.page_views(created_at);
+
+-- Sprint 2: email events for engagement tracking
+create table public.email_events (
+  id uuid primary key default gen_random_uuid(),
+  subscriber_id uuid not null references public.subscribers(id) on delete cascade,
+  waitlist_id uuid not null references public.waitlists(id) on delete cascade,
+  event_type text not null check (event_type in ('sent', 'delivered', 'opened', 'clicked', 'bounced')),
+  created_at timestamptz not null default now()
+);
+
+create index email_events_waitlist_id_idx on public.email_events(waitlist_id);
+create index email_events_subscriber_id_idx on public.email_events(subscriber_id);
+create index email_events_event_type_idx on public.email_events(event_type);
+create index email_events_created_at_idx on public.email_events(created_at);
+
 create unique index subscribers_waitlist_email_idx on public.subscribers(waitlist_id, email);
 create index subscribers_referral_code_idx on public.subscribers(referral_code);
 ```
@@ -435,16 +470,18 @@ Repeat the child-table pattern for milestone_rewards and founder_updates. This i
 
 #### Sprint 2 Routes (Active)
 
-| Route                       | Type                 | Purpose                                                     |
-| --------------------------- | -------------------- | ----------------------------------------------------------- |
-| /:subdomain                 | Page (RSC)           | Public waitlist page — email capture + qual questions       |
-| /:subdomain/thank-you       | Page                 | Post-signup thank you — position, referral link, milestones |
-| /:subdomain/leaderboard     | Page (RSC)           | Public leaderboard — ranked list, milestones                |
-| /dashboard                  | Page (restructured)  | Left sidebar layout, stat cards, subscriber table           |
-| /dashboard/subscribers/:id  | Page                 | Individual subscriber view, qual answers                    |
-| /api/subscribers            | Route Handler (POST) | Create subscriber (public signup)                           |
-| /api/subscribers/export     | Route Handler (GET)  | CSV export (Pro tier)                                       |
-| /api/leaderboard/:subdomain | Route Handler (GET)  | Leaderboard data for public page                            |
+| Route                       | Type                 | Purpose                                                                      |
+| --------------------------- | -------------------- | ---------------------------------------------------------------------------- |
+| /:subdomain                 | Page (RSC)           | Public waitlist page — email capture + qual questions + latest update card   |
+| /:subdomain/thank-you       | Page                 | Post-signup thank you — position, referral link, milestone threshold display |
+| /:subdomain/leaderboard     | Page (RSC)           | Public leaderboard — ranked list, milestone display                          |
+| /dashboard                  | Page (restructured)  | Left sidebar layout, stat cards, subscriber table                            |
+| /dashboard/subscribers/:id  | Page                 | Individual subscriber view, qual answers                                     |
+| /api/subscribers            | Route Handler (POST) | Create subscriber (public signup)                                            |
+| /api/subscribers/export     | Route Handler (GET)  | CSV export (Pro tier)                                                        |
+| /api/leaderboard/:subdomain | Route Handler (GET)  | Leaderboard data for public page                                             |
+| /api/updates                | Route Handler (POST) | Create founder update + dispatch email to subscribers                        |
+| /api/warmth/:subdomain      | Route Handler (GET)  | Warmth distribution counts (hot/warm/cold/unscored)                          |
 
 ### 7.6 Component Tree (high level)
 
@@ -484,7 +521,8 @@ components/
 ├── public/
 │   ├── email-capture-form.tsx        -> email-only signup form + inline qual questions
 │   ├── social-proof-counter.tsx      -> "X people ahead of you" display
-│   ├── milestone-progress.tsx        -> referral milestone tracking
+│   ├── latest-update-card.tsx        -> single latest founder update card
+│   ├── milestone-display.tsx         -> referral milestone threshold display
 │   └── leaderboard-table.tsx         -> ranked subscriber list
 ├── dashboard/
 │   ├── sidebar.tsx                   -> left sidebar navigation

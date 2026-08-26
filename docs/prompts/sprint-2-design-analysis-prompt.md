@@ -27,7 +27,7 @@ Sprint 2 screens that need wireframes + high-fidelity design:
 | Public waitlist page                      | S-B1     | Subscriber-facing page at `{slug}.prewaitlist.com`        |
 | Qualification questions (subscriber view) | S-B2a    | Post-email-capture question display                       |
 | Thank-you page — direct signup            | S-B4a    | Position, referral link, milestone rewards, share buttons |
-| Thank-you page — referred signup          | S-B4b    | Acknowledges referrer, same reward ladder                 |
+| Thank-you page — referred signup          | S-B4b    | Acknowledges referrer, same milestone display             |
 | Duplicate email message                   | S-B3-DUP | When subscriber tries to sign up twice                    |
 | Dashboard — active state                  | F-G2     | Full panels with real subscriber data                     |
 

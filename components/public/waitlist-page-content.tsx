@@ -21,6 +21,7 @@ interface WaitlistPageContentProps {
   qualificationEnabled: boolean;
   questions: Question[];
   emailCaptureForm: React.ReactNode;
+  latestUpdateSlot?: React.ReactNode;
 }
 
 export function WaitlistPageContent({
@@ -34,6 +35,7 @@ export function WaitlistPageContent({
   headline,
   subheadline,
   logoUrl,
+  latestUpdateSlot,
 }: WaitlistPageContentProps) {
   const isDark = template === "dark";
 
@@ -54,6 +56,7 @@ export function WaitlistPageContent({
           signupCounterVisible={signupCounterVisible}
           milestoneRewards={milestoneRewards}
           emailCaptureForm={emailCaptureForm}
+          latestUpdateSlot={latestUpdateSlot}
         />
       </div>
       <div className="w-full max-w-lg">
