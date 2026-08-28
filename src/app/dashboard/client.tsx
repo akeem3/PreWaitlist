@@ -1,15 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import ShareCopyLink from "../../../components/share/share-copy-link";
 
+interface Subscriber {
+  id: string;
+  email: string;
+  position: number;
+  referral_count: number;
+  created_at: string;
+}
+
 interface DashboardClientProps {
   liveUrl: string;
   waitlistName: string | null;
   logoUrl: string | null;
+  subscribers?: Subscriber[];
 }
 
 const NAV_TABS = [
@@ -50,9 +59,36 @@ export default function DashboardClient({
   liveUrl,
   waitlistName,
   logoUrl,
+  subscribers = [],
 }: DashboardClientProps) {
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+  const [sortField, setSortField] = useState<"position" | "referral_count">(
+    "referral_count"
+  );
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const router = useRouter();
+
+  const sortedSubscribers = useMemo(() => {
+    return [...subscribers].sort((a, b) => {
+      if (sortField === "referral_count") {
+        return sortDir === "desc"
+          ? b.referral_count - a.referral_count
+          : a.referral_count - b.referral_count;
+      }
+      return sortDir === "asc"
+        ? a.position - b.position
+        : b.position - a.position;
+    });
+  }, [subscribers, sortField, sortDir]);
+
+  function handleSort(field: "position" | "referral_count") {
+    if (sortField === field) {
+      setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir(field === "referral_count" ? "desc" : "asc");
+    }
+  }
 
   function handleShareOrCopy() {
     setCheckedItems((prev) => new Set(prev).add("share"));
@@ -323,20 +359,72 @@ export default function DashboardClient({
         {/* Subscriber table */}
         <div className="rounded-[var(--card-radius)] border border-border bg-card">
           <div className="grid grid-cols-6 gap-4 border-b border-border px-5 py-3">
-            {TABLE_COLUMNS.map((col) => (
-              <span
-                key={col}
-                className="text-caption font-medium text-muted-foreground"
-              >
-                {col}
+            {TABLE_COLUMNS.map((col) => {
+              const field =
+                col === "Referrals"
+                  ? "referral_count"
+                  : col === "Position"
+                    ? "position"
+                    : null;
+              const isActive = field === sortField;
+              return (
+                <button
+                  key={col}
+                  type="button"
+                  onClick={() => field && handleSort(field)}
+                  className={`text-left text-caption font-medium transition-colors ${
+                    field
+                      ? "cursor-pointer hover:text-foreground"
+                      : "cursor-default"
+                  } ${isActive ? "text-foreground" : "text-muted-foreground"}`}
+                >
+                  {col}
+                  {isActive && (
+                    <span className="ml-1">
+                      {sortDir === "asc" ? "↑" : "↓"}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {sortedSubscribers.length > 0 ? (
+            <div>
+              {sortedSubscribers.map((sub) => (
+                <div
+                  key={sub.id}
+                  className="grid grid-cols-6 gap-4 border-b border-border px-5 py-3 last:border-b-0"
+                >
+                  <span className="text-body-sm text-muted-foreground">—</span>
+                  <span className="text-body-sm text-foreground truncate">
+                    {sub.email}
+                  </span>
+                  <span className="text-body-sm text-muted-foreground">
+                    {sub.position}
+                  </span>
+                  <span className="text-body-sm text-muted-foreground">—</span>
+                  <span
+                    className={`text-right text-body-sm ${
+                      sub.referral_count === 0
+                        ? "text-muted-foreground"
+                        : "font-medium text-foreground"
+                    }`}
+                  >
+                    {sub.referral_count}
+                  </span>
+                  <span className="text-body-sm text-muted-foreground">
+                    {new Date(sub.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex min-h-[80px] items-center justify-center">
+              <span className="text-body-sm text-muted-foreground">
+                No subscribers yet. Share your link to get started.
               </span>
-            ))}
-          </div>
-          <div className="flex min-h-[80px] items-center justify-center">
-            <span className="text-body-sm text-muted-foreground">
-              No subscribers yet. Share your link to get started.
-            </span>
-          </div>
+            </div>
+          )}
         </div>
       </main>
     </div>

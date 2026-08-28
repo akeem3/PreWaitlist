@@ -41,7 +41,7 @@ export function EmailCaptureForm({
 }: EmailCaptureFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const referrerId = searchParams.get("ref");
+  const referralCode = searchParams.get("ref");
 
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -81,8 +81,8 @@ export function EmailCaptureForm({
         email: email.trim().toLowerCase(),
       };
 
-      if (referrerId) {
-        body.referrer_id = referrerId;
+      if (referralCode) {
+        body.referral_code = referralCode;
       }
 
       const filledAnswers = Object.fromEntries(

@@ -10,7 +10,12 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient();
 
   const body = await request.json();
-  const { waitlist_id, email, referrer_id, qual_answers } = body;
+  const {
+    waitlist_id,
+    email,
+    referral_code: incomingRefCode,
+    qual_answers,
+  } = body;
 
   if (!waitlist_id || !email) {
     return NextResponse.json(
@@ -27,6 +32,36 @@ export async function POST(request: NextRequest) {
       { error: "Invalid email format" },
       { status: 400 }
     );
+  }
+
+  // Resolve referral_code → referrer_id
+  let resolvedReferrerId: string | null = null;
+  if (
+    incomingRefCode &&
+    typeof incomingRefCode === "string" &&
+    incomingRefCode.trim()
+  ) {
+    const { data: referrer } = await supabase
+      .from("subscribers")
+      .select("id, waitlist_id")
+      .eq("referral_code", incomingRefCode.trim())
+      .single();
+
+    if (!referrer) {
+      return NextResponse.json(
+        { error: "Invalid referral code" },
+        { status: 400 }
+      );
+    }
+
+    if (referrer.waitlist_id !== waitlist_id) {
+      return NextResponse.json(
+        { error: "Invalid referral code" },
+        { status: 400 }
+      );
+    }
+
+    resolvedReferrerId = referrer.id;
   }
 
   const { data: maxPos } = await supabase
@@ -47,7 +82,7 @@ export async function POST(request: NextRequest) {
       email: trimmedEmail,
       referral_code,
       position,
-      referrer_id: referrer_id || null,
+      referrer_id: resolvedReferrerId,
       qual_answers:
         qual_answers && Object.keys(qual_answers).length > 0
           ? qual_answers
@@ -73,13 +108,28 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (referrer_id) {
-    const { count } = await supabase
-      .from("subscribers")
-      .select("id", { count: "exact", head: true })
-      .eq("referrer_id", referrer_id);
+  // Post-insert: check for self-referral and trigger milestones
+  if (resolvedReferrerId) {
+    // Prevent self-referral (safety net — client shouldn't send own referral_code)
+    if (resolvedReferrerId === data.id) {
+      await supabase
+        .from("subscribers")
+        .update({ referrer_id: null })
+        .eq("id", data.id);
+      resolvedReferrerId = null;
+    } else {
+      // Count referrals and check milestones
+      const { count } = await supabase
+        .from("subscribers")
+        .select("id", { count: "exact", head: true })
+        .eq("referrer_id", resolvedReferrerId);
 
-    await checkAndFulfillMilestones(referrer_id, waitlist_id, count || 0);
+      await checkAndFulfillMilestones(
+        resolvedReferrerId,
+        waitlist_id,
+        count || 0
+      );
+    }
   }
 
   return NextResponse.json(

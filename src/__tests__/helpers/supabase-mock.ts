@@ -14,6 +14,7 @@ type MockResponse = {
 interface MockQuery {
   select: ReturnType<typeof vi.fn>;
   insert: ReturnType<typeof vi.fn>;
+  update: ReturnType<typeof vi.fn>;
   order: ReturnType<typeof vi.fn>;
   eq: ReturnType<typeof vi.fn>;
   in: ReturnType<typeof vi.fn>;
@@ -39,6 +40,10 @@ export function createMockSupabaseClient(responses: MockResponse[] = []) {
       }),
       insert: vi.fn((...args: unknown[]) => {
         calls.push({ method: "insert", args });
+        return chain;
+      }),
+      update: vi.fn((...args: unknown[]) => {
+        calls.push({ method: "update", args });
         return chain;
       }),
       order: vi.fn((...args: unknown[]) => {

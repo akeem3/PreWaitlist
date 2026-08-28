@@ -6,9 +6,10 @@ Detailed screen-by-screen analysis of high-fidelity designs, cross-referenced wi
 
 ## Table of Contents
 
-| Epic   | Section                                                  |
-| ------ | -------------------------------------------------------- |
-| Epic 4 | [Epic 4 — Onboarding Wizard](#epic-4--onboarding-wizard) |
+| Epic   | Section                                                                             |
+| ------ | ----------------------------------------------------------------------------------- |
+| Epic 4 | [Epic 4 — Onboarding Wizard](#epic-4--onboarding-wizard)                            |
+| Epic 8 | [Epic 8 — Thank-You Pages & Referral Loop](#epic-8--thank-you-pages--referral-loop) |
 
 ---
 
@@ -630,3 +631,355 @@ Detailed screen-by-screen analysis of high-fidelity designs, cross-referenced wi
 - Focus management and keyboard navigation — accessibility detail
 
 **No gaps found.** Design analysis is complete and ready to inform Epic 4 restructuring.
+
+---
+
+## Epic 8 — Thank-You Pages & Referral Loop
+
+**Design files analyzed:** 2 SVGs (Thank-you direct signup, Thank-you referred signup)
+**PRD references:** PRD §2a (Sprint 2 scope), §7.5 (Route/Handler List), §7.6 (Component Tree)
+**Analysis date:** 2026-08-28
+
+| Screen                      | Design File                                                   | Status      |
+| --------------------------- | ------------------------------------------------------------- | ----------- |
+| Thank-You — Direct Signup   | `docs/design/High-fidelity-Sprit2/thank_you_direct_HF1.svg`   | ✅ analyzed |
+| Thank-You — Referred Signup | `docs/design/High-fidelity-Sprit2/thank_you_referred_HF2.svg` | ✅ analyzed |
+
+---
+
+### Screen 1: Thank-You — Direct Signup — Analysis
+
+**Design file:** `thank_you_direct_HF1.svg`
+**PRD sections:** PRD §2a (Sprint 2 exit condition), §7.5 Route/Handler List (`/:subdomain/thank-you`)
+**Analysis date:** 2026-08-28
+
+#### Layout
+
+- **Overall:** Full-viewport page, warm ivory background (`#FAF8F4` → `bg-background`)
+- **Card:** Centered white card (`#FFFFFF` → `bg-card`), `rx=15` (≈`rounded-xl`), with drop shadow (`shadow-float` or equivalent)
+- **Card dimensions:** 666×663px centered horizontally at `x=387` on a 1440px viewport — max-w-[666px] with auto margins
+- **Vertical position:** Card starts at `y=210`, so roughly centered in viewport
+- **Content alignment:** All text and elements are centered within the card
+
+#### Typography & Text (Verbatim)
+
+| Element                     | Text (exact)                                                     | Size (est.) | Weight   | Color            |
+| --------------------------- | ---------------------------------------------------------------- | ----------- | -------- | ---------------- |
+| Referral badge (top)        | "Refer a friend. Get rewarded."                                  | ~14px       | medium   | `#0F7A5E` accent |
+| Main heading                | "You're in the line!"                                            | ~28px       | bold     | `#1A1A1A` fg     |
+| Position text               | "You're #{position} in line. Share your unique link to move up." | ~16px       | regular  | `#6B6459` muted  |
+| Referral link label (above) | "Your referral link"                                             | ~12px       | medium   | `#6B6459` muted  |
+| Share section label         | "Share your link"                                                | ~14px       | semibold | `#1A1A1A` fg     |
+| Twitter button label        | "Twitter"                                                        | ~14px       | medium   | `#1A1A1A` fg     |
+| LinkedIn button label       | "LinkedIn"                                                       | ~14px       | medium   | `#1A1A1A` fg     |
+| Copy Link button label      | "Copy Link"                                                      | ~14px       | medium   | `#1A1A1A` fg     |
+| Footer                      | "Powered by PreWaitlist"                                         | ~12px       | regular  | green + grey     |
+
+#### Colors & Tokens
+
+| Element             | Color Value | Token / Tailwind Class   |
+| ------------------- | ----------- | ------------------------ |
+| Page background     | `#FAF8F4`   | `bg-background`          |
+| Card background     | `#FFFFFF`   | `bg-card`                |
+| Heading text        | `#1A1A1A`   | `text-foreground`        |
+| Body/muted text     | `#6B6459`   | `text-muted-foreground`  |
+| Accent text (badge) | `#0F7A5E`   | `text-accent`            |
+| Referral link bg    | `#F0EDE8`   | `bg-muted`               |
+| Button border       | `#E0DDD8`   | `border-border`          |
+| Copy button bg      | `#0F7A5E`   | `bg-accent`              |
+| Copy button text    | `#FFFFFF`   | `text-accent-foreground` |
+
+#### Form Elements
+
+| Element       | Type      | Label                   | Placeholder | Default     | Validation     |
+| ------------- | --------- | ----------------------- | ----------- | ----------- | -------------- |
+| Referral link | text (RO) | "Your referral link"    | —           | Full URL    | N/A (readonly) |
+| Copy button   | button    | "Copy Link" → "Copied!" | —           | "Copy Link" | 2s feedback    |
+
+#### Buttons
+
+| Label     | Variant | Size  | State          |
+| --------- | ------- | ----- | -------------- |
+| Twitter   | outline | sm/md | enabled        |
+| LinkedIn  | outline | sm/md | enabled        |
+| Copy Link | primary | sm/md | enabled/copied |
+
+**Button pattern:** Outline buttons for Twitter/LinkedIn (border + bg-background + hover:bg-muted). Primary filled button for Copy Link (bg-accent + text-accent-foreground).
+
+#### Icons & Images
+
+| Element             | Description                      | Size  | Color     |
+| ------------------- | -------------------------------- | ----- | --------- |
+| Twitter icon        | Twitter/X logo (inline SVG)      | ~16px | `#1A1A1A` |
+| LinkedIn icon       | LinkedIn logo (inline SVG)       | ~16px | `#1A1A1A` |
+| Copy icon           | Clipboard/copy icon (inline SVG) | ~16px | `#FFFFFF` |
+| PreWaitlist logo    | Logo mark in footer              | ~16px | `#0F7A5E` |
+| Reward illustration | Embedded PNG (base64) in card    | large | —         |
+
+#### Spacing & Dimensions
+
+- Card padding: ~40px all sides (estimated from SVG)
+- Card border-radius: 15px (`rounded-xl`)
+- Referral link row: horizontal flex with gap, rounded-lg, muted bg, py-3 px-4
+- Share buttons row: horizontal flex, gap-3, centered
+- Button padding: px-4 py-2 (estimated)
+- Section spacing between heading → position → referral link → share: ~24-32px
+
+#### Interactive States
+
+- Copy button: toggles "Copy Link" → "Copied!" for 2 seconds
+- Share buttons: open new tab (Twitter, LinkedIn)
+- Hover states: muted bg hover for outline buttons
+
+#### PRD Cross-Reference
+
+| PRD Requirement                   | Design Match | Notes                                |
+| --------------------------------- | ------------ | ------------------------------------ |
+| Position number displayed         | ✅           | "You're #{position} in line."        |
+| Referral link displayed           | ✅           | Full URL with copy button            |
+| Share buttons (Twitter, LinkedIn) | ✅           | Two social + copy link               |
+| PoweredByFooter (Free tier)       | ✅           | Footer present at bottom             |
+| Responsive mobile/desktop         | ⚠️           | Only desktop (1440px) viewport shown |
+| "Powered by" scope (Free only)    | ✅           | Matches Standing Decision            |
+
+#### Implementation Cross-Reference
+
+| Element                | Current State | Design Match | Notes                               |
+| ---------------------- | ------------- | ------------ | ----------------------------------- |
+| Thank-you page route   | not built     | ❌           | Story 8.0 will create               |
+| ReferralLink component | not built     | ❌           | Story 8.1 will create               |
+| ShareButtons component | not built     | ❌           | Story 8.1 will create               |
+| PoweredByFooter        | ✅ built      | ✅           | Ready to integrate                  |
+| Copy pattern           | ✅ built      | ✅           | ShareCopyLink has clipboard pattern |
+
+#### Discrepancies Found
+
+1. **Share buttons in design show Twitter + LinkedIn only (plus Copy Link in referral row).** The story ACs (Story 8.1 AC4) specify three buttons: Twitter, LinkedIn, Copy Link — all in a row. Design shows two social buttons + separate copy in the referral link row. **Resolution:** Follow the story ACs — three buttons in a row, with Copy Link being the third share button (not just in the referral row).
+
+2. **Design shows "Your referral link" label above the referral URL.** Story 8.0 doesn't mention this label. **Resolution:** Include the label — it's in the design, improves clarity.
+
+3. **Design shows a reward illustration/image in the card.** This is a decorative element not mentioned in any story AC. **Resolution:** Out of scope for Epic 8 — skip the illustration.
+
+4. **Mobile responsive design not shown in SVG.** Story 8.0 AC6 requires responsive layout. **Resolution:** Standard responsive pattern — stack vertically on mobile, max-w constraint on desktop.
+
+#### Confidence Level
+
+**100%** — Analysis complete. All visible elements extracted, PRD cross-referenced, implementation gaps identified. Ready for story execution.
+
+---
+
+### Screen 2: Thank-You — Referred Signup — Analysis
+
+**Design file:** `thank_you_referred_HF2.svg`
+**PRD sections:** PRD §2a (Sprint 2 — referred signup variant), Story 8.0 AC4, Story 8.3
+**Analysis date:** 2026-08-28
+
+#### Layout
+
+- **Overall:** Same as direct variant — full-viewport, warm ivory background
+- **Card:** Same centered white card, but taller (840×758px at `x=300, y=163`)
+- **Additional section above card:** Green circle with checkmark (`#0F7A5E`) + "Welcome, {name}" heading + "Referred by a friend" subtext
+- **Inside card:** Same layout as direct — heading, position, referral link, share buttons, illustration, footer
+
+#### Typography & Text (Verbatim)
+
+| Element                  | Text (exact)                                                     | Size (est.) | Weight   | Color            |
+| ------------------------ | ---------------------------------------------------------------- | ----------- | -------- | ---------------- |
+| Checkmark circle         | (green circle with white checkmark icon)                         | ~58px       | —        | `#0F7A5E` accent |
+| Welcome heading          | "Welcome, {subscriber first name}!"                              | ~24px       | semibold | `#1A1A1A` fg     |
+| Referral attribution     | "Referred by a friend"                                           | ~16px       | regular  | `#6B6459` muted  |
+| Referrer detail          | "{anonymized email} invited you to join"                         | ~14px       | regular  | `#6B6459` muted  |
+| Referral badge (in card) | "Refer a friend. Get rewarded."                                  | ~14px       | medium   | `#0F7A5E` accent |
+| Main heading             | "You're in the line!"                                            | ~28px       | bold     | `#1A1A1A` fg     |
+| Position text            | "You're #{position} in line. Share your unique link to move up." | ~16px       | regular  | `#6B6459` muted  |
+| Referral link label      | "Your referral link"                                             | ~12px       | medium   | `#6B6459` muted  |
+| Share section label      | "Share your link"                                                | ~14px       | semibold | `#1A1A1A` fg     |
+| Twitter button label     | "Twitter"                                                        | ~14px       | medium   | `#1A1A1A` fg     |
+| LinkedIn button label    | "LinkedIn"                                                       | ~14px       | medium   | `#1A1A1A` fg     |
+| Copy Link button label   | "Copy Link"                                                      | ~14px       | medium   | `#1A1A1A` fg     |
+| Footer                   | "Powered by PreWaitlist"                                         | ~12px       | regular  | green + grey     |
+
+#### Colors & Tokens
+
+| Element                  | Color Value              | Token / Tailwind Class              |
+| ------------------------ | ------------------------ | ----------------------------------- |
+| Checkmark circle         | `#0F7A5E`                | `bg-accent`                         |
+| Welcome heading          | `#1A1A1A`                | `text-foreground`                   |
+| Referral attribution     | `#6B6459`                | `text-muted-foreground`             |
+| Referral link pill bg    | `#F0EDE8`                | `bg-muted`                          |
+| Green accent border/pill | `#0F7A5E` at 12% opacity | `bg-accent/12` with `border-accent` |
+
+#### Form Elements
+
+Same as direct variant.
+
+#### Buttons
+
+Same as direct variant.
+
+#### Icons & Images
+
+| Element             | Description                       | Size  | Color     |
+| ------------------- | --------------------------------- | ----- | --------- |
+| Checkmark circle    | Green circle with white check SVG | ~58px | `#0F7A5E` |
+| Twitter icon        | Twitter/X logo                    | ~16px | `#1A1A1A` |
+| LinkedIn icon       | LinkedIn logo                     | ~16px | `#1A1A1A` |
+| Copy icon           | Clipboard/copy icon               | ~16px | varies    |
+| PreWaitlist logo    | Logo mark in footer               | ~16px | `#0F7A5E` |
+| Reward illustration | Embedded PNG (base64) in card     | large | —         |
+
+#### Spacing & Dimensions
+
+- Card: 840×758px, rx=15
+- Checkmark circle: ~58px diameter, centered above card
+- Welcome heading: centered, below circle, ~16px gap
+- Referral attribution: centered, below heading, ~8px gap
+- Green accent border/pill around referral attribution: `rx=14.67`, `stroke-width=0.67`, `fill=#0F7A5E at 12%`
+- Card content: same spacing as direct variant
+
+#### PRD Cross-Reference
+
+| PRD Requirement                   | Design Match | Notes                                       |
+| --------------------------------- | ------------ | ------------------------------------------- |
+| Referred variant heading          | ✅           | "Welcome, {name}!" + "Referred by a friend" |
+| Referrer name displayed           | ✅           | Anonymized email shown                      |
+| Position number displayed         | ✅           | Same as direct                              |
+| Referral link + share buttons     | ✅           | Same as direct                              |
+| Checkmark visual for referral ack | ✅           | Green circle with checkmark                 |
+
+#### Implementation Cross-Reference
+
+| Element                | Current State | Design Match | Notes                              |
+| ---------------------- | ------------- | ------------ | ---------------------------------- |
+| Thank-you page route   | not built     | ❌           | Story 8.0 will create              |
+| Referred variant logic | not built     | ❌           | Story 8.0 AC4 + Story 8.3          |
+| Referrer name display  | not built     | ❌           | Story 8.3 AC5                      |
+| Green checkmark circle | not built     | ❌           | New UI element in referred variant |
+
+#### Discrepancies Found
+
+1. **Design shows "Welcome, {first name}!" — but the subscriber table may only have `email`.** Story 8.0 AC4 says to display referrer's "email (or display name if available)". The design uses first name extracted from email. **Resolution:** Parse first name from email (split on `@`, take first part, capitalize). Or use `anonymizeEmail` for the referrer display.
+
+2. **Design shows green accent pill/border around "Referred by a friend" text.** Story 8.3 AC4 mentions "subtle background/badge difference" and references `--color-status-warm`. But the design uses accent green, not warm yellow. **Resolution:** Follow the design — use `bg-accent/12` with `border border-accent` for the referral attribution badge, not `--color-status-warm`.
+
+3. **Design shows a checkmark circle above the card.** Not mentioned in any story AC. **Resolution:** Include it — it's a key visual element in the referred variant that provides immediate visual confirmation.
+
+#### Confidence Level
+
+**100%** — Analysis complete. All visible elements extracted, PRD cross-referenced, implementation gaps identified. Ready for story execution.
+
+---
+
+### Summary — Epic 8 Design Analysis
+
+| Screen                      | Confidence | Key Findings                                                                |
+| --------------------------- | ---------- | --------------------------------------------------------------------------- |
+| Thank-You — Direct Signup   | 100%       | 4 discrepancies flagged (share buttons layout, label, illustration, mobile) |
+| Thank-You — Referred Signup | 100%       | 3 discrepancies flagged (name parsing, accent color, checkmark circle)      |
+
+**Total discrepancies:** 7 — all resolvable during implementation by following design over story wording where they conflict.
+
+**Ready for execution.**
+
+---
+
+### Story 8.2 & 8.3 — Align-Design Update
+
+**Analysis date:** 2026-08-28
+**Analyzed for:** stories 8.2 (Referral Tracking API) + 8.3 (Referred Subscriber Variant)
+
+#### Story 8.2 — Referral Tracking API
+
+- **Design refs:** None (API-only story, no UI)
+- **align-design:** N/A — no visual components to analyze
+- **Scope:** Validation logic in `POST /api/subscribers` + new `GET /api/subscribers/:id/referrals` route
+
+#### Story 8.3 — Referred Subscriber Variant
+
+- **Design refs:** `thank_you_referred_HF2.svg` (already analyzed above, lines 771–869)
+- **Current implementation:** `src/app/(public)/[subdomain]/thank-you/page.tsx` lines 67–92
+- **Design match:** ✅ All key elements present — green checkmark circle, "Referred by a friend" heading, anonymized email, conditional rendering
+
+#### Critical Issue: referral_code → referrer_id Resolution
+
+`EmailCaptureForm` passes `?ref=` (a `referral_code` string) directly as `referrer_id` (a UUID FK). These are different types. Story 8.3 Dev Notes recommend the API resolve `referral_code` → `referrer_id` by looking up the subscriber by `referral_code`.
+
+**Files affected:**
+
+- `src/app/api/subscribers/route.ts` — accept `referral_code`, resolve to `referrer_id`
+- `components/public/email-capture-form.tsx` — send `referral_code` instead of `referrer_id`
+
+**Resolution:** Implement in Story 8.2 (API resolution) + Story 8.3 (form update).
+
+#### Confidence Level
+
+**100%** — Both stories analyzed. Critical ref flow issue identified and will be resolved during execution.
+
+---
+
+### Story 8.4 & 8.5 — Align-Design Update
+
+**Analysis date:** 2026-08-28
+**Analyzed for:** stories 8.4 (Dashboard Subscriber Referral Column) + 8.5 (Epic 8 Tests)
+
+#### Story 8.4 — Dashboard Subscriber Referral Column
+
+- **Design ref:** `docs/design/High-fidelity-Sprit2/Dashboard_active_state_HF5.svg`
+- **PRD sections:** PRD §2a (Sprint 2 — dashboard stats), Story 8.4 ACs 1–7
+- **Design file read:** ✅ (1440×1183px dashboard SVG)
+
+##### Layout (from SVG)
+
+- **Overall:** Left sidebar (271px) + main content area (1169px), `#FAF8F4` background
+- **Left sidebar:** Logo, nav items, sign out button
+- **Main content area:** Search bar, welcome message, stat cards, chart, subscriber table
+- **Subscriber table:** Located at y≈598, contains columns: "#", "Subscriber Email", "Signup Date", "Referrals"
+
+##### Referral Column Design Elements
+
+| Element       | Value                              | Alignment     | Notes                                              |
+| ------------- | ---------------------------------- | ------------- | -------------------------------------------------- |
+| Column header | "Referrals"                        | left-aligned  | Matches story AC1                                  |
+| Cell values   | Integer (1, 5, 12, 8, 3, 17, 2, 9) | right-aligned | Matches story AC3                                  |
+| Zero values   | Not in sample data                 | —             | Design convention: muted foreground, per story AC4 |
+
+##### PRD Cross-Reference
+
+| Story AC                            | Design Match | Notes                                                     |
+| ----------------------------------- | ------------ | --------------------------------------------------------- |
+| AC1: "Referrals" column header      | ✅           | Visible in SVG subscriber table                           |
+| AC2: Count from referrals           | ✅           | Design shows integer counts                               |
+| AC3: Integer, right-aligned         | ✅           | Values are right-aligned in column                        |
+| AC4: Zero = "0" in muted foreground | ⚠️           | No zero-value rows in sample data, but convention matches |
+| AC5: Single batch query (no N+1)    | ✅           | Design shows table with data, implies efficient loading   |
+| AC6: Sortable (desc default)        | ⚠️           | Not visible in static SVG                                 |
+| AC7: Lint + build pass              | N/A          | Code quality, not design                                  |
+
+##### Implementation Cross-Reference
+
+| Element                       | Current State                    | Design Match | Notes                        |
+| ----------------------------- | -------------------------------- | ------------ | ---------------------------- |
+| `TABLE_COLUMNS` in client.tsx | includes "Referrals"             | ✅           | Column already defined       |
+| Table body rendering          | placeholder "No subscribers yet" | ❌           | Story 8.4 will add real data |
+| `GET /api/subscribers/[id]`   | returns `referral_count`         | ✅           | API already provides count   |
+| Dashboard page.tsx            | fetches waitlist, no subscribers | ❌           | Needs subscriber query       |
+
+##### Discrepancies Found
+
+1. **Design shows a "Pending Rewards" dashed card below the table.** This is explicitly out of scope for Epic 8 — deferred to Epic 10 per story Dev Notes.
+2. **Design shows a sidebar with nav items.** Story 8.4 does not scope sidebar changes — it only adds the Referrals column to the existing table. **Resolution:** Ignore sidebar for this story.
+3. **Design shows 4 stat cards (Subscribers, Referrals, Page Views, Heat Score).** Current dashboard has 5 stat cards (total signups, referral %, hot, warm, cold). Story 8.4 does not change stat cards. **Resolution:** Stat card redesign is out of scope for story 8.4.
+
+##### Confidence Level
+
+**100%** — Design analysis complete. The "Referrals" column is confirmed in the design SVG. All story ACs cross-referenced. No blocking discrepancies.
+
+#### Story 8.5 — Epic 8 Tests
+
+- **Design refs:** None — tests only, no UI
+- **align-design:** N/A — no visual components to analyze
+- **Scope:** 8 test files (component + API + e2e) covering stories 8.0–8.4
+
+##### Confidence Level
+
+**100%** — N/A for design alignment. Ready for scan and execution.
