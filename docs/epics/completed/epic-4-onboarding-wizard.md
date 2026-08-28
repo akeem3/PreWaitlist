@@ -298,7 +298,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - **Logo Upload:** Dashed border variant (`stroke-dasharray="3.34 3.34"`)
 - **CTA Text:** Default "Join Waitlist"
 - **Meta Preview:** White card with dashed border (rx=12.11, stroke `#CCC9C3`)
-- **Milestone Rewards:** Toggle OFF = completely hidden; Toggle ON = 3 input fields
+- **Milestone Rewards:** Toggle OFF = completely hidden; Toggle ON = 4 input fields (1/5/10/25 defaults with "Recommended" badges, editable thresholds + labels)
 - **Submit button:** 458×59px, rx=9.59, `#0F7A5E` fill, arrow-only (→)
 
 **Acceptance Criteria (EARS):**
@@ -308,7 +308,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - AC3: The system shall accept logo uploads in PNG or SVG only, up to 2MB, stored in Supabase Storage (REQ-6.8.4). The upload area shall have a dashed border style.
 - AC4: The Meta Preview panel (og:title/og:description preview) shall update live from Headline/Sub-headline/brand-color (REQ-6.8.1). The panel shall be a white card with dashed border (rx=12.11).
 - AC5: While the milestone-rewards toggle is OFF, the system shall render no reward-tier configuration UI at all, not even collapsed (REQ-6.8.2).
-- AC6: When the milestone-rewards toggle is switched ON, the system shall reveal exactly 3 reward tiers (refer-3 / refer-10 / refer-25), each with an editable label (REQ-6.8.3).
+- AC6: When the milestone-rewards toggle is switched ON, the system shall reveal exactly 4 default reward tiers (1/5/10/25 referrals) with "Recommended" badges, each with an editable threshold and label. Founder can add tiers (up to 5) or remove tiers (minimum 1) (REQ-6.8.3).
 - AC7: On form submission, the system shall PATCH the waitlist record with all Step 3 fields and navigate to `/onboarding/4`. While the API call is in progress, the form shall be disabled and a loading indicator shown (uses `loading`/`setLoading` from context).
 - AC8: The submit button shall display an arrow icon only (→), no text label.
 - AC9: Lint and build shall pass with zero errors.
@@ -318,7 +318,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - T1 (AC1-AC2) Build Step 3 form UI with brand color validation
 - T2 (AC3) Implement logo upload to Supabase Storage
 - T3 (AC4) Wire meta preview to live preview
-- T4 (AC5-AC6) Implement milestone rewards toggle + 3-tier config
+- T4 (AC5-AC6) Implement milestone rewards toggle + 4-tier config with add/remove
 - T5 (AC7) Submit handler + loading state + PATCH + navigation
 - T6 (AC8) Build arrow-only submit button
 - T7 (AC9) Run lint + build
@@ -330,7 +330,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - T1: ✅ Done — `src/app/onboarding/3/page.tsx` built with `Input` for headline/subheadline/brand-color/cta-text. Brand color input has text input + color swatch preview. Hex validation on blur.
 - T2: ✅ Done — Logo upload uses Supabase Storage (`supabase.storage.from('logos').upload(path, file)`). Path: `logos/{waitlistId}/{filename}`. Public URL stored in context as `logoUrl`. Dashed border upload area. File limited to PNG/SVG, 2MB max.
 - T3: ✅ Done — Meta preview (og:title/og:description) updates live from context fields. White card with dashed border (rx=12.11, stroke `#CCC9C3`).
-- T4: ✅ Done — Milestone rewards toggle: OFF = completely hidden, ON = 3 input fields (refer-3, refer-10, refer-25) with editable labels. `milestone_rewards_enabled` persisted to `waitlists` table.
+- T4: ✅ Done — Milestone rewards toggle: OFF = completely hidden, ON = 4 input fields (1/5/10/25 defaults with "Recommended" badges, editable thresholds + labels, add/remove tiers). `milestone_rewards_enabled` persisted to `waitlists` table.
 - T5: ✅ Done — PATCH to `/api/waitlist` with all Step 3 fields. Navigate to `/onboarding/4`. Loading state during API call.
 - T6: ✅ Done — Submit button 458×59px, rx=9.59, `#0F7A5E` fill, `#FAF8F4` text, arrow-only "→".
 - T7: ✅ Done — Files: `src/app/onboarding/3/page.tsx`. Available components: `Input` ✓, `Toggle` ✓.

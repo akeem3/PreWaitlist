@@ -41,7 +41,7 @@ updated: 2026-08-17
 
 ## Out of scope
 
-Referral milestone rewards (displayed on leaderboard, not thank-you page), referrer notification emails (Epic 11), referral analytics (Sprint 3).
+Milestone fulfillment (handled by `src/lib/milestones.ts` in Story 7.6 — platform tracks + notifies, founder delivers; milestone progress displayed on public waitlist page, not thank-you page), referrer notification emails (Epic 11), referral analytics (Sprint 3).
 
 ## Dev Notes
 

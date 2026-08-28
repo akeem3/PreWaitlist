@@ -8,6 +8,16 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: () => Promise.resolve(mockSupabase),
 }));
 
+// Mock Resend (needs RESEND_API_KEY in env)
+vi.mock("@/lib/resend", () => ({
+  resend: { emails: { send: vi.fn() } },
+}));
+
+// Mock milestones (depends on Resend)
+vi.mock("@/lib/milestones", () => ({
+  checkAndFulfillMilestones: vi.fn(),
+}));
+
 import { POST } from "../../app/api/subscribers/route";
 
 describe("POST /api/subscribers", () => {

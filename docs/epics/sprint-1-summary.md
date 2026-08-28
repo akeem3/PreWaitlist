@@ -194,7 +194,7 @@ Additional screens built beyond PRD scope:
 | Public waitlist page (subscriber-facing)  | 2      | `src/app/(public)/[subdomain]/page.tsx` exists but is placeholder |
 | Email capture form                        | 2      | Subscriber signup flow                                            |
 | Qualification questions (subscriber view) | 2      | Post-email-capture display                                        |
-| Thank-you page (direct + referred)        | 2      | Position, referral link, share buttons, milestone rewards         |
+| Thank-you page (direct + referred)        | 2      | Position, referral link, share buttons                            |
 | Duplicate email handling                  | 2      | Subscriber-side                                                   |
 | Referral link generation                  | 2      | Unique per subscriber                                             |
 | Position tracking + recalculation         | 2      | On referral signup                                                |
@@ -202,7 +202,7 @@ Additional screens built beyond PRD scope:
 | Confirmation email (Resend)               | 2      | Position + referral link                                          |
 | "You moved up" trigger email              | 2      | On referral conversion                                            |
 | Dashboard active state (real data)        | 2      | Replace placeholder                                               |
-| Founder updates display (public page)     | 2      | Compose built, read not                                           |
+| Founder updates display (public page)     | 2      | LatestUpdateCard built (Story 7.6), email-first delivery          |
 | CSV export                                | 2      | Subscriber data export                                            |
 | `subscribers` table                       | 2      | Not yet created                                                   |
 | Warmth tracking engine                    | 3      | Email opens + page returns + qual answers                         |

@@ -96,4 +96,20 @@ describe("WaitlistTemplateContent", () => {
     const heading = screen.getByText("Join our waitlist");
     expect(heading.className).toContain("text-h3");
   });
+
+  it("renders latestUpdate slot when provided", () => {
+    render(
+      <WaitlistTemplateContent
+        {...defaultProps}
+        latestUpdateSlot={<div data-testid="latest-update">Update content</div>}
+      />
+    );
+    expect(screen.getByTestId("latest-update")).toBeDefined();
+    expect(screen.getByText("Update content")).toBeDefined();
+  });
+
+  it("does not render latestUpdate slot when undefined", () => {
+    render(<WaitlistTemplateContent {...defaultProps} />);
+    expect(screen.queryByTestId("latest-update")).toBeNull();
+  });
 });

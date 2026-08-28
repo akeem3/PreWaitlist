@@ -93,22 +93,19 @@ describe("EmailCaptureForm", () => {
   });
 
   it("shows loading state during submission", async () => {
-    const mockFetch = vi
-      .fn()
-      .mockImplementation(
-        () =>
-          new Promise((resolve) =>
-            setTimeout(
-              () =>
-                resolve({
-                  status: 201,
-                  json: () =>
-                    Promise.resolve({ id: "1", referral_code: "abc" }),
-                }),
-              100
-            )
+    const mockFetch = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                status: 201,
+                json: () => Promise.resolve({ id: "1", referral_code: "abc" }),
+              }),
+            100
           )
-      );
+        )
+    );
     vi.stubGlobal("fetch", mockFetch);
 
     const user = userEvent.setup();
@@ -167,6 +164,72 @@ describe("EmailCaptureForm", () => {
           waitlist_id: "waitlist-1",
           email: "test@example.com",
         }),
+      });
+    });
+  });
+
+  it("renders qualification questions as input fields", () => {
+    render(
+      <EmailCaptureForm
+        {...defaultProps}
+        qualificationEnabled={true}
+        questions={[
+          { id: "q1", text: "What brings you here?", type: "free_text" },
+          { id: "q2", text: "How did you hear about us", type: "free_text" },
+        ]}
+      />
+    );
+    expect(screen.getByPlaceholderText("What brings you here?")).toBeDefined();
+    expect(
+      screen.getByPlaceholderText("How did you hear about us?")
+    ).toBeDefined();
+  });
+
+  it("does not render questions when qualificationEnabled is false", () => {
+    render(
+      <EmailCaptureForm
+        {...defaultProps}
+        qualificationEnabled={false}
+        questions={[
+          { id: "q1", text: "What brings you here?", type: "free_text" },
+        ]}
+      />
+    );
+    expect(screen.queryByPlaceholderText("What brings you here?")).toBeNull();
+  });
+
+  it("sends qual_answers in body when questions answered", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      status: 201,
+      json: () => Promise.resolve({ id: "1", referral_code: "abc12345" }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const user = userEvent.setup();
+    render(
+      <EmailCaptureForm
+        {...defaultProps}
+        qualificationEnabled={true}
+        questions={[
+          { id: "q1", text: "What brings you here?", type: "free_text" },
+        ]}
+      />
+    );
+
+    await user.type(
+      screen.getByPlaceholderText("Email address"),
+      "test@example.com"
+    );
+    await user.type(
+      screen.getByPlaceholderText("What brings you here?"),
+      "Friend recommendation"
+    );
+    await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
+
+    await waitFor(() => {
+      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(callBody.qual_answers).toEqual({
+        q1: "Friend recommendation",
       });
     });
   });

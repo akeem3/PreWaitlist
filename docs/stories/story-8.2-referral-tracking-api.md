@@ -34,7 +34,7 @@ updated: 2026-08-17
 
 ## Out of scope
 
-Referral milestone rewards display (Epic 8 Story 8.3 handles the referred variant), referral analytics dashboard (Sprint 3), email notification to referrers (Epic 11).
+Milestone fulfillment (handled by `src/lib/milestones.ts` in Story 7.6 — platform tracks thresholds + sends congratulatory emails; founder delivers actual rewards), referral analytics dashboard (Sprint 3), email notification to referrers (Epic 11).
 
 ## Dev Notes
 

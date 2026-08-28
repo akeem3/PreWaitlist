@@ -81,7 +81,7 @@ Work through these in dependency order, one at a time. Story 8.0 must be complet
 
 **Tasks:** T1 (AC1-AC2) Referral link display + copy button · T2 (AC3) Pre-fill ref param on public page · T3 (AC4-AC5) Referred-variant styling · T4 (AC6) Lint + build
 
-**Out of scope:** Referral tracking/counting (Story 8.2), share buttons (Story 8.3), referral rewards/tiers.
+**Out of scope:** Referral tracking/counting (Story 8.2), share buttons (Story 8.3), milestone fulfillment (handled by `src/lib/milestones.ts` in Story 7.6 — platform tracks + notifies, founder delivers).
 
 **Dev Notes:**
 
@@ -109,7 +109,7 @@ Work through these in dependency order, one at a time. Story 8.0 must be complet
 
 **Tasks:** T1 (AC1-AC2) Increment referral_count + store referrer_id · T2 (AC3-AC4) Validation (valid code, same waitlist, no self-referral) · T3 (AC5) GET /api/subscribers/:id/referrals route · T4 (AC6) Lint + build
 
-**Out of scope:** Real-time referral tracking (Sprint 3), referral rewards/milestones (Sprint 3), leaderboard referral sorting (Story 7.5).
+**Out of scope:** Real-time referral tracking (Sprint 3), milestone fulfillment (handled by `src/lib/milestones.ts` in Story 7.6 — platform tracks thresholds + sends congratulatory emails + auto-boosts position for "skip the line"; founder delivers actual rewards), leaderboard referral sorting (Story 7.5).
 
 **Dev Notes:**
 
@@ -164,7 +164,7 @@ Work through these in dependency order, one at a time. Story 8.0 must be complet
 
 **Tasks:** T1 (AC1-AC3) Referral source column display · T2 (AC4) Filter by referral source · T3 (AC5) Lint + build
 
-**Out of scope:** Referral count column (Sprint 3), referral analytics chart (Sprint 3), bulk export with referral data (Sprint 3).
+**Out of scope:** Referral analytics chart (Sprint 3), bulk export with referral data (Sprint 3).
 
 **Dev Notes:**
 

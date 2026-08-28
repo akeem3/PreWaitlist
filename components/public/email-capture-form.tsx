@@ -47,6 +47,7 @@ export function EmailCaptureForm({
   const [emailError, setEmailError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
   const isDark = template === "dark";
   const isBold = template === "bold";
 
@@ -82,6 +83,13 @@ export function EmailCaptureForm({
 
       if (referrerId) {
         body.referrer_id = referrerId;
+      }
+
+      const filledAnswers = Object.fromEntries(
+        Object.entries(answers).filter(([, v]) => v.trim().length > 0)
+      );
+      if (Object.keys(filledAnswers).length > 0) {
+        body.qual_answers = filledAnswers;
       }
 
       const res = await fetch("/api/subscribers", {
@@ -130,14 +138,6 @@ export function EmailCaptureForm({
   const btnHeight = isBold ? "h-11" : "h-10";
   const btnPadding = isBold ? "px-7" : "px-4";
   const btnText = isBold ? "text-base font-semibold" : "text-sm font-medium";
-  const cardBorder = isBold
-    ? "border-2 border-foreground"
-    : isDark
-      ? "border border-dark-template-border"
-      : "border border-border";
-  const cardText = isDark
-    ? "text-dark-template-muted"
-    : "text-muted-foreground";
   const cardGap = isBold ? "gap-2.5" : "gap-2";
 
   return (
@@ -166,16 +166,24 @@ export function EmailCaptureForm({
 
           <div className={`flex flex-col ${cardGap} mt-4`}>
             {visibleQuestions.map((q) => (
-              <div
-                key={q.id}
-                className={`flex justify-between items-center rounded-[var(--radius-md)] ${cardBorder} px-3.5 py-2.5 ${textSize} ${cardText}`}
-              >
-                <span>
-                  {q.text.trim().endsWith("?")
-                    ? q.text.trim()
-                    : `${q.text.trim()}?`}
+              <div key={q.id} className="relative">
+                <input
+                  type="text"
+                  placeholder={
+                    q.text.trim().endsWith("?")
+                      ? q.text.trim()
+                      : `${q.text.trim()}?`
+                  }
+                  value={answers[q.id] || ""}
+                  onChange={(e) =>
+                    setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
+                  }
+                  disabled={loading}
+                  className={`${inputHeight} w-full rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none focus-visible:border-[var(--input-border-color-focus)] disabled:cursor-not-allowed disabled:opacity-50 pr-16`}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-status-warm pointer-events-none">
+                  (optional)
                 </span>
-                <span className={`text-xs ${cardText}`}>(optional)</span>
               </div>
             ))}
           </div>
