@@ -26,7 +26,6 @@ afterEach(() => {
 
 const defaultProps = {
   waitlistId: "waitlist-1",
-  subdomain: "test-subdomain",
   ctaText: "Join Waitlist",
   brandColor: "#0F7A5E",
   template: "minimal" as const,

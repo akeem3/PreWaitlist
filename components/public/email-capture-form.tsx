@@ -12,7 +12,6 @@ interface Question {
 
 interface EmailCaptureFormProps {
   waitlistId: string;
-  subdomain: string;
   ctaText: string;
   brandColor: string;
   template: "minimal" | "bold" | "dark";
@@ -31,7 +30,6 @@ const MAX_QUESTIONS: Record<string, number> = {
 
 export function EmailCaptureForm({
   waitlistId,
-  subdomain,
   ctaText,
   brandColor,
   template,
@@ -111,7 +109,7 @@ export function EmailCaptureForm({
       }
 
       router.push(
-        `/${subdomain}/thank-you?subscriber_id=${data.id}&referral_code=${data.referral_code}`
+        `/thank-you?subscriber_id=${data.id}&referral_code=${data.referral_code}`
       );
     } catch {
       setApiError("Something went wrong. Please try again.");
