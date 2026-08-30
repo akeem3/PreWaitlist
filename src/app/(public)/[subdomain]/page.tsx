@@ -98,6 +98,7 @@ export default async function PublicSubdomainPage({ params }: Props) {
       emailCaptureForm={
         <EmailCaptureForm
           waitlistId={waitlist.id}
+          subdomain={waitlist.subdomain}
           ctaText={waitlist.cta_text || "Join Waitlist"}
           brandColor={waitlist.brand_color}
           template={waitlist.template as "minimal" | "bold" | "dark"}

@@ -46,9 +46,3 @@ create policy "founders manage own waitlist's subscribers"
 create policy "public read access for leaderboard"
   on public.subscribers for select
   using (true);
-
--- Public insert access for email capture (anonymous visitors can sign up for waitlists)
-create policy "public can insert subscribers"
-  on public.subscribers for insert
-  to anon
-  with check (true);
