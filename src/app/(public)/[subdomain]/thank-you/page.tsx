@@ -82,7 +82,7 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
             </svg>
           </div>
           <div className="text-center">
-            <p className="text-body-lg font-semibold text-foreground">
+            <p className="text-body-lg font-semibold text-accent">
               Referred by a friend
             </p>
             <p className="text-body-sm text-muted-foreground">
@@ -100,7 +100,7 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
         </div>
 
         <div className="text-center">
-          <h1 className="text-h2 text-foreground">You&apos;re in the line!</h1>
+          <h1 className="text-h2 text-accent">You&apos;re in the line!</h1>
           <p className="text-body text-muted-foreground mt-2">
             You&apos;re{" "}
             <span className="font-semibold text-foreground">
@@ -126,7 +126,7 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
       </div>
 
       {tier === "free" && (
-        <div className="mt-8 w-full max-w-[666px]">
+        <div className="mt-auto w-full max-w-[666px] pt-8">
           <PoweredByFooter template="minimal" />
         </div>
       )}

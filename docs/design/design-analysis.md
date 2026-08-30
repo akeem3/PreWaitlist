@@ -983,3 +983,38 @@ Same as direct variant.
 ##### Confidence Level
 
 **100%** — N/A for design alignment. Ready for scan and execution.
+
+---
+
+### Thank-You Page Design Discrepancy Analysis
+
+**Analysis date:** 2026-08-29
+**Triggered by:** User manual testing — "thank you page is missing a lot of things as per the design"
+**Design files:** `docs/design/High-fidelity-Sprit2/thank_you_direct_HF1.svg`, `thank_you_referred_HF2.svg`
+**Implementation:** `src/app/(public)/[subdomain]/thank-you/page.tsx`
+
+#### Discrepancies Found
+
+| #   | Issue                                    | Design Spec                                    | Implementation                     | Severity  |
+| --- | ---------------------------------------- | ---------------------------------------------- | ---------------------------------- | --------- |
+| 1   | **Heading "You're in the line!" color**  | Green `#0F7A5E` (accent)                       | `text-foreground` (dark `#1A1A1A`) | ❌ High   |
+| 2   | **"Referred by a friend" heading color** | Green `#0F7A5E` (accent)                       | `text-foreground` (dark `#1A1A1A`) | ❌ High   |
+| 3   | **PoweredBy footer placement**           | Bottom of entire page, centered, below card    | Inside card container with `mt-8`  | ❌ High   |
+| 4   | **Card background**                      | White with embedded waitlist page mockup image | Plain white `bg-card`              | ⚠️ Medium |
+| 5   | **Referred card width**                  | 840px wide (wider than direct 666px)           | Same `max-w-[666px]` for both      | ⚠️ Medium |
+| 6   | **Referred checkmark position**          | Outside card, above it                         | Inside card wrapper                | ⚠️ Low    |
+
+#### Root Cause
+
+The implementation built the functional logic correctly (referral tracking, share buttons, position display) but did not match the visual design spec. The heading colors were set to `text-foreground` instead of `text-accent`, and the PoweredBy footer was placed inside the card container instead of at the page bottom.
+
+#### Fix Plan
+
+1. Change heading "You're in the line!" from `text-foreground` to `text-accent`
+2. Change "Referred by a friend" from `text-foreground` to `text-accent`
+3. Move PoweredBy footer outside card container to page bottom with `mt-auto`
+4. Adjust layout to `flex flex-col` with footer pushed down
+
+#### Confidence Level
+
+**100%** — Discrepancies identified, fix plan clear.
