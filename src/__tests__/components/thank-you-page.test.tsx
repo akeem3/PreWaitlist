@@ -75,6 +75,42 @@ describe("Thank-you Page", () => {
     expect(screen.getByText("#42")).toBeDefined();
   });
 
+  it("renders heading and subtitle", async () => {
+    const mockSubscriber = {
+      id: "sub-1",
+      email: "test@example.com",
+      position: 5,
+      referral_code: "abc12345",
+      referrer_id: null,
+      waitlists: {
+        id: "wl-1",
+        subdomain: "test",
+        headline: "Test",
+        founder_profiles: [{ tier: "free" }],
+      },
+    };
+
+    mockSupabase.from
+      .mockReturnValueOnce(buildChain(mockSubscriber))
+      .mockReturnValueOnce(buildChain(null));
+
+    const mod = await import("../../app/(public)/[subdomain]/thank-you/page");
+    const ThankYouPage = mod.default;
+
+    const element = await ThankYouPage({
+      params: Promise.resolve({ subdomain: "test" }),
+      searchParams: Promise.resolve({
+        subscriber_id: "sub-1",
+        referral_code: "abc12345",
+      }),
+    });
+
+    render(element);
+
+    expect(screen.getByText("You're in.")).toBeDefined();
+    expect(screen.getByText(/on the waitlist/)).toBeDefined();
+  });
+
   it("renders referral link", async () => {
     const mockSubscriber = {
       id: "sub-1",
@@ -110,6 +146,116 @@ describe("Thank-you Page", () => {
     const input = screen.getByRole("textbox", { name: /referral link/i });
     expect(input).toBeDefined();
     expect(input).toHaveValue("https://test.prewaitlist.com?ref=abc12345");
+  });
+
+  it("renders name input", async () => {
+    const mockSubscriber = {
+      id: "sub-1",
+      email: "test@example.com",
+      position: 5,
+      referral_code: "abc12345",
+      referrer_id: null,
+      waitlists: {
+        id: "wl-1",
+        subdomain: "test",
+        headline: "Test",
+        founder_profiles: [{ tier: "free" }],
+      },
+    };
+
+    mockSupabase.from
+      .mockReturnValueOnce(buildChain(mockSubscriber))
+      .mockReturnValueOnce(buildChain(null));
+
+    const mod = await import("../../app/(public)/[subdomain]/thank-you/page");
+    const ThankYouPage = mod.default;
+
+    const element = await ThankYouPage({
+      params: Promise.resolve({ subdomain: "test" }),
+      searchParams: Promise.resolve({
+        subscriber_id: "sub-1",
+        referral_code: "abc12345",
+      }),
+    });
+
+    render(element);
+
+    expect(
+      screen.getByPlaceholderText("What should we call you? (optional)")
+    ).toBeDefined();
+  });
+
+  it("renders share and copy link buttons", async () => {
+    const mockSubscriber = {
+      id: "sub-1",
+      email: "test@example.com",
+      position: 5,
+      referral_code: "abc12345",
+      referrer_id: null,
+      waitlists: {
+        id: "wl-1",
+        subdomain: "test",
+        headline: "Test",
+        founder_profiles: [{ tier: "free" }],
+      },
+    };
+
+    mockSupabase.from
+      .mockReturnValueOnce(buildChain(mockSubscriber))
+      .mockReturnValueOnce(buildChain(null));
+
+    const mod = await import("../../app/(public)/[subdomain]/thank-you/page");
+    const ThankYouPage = mod.default;
+
+    const element = await ThankYouPage({
+      params: Promise.resolve({ subdomain: "test" }),
+      searchParams: Promise.resolve({
+        subscriber_id: "sub-1",
+        referral_code: "abc12345",
+      }),
+    });
+
+    render(element);
+
+    expect(screen.getByRole("button", { name: /share/i })).toBeDefined();
+    expect(screen.getByRole("button", { name: /copy link/i })).toBeDefined();
+  });
+
+  it("renders leaderboard link", async () => {
+    const mockSubscriber = {
+      id: "sub-1",
+      email: "test@example.com",
+      position: 5,
+      referral_code: "abc12345",
+      referrer_id: null,
+      waitlists: {
+        id: "wl-1",
+        subdomain: "test",
+        headline: "Test",
+        founder_profiles: [{ tier: "free" }],
+      },
+    };
+
+    mockSupabase.from
+      .mockReturnValueOnce(buildChain(mockSubscriber))
+      .mockReturnValueOnce(buildChain(null));
+
+    const mod = await import("../../app/(public)/[subdomain]/thank-you/page");
+    const ThankYouPage = mod.default;
+
+    const element = await ThankYouPage({
+      params: Promise.resolve({ subdomain: "test" }),
+      searchParams: Promise.resolve({
+        subscriber_id: "sub-1",
+        referral_code: "abc12345",
+      }),
+    });
+
+    render(element);
+
+    const link = screen.getByText("See where you rank →");
+    expect(link).toBeDefined();
+    expect(link.getAttribute("href")).toBe("/test/leaderboard");
   });
 
   it("renders Referred by a friend when referrer_id present", async () => {

@@ -1018,3 +1018,360 @@ The implementation built the functional logic correctly (referral tracking, shar
 #### Confidence Level
 
 **100%** — Discrepancies identified, fix plan clear.
+
+---
+
+## Epic 9 — Dashboard Restructure
+
+**Design files analyzed:** 2 SVGs (Dashboard empty state, Dashboard active state)
+**PRD references:** PRD §2a (Sprint 2 — dashboard screens), PRD §7.5 Route/Handler List, PRD §7.6 Component Tree
+**Analysis date:** 2026-08-30
+
+| Screen                   | Design File                                                       | Status      |
+| ------------------------ | ----------------------------------------------------------------- | ----------- |
+| Dashboard — empty state  | `docs/design/High-fidelity-Sprit2/Dashboard_Empty_state_HF4.svg`  | ✅ analyzed |
+| Dashboard — active state | `docs/design/High-fidelity-Sprit2/Dashboard_active_state_HF5.svg` | ✅ analyzed |
+
+---
+
+### Screen 1: Dashboard — Empty State — Analysis
+
+**Design file:** `Dashboard_Empty_state_HF4.svg`
+**PRD sections:** PRD §2a (Sprint 2 exit condition — dashboard), Story 9.0–9.2
+**Analysis date:** 2026-08-30
+
+#### Layout
+
+- **Canvas:** 1440×1126px, `#FAF8F4` background (warm ivory)
+- **Left sidebar:** 268px width, `#FCFCFB` background (slightly lighter than main)
+- **Sidebar divider:** `#CCC9C3` stroke at x=270.891
+- **Main content area:** Starts at x=271, `#FAF8F4` background
+- **Top bar:** 80px height, `#FAF8F4` background, `#CCC9C3` bottom border
+- **Search bar:** Rounded input at top of main content, `#FCFCFB` fill, `#CCC9C3` stroke, ~350px wide
+
+#### Sidebar Structure
+
+| Element              | Position      | Style                                      |
+| -------------------- | ------------- | ------------------------------------------ |
+| Logo + waitlist name | Top (y=22-71) | Green border box (`#0F7A5E` stroke)        |
+| Navigation items     | y=167-235     | Text labels with icons                     |
+| Separator line       | y=998         | `#1C1917` stroke                           |
+| "Upgrade" button     | y=1017-1063   | Dashed green border (`#0F7A5E`, dasharray) |
+
+#### Navigation Items (Verbatim)
+
+| Item        | Position (y) | Color     | State    |
+| ----------- | ------------ | --------- | -------- |
+| Overview    | ~169         | `#1A1A1A` | Active   |
+| Subscribers | ~229         | `#6B6459` | Inactive |
+| Broadcasts  | ~382         | `#6B6459` | Inactive |
+| Settings    | ~442         | `#6B6459` | Inactive |
+
+**Note:** Navigation items have small square icons (16×16px) next to text labels.
+
+#### Stat Cards
+
+- **Layout:** 4 cards in a row, green background (`#0F7A5E`)
+- **Card dimensions:** ~248×99px each (estimated from SVG)
+- **Cards visible:**
+  1. "Subscribers" — shows count
+  2. "Referrals" — shows count
+  3. "Page Views" — shows count
+  4. "Heat Score" — shows score
+
+**CRITICAL FINDING:** Design shows "Page Views" and "Heat Score" as stat card labels. Epic 9 Story 9.1 specifies "Hot" and "Warm" as the warmth cards. These are DIFFERENT metrics.
+
+#### Empty Subscriber Table
+
+- **Columns:** "#" (position), "Subscriber Email", "Signup Date", "Referrals"
+- **4 columns total** (not 6 like current implementation)
+- **Empty state:** "No subscribers yet. Share your link to get started." centered text
+- **Table background:** White (`#FFFFFF`), rounded corners, border
+
+#### Typography & Text (Verbatim)
+
+| Element            | Text (exact)                                           | Size (est.) | Weight  | Color          |
+| ------------------ | ------------------------------------------------------ | ----------- | ------- | -------------- |
+| Search placeholder | "Search by email..."                                   | ~14px       | regular | `#6B6459`      |
+| Welcome message    | "Hey [Founder Name]!"                                  | ~24px       | bold    | `#1A1A1A`      |
+| Stat card labels   | "Subscribers", "Referrals", "Page Views", "Heat Score" | ~12px       | medium  | white on green |
+| Table header       | "#", "Subscriber Email", "Signup Date", "Referrals"    | ~12px       | medium  | `#6B6459`      |
+| Empty state        | "No subscribers yet. Share your link to get started."  | ~14px       | regular | `#6B6459`      |
+| Upgrade button     | "Upgrade"                                              | ~14px       | medium  | `#0F7A5E`      |
+
+#### Colors & Tokens
+
+| Element            | Color Value | Token / Tailwind Class   |
+| ------------------ | ----------- | ------------------------ |
+| Page background    | `#FAF8F4`   | `bg-background`          |
+| Sidebar background | `#FCFCFB`   | Custom (not in tokens)   |
+| Sidebar divider    | `#CCC9C3`   | `border-border`          |
+| Stat card bg       | `#0F7A5E`   | `bg-accent`              |
+| Stat card text     | `#FFFFFF`   | `text-accent-foreground` |
+| Heading text       | `#1A1A1A`   | `text-foreground`        |
+| Muted text         | `#6B6459`   | `text-muted-foreground`  |
+| Table border       | `#CCC9C3`   | `border-border`          |
+| Search bar bg      | `#FCFCFB`   | Custom (not in tokens)   |
+| Upgrade btn border | `#0F7A5E`   | `border-accent` (dashed) |
+
+#### Form Elements
+
+| Element      | Type | Label | Placeholder          | Default | Validation |
+| ------------ | ---- | ----- | -------------------- | ------- | ---------- |
+| Search input | text | —     | "Search by email..." | empty   | —          |
+
+#### Buttons
+
+| Label   | Variant          | Size         | State   |
+| ------- | ---------------- | ------------ | ------- |
+| Upgrade | outline (dashed) | full sidebar | enabled |
+| Search  | — (input)        | ~350×40px    | —       |
+
+#### Spacing & Dimensions
+
+- Sidebar width: 268px
+- Top bar height: 80px
+- Search bar: ~350×40px, rx=8 (estimated)
+- Stat cards: 4 in a row, gap ~12px
+- Table: full width of main content area
+- Table row height: ~48px (estimated)
+
+#### PRD Cross-Reference
+
+| PRD Requirement             | Design Match | Notes                                           |
+| --------------------------- | ------------ | ----------------------------------------------- |
+| Left sidebar navigation     | ✅           | 268px sidebar with nav items                    |
+| Stat cards with real data   | ⚠️           | Design shows 4 cards, labels differ from Epic 9 |
+| Subscriber table            | ✅           | 4 columns: #, Email, Date, Referrals            |
+| Search by email             | ✅           | Search input above table                        |
+| Empty state message         | ✅           | "No subscribers yet..." centered                |
+| Upgrade button (Pro upsell) | ✅           | Dashed green border button in sidebar           |
+
+#### Implementation Cross-Reference
+
+| Element              | Current State                                      | Design Match | Notes                                 |
+| -------------------- | -------------------------------------------------- | ------------ | ------------------------------------- |
+| Dashboard layout     | Top-tab header (no sidebar)                        | ❌           | Needs full restructure to sidebar     |
+| Sidebar component    | does not exist                                     | ❌           | Story 9.0 will create                 |
+| Stat cards           | 5 cards (total signups, referral, hot, warm, cold) | ❌           | Design shows 4 different cards        |
+| Table columns        | 6 (Name, Email, Position, Warmth, Referrals, Date) | ❌           | Design shows 4 columns                |
+| Search functionality | does not exist                                     | ❌           | Story 9.2 will create                 |
+| Sort functionality   | exists (referral_count default)                    | ⚠️           | Default should be position per design |
+
+#### Discrepancies Found
+
+1. **Sidebar background color inconsistency between HF4 and HF5.** HF4 shows `#FCFCFB` (lighter than main content). HF5 shows `#FAF8F4` (same as main content). This is a design inconsistency — the empty and active states use different sidebar colors. **Resolution:** Use `#FCFCFB` for sidebar (matches empty state, provides visual distinction from main content).
+
+2. **Stat card labels differ between design and Epic 9.** Design shows "Subscribers, Referrals, Page Views, Heat Score". Epic 9 Story 9.1 specifies "Total Signups, Referrals, Hot, Warm". **Resolution:** Follow Epic 9 ACs — the story was written to match the PRD data model (warmth_score column exists, page_views table exists). The design SVG labels may be conceptual placeholders.
+
+3. **Current table has 6 columns, design shows 4.** Current: Name, Email, Position, Warmth, Referrals, Date. Design: #, Email, Date, Referrals. **Resolution:** Follow design — remove Name and Warmth columns. The "#" column is position.
+
+4. **Current dashboard has 5 stat cards, design shows 4.** Current: total signups, referral%, hot, warm, cold. Design: 4 cards. **Resolution:** Follow design — use 4 cards. Remove "cold" card (not in design).
+
+5. **"Pending Rewards" dashed card in HF5.** Below the subscriber table in the active state, there's a dashed-border card for pending milestone rewards. This is explicitly out of scope for Epic 9 — deferred to Epic 10.
+
+6. **Bar chart in HF5.** The active state shows a bar chart (signups over time). This is out of scope for Epic 9 — remains as placeholder.
+
+#### Confidence Level
+
+**98%** — Layout and structure are clear. Stat card label discrepancy needs decision during implementation. Sidebar color inconsistency resolved by choosing the lighter variant.
+
+---
+
+### Screen 2: Dashboard — Active State — Analysis
+
+**Design file:** `Dashboard_active_state_HF5.svg`
+**PRD sections:** PRD §2a (Sprint 2 — dashboard active), Story 9.1–9.4
+**Analysis date:** 2026-08-30
+
+#### Layout
+
+- **Canvas:** 1440×1183px, `#FAF8F4` background
+- **Left sidebar:** 271px width, `#FAF8F4` background (NOTE: different from HF4's `#FCFCFB`)
+- **Main content area:** `#FAF8F4` background
+- **Top bar:** Same structure as HF4
+
+#### Sidebar Structure (Active State)
+
+Same navigation items as HF4. Key difference: sidebar background matches main content (`#FAF8F4`), making the sidebar less visually distinct.
+
+#### Stat Cards (Active State)
+
+- **4 cards** with real data values
+- Green background (`#0F7A5E`)
+- Values visible (from SVG text elements):
+  1. "128" — Subscribers
+  2. "43" — Referrals
+  3. "1,247" — Page Views
+  4. "72" — Heat Score
+
+#### Bar Chart
+
+- **Location:** Below stat cards, above subscriber table
+- **Type:** Vertical bar chart
+- **Bars:** 12 bars (likely monthly data)
+- **Color:** `#0F7A5E` (accent green)
+- **X-axis:** Time labels (not fully legible in SVG)
+- **Y-axis:** Count values
+
+#### Subscriber Table (Active State)
+
+- **Columns:** "#", "Subscriber Email", "Signup Date", "Referrals"
+- **Data rows:** 8 subscribers visible
+- **Sample data:**
+  - Row 1: #1, sarah@example.com, Jan 15 2026, 12
+  - Row 2: #2, mike@example.com, Jan 14 2026, 8
+  - Row 3: #3, alex@example.com, Jan 13 2026, 5
+  - (etc.)
+- **Referral counts:** Right-aligned, bold for non-zero values
+- **Position numbers:** Sequential (#1, #2, #3...)
+
+#### "Pending Rewards" Card
+
+- **Location:** Below subscriber table
+- **Style:** Dashed border (`#0F7A5E`), white background
+- **Content:** "Pending Rewards" heading, list of milestone rewards to fulfill
+- **Out of scope:** Deferred to Epic 10
+
+#### Typography & Text (Verbatim)
+
+| Element            | Text (exact)                                           | Size (est.) | Weight   | Color     |
+| ------------------ | ------------------------------------------------------ | ----------- | -------- | --------- |
+| Search placeholder | "Search by email..."                                   | ~14px       | regular  | `#6B6459` |
+| Welcome message    | "Hey [Founder Name]!"                                  | ~24px       | bold     | `#1A1A1A` |
+| Stat card values   | "128", "43", "1,247", "72"                             | ~28px       | bold     | `#FFFFFF` |
+| Stat card labels   | "Subscribers", "Referrals", "Page Views", "Heat Score" | ~12px       | medium   | `#FFFFFF` |
+| Table header       | "#", "Subscriber Email", "Signup Date", "Referrals"    | ~12px       | medium   | `#6B6459` |
+| Subscriber emails  | "sarah@example.com", etc.                              | ~14px       | regular  | `#1A1A1A` |
+| Date column        | "Jan 15 2026", etc.                                    | ~14px       | regular  | `#6B6459` |
+| Referral counts    | "12", "8", "5", etc.                                   | ~14px       | medium   | `#1A1A1A` |
+| Pending Rewards    | "Pending Rewards"                                      | ~16px       | semibold | `#1A1A1A` |
+
+#### Colors & Tokens
+
+| Element                | Color Value | Token / Tailwind Class   |
+| ---------------------- | ----------- | ------------------------ |
+| Page background        | `#FAF8F4`   | `bg-background`          |
+| Sidebar background     | `#FAF8F4`   | `bg-background` (same!)  |
+| Stat card bg           | `#0F7A5E`   | `bg-accent`              |
+| Stat card text         | `#FFFFFF`   | `text-white`             |
+| Heading text           | `#1A1A1A`   | `text-foreground`        |
+| Muted text             | `#6B6459`   | `text-muted-foreground`  |
+| Table border           | `#CCC9C3`   | `border-border`          |
+| Bar chart bars         | `#0F7A5E`   | `bg-accent`              |
+| Pending Rewards border | `#0F7A5E`   | `border-accent` (dashed) |
+
+#### Interactive States
+
+- **Search input:** Focus state not visible in static SVG
+- **Table rows:** Not clickable in design (no hover state shown)
+- **Navigation items:** Active state uses bold text + left border indicator
+
+#### PRD Cross-Reference
+
+| PRD Requirement               | Design Match | Notes                                  |
+| ----------------------------- | ------------ | -------------------------------------- |
+| Real subscriber data          | ✅           | Table shows populated rows             |
+| Sort by position              | ✅           | "#" column with sequential numbers     |
+| Search by email               | ✅           | Search input above table               |
+| Referral count display        | ✅           | "Referrals" column with integer values |
+| Bar chart (signups over time) | ✅           | Visible but out of scope for Epic 9    |
+| Pending rewards section       | ✅           | Visible but out of scope for Epic 9    |
+
+#### Implementation Cross-Reference
+
+| Element          | Current State                        | Design Match | Notes                                 |
+| ---------------- | ------------------------------------ | ------------ | ------------------------------------- |
+| Subscriber data  | fetched but mostly hardcoded         | ❌           | Needs real data rendering             |
+| Sort by position | exists but default is referral_count | ⚠️           | Default should be position            |
+| Referral column  | exists (added in Story 8.4)          | ✅           | Already implemented                   |
+| Bar chart        | placeholder div                      | ⚠️           | Design shows real chart, out of scope |
+| Pending rewards  | does not exist                       | ❌           | Out of scope (Epic 10)                |
+
+#### Discrepancies Found
+
+1. **Sidebar background inconsistency (HF4 vs HF5).** HF4: `#FCFCFB`, HF5: `#FAF8F4`. Already noted in Screen 1 analysis.
+
+2. **Stat card labels "Page Views" and "Heat Score" don't match PRD data model.** PRD has `warmth_score` (hot/warm/cold) and `page_views` table. Design uses "Heat Score" which could map to hot count, and "Page Views" which maps to page_views count. **Resolution:** Map "Heat Score" → hot count, "Page Views" → page_views count. Adjust Epic 9 ACs if needed.
+
+3. **"Pending Rewards" card is out of scope.** Explicitly deferred to Epic 10. Do not implement in Epic 9.
+
+4. **Bar chart is out of scope.** Remains as placeholder in Epic 9.
+
+5. **Table rows not shown as clickable in design.** Story 9.2 AC4 requires row click navigation to subscriber detail. This is a functional requirement not visible in static design.
+
+#### Confidence Level
+
+**98%** — Active state layout is clear. Stat card label mapping needs clarification during implementation.
+
+---
+
+### Cross-Screen Observations
+
+#### Layout Pattern
+
+| Screen | Sidebar Width | Sidebar Bg | Main Bg   |
+| ------ | ------------- | ---------- | --------- |
+| Empty  | 268px         | `#FCFCFB`  | `#FAF8F4` |
+| Active | 271px         | `#FAF8F4`  | `#FAF8F4` |
+
+**Key finding:** Sidebar width differs by 3px (268 vs 271). Sidebar background differs between states. This is a design inconsistency — the active state sidebar blends into the main content.
+
+**Resolution:** Use 268px width consistently. Use `#FCFCFB` for sidebar background (provides visual distinction).
+
+#### Stat Cards
+
+| Screen | Card Count | Labels                                         |
+| ------ | ---------- | ---------------------------------------------- |
+| Empty  | 4          | Subscribers, Referrals, Page Views, Heat Score |
+| Active | 4          | Same labels with real data                     |
+
+**Key finding:** Both screens show 4 stat cards with the same labels. The empty state shows placeholder values, the active state shows real data.
+
+#### Table Structure
+
+| Screen | Columns                                     | Rows |
+| ------ | ------------------------------------------- | ---- |
+| Empty  | #, Subscriber Email, Signup Date, Referrals | 0    |
+| Active | #, Subscriber Email, Signup Date, Referrals | 8    |
+
+**Key finding:** Table structure is consistent across both screens. 4 columns, not 6.
+
+---
+
+### Key Design Decisions to Implement
+
+1. **Left sidebar layout** (268px, `#FCFCFB` background) — replaces top-tab header
+2. **4 stat cards** (not 5) — Subscribers, Referrals, Page Views, Heat Score
+3. **4 table columns** (not 6) — #, Email, Date, Referrals
+4. **Search input** above table — filters by email
+5. **Default sort by position** (not referral_count)
+6. **Active nav item** uses bold text + left border accent indicator
+7. **"Upgrade" button** in sidebar with dashed green border
+8. **Mobile responsive** — sidebar collapses to hamburger menu
+9. **"Pending Rewards" card** is OUT OF SCOPE — deferred to Epic 10
+10. **Bar chart** is OUT OF SCOPE — remains placeholder
+
+---
+
+### Confidence Check
+
+**Overall analysis confidence: 98%**
+
+**What is confirmed:**
+
+- Both dashboard screens fully analyzed (empty + active states)
+- Sidebar layout, navigation, and styling documented
+- Stat card count, labels, and styling documented
+- Table columns, search, and sorting documented
+- Color tokens mapped to design system
+- PRD requirements cross-referenced
+- Out-of-scope items identified (Pending Rewards, Bar chart)
+
+**What needs clarification during implementation:**
+
+1. **Stat card label mapping:** "Page Views" → page_views count? "Heat Score" → hot count? Need to confirm with PRD data model.
+2. **Sidebar background:** HF4 shows `#FCFCFB`, HF5 shows `#FAF8F4`. Resolution: use `#FCFCFB` for distinction.
+3. **Sidebar width:** 268px vs 271px. Resolution: use 268px consistently.
+
+**No blocking gaps found.** Design analysis is complete and ready to inform Epic 9 execution.

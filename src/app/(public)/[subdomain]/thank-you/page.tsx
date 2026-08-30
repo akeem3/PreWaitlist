@@ -92,41 +92,56 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
         </div>
       )}
 
-      <div className="w-full max-w-[666px] rounded-xl bg-card p-10 shadow-[var(--shadow-float)]">
-        <div className="mb-2 text-center">
-          <span className="inline-block rounded-full bg-accent/10 px-3 py-1 text-body-sm font-medium text-accent">
-            Refer a friend. Get rewarded.
-          </span>
+      <div className="flex w-full max-w-[400px] flex-col items-center">
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent">
+          <svg
+            className="h-8 w-8 text-accent-foreground"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4.5 12.75l6 6 9-13.5"
+            />
+          </svg>
         </div>
 
-        <div className="text-center">
-          <h1 className="text-h2 text-accent">You&apos;re in the line!</h1>
-          <p className="text-body text-muted-foreground mt-2">
-            You&apos;re{" "}
-            <span className="font-semibold text-foreground">
-              #{subscriber.position}
-            </span>{" "}
-            in line. Share your unique link to move up.
-          </p>
-        </div>
+        <h1 className="text-h2 text-foreground">You&apos;re in.</h1>
+        <p className="text-body text-muted-foreground mt-2">
+          You&apos;re{" "}
+          <span className="font-semibold text-accent">
+            #{subscriber.position}
+          </span>{" "}
+          on the waitlist
+        </p>
 
-        <div className="mt-6">
-          <p className="text-caption text-muted-foreground mb-1.5 text-center">
-            Your referral link
-          </p>
-          <ReferralLink url={referralLink} />
-        </div>
+        <input
+          type="text"
+          placeholder="What should we call you? (optional)"
+          className="mt-8 h-[52px] w-full rounded-[12px] border border-border bg-card px-4 text-body text-center placeholder:text-muted-foreground/60 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+        />
 
-        <div className="mt-6">
-          <p className="text-caption text-muted-foreground mb-3 text-center font-semibold">
-            Share your link
-          </p>
-          <ShareButtons url={referralLink} />
-        </div>
+        <p className="text-body-sm text-muted-foreground mt-8 text-center">
+          Refer 3 friends for early access — share your link:
+        </p>
+
+        <ReferralLink url={referralLink} className="mt-3 w-full" />
+
+        <ShareButtons url={referralLink} className="mt-4 w-full" />
+
+        <a
+          href={`/${subdomain}/leaderboard`}
+          className="text-body-lg font-semibold text-accent mt-8 hover:underline"
+        >
+          See where you rank →
+        </a>
       </div>
 
       {tier === "free" && (
-        <div className="mt-auto w-full max-w-[666px] pt-8">
+        <div className="mt-auto w-full max-w-[400px] pt-8">
           <PoweredByFooter template="minimal" />
         </div>
       )}
