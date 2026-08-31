@@ -102,4 +102,23 @@ describe("ShareButtons", () => {
 
     expect(screen.getByRole("button", { name: /copied!/i })).toBeDefined();
   });
+
+  it("falls back to execCommand when clipboard API unavailable", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      value: undefined,
+      writable: true,
+      configurable: true,
+    });
+    const execCommandMock = vi.fn().mockReturnValue(true);
+    document.execCommand = execCommandMock;
+
+    render(<ShareButtons url={testUrl} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /copy link/i }));
+    });
+
+    expect(execCommandMock).toHaveBeenCalledWith("copy");
+    expect(screen.getByRole("button", { name: /copied!/i })).toBeDefined();
+  });
 });

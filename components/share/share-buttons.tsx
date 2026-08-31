@@ -9,6 +9,31 @@ interface ShareButtonsProps {
   className?: string;
 }
 
+async function copyToClipboard(text: string): Promise<boolean> {
+  if (typeof navigator !== "undefined" && navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Clipboard API failed — fall through to execCommand
+    }
+  }
+
+  try {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(textarea);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 export function ShareButtons({
   url,
   text = "Join the waitlist!",
@@ -35,12 +60,8 @@ export function ShareButtons({
   }
 
   async function handleCopyLink() {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-    } catch {
-      // Clipboard write failed — silently ignore
-    }
+    const ok = await copyToClipboard(url);
+    if (ok) setCopied(true);
   }
 
   return (

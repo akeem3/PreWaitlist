@@ -76,7 +76,7 @@ describe("LeaderboardClient", () => {
     expect(screen.getByText("Join the waitlist")).toBeDefined();
   });
 
-  it("paginates at 10 rows with View More button", async () => {
+  it("paginates at 10 rows with prev/next navigation", async () => {
     const user = userEvent.setup();
     const manyRows = Array.from({ length: 15 }, (_, i) => ({
       id: String(i + 1),
@@ -90,12 +90,20 @@ describe("LeaderboardClient", () => {
       <LeaderboardClient rows={manyRows} totalCount={15} subdomain="test" />
     );
 
-    expect(screen.getByText("1–10 of 15")).toBeDefined();
-    expect(screen.getByText("View More")).toBeDefined();
+    expect(screen.getByText("Showing 1–10 of 15")).toBeDefined();
+    expect(screen.getByText("Next →")).toBeDefined();
+    expect(screen.queryByText("← Previous")).toBeNull();
 
-    await user.click(screen.getByText("View More"));
+    await user.click(screen.getByText("Next →"));
 
-    expect(screen.getByText("1–15 of 15")).toBeDefined();
-    expect(screen.queryByText("View More")).toBeNull();
+    expect(screen.getByText("Showing 11–15 of 15")).toBeDefined();
+    expect(screen.getByText("← Previous")).toBeDefined();
+    expect(screen.queryByText("Next →")).toBeNull();
+
+    await user.click(screen.getByText("← Previous"));
+
+    expect(screen.getByText("Showing 1–10 of 15")).toBeDefined();
+    expect(screen.queryByText("← Previous")).toBeNull();
+    expect(screen.getByText("Next →")).toBeDefined();
   });
 });

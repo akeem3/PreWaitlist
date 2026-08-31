@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { PoweredByFooter } from "../../../../../components/share/powered-by-footer";
 import { ReferralLink } from "../../../../../components/share/referral-link";
 import { ShareButtons } from "../../../../../components/share/share-buttons";
-import { anonymizeEmail } from "@/lib/format";
 
 type Props = {
   params: Promise<{ subdomain: string }>;
@@ -48,7 +48,10 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
     : waitlist.founder_profiles;
   const tier = founderProfile?.tier || "free";
 
-  const referralLink = `https://${subdomain}.prewaitlist.com?ref=${referral_code}`;
+  const headersList = await headers();
+  const host = headersList.get("host") || `${subdomain}.prewaitlist.com`;
+  const protocol = headersList.get("x-forwarded-proto") || "https";
+  const referralLink = `${protocol}://${host}?ref=${referral_code}`;
 
   let referrerEmail: string | null = null;
   if (subscriber.referrer_id) {
@@ -61,37 +64,13 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
   }
 
   const isReferred = !!subscriber.referrer_id && !!referrerEmail;
+  const referrerName = referrerEmail
+    ? referrerEmail.split("@")[0].charAt(0).toUpperCase() +
+      referrerEmail.split("@")[0].slice(1)
+    : null;
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-background px-4 py-16">
-      {isReferred && (
-        <div className="mb-6 flex flex-col items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-accent">
-            <svg
-              className="h-7 w-7 text-accent-foreground"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4.5 12.75l6 6 9-13.5"
-              />
-            </svg>
-          </div>
-          <div className="text-center">
-            <p className="text-body-lg font-semibold text-accent">
-              Referred by a friend
-            </p>
-            <p className="text-body-sm text-muted-foreground">
-              {anonymizeEmail(referrerEmail!)} invited you to join
-            </p>
-          </div>
-        </div>
-      )}
-
       <div className="flex w-full max-w-[400px] flex-col items-center">
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent">
           <svg
@@ -117,6 +96,12 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
           </span>{" "}
           on the waitlist
         </p>
+
+        {isReferred && referrerName && (
+          <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1 text-body-sm text-accent">
+            Referred by <span className="font-semibold">{referrerName}</span>
+          </span>
+        )}
 
         <input
           type="text"

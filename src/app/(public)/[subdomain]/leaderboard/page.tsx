@@ -56,18 +56,21 @@ export default async function LeaderboardPage({ params }: Props) {
     }
   });
 
-  // Sort and rank
+  // Sort and rank — secondary sort by signup date ascending (earlier = higher)
   const ranked = rows
     .map((s) => ({
       id: s.id,
       name: maskName(s.email),
       referral_count: referralCounts.get(s.id) || 0,
       qualified_count: qualifiedCounts.get(s.id) || 0,
+      created_at: s.created_at,
     }))
     .sort((a, b) => {
       if (b.referral_count !== a.referral_count)
         return b.referral_count - a.referral_count;
-      return 0;
+      return (
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
     })
     .map((s, i) => ({ ...s, rank: i + 1 }));
 
@@ -82,7 +85,13 @@ export default async function LeaderboardPage({ params }: Props) {
 
         {/* Leaderboard table */}
         <LeaderboardClient
-          rows={ranked}
+          rows={ranked.map((r) => ({
+            id: r.id,
+            name: r.name,
+            referral_count: r.referral_count,
+            qualified_count: r.qualified_count,
+            rank: r.rank,
+          }))}
           totalCount={ranked.length}
           subdomain={subdomain}
         />

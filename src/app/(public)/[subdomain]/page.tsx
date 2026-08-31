@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { WaitlistPageContent } from "../../../../components/public/waitlist-page-content";
@@ -96,16 +97,18 @@ export default async function PublicSubdomainPage({ params }: Props) {
       qualificationEnabled={waitlist.qualification_enabled}
       questions={questions}
       emailCaptureForm={
-        <EmailCaptureForm
-          waitlistId={waitlist.id}
-          subdomain={waitlist.subdomain}
-          ctaText={waitlist.cta_text || "Join Waitlist"}
-          brandColor={waitlist.brand_color}
-          template={waitlist.template as "minimal" | "bold" | "dark"}
-          tier={tier}
-          questions={questions}
-          qualificationEnabled={waitlist.qualification_enabled}
-        />
+        <Suspense>
+          <EmailCaptureForm
+            waitlistId={waitlist.id}
+            subdomain={waitlist.subdomain}
+            ctaText={waitlist.cta_text || "Join Waitlist"}
+            brandColor={waitlist.brand_color}
+            template={waitlist.template as "minimal" | "bold" | "dark"}
+            tier={tier}
+            questions={questions}
+            qualificationEnabled={waitlist.qualification_enabled}
+          />
+        </Suspense>
       }
       latestUpdateSlot={
         latestUpdate ? <LatestUpdateCard update={latestUpdate} /> : undefined

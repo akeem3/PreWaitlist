@@ -16,6 +16,15 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+vi.mock("next/headers", () => ({
+  headers: vi.fn().mockResolvedValue(
+    new Map([
+      ["host", "test.lvh.me:3000"],
+      ["x-forwarded-proto", "http"],
+    ])
+  ),
+}));
+
 function buildChain(data: unknown, error: unknown = null) {
   const resolved = { data, error };
   const chain: Record<string, ReturnType<typeof vi.fn>> = {};
@@ -73,10 +82,10 @@ describe("Referred Variant Display", () => {
 
     render(element);
 
-    expect(screen.getByText("Referred by a friend")).toBeDefined();
+    expect(screen.getByText(/Referred by/)).toBeDefined();
   });
 
-  it("shows anonymized referrer email", async () => {
+  it("shows referrer first name from email", async () => {
     const mockSubscriber = {
       id: "sub-1",
       email: "newuser@example.com",
@@ -110,7 +119,7 @@ describe("Referred Variant Display", () => {
 
     render(element);
 
-    expect(screen.getByText(/invited you to join/i)).toBeDefined();
+    expect(screen.getByText("Friend")).toBeDefined();
   });
 
   it("does not show referred section when referrer_id is null", async () => {
@@ -145,6 +154,6 @@ describe("Referred Variant Display", () => {
 
     render(element);
 
-    expect(screen.queryByText("Referred by a friend")).toBeNull();
+    expect(screen.queryByText(/Referred by/)).toBeNull();
   });
 });

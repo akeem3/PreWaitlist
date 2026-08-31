@@ -16,6 +16,15 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+vi.mock("next/headers", () => ({
+  headers: vi.fn().mockResolvedValue(
+    new Map([
+      ["host", "test.lvh.me:3000"],
+      ["x-forwarded-proto", "http"],
+    ])
+  ),
+}));
+
 function buildChain(data: unknown, error: unknown = null) {
   const chain: Record<string, ReturnType<typeof vi.fn>> = {};
   const resolved = { data, error };
@@ -145,7 +154,7 @@ describe("Thank-you Page", () => {
 
     const input = screen.getByRole("textbox", { name: /referral link/i });
     expect(input).toBeDefined();
-    expect(input).toHaveValue("https://test.prewaitlist.com?ref=abc12345");
+    expect(input).toHaveValue("http://test.lvh.me:3000?ref=abc12345");
   });
 
   it("renders name input", async () => {
@@ -292,7 +301,7 @@ describe("Thank-you Page", () => {
 
     render(element);
 
-    expect(screen.getByText("Referred by a friend")).toBeDefined();
+    expect(screen.getByText(/Referred by/)).toBeDefined();
   });
 
   it("does not render referred section for direct signup", async () => {
@@ -327,7 +336,7 @@ describe("Thank-you Page", () => {
 
     render(element);
 
-    expect(screen.queryByText("Referred by a friend")).toBeNull();
+    expect(screen.queryByText(/Referred by/)).toBeNull();
   });
 
   it("renders PoweredByFooter when tier is free", async () => {
