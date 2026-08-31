@@ -10,6 +10,7 @@ Detailed screen-by-screen analysis of high-fidelity designs, cross-referenced wi
 | ------ | ----------------------------------------------------------------------------------- |
 | Epic 4 | [Epic 4 — Onboarding Wizard](#epic-4--onboarding-wizard)                            |
 | Epic 8 | [Epic 8 — Thank-You Pages & Referral Loop](#epic-8--thank-you-pages--referral-loop) |
+| Epic 9 | [Epic 9 — Dashboard Restructure](#epic-9--dashboard-restructure)                    |
 
 ---
 
