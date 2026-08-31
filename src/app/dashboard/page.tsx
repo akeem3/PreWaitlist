@@ -15,7 +15,7 @@ export default async function DashboardPage() {
 
   const { data: waitlist } = await supabase
     .from("waitlists")
-    .select("id, headline, subdomain, template, status, logo_url")
+    .select("id, headline, subdomain, template, logo_url")
     .eq("founder_id", user.id)
     .single();
 
@@ -23,11 +23,19 @@ export default async function DashboardPage() {
     redirect("/onboarding/1");
   }
 
+  const { data: profile } = await supabase
+    .from("founder_profiles")
+    .select("tier")
+    .eq("id", user.id)
+    .single();
+
+  const tier = profile?.tier ?? "free";
+
   const liveUrl = `${waitlist.subdomain}.prewaitlist.com`;
 
   const { data: subscribers } = await supabase
     .from("subscribers")
-    .select("id, email, position, created_at")
+    .select("id, email, position, referral_code, warmth_score, created_at")
     .eq("waitlist_id", waitlist.id)
     .order("position", { ascending: true });
 
@@ -56,12 +64,31 @@ export default async function DashboardPage() {
       referral_count: referralCounts.get(s.id) || 0,
     })) || [];
 
+  const today = new Date().toISOString().split("T")[0];
+  const stats = {
+    totalSignups: subscribersWithCounts.length,
+    referralPercentage:
+      subscribersWithCounts.length > 0
+        ? Math.round(
+            (subscribersWithCounts.filter((s) => s.referral_count > 0).length /
+              subscribersWithCounts.length) *
+              100
+          )
+        : null,
+    todaySignups:
+      subscribersWithCounts.filter((s) => s.created_at.startsWith(today))
+        .length || 0,
+  };
+
   return (
     <DashboardClient
       liveUrl={liveUrl}
       waitlistName={waitlist.headline}
       logoUrl={waitlist.logo_url}
+      tier={tier}
+      subdomain={waitlist.subdomain}
       subscribers={subscribersWithCounts}
+      stats={stats}
     />
   );
 }

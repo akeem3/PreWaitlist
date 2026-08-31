@@ -3,12 +3,30 @@ import { render, screen } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => "/dashboard",
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("next/image", () => ({
   default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
     // eslint-disable-next-line @next/next/no-img-element
     <img alt={props.alt} src={props.src} />
+  ),
+}));
+
+vi.mock("next/link", () => ({
+  default: ({
+    children,
+    href,
+    className,
+  }: {
+    children: React.ReactNode;
+    href: string;
+    className?: string;
+  }) => (
+    <a href={href} className={className}>
+      {children}
+    </a>
   ),
 }));
 
@@ -23,6 +41,8 @@ describe("Dashboard Referral Column", () => {
     liveUrl: "test.prewaitlist.com",
     waitlistName: "Test Waitlist",
     logoUrl: null,
+    tier: "free",
+    subdomain: "test",
   };
 
   beforeEach(() => {

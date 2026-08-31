@@ -54,7 +54,7 @@ export default function OnboardingStep1() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  // Auth check: if logged in with existing waitlist, redirect to dashboard
+  // Auth check: if logged in with completed onboarding, redirect to dashboard
   useEffect(() => {
     async function checkAuth() {
       const {
@@ -62,16 +62,21 @@ export default function OnboardingStep1() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // User is authenticated — check if they have a waitlist
       try {
         const res = await fetch("/api/waitlist");
-        if (res.ok) {
-          // Has a waitlist → already set up, go to dashboard
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const hasSlug = Boolean(data.slug);
+        const hasHeadline = Boolean(data.headline);
+        const hasTemplate = Boolean(data.template);
+        const hasBrandColor = Boolean(data.brandColor);
+
+        if (hasSlug && hasHeadline && hasTemplate && hasBrandColor) {
           router.replace("/dashboard");
         }
-        // 404 → no waitlist, let them start fresh
       } catch {
-        // API error → let them continue
+        // API error — continue onboarding
       }
     }
     checkAuth();

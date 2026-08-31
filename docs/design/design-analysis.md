@@ -1061,26 +1061,34 @@ The implementation built the functional logic correctly (referral tracking, shar
 
 #### Navigation Items (Verbatim)
 
-| Item        | Position (y) | Color     | State    |
-| ----------- | ------------ | --------- | -------- |
-| Overview    | ~169         | `#1A1A1A` | Active   |
-| Subscribers | ~229         | `#6B6459` | Inactive |
-| Broadcasts  | ~382         | `#6B6459` | Inactive |
-| Settings    | ~442         | `#6B6459` | Inactive |
+| #   | Item          | Icons       | Color     | State                           |
+| --- | ------------- | ----------- | --------- | ------------------------------- |
+| 1   | Overview      | chart icon  | `#1A1A1A` | Active (green pill, white text) |
+| 2   | Subscribers   | people icon | `#6B6459` | Inactive                        |
+| 3   | Qualification | check icon  | `#6B6459` | Inactive                        |
+| 4   | Leaderboard   | trophy icon | `#6B6459` | Inactive                        |
+| 5   | Warmth        | flame icon  | `#6B6459` | Locked (🔒)                     |
+| 6   | Updates       | bell icon   | `#6B6459` | Inactive                        |
+| 7   | Broadcast     | megaphone   | `#6B6459` | Locked (🔒)                     |
+| 8   | Settings      | gear icon   | `#6B6459` | Inactive                        |
 
-**Note:** Navigation items have small square icons (16×16px) next to text labels.
+**Active nav style:** Green filled pill background (`#0F7A5E`), white text, rounded-full. NOT a left-border indicator.
+
+**Lock indicators:** Items 5 (Warmth) and 7 (Broadcast) show a lock icon — Pro-only features.
+
+**Logo area:** Green bordered box (`#0F7A5E` stroke, 1px) containing logo image + waitlist name + dropdown chevron (▼).
 
 #### Stat Cards
 
-- **Layout:** 4 cards in a row, green background (`#0F7A5E`)
-- **Card dimensions:** ~248×99px each (estimated from SVG)
+- **Layout:** 4 cards in a row, white background (`#FFFFFF`)
+- **Card dimensions:** Equal width, flex-1 each
 - **Cards visible:**
-  1. "Subscribers" — shows count
-  2. "Referrals" — shows count
-  3. "Page Views" — shows count
-  4. "Heat Score" — shows score
+  1. "Total signups" — count value
+  2. "Referral %" — percentage value
+  3. "Today" — count value
+  4. "Warmth" — locked state (🔒 overlay, Pro-only)
 
-**CRITICAL FINDING:** Design shows "Page Views" and "Heat Score" as stat card labels. Epic 9 Story 9.1 specifies "Hot" and "Warm" as the warmth cards. These are DIFFERENT metrics.
+**CRITICAL FINDING:** Design shows "Total signups", "Referral %", "Today", "Warmth". Implementation has "total signups", "referrals", "hot", "warm" — different labels and different metrics. The design also shows the Warmth card as locked/Pro-only.
 
 #### Empty Subscriber Table
 
@@ -1088,6 +1096,23 @@ The implementation built the functional logic correctly (referral tracking, shar
 - **4 columns total** (not 6 like current implementation)
 - **Empty state:** "No subscribers yet. Share your link to get started." centered text
 - **Table background:** White (`#FFFFFF`), rounded corners, border
+
+#### Top Bar (Above Main Content)
+
+- **Left:** Domain slug (e.g. "yourslug.prewaitlist.com") in green text + copy icon
+- **Center:** "Share on Twitter" button (green, solid)
+- **Right:** Green checkmark icon (confirmation indicator)
+- **Height:** ~64px, bottom border (`#CCC9C3`)
+
+#### Main Content (Below Top Bar)
+
+- **Heading:** "Get your first signups" (large, bold, `#1A1A1A`)
+- **CTA:** "Share your link →" large green button (full-width or large)
+- **Checklist:** Two items with checkboxes:
+  - "Post in one relevant community"
+  - "Tell 5 people personally"
+- **Preview section:** "Preview — this is what it'll look like once signups arrive"
+- **Below preview:** 4 stat cards, bar chart, qualification breakdown, warmth distribution
 
 #### Typography & Text (Verbatim)
 
@@ -1123,10 +1148,12 @@ The implementation built the functional logic correctly (referral tracking, shar
 
 #### Buttons
 
-| Label   | Variant          | Size         | State   |
-| ------- | ---------------- | ------------ | ------- |
-| Upgrade | outline (dashed) | full sidebar | enabled |
-| Search  | — (input)        | ~350×40px    | —       |
+| Label             | Variant          | Size         | State   |
+| ----------------- | ---------------- | ------------ | ------- |
+| Upgrade to pro    | outline (dashed) | full sidebar | enabled |
+| Share your link → | primary (solid)  | large        | enabled |
+| Share on Twitter  | primary (solid)  | medium       | enabled |
+| Copy domain       | ghost            | icon only    | enabled |
 
 #### Spacing & Dimensions
 
@@ -1150,32 +1177,83 @@ The implementation built the functional logic correctly (referral tracking, shar
 
 #### Implementation Cross-Reference
 
-| Element              | Current State                                      | Design Match | Notes                                 |
-| -------------------- | -------------------------------------------------- | ------------ | ------------------------------------- |
-| Dashboard layout     | Top-tab header (no sidebar)                        | ❌           | Needs full restructure to sidebar     |
-| Sidebar component    | does not exist                                     | ❌           | Story 9.0 will create                 |
-| Stat cards           | 5 cards (total signups, referral, hot, warm, cold) | ❌           | Design shows 4 different cards        |
-| Table columns        | 6 (Name, Email, Position, Warmth, Referrals, Date) | ❌           | Design shows 4 columns                |
-| Search functionality | does not exist                                     | ❌           | Story 9.2 will create                 |
-| Sort functionality   | exists (referral_count default)                    | ⚠️           | Default should be position per design |
+| Element           | Current State                                 | Design Match | Notes                                       |
+| ----------------- | --------------------------------------------- | ------------ | ------------------------------------------- |
+| Dashboard layout  | Top-tab header (no sidebar)                   | ❌           | Needs full restructure to sidebar           |
+| Sidebar component | exists (4 nav items)                          | ❌           | Design has 8 nav items with icons           |
+| Active nav style  | Left-border indicator                         | ❌           | Design uses green filled pill               |
+| Logo area         | Simple logo + name                            | ❌           | Design has bordered box + dropdown          |
+| Top bar           | None (removed in Story 9.0)                   | ❌           | Design has domain + share + checkmark       |
+| Main heading      | Live URL display                              | ❌           | Design shows "Get your first signups"       |
+| Share CTA         | Small ShareCopyLink component                 | ❌           | Design shows large "Share your link →"      |
+| Stat cards        | 4 cards (total signups, referrals, hot, warm) | ❌           | Design has different labels + locked warmth |
+| Table columns     | 4 (#, Email, Date, Referrals)                 | ✅           | Matches design                              |
+| Upgrade button    | does not exist                                | ❌           | Design shows dashed green button            |
+| Sidebar bg        | `bg-card` (white)                             | ⚠️           | Design shows `#FCFCFB` (slightly off-white) |
+| Checklist section | does not exist                                | ❌           | Design shows post-signup checklist          |
+| Preview section   | does not exist                                | ❌           | Design shows "Preview" section              |
 
-#### Discrepancies Found
+#### Discrepancies Found (Updated from User Screenshot 2026-08-31)
 
-1. **Sidebar background color inconsistency between HF4 and HF5.** HF4 shows `#FCFCFB` (lighter than main content). HF5 shows `#FAF8F4` (same as main content). This is a design inconsistency — the empty and active states use different sidebar colors. **Resolution:** Use `#FCFCFB` for sidebar (matches empty state, provides visual distinction from main content).
+**CRITICAL: The user's screenshot reveals the design is significantly different from what was implemented. The following are ALL mismatches identified:**
 
-2. **Stat card labels differ between design and Epic 9.** Design shows "Subscribers, Referrals, Page Views, Heat Score". Epic 9 Story 9.1 specifies "Total Signups, Referrals, Hot, Warm". **Resolution:** Follow Epic 9 ACs — the story was written to match the PRD data model (warmth_score column exists, page_views table exists). The design SVG labels may be conceptual placeholders.
+1. **Sidebar nav items: 8 in design, 4 in implementation.**
+   - Design: Overview, Subscribers, Qualification, Leaderboard, Warmth (locked), Updates, Broadcast (locked), Settings
+   - Implementation: Overview, Subscribers, Broadcasts, Settings
+   - Missing: Qualification, Leaderboard, Warmth, Updates
+   - Mislabeled: "Broadcasts" should be "Broadcast"
 
-3. **Current table has 6 columns, design shows 4.** Current: Name, Email, Position, Warmth, Referrals, Date. Design: #, Email, Date, Referrals. **Resolution:** Follow design — remove Name and Warmth columns. The "#" column is position.
+2. **Active nav style: green pill in design, left-border in implementation.**
+   - Design: Green filled pill (`bg-accent rounded-full`), white text
+   - Implementation: Left-border accent indicator (`border-l-2 border-accent`), bold text
 
-4. **Current dashboard has 5 stat cards, design shows 4.** Current: total signups, referral%, hot, warm, cold. Design: 4 cards. **Resolution:** Follow design — use 4 cards. Remove "cold" card (not in design).
+3. **Logo area: bordered box with dropdown in design, simple in implementation.**
+   - Design: Green bordered box (`border border-accent rounded-lg`), logo + name + dropdown chevron
+   - Implementation: Simple logo + name, no border, no dropdown
 
-5. **"Pending Rewards" dashed card in HF5.** Below the subscriber table in the active state, there's a dashed-border card for pending milestone rewards. This is explicitly out of scope for Epic 9 — deferred to Epic 10.
+4. **Top bar: completely missing in implementation.**
+   - Design: Domain slug + copy icon, "Share on Twitter" button, checkmark icon
+   - Implementation: No top bar at all
 
-6. **Bar chart in HF5.** The active state shows a bar chart (signups over time). This is out of scope for Epic 9 — remains as placeholder.
+5. **Main heading: wrong content.**
+   - Design: "Get your first signups" (large, bold)
+   - Implementation: Live URL display
+
+6. **Share CTA: wrong component and styling.**
+   - Design: Large "Share your link →" green button
+   - Implementation: Small ShareCopyLink component
+
+7. **Stat card labels: different.**
+   - Design: "Total signups", "Referral %", "Today", "Warmth"
+   - Implementation: "total signups", "referrals", "hot", "warm"
+
+8. **Warmth stat card: locked in design, active in implementation.**
+   - Design: Warmth card shows 🔒 lock icon (Pro-only)
+   - Implementation: Warmth card shows live data
+
+9. **Upgrade button: missing in implementation.**
+   - Design: "Upgrade to pro" dashed green button at sidebar bottom
+   - Implementation: No upgrade button
+
+10. **Sidebar background color: different.**
+    - Design: `#FCFCFB` (slightly off-white)
+    - Implementation: `bg-card` (pure white)
+
+11. **Checklist section: missing in implementation.**
+    - Design: "Post in one relevant community", "Tell 5 people personally" with checkboxes
+    - Implementation: No checklist
+
+12. **Preview section: missing in implementation.**
+    - Design: "Preview — this is what it'll look like once signups arrive"
+    - Implementation: No preview section
+
+13. **Nav item icons: missing in implementation.**
+    - Design: Each nav item has a small icon (chart, people, check, trophy, flame, bell, megaphone, gear)
+    - Implementation: No icons on nav items
 
 #### Confidence Level
 
-**98%** — Layout and structure are clear. Stat card label discrepancy needs decision during implementation. Sidebar color inconsistency resolved by choosing the lighter variant.
+**90%** — The user's screenshot reveals 13 significant design-vs-implementation mismatches. All are clearly documented with before/after references. The investigate prompt (Prompt #8) must resolve each one. The SVGs alone were insufficient — the user's screenshot showed additional elements (8 nav items, top bar, checklist, preview section) that the initial SVG analysis missed.
 
 ---
 
@@ -1357,22 +1435,88 @@ Same navigation items as HF4. Key difference: sidebar background matches main co
 
 ### Confidence Check
 
-**Overall analysis confidence: 98%**
+**Overall analysis confidence: 90%** (updated after user screenshot comparison)
 
 **What is confirmed:**
 
 - Both dashboard screens fully analyzed (empty + active states)
-- Sidebar layout, navigation, and styling documented
-- Stat card count, labels, and styling documented
-- Table columns, search, and sorting documented
-- Color tokens mapped to design system
-- PRD requirements cross-referenced
-- Out-of-scope items identified (Pending Rewards, Bar chart)
+- 13 design-vs-implementation mismatches identified and documented
+- Sidebar navigation (8 items with icons) documented
+- Active nav style (green pill) documented
+- Logo area (bordered box with dropdown) documented
+- Top bar (domain, share, checkmark) documented
+- Main content heading and CTA documented
+- Stat card labels and locked states documented
+- Upgrade button documented
 
-**What needs clarification during implementation:**
+**What needs resolution via investigate prompt (Prompt #8):**
 
-1. **Stat card label mapping:** "Page Views" → page_views count? "Heat Score" → hot count? Need to confirm with PRD data model.
-2. **Sidebar background:** HF4 shows `#FCFCFB`, HF5 shows `#FAF8F4`. Resolution: use `#FCFCFB` for distinction.
-3. **Sidebar width:** 268px vs 271px. Resolution: use 268px consistently.
+1. **Sidebar nav:** Add 4 missing items (Qualification, Leaderboard, Warmth, Updates), add icons, add lock indicators
+2. **Active nav style:** Change from left-border to green pill
+3. **Logo area:** Add bordered box + dropdown chevron
+4. **Top bar:** Add domain display, copy icon, "Share on Twitter" button, checkmark
+5. **Main heading:** Change from live URL to "Get your first signups"
+6. **Share CTA:** Replace small ShareCopyLink with large "Share your link →" button
+7. **Stat card labels:** Update to match design (Total signups, Referral %, Today, Warmth)
+8. **Warmth card:** Add locked state (Pro-only)
+9. **Upgrade button:** Add dashed green button at sidebar bottom
+10. **Sidebar bg:** Change from `bg-card` to `#FCFCFB`
+11. **Checklist section:** Add post-signup checklist
+12. **Preview section:** Add preview placeholder
 
-**No blocking gaps found.** Design analysis is complete and ready to inform Epic 9 execution.
+**No blocking gaps found.** Design analysis is complete and ready to inform Epic 9 fixes via investigate prompt.
+
+---
+
+### Story 9.2 — Subscriber Table Design Alignment — Analysis
+
+**Design file:** `Dashboard_active_state_HF5.svg`
+**PRD sections:** PRD §2a (Sprint 2 — dashboard active), Story 9.2
+**Analysis date:** 2026-08-31
+
+#### Layout
+
+- Table sits below qualification breakdown and warmth distribution cards
+- Search input above table (not visible in current SVG — from story spec)
+- 4 columns: #, Email, Date, Referrals
+- White background (`bg-card`), rounded corners, border
+
+#### Typography & Text (Verbatim)
+
+| Element                  | Text (exact)                                          | Size  | Weight  | Color     |
+| ------------------------ | ----------------------------------------------------- | ----- | ------- | --------- |
+| Table header "#"         | "#"                                                   | ~14px | medium  | `#6B6459` |
+| Table header "Email"     | "Subscriber Email"                                    | ~14px | medium  | `#6B6459` |
+| Table header "Date"      | "Signup Date"                                         | ~14px | medium  | `#6B6459` |
+| Table header "Referrals" | "Referrals"                                           | ~14px | medium  | `#6B6459` |
+| Row position             | "1", "2", "3"...                                      | ~14px | regular | `#6B6459` |
+| Row email                | "sarah@example.com"                                   | ~14px | regular | `#1A1A1A` |
+| Row date                 | "Jan 15 2026"                                         | ~14px | regular | `#6B6459` |
+| Row referrals (non-zero) | "12", "8", "5"                                        | ~14px | medium  | `#1A1A1A` |
+| Row referrals (zero)     | "0"                                                   | ~14px | regular | `#6B6459` |
+| Empty state              | "No subscribers yet. Share your link to get started." | ~14px | regular | `#6B6459` |
+
+#### Implementation Cross-Reference
+
+| Element             | Current State                                         | Design Match | Notes                                            |
+| ------------------- | ----------------------------------------------------- | ------------ | ------------------------------------------------ |
+| Table columns       | 4 columns: #, Email, Date, Referrals                  | ✅           | Matches design                                   |
+| Search input        | Missing                                               | ❌           | Story AC2 requires search                        |
+| Sort default        | Position asc                                          | ✅           | Matches design intent                            |
+| Row click           | Not clickable                                         | ❌           | Story AC4 requires navigation                    |
+| Empty state         | "No subscribers yet. Share your link to get started." | ✅           | Matches design                                   |
+| Subscriber count    | Not shown                                             | ✅           | Not in design (story AC6 adds it)                |
+| Referrals alignment | Right-aligned, bold for non-zero                      | ✅           | Matches design                                   |
+| Row hover           | No hover state                                        | ⚠️           | Design implies hover (not visible in static SVG) |
+
+#### Discrepancies Found
+
+1. **Search input missing.** Story AC2 requires search by email above table. Not implemented.
+
+2. **Row click navigation missing.** Story AC4 requires each row to navigate to `/dashboard/subscribers/:id`. Rows are not clickable.
+
+3. **Subscriber count not displayed.** Story AC6 requires count above table (e.g. "12 subscribers"). Not implemented.
+
+#### Confidence Level
+
+**100%** — Story 9.2 requirements are clear. All gaps are well-defined ACs. No ambiguities.

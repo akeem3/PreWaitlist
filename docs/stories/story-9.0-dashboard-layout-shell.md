@@ -63,7 +63,12 @@ updated: 2026-08-31
 
 ## Out of scope
 
-Sidebar sign-out button (keep existing header sign-out for now), sidebar search/filter (Story 9.2), sidebar subscriber list (Story 9.2), stat cards (Story 9.1), subscriber table redesign (Story 9.2).
+Sidebar search/filter (Story 9.2), sidebar subscriber list (Story 9.2), stat cards (Story 9.1), subscriber table redesign (Story 9.2).
+
+## Ambiguity Resolutions
+
+- **Sign-out button:** Header is being removed (replaced by sidebar). "Keep existing header sign-out" is impossible. Resolution: Move sign-out to sidebar bottom (within scope — necessary consequence of replacing the header). Design SVGs show sign-out at sidebar bottom.
+- **Sidebar bg `#FCFCFB`:** Not a design token. AGENTS.md says "never use hardcoded hex" but this is a one-off layout color. Resolution: Use `bg-[#FCFCFB]` — matches existing pattern for layout-specific values.
 
 ## Dev Notes
 

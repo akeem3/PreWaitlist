@@ -59,6 +59,10 @@ updated: 2026-08-31
 
 Cold/Unscored stat cards (not in design SVG), chart/signups-over-time (placeholder), qualification breakdown panel (not in Sprint 2 scope), "Page Views" and "Heat Score" labels (design uses different data model than PRD — follow PRD).
 
+## Ambiguity Resolutions
+
+- **Stat card colors:** Design SVG shows green cards (`bg-accent`, white text). Story AC6 explicitly says `bg-card` (white). Resolution: Follow story AC6 — white cards with border. Story ACs are the source of truth per AGENTS.md.
+
 ## Dev Notes
 
 ### T1 — Total Signups Card

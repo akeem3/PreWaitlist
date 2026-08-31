@@ -63,26 +63,20 @@ export async function GET(request: NextRequest) {
       if (user && !cookieRedirect) {
         const { data: waitlist } = await supabase
           .from("waitlists")
-          .select(
-            "id, subdomain, headline, template, brand_color, email_subject"
-          )
+          .select("id, subdomain, headline, template, brand_color")
           .eq("founder_id", user.id)
           .single();
 
         if (!waitlist) {
           redirectPath = "/onboarding/1";
         } else {
-          // Check if onboarding is complete
           const hasSlug = Boolean(waitlist.subdomain);
           const hasHeadline = Boolean(waitlist.headline);
           const hasTemplate = Boolean(waitlist.template);
           const hasBrandColor = Boolean(waitlist.brand_color);
-          const hasEmailSetup = Boolean(waitlist.email_subject);
 
           if (!hasSlug || !hasHeadline || !hasTemplate || !hasBrandColor) {
             redirectPath = "/onboarding/1";
-          } else if (!hasEmailSetup) {
-            redirectPath = "/onboarding/5";
           } else {
             redirectPath = "/dashboard";
           }
