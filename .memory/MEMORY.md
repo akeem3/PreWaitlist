@@ -455,8 +455,8 @@ Implementation order:
 | `components/ui/select.tsx`                    | Select                  | ✅ Done — native select, placeholder, error/helperText                                                              |
 | `components/ui/textarea.tsx`                  | Textarea                | ✅ Done — label, error/helperText, resize-y                                                                         |
 | `components/share/share-copy-link.tsx`        | ShareCopyLink           | ✅ Done — Web Share API + clipboard, 2s confirmation                                                                |
-| `components/share/referral-link.tsx`          | ReferralLink            | ✅ Done — clipboard copy, 2s "Copied!" confirmation, unique URL display                                             |
-| `components/share/share-buttons.tsx`          | ShareButtons            | ✅ Done — Twitter URL, LinkedIn URL, Copy Link, 2s confirmation                                                     |
+| `components/share/referral-link.tsx`          | ReferralLink            | ✅ Done — clipboard copy with execCommand fallback, 2s "Copied!" confirmation, unique URL display                   |
+| `components/share/share-buttons.tsx`          | ShareButtons            | ✅ Done — Twitter URL, LinkedIn URL, Copy Link with execCommand fallback, 2s confirmation                           |
 | `components/share/powered-by-footer.tsx`      | PoweredByFooter         | ✅ Done — dark template border fix applied, scoped to Free tier                                                     |
 | `components/onboarding/live-preview.tsx`      | LivePreview             | ✅ Done — 3 templates, BrowserFrame with dark mode (`data-theme`), desktop/mobile toggle, dark template tokens      |
 | `components/layout/marketing-layout.tsx`      | MarketingLayout         | ✅ Done — Header (sticky, backdrop-blur, scroll border, logo image, mobile drawer) + Footer (warm ivory, 16px text) |
@@ -611,6 +611,15 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - **Self-referral behavior mismatch:** Story AC5 says "rejects self-referral (returns 400)" but implementation silently nullifies referrer_id. Tests match actual behavior, not story AC wording.
 - **E2E test limitation:** Thank-you flow e2e test (`tests/e2e/thank-you-flow.spec.ts`) requires running server with seed data; tests use minimal assertions (page loads without JS errors, missing params → 404/500).
 - **Playwright config exists:** `playwright.config.ts` with `webServer: { command: "pnpm build && pnpm start" }`.
+- **ReferralLink component:** Now has copy icon button with execCommand fallback (not just clipboard API). Also used `copyToClipboard` helper function in both ReferralLink and ShareButtons.
+- **Thank-you page dynamic referral link:** Uses `headers()` to read `host` and `x-forwarded-proto` from request headers — referral link is now `http://` on localhost, `https://` in production. Not hardcoded to `prewaitlist.com`.
+- **Thank-you referred variant design:** Uses inline pill badge (`bg-accent/10 px-3 py-1 rounded-full`) with "Referred by {FirstName}" — NOT a separate section above the card. Referrer name derived from email local part, capitalized.
+- **Middleware double-subdomain guard:** Middleware rewrite at line 110 checks if path already starts with `/${subdomain}` before prepending — prevents double-subdomain on routes like `/:subdomain/leaderboard`.
+- **Leaderboard pagination:** Uses page-based prev/next (not "View More" append). `page` state (0-indexed), `rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)`. "Showing X–Y of Z" counter.
+- **Leaderboard column alignment:** All columns centered (`text-center`) with uniform `gap-8` between columns. Grid: `[80px_1fr_120px_140px]` on desktop.
+- **Leaderboard headers:** Use `text-body-sm font-medium` (14px) — NOT `text-caption` (12px). Design SVG showed larger headers than initially implemented.
+- **Leaderboard tiebreaker:** Secondary sort by `created_at ASC` (earlier signup = higher rank for ties). Previously returned `0` for equal referral counts.
+- **EmailCaptureForm Suspense:** Wrapped in `<Suspense>` boundary on public page to prevent SSR hydration issues with `?ref=` URL param reading.
 
 ## Epic 7 Progress (Public Waitlist Page)
 
@@ -652,9 +661,9 @@ Design specs use hex values that don't always match the token system exactly. Ma
 | Story | Status  | Summary                                                                                                                                                                                              |
 | ----- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 8.0   | ✅ done | Thank-You Page Route — `[subdomain]/thank-you/page.tsx`, position display, referral link, share buttons, powered-by footer                                                                           |
-| 8.1   | ✅ done | Referral Link & Share Buttons — `ReferralLink` + `ShareButtons` client components, clipboard copy, Twitter/LinkedIn share URLs                                                                       |
+| 8.1   | ✅ done | Referral Link & Share Buttons — `ReferralLink` + `ShareButtons` client components, clipboard copy with execCommand fallback, Twitter/LinkedIn share URLs                                             |
 | 8.2   | ✅ done | Referral Tracking API — POST `/api/subscribers` accepts `referral_code`, resolves to UUID, validates (same-waitlist, no self-referral)                                                               |
-| 8.3   | ✅ done | Referred Subscriber Variant — "Referred by a friend" heading, anonymized email, ref param flow end-to-end                                                                                            |
+| 8.3   | ✅ done | Referred Subscriber Variant — "Referred by" inline pill badge, referrer first name, ref param flow end-to-end                                                                                        |
 | 8.4   | ✅ done | Dashboard Subscriber Referral Column — batch query, sort by referrals, 6-column table, Referrals header with ↑/↓                                                                                     |
 | 8.5   | ✅ done | Epic 8 Tests — 31 tests (thank-you-page 5, referral-link 4, share-buttons 4, referred-variant 3, subscribers-referral 4, subscribers-referrals 3, dashboard-referral-column 4, thank-you-flow e2e 2) |
 
@@ -709,11 +718,16 @@ Design specs use hex values that don't always match the token system exactly. Ma
 34. ~~Story 8.4 — Dashboard Subscriber Referral Column~~ ✅ Done
 35. ~~Story 8.5 — Epic 8 Tests~~ ✅ Done
 36. ~~Merge epic-8 → dev~~ ✅ Done (fast-forward, no conflicts)
-37. Create Epic 9 branch — Dashboard + Store Features (Sprint 2)
-38. Epic 9 — Dashboard Restructure (left sidebar, stat cards, subscriber table)
-39. Epic 10 — Store Features (settings, domain config, email customization)
-40. Epic 11 — Email Nurture Sequences
-41. Epic 12 — Billing & Paddle Integration (Sprint 3)
+37. ~~Create Epic 9 branch from dev~~ ✅ Done (on `epic-9` branch)
+38. ~~Manual testing Steps 3-4 (Epics 7 & 8)~~ ✅ Done — all bugs found and fixed
+39. ~~investigate [ leaderboard issues ]~~ ✅ Done — pagination, alignment, column widths, sort fix
+40. ~~investigate [ step 3 ] — referral link dynamic URL~~ ✅ Done
+41. ~~investigate [ step 3 ] — thank-you page copy/share icons + leaderboard link + referred submit~~ ✅ Done
+42. ~~investigate [ step 2 ] — referred thank-you design mismatch~~ ✅ Done
+43. Epic 9 — Dashboard Restructure (left sidebar, stat cards, subscriber table) ← NEXT
+44. Epic 10 — Store Features (settings, domain config, email customization)
+45. Epic 11 — Email Nurture Sequences
+46. Epic 12 — Billing & Paddle Integration (Sprint 3)
 
 ## Decision + bug fix: "Powered by PreWaitlist" footer (2026-07)
 
