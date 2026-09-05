@@ -33,6 +33,22 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+vi.mock("../../../components/dashboard/signup-chart", () => ({
+  default: () => <div data-testid="signup-chart" />,
+}));
+
+vi.mock("../../../components/dashboard/qualification-panel", () => ({
+  default: () => <div data-testid="qualification-panel" />,
+}));
+
+vi.mock("../../../components/dashboard/top-referrers", () => ({
+  default: () => <div data-testid="top-referrers" />,
+}));
+
+vi.mock("../../../components/dashboard/warmth-panel", () => ({
+  default: () => <div data-testid="warmth-panel" />,
+}));
+
 import DashboardClient from "../../app/dashboard/client";
 
 const baseProps = {
@@ -51,6 +67,9 @@ const mockSubscribers = [
     referral_code: "abc123",
     referral_count: 5,
     created_at: "2026-08-20T10:00:00Z",
+    warmth_score: null,
+    quality_score: 71,
+    qual_answers: null,
   },
   {
     id: "2",
@@ -59,6 +78,9 @@ const mockSubscribers = [
     referral_code: "def456",
     referral_count: 0,
     created_at: "2026-08-21T10:00:00Z",
+    warmth_score: null,
+    quality_score: null,
+    qual_answers: null,
   },
   {
     id: "3",
@@ -67,6 +89,9 @@ const mockSubscribers = [
     referral_code: "ghi789",
     referral_count: 2,
     created_at: "2026-08-22T10:00:00Z",
+    warmth_score: null,
+    quality_score: 29,
+    qual_answers: null,
   },
 ];
 
@@ -75,12 +100,14 @@ describe("Subscriber Table", () => {
     vi.clearAllMocks();
   });
 
-  it("renders 4 column headers", () => {
+  it("renders 6 column headers", () => {
     render(<DashboardClient {...baseProps} subscribers={mockSubscribers} />);
     expect(screen.getByText("#")).toBeDefined();
     expect(screen.getByText("Email")).toBeDefined();
     expect(screen.getByText("Date")).toBeDefined();
     expect(screen.getByText("Referrals")).toBeDefined();
+    expect(screen.getByText("Quality")).toBeDefined();
+    expect(screen.getAllByText("Warmth").length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders subscriber emails", () => {
@@ -145,19 +172,23 @@ describe("Subscriber Table", () => {
     ).toBeDefined();
   });
 
-  it("navigates to subscriber detail on row click", async () => {
+  it("expands row on click to show details", async () => {
     const user = userEvent.setup();
     render(<DashboardClient {...baseProps} subscribers={mockSubscribers} />);
 
     await user.click(screen.getByText("alice@example.com"));
-    expect(mockPush).toHaveBeenCalledWith("/dashboard/subscribers/1");
+    expect(screen.getByText("View full profile →")).toBeDefined();
+    expect(screen.getByText("#1")).toBeDefined();
   });
 
   it("sorts by referrals when Referrals header is clicked", async () => {
     const user = userEvent.setup();
     render(<DashboardClient {...baseProps} subscribers={mockSubscribers} />);
 
-    await user.click(screen.getByText("Referrals"));
+    const referralsButton = screen
+      .getAllByText("Referrals")
+      .find((el) => el.tagName === "BUTTON");
+    await user.click(referralsButton!);
 
     const emails = screen.getAllByText(/@(example|test)\.com/);
     expect(emails[0].textContent).toBe("alice@example.com");
@@ -171,7 +202,16 @@ describe("Subscriber Table", () => {
 
     expect(screen.getByText("↑")).toBeDefined();
 
-    await user.click(screen.getByText("Referrals"));
+    const referralsButton = screen
+      .getAllByText("Referrals")
+      .find((el) => el.tagName === "BUTTON");
+    await user.click(referralsButton!);
     expect(screen.getByText("↓")).toBeDefined();
+  });
+
+  it("renders quality scores", () => {
+    render(<DashboardClient {...baseProps} subscribers={mockSubscribers} />);
+    expect(screen.getByText("71%")).toBeDefined();
+    expect(screen.getByText("29%")).toBeDefined();
   });
 });

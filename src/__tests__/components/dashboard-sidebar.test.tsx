@@ -116,7 +116,7 @@ describe("Sidebar", () => {
     const subscribers = screen.getByText("Subscribers").closest("a");
 
     expect(overview).toHaveAttribute("href", "/dashboard");
-    expect(subscribers).toHaveAttribute("href", "/dashboard/subscribers");
+    expect(subscribers).toHaveAttribute("href", "/dashboard");
   });
 
   it("toggles mobile sidebar visibility", () => {

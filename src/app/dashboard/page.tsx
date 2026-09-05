@@ -35,7 +35,9 @@ export default async function DashboardPage() {
 
   const { data: subscribers } = await supabase
     .from("subscribers")
-    .select("id, email, position, referral_code, warmth_score, created_at")
+    .select(
+      "id, email, position, referral_code, warmth_score, qual_answers, created_at"
+    )
     .eq("waitlist_id", waitlist.id)
     .order("position", { ascending: true });
 
@@ -64,19 +66,31 @@ export default async function DashboardPage() {
       referral_count: referralCounts.get(s.id) || 0,
     })) || [];
 
+  const totalReferrals = subscribersWithCounts.reduce(
+    (sum, s) => sum + s.referral_count,
+    0
+  );
+  const subscribersWithQuality = subscribersWithCounts.map((s) => ({
+    ...s,
+    quality_score:
+      totalReferrals > 0
+        ? Math.round((s.referral_count / totalReferrals) * 100)
+        : null,
+  }));
+
   const today = new Date().toISOString().split("T")[0];
   const stats = {
-    totalSignups: subscribersWithCounts.length,
+    totalSignups: subscribersWithQuality.length,
     referralPercentage:
-      subscribersWithCounts.length > 0
+      subscribersWithQuality.length > 0
         ? Math.round(
-            (subscribersWithCounts.filter((s) => s.referral_count > 0).length /
-              subscribersWithCounts.length) *
+            (subscribersWithQuality.filter((s) => s.referral_count > 0).length /
+              subscribersWithQuality.length) *
               100
           )
         : null,
     todaySignups:
-      subscribersWithCounts.filter((s) => s.created_at.startsWith(today))
+      subscribersWithQuality.filter((s) => s.created_at.startsWith(today))
         .length || 0,
   };
 
@@ -87,7 +101,7 @@ export default async function DashboardPage() {
       logoUrl={waitlist.logo_url}
       tier={tier}
       subdomain={waitlist.subdomain}
-      subscribers={subscribersWithCounts}
+      subscribers={subscribersWithQuality}
       stats={stats}
     />
   );

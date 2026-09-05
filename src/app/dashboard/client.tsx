@@ -2,7 +2,45 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Sidebar } from "../../../components/dashboard/sidebar";
+
+const SignupChart = dynamic(
+  () => import("../../../components/dashboard/signup-chart"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-[var(--card-radius)] border border-border bg-card p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="h-5 w-40 animate-pulse rounded bg-muted" />
+          <div className="h-5 w-20 animate-pulse rounded bg-muted" />
+        </div>
+        <div className="h-[200px] animate-pulse rounded bg-muted" />
+      </div>
+    ),
+  }
+);
+
+const QualificationPanel = dynamic(
+  () => import("../../../components/dashboard/qualification-panel"),
+  {
+    ssr: false,
+  }
+);
+
+const TopReferrers = dynamic(
+  () => import("../../../components/dashboard/top-referrers"),
+  {
+    ssr: false,
+  }
+);
+
+const WarmthPanel = dynamic(
+  () => import("../../../components/dashboard/warmth-panel"),
+  {
+    ssr: false,
+  }
+);
 
 interface Subscriber {
   id: string;
@@ -11,6 +49,9 @@ interface Subscriber {
   referral_code: string;
   referral_count: number;
   created_at: string;
+  warmth_score: string | null;
+  quality_score: number | null;
+  qual_answers: Record<string, string> | null;
 }
 
 interface DashboardClientProps {
@@ -40,7 +81,13 @@ const CHECKLIST_ITEMS = [
   },
 ];
 
-const TABLE_COLUMNS = ["#", "Email", "Date", "Referrals"];
+const TABLE_COLUMNS = ["#", "Email", "Date", "Referrals", "Quality", "Warmth"];
+
+const WARMTH_ORDER: Record<string, number> = {
+  hot: 0,
+  warm: 1,
+  cold: 2,
+};
 
 function formatStat(value: number): string {
   return value > 0 ? String(value) : "—";
@@ -58,10 +105,12 @@ export default function DashboardClient({
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState<"position" | "referral_count">(
-    "position"
-  );
+  const [sortField, setSortField] = useState<
+    "position" | "referral_count" | "quality_score" | "warmth_score"
+  >("position");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [warmthFilter, setWarmthFilter] = useState<string>("all");
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const router = useRouter();
 
@@ -72,6 +121,16 @@ export default function DashboardClient({
           ? b.referral_count - a.referral_count
           : a.referral_count - b.referral_count;
       }
+      if (sortField === "quality_score") {
+        const aVal = a.quality_score ?? -1;
+        const bVal = b.quality_score ?? -1;
+        return sortDir === "desc" ? bVal - aVal : aVal - bVal;
+      }
+      if (sortField === "warmth_score") {
+        const aVal = a.warmth_score ? (WARMTH_ORDER[a.warmth_score] ?? 3) : 3;
+        const bVal = b.warmth_score ? (WARMTH_ORDER[b.warmth_score] ?? 3) : 3;
+        return sortDir === "desc" ? aVal - bVal : bVal - aVal;
+      }
       return sortDir === "asc"
         ? a.position - b.position
         : b.position - a.position;
@@ -79,19 +138,47 @@ export default function DashboardClient({
   }, [subscribers, sortField, sortDir]);
 
   const filteredSubscribers = useMemo(() => {
-    if (!searchQuery) return sortedSubscribers;
-    return sortedSubscribers.filter((s) =>
-      s.email.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [sortedSubscribers, searchQuery]);
+    let result = sortedSubscribers;
+    if (warmthFilter === "unscored") {
+      result = result.filter((s) => !s.warmth_score);
+    } else if (warmthFilter !== "all") {
+      result = result.filter((s) => s.warmth_score === warmthFilter);
+    }
+    if (searchQuery) {
+      result = result.filter((s) =>
+        s.email.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    return result;
+  }, [sortedSubscribers, searchQuery, warmthFilter]);
 
-  function handleSort(field: "position" | "referral_count") {
+  function handleSort(
+    field: "position" | "referral_count" | "quality_score" | "warmth_score"
+  ) {
     if (sortField === field) {
       setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
       setSortField(field);
-      setSortDir(field === "referral_count" ? "desc" : "asc");
+      setSortDir(
+        field === "quality_score" ||
+          field === "warmth_score" ||
+          field === "referral_count"
+          ? "desc"
+          : "asc"
+      );
     }
+  }
+
+  function toggleRow(id: string) {
+    if (expandedRows.has(id)) {
+      router.push(`/dashboard/subscribers/${id}`);
+      return;
+    }
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
   }
 
   function handleCopy() {
@@ -116,17 +203,21 @@ export default function DashboardClient({
 
   function handleExportCsv() {
     const headers = [
-      "position",
-      "email",
-      "referral_code",
-      "referral_count",
-      "created_at",
+      "Position",
+      "Email",
+      "Referral Code",
+      "Referrals",
+      "Quality Score",
+      "Warmth",
+      "Signup Date",
     ];
     const rows = filteredSubscribers.map((s) => [
       s.position,
       s.email,
       s.referral_code,
       s.referral_count,
+      s.quality_score ?? "",
+      s.warmth_score ?? "Unscored",
       s.created_at,
     ]);
 
@@ -360,30 +451,17 @@ export default function DashboardClient({
             </div>
           </div>
 
-          <div className="mb-6 flex min-h-[120px] items-center justify-center rounded-[var(--card-radius)] border border-dashed border-border bg-card">
-            <span className="text-body-sm text-muted-foreground">
-              signups over time — your chart will appear here
-            </span>
+          <div className="mb-6">
+            <SignupChart subdomain={subdomain} />
+          </div>
+
+          <div className="mb-6">
+            <TopReferrers subscribers={subscribers} />
           </div>
 
           <div className="mb-6 grid grid-cols-2 gap-4">
-            <div className="rounded-[var(--card-radius)] border border-border bg-card p-5">
-              <h3 className="mb-3 text-body-sm font-medium text-foreground">
-                qualification breakdown
-              </h3>
-              <p className="text-body-sm text-muted-foreground">No data yet</p>
-            </div>
-            <div className="rounded-[var(--card-radius)] border border-border bg-card p-5">
-              <h3 className="mb-3 text-body-sm font-medium text-foreground">
-                warmth distribution
-              </h3>
-              <p className="text-body-sm text-muted-foreground">
-                0 hot · 0 warm · 0 cold
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                locked — live in a future update
-              </p>
-            </div>
+            <QualificationPanel subdomain={subdomain} />
+            <WarmthPanel />
           </div>
 
           <div className="rounded-[var(--card-radius)] border border-border bg-card">
@@ -399,26 +477,44 @@ export default function DashboardClient({
                 <p className="text-body-sm text-muted-foreground">
                   {filteredSubscribers.length} subscriber
                   {filteredSubscribers.length !== 1 ? "s" : ""}
+                  {warmthFilter !== "all" ? ` (${warmthFilter})` : ""}
                 </p>
-                {tier === "pro" && (
-                  <button
-                    type="button"
-                    onClick={handleExportCsv}
-                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-body-sm text-foreground transition-colors hover:bg-muted/50"
+                <div className="flex items-center gap-3">
+                  <select
+                    value={warmthFilter}
+                    onChange={(e) => setWarmthFilter(e.target.value)}
+                    className="rounded-lg border border-border bg-card px-3 py-1.5 text-body-sm text-foreground"
                   >
-                    Export CSV
-                  </button>
-                )}
+                    <option value="all">All warmth</option>
+                    <option value="hot">Hot</option>
+                    <option value="warm">Warm</option>
+                    <option value="cold">Cold</option>
+                    <option value="unscored">Unscored</option>
+                  </select>
+                  {tier === "pro" && (
+                    <button
+                      type="button"
+                      onClick={handleExportCsv}
+                      className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-body-sm text-foreground transition-colors hover:bg-muted/50"
+                    >
+                      Export CSV
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-4 gap-4 border-b border-border px-5 py-3">
+            <div className="grid grid-cols-6 gap-4 border-b border-border px-5 py-3">
               {TABLE_COLUMNS.map((col) => {
                 const field =
                   col === "Referrals"
                     ? "referral_count"
                     : col === "#"
                       ? "position"
-                      : null;
+                      : col === "Quality"
+                        ? "quality_score"
+                        : col === "Warmth"
+                          ? "warmth_score"
+                          : null;
                 const isActive = field === sortField;
                 return (
                   <button
@@ -444,31 +540,122 @@ export default function DashboardClient({
             {filteredSubscribers.length > 0 ? (
               <div>
                 {filteredSubscribers.map((sub) => (
-                  <div
-                    key={sub.id}
-                    onClick={() =>
-                      router.push(`/dashboard/subscribers/${sub.id}`)
-                    }
-                    className="grid grid-cols-4 gap-4 border-b border-border px-5 py-3 last:border-b-0 cursor-pointer transition-colors hover:bg-muted/30"
-                  >
-                    <span className="text-body-sm text-muted-foreground">
-                      {sub.position}
-                    </span>
-                    <span className="truncate text-body-sm text-foreground">
-                      {sub.email}
-                    </span>
-                    <span className="text-body-sm text-muted-foreground">
-                      {sub.created_at.split("T")[0]}
-                    </span>
-                    <span
-                      className={`text-right text-body-sm ${
-                        sub.referral_count === 0
-                          ? "text-muted-foreground"
-                          : "font-medium text-foreground"
-                      }`}
+                  <div key={sub.id}>
+                    <div
+                      onClick={() => toggleRow(sub.id)}
+                      className="grid grid-cols-6 gap-4 border-b border-border px-5 py-3 cursor-pointer transition-colors hover:bg-muted/30"
                     >
-                      {sub.referral_count}
-                    </span>
+                      <span className="text-body-sm text-muted-foreground">
+                        {sub.position}
+                      </span>
+                      <span className="truncate text-body-sm text-foreground">
+                        {sub.email}
+                      </span>
+                      <span className="text-body-sm text-muted-foreground">
+                        {sub.created_at.split("T")[0]}
+                      </span>
+                      <span
+                        className={`text-right text-body-sm ${
+                          sub.referral_count === 0
+                            ? "text-muted-foreground"
+                            : "font-medium text-foreground"
+                        }`}
+                      >
+                        {sub.referral_count}
+                      </span>
+                      <span
+                        className={`text-right text-body-sm ${
+                          sub.quality_score === null
+                            ? "text-muted-foreground"
+                            : "font-medium text-foreground"
+                        }`}
+                      >
+                        {sub.quality_score !== null
+                          ? `${sub.quality_score}%`
+                          : "—"}
+                      </span>
+                      <span className="text-body-sm">
+                        {sub.warmth_score ? (
+                          <span
+                            className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                              sub.warmth_score === "hot"
+                                ? "bg-red-100 text-red-700"
+                                : sub.warmth_score === "warm"
+                                  ? "bg-amber-100 text-amber-700"
+                                  : "bg-blue-100 text-blue-700"
+                            }`}
+                          >
+                            {sub.warmth_score}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            Unscored
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    {expandedRows.has(sub.id) && (
+                      <div className="border-b border-border bg-muted/20 px-5 py-3">
+                        <div className="grid grid-cols-3 gap-4 text-body-sm">
+                          <div>
+                            <span className="text-muted-foreground">
+                              Position:{" "}
+                            </span>
+                            <span className="font-medium text-foreground">
+                              #{sub.position}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">
+                              Referrals:{" "}
+                            </span>
+                            <span className="font-medium text-foreground">
+                              {sub.referral_count}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">
+                              Signed up:{" "}
+                            </span>
+                            <span className="font-medium text-foreground">
+                              {sub.created_at.split("T")[0]}
+                            </span>
+                          </div>
+                        </div>
+                        {sub.qual_answers &&
+                          Object.keys(sub.qual_answers).length > 0 && (
+                            <div className="mt-3 border-t border-border pt-3">
+                              <p className="mb-1 text-xs font-medium text-muted-foreground">
+                                Qualification Answers
+                              </p>
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                {Object.entries(sub.qual_answers).map(
+                                  ([q, a]) => (
+                                    <div key={q}>
+                                      <span className="text-muted-foreground">
+                                        {q}:{" "}
+                                      </span>
+                                      <span className="text-foreground">
+                                        {String(a)}
+                                      </span>
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/dashboard/subscribers/${sub.id}`);
+                          }}
+                          className="mt-3 text-xs font-medium text-accent hover:underline"
+                        >
+                          View full profile →
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

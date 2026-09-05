@@ -390,6 +390,12 @@ create table public.subscribers (
   constraint email_format check (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
 );
 
+-- Referral Quality Score (Epic 9, Story 9.6)
+-- Formula: (subscribers this subscriber referred / total referrals across all subscribers) * 100
+-- Display: percentage (0-100%) in subscriber table and top referrers panel
+-- Purpose: transparent metric enabling founders to identify high-impact referrers
+-- Scope: zero-referral subscribers show null (not 0%), null when total referrals = 0 (divide-by-zero guard)
+
 -- Sprint 2: page views for warmth tracking
 create table public.page_views (
   id uuid primary key default gen_random_uuid(),

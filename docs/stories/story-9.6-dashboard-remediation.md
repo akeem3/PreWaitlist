@@ -97,7 +97,7 @@ All implementation in this story MUST comply with `docs/design/dashboard-design-
 ### Warmth Distribution
 
 - AC19: The dashboard shall display a "Warmth Distribution" card showing Hot, Warm, Cold, and Unscored counts as horizontal bars.
-- AC20: For Free tier, the card shall show a locked state with a blur overlay, "Pro" badge, and lock icon.
+- AC20: The warmth distribution card shall show a neutral placeholder for all tiers (greyed layout with "Warmth tracking coming in a future update" message). The warmth engine ships in Sprint 3 — viewing is available on all tiers per the product spec.
 - AC21: For Pro tier, the card shall display the real warmth distribution data from the existing `/api/warmth/[subdomain]` endpoint.
 - AC22: When no subscribers exist, the card shall display em-dashes for all categories.
 

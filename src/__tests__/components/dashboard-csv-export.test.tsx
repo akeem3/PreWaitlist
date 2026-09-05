@@ -46,6 +46,9 @@ const baseProps = {
       referral_code: "abc123",
       referral_count: 5,
       created_at: "2026-08-20T10:00:00Z",
+      warmth_score: null,
+      quality_score: 100,
+      qual_answers: null,
     },
     {
       id: "2",
@@ -54,6 +57,9 @@ const baseProps = {
       referral_code: "def456",
       referral_count: 0,
       created_at: "2026-08-21T10:00:00Z",
+      warmth_score: null,
+      quality_score: null,
+      qual_answers: null,
     },
   ],
 };
@@ -127,7 +133,7 @@ describe("CSV Export", () => {
     const text = await blob.text();
     const firstLine = text.split("\n")[0];
     expect(firstLine).toBe(
-      "position,email,referral_code,referral_count,created_at"
+      "Position,Email,Referral Code,Referrals,Quality Score,Warmth,Signup Date"
     );
   });
 

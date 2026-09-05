@@ -61,7 +61,7 @@ const NAV_ITEMS = [
   },
   {
     label: "Subscribers",
-    href: "/dashboard/subscribers",
+    href: "/dashboard",
     icon: (
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <circle cx="6" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.5" />
@@ -235,7 +235,7 @@ export function Sidebar({
 
       <aside
         className={cn(
-          "fixed top-0 left-0 z-50 flex h-full w-[268px] flex-col border-r border-border bg-[#FCFCFB]",
+          "fixed top-0 left-0 z-50 flex h-full w-67 flex-col border-r border-border bg-[#FCFCFB]",
           "transition-transform duration-200 lg:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
@@ -298,8 +298,11 @@ export function Sidebar({
         </div>
 
         <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
-          {NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.href;
+          {NAV_ITEMS.map((item, index) => {
+            const isFirstMatchingHref =
+              pathname === item.href &&
+              NAV_ITEMS.findIndex((n) => n.href === item.href) === index;
+            const isActive = isFirstMatchingHref;
             const isLocked = "locked" in item && item.locked;
             const isDisabled = "disabled" in item && item.disabled;
 

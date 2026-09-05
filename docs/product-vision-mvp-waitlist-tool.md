@@ -176,6 +176,8 @@ _The founder's control room. Qualification breakdown, warmth distribution, and r
 
 **[UPDATED — 2026-08-13]** Navigation architecture: left sidebar (Overview, Subscribers, Qualification, Leaderboard, Warmth, Updates, Broadcast, Settings) + top bar for global actions (live URL/copy, share shortcut, notifications), replacing Sprint 1's top-tab shell. Warmth distribution ships as a locked/empty placeholder in Sprint 2 (real engine in Sprint 3, per the sprint breakdown below). Top referrers/leaderboard: subscribers who skip the optional post-signup name field display as a masked email rather than a bare identifier. Full panel-by-panel content and copy for all four dashboard states (empty / active / warning / pre-launch) is specified in `dashboard-design-spec.md` — this table stays the feature-grading reference, that document is the design source of truth.
 
+**[UPDATED — 2026-09-05]** Referral Quality Score: transparent metric displayed in subscriber table and top referrers panel. Formula: `(subscribers this subscriber referred / total referrals across all subscribers) × 100`. Zero-referral subscribers show null (not 0%). Null when total referrals = 0 (divide-by-zero guard). Purpose: enables founders to identify high-impact referrers for customer discovery outreach. No platform in market provides this metric — competitive differentiator.
+
 ---
 
 ## Module 6 — Account, Tiers & Billing
