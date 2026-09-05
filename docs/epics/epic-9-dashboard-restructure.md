@@ -1,7 +1,7 @@
 # Epic 9 — Dashboard Restructure
 
 **Status:** ready
-**Source:** [PRD S2a Sprint 2](../PRD.md#2a-sprint-2--public-page-dashboard-active), [PRD S7.5 Route/Handler List](../PRD.md#75-route--handler-list), [PRD S7.6 Component Tree](../PRD.md#76-component-tree-high-level)
+**Source:** [PRD S2a Sprint 2](../PRD.md#2a-sprint-2--public-page-dashboard-active), [PRD S7.5 Route/Handler List](../PRD.md#75-route--handler-list), [PRD S7.6 Component Tree](../PRD.md#76-component-tree-high-level), [MVP Vision Module 5](../product-vision-mvp-waitlist-tool.md#module-5--dashboard--analytics)
 
 ## Design References
 
@@ -12,24 +12,26 @@
 
 ## Goal
 
-Restructure the founder dashboard from a top-tab layout to a left-sidebar navigation pattern matching the Sprint 2 design spec. The dashboard provides founders with real subscriber data, CSV export, and a subscriber detail view.
+Restructure the founder dashboard from a top-tab layout to a left-sidebar navigation pattern matching the Sprint 2 design spec, then close all remaining gaps against the MVP vision — including a signups-over-time chart, qualification breakdown, referral quality scores, top referrers panel, warmth distribution, enhanced subscriber table, and loading skeleton. The dashboard provides founders with real subscriber data, analytics, CSV export, and a subscriber detail view.
 
 ## Definition of Done
 
-The dashboard displays a persistent left sidebar with navigation (Overview, Subscribers, Broadcasts, Settings). The main content area shows stat cards with real subscriber counts, a subscriber table with search and sorting, and a CSV export button for Pro tier founders. The subscriber detail page shows individual subscriber information, qualification answers, and referral chain.
+The dashboard displays a persistent left sidebar with navigation (8 items: Overview, Subscribers, Qualification, Leaderboard, Warmth, Updates, Broadcast, Settings). The main content area shows: stat cards with real subscriber counts, a signups-over-time bar chart (30d/All Time), a qualification breakdown panel, a top referrers panel (quality-scored), a warmth distribution card (locked for Free, live for Pro), an enhanced subscriber table with warmth/quality columns and warmth filter, CSV export with all fields, and a loading skeleton. The subscriber detail page shows individual subscriber information, qualification answers, and referral chain. All features are tested and documented.
 
 ## Story Index
 
-| ID  | Title                             | Depends on | Status | Story File                                                  |
-| --- | --------------------------------- | ---------- | ------ | ----------------------------------------------------------- |
-| 9.0 | Dashboard Layout Shell            | —          | ready  | [story-9.0](../stories/story-9.0-dashboard-layout-shell.md) |
-| 9.1 | Stat Cards with Real Data         | 9.0        | ready  | [story-9.1](../stories/story-9.1-stat-cards.md)             |
-| 9.2 | Subscriber Table Design Alignment | 9.0        | ready  | [story-9.2](../stories/story-9.2-subscriber-table.md)       |
-| 9.3 | CSV Export (Pro Tier)             | 9.2        | ready  | [story-9.3](../stories/story-9.3-csv-export.md)             |
-| 9.4 | Subscriber Detail Page            | 9.2        | ready  | [story-9.4](../stories/story-9.4-subscriber-detail.md)      |
-| 9.5 | Epic 9 Tests                      | 9.0–9.4    | ready  | [story-9.5](../stories/story-9.5-epic9-tests.md)            |
+| ID  | Title                                | Depends on | Status | Story File                                                  |
+| --- | ------------------------------------ | ---------- | ------ | ----------------------------------------------------------- |
+| 9.0 | Dashboard Layout Shell               | —          | ready  | [story-9.0](../stories/story-9.0-dashboard-layout-shell.md) |
+| 9.1 | Stat Cards with Real Data            | 9.0        | ready  | [story-9.1](../stories/story-9.1-stat-cards.md)             |
+| 9.2 | Subscriber Table Design Alignment    | 9.0        | ready  | [story-9.2](../stories/story-9.2-subscriber-table.md)       |
+| 9.3 | CSV Export (Pro Tier)                | 9.2        | ready  | [story-9.3](../stories/story-9.3-csv-export.md)             |
+| 9.4 | Subscriber Detail Page               | 9.2        | ready  | [story-9.4](../stories/story-9.4-subscriber-detail.md)      |
+| 9.5 | Epic 9 Tests (Original)              | 9.0–9.4    | ready  | [story-9.5](../stories/story-9.5-epic9-tests.md)            |
+| 9.6 | Dashboard Remediation — MVP Gap Fill | 9.0–9.4    | ready  | [story-9.6](../stories/story-9.6-dashboard-remediation.md)  |
+| 9.7 | Epic 9 Final Tests                   | 9.0–9.6    | ready  | [story-9.7](../stories/story-9.7-epic9-final-tests.md)      |
 
-Work through these in dependency order, one at a time. Story 9.0 must be complete before 9.1 and 9.2 begin. Story 9.2 must be complete before 9.3 and 9.4 begin. Story 9.5 must be the last story — it tests everything built in 9.0–9.4.
+Work through these in dependency order, one at a time. Stories 9.0–9.4 form the foundation (layout, stat cards, table, export, detail). Story 9.5 tests the foundation. Story 9.6 closes all MVP gaps (chart, panels, table enhancements, loading skeleton). Story 9.7 is the final comprehensive test pass covering everything in 9.0–9.6.
 
 ---
 
@@ -225,3 +227,114 @@ Work through these in dependency order, one at a time. Story 9.0 must be complet
 - T6: Run `pnpm test` for unit tests, `pnpm lint` for linting, `pnpm build` for build verification. **Status: existing tests pass (86 tests across 8 files), but no Epic 9 tests exist yet.**
 
 **Existing dashboard test:** `src/__tests__/components/dashboard-referral-column.test.tsx` exists but tests Sprint 1 referral column feature, not Epic 9 components.
+
+---
+
+### Story 9.6 — Dashboard Remediation — MVP Gap Fill
+
+**Status:** ready
+**Design Refs:** `docs/design/High-fidelity-Sprit2/Dashboard_Empty_state_HF4.svg`, `docs/design/High-fidelity-Sprit2/Dashboard_active_state_HF5.svg`
+
+**Story:** As the founder, I want the dashboard to close the remaining gaps between what's built and what the MVP spec requires — including a signups-over-time chart, qualification breakdown, referral quality scores, top referrers panel, warmth distribution, enhanced subscriber table, and a loading skeleton — so that the dashboard is feature-complete for Sprint 2 launch.
+
+**Acceptance Criteria (EARS):**
+
+_Data Layer:_
+
+- AC1: The `Subscriber` interface in `client.tsx` shall include `warmth_score: string | null`, `quality_score: number | null`, and `qual_answers: Record<string, string> | null`.
+- AC2: The server component `page.tsx` shall fetch `warmth_score` and `qual_answers` for every subscriber in the main query.
+- AC3: The server component shall compute `quality_score` for each subscriber server-side: `(subscriber.referral_count / total_referrals × 100)` rounded to nearest integer, or `null` when `total_referrals === 0`.
+
+_Signups-Over-Time Chart:_
+
+- AC4: The dashboard shall display a bar chart showing daily signup counts for the founder's waitlist.
+- AC5: The chart shall default to a 30-day rolling window from today.
+- AC6: The chart shall provide an "All Time" toggle that displays all historical signups.
+- AC7: Each bar shall display the date and count on hover (tooltip).
+- AC8: The chart shall use design system tokens: `bg-card`, `border-border`, `rounded-[var(--card-radius)]`.
+- AC9: When no signups exist in the selected range, the chart shall display "No signups in this period" with an em-dash.
+
+_Qualification Breakdown Panel:_
+
+- AC10: The dashboard shall display a "Qualification Breakdown" card showing each qualification question and its answer distribution.
+- AC11: For each question, the panel shall show the question text and a horizontal bar with the count of subscribers who gave each answer.
+- AC12: When no qualification questions exist, the panel shall display "No qualification questions configured."
+- AC13: When questions exist but no subscribers have answered, the panel shall display "No answers yet."
+
+_Referral Quality Score + Top Referrers:_
+
+- AC14: The subscriber table shall include a "Quality" column showing each subscriber's quality score as a percentage (e.g. "42%").
+- AC15: The quality score column shall be sortable (default: descending).
+- AC16: A "Top Referrers" panel shall display the top 5 subscribers ranked by quality score, showing email, referral count, and quality percentage.
+- AC17: The top referrers panel shall only render when ≥1 subscriber has `referral_count > 0`. When 0 referrers exist, display "Share your link to get referrals" CTA.
+- AC18: The quality score formula shall be documented in `docs/PRD.md` and `docs/product-vision-mvp-waitlist-tool.md`.
+
+_Warmth Distribution:_
+
+- AC19: The dashboard shall display a "Warmth Distribution" card showing Hot, Warm, Cold, and Unscored counts as horizontal bars.
+- AC20: For Free tier, the card shall show a locked state with a blur overlay, "Pro" badge, and lock icon.
+- AC21: For Pro tier, the card shall display the real warmth distribution data from the existing `/api/warmth/[subdomain]` endpoint.
+- AC22: When no subscribers exist, the card shall display em-dashes for all categories.
+
+_Subscriber Table Enhancements:_
+
+- AC23: The subscriber table shall include a "Warmth" column showing a colored badge: Hot (red), Warm (yellow), Cold (blue), Unscored (gray).
+- AC24: The subscriber table shall include an expandable row detail showing `qual_answers` as key-value pairs when the user clicks a row.
+- AC25: The table shall include a warmth filter dropdown above the table: "All", "Hot", "Warm", "Cold", "Unscored" — defaulting to "All".
+- AC26: The warmth filter shall filter the displayed subscriber list client-side.
+
+_CSV Export Enhancement:_
+
+- AC27: The CSV export shall include columns: Position, Email, Referral Code, Referrals, Quality Score, Warmth, Date.
+- AC28: The CSV headers shall be human-readable: "Position", "Email", "Referral Code", "Referrals", "Quality Score", "Warmth", "Signup Date".
+
+_Loading State:_
+
+- AC29: The dashboard shall render a loading skeleton (`src/app/dashboard/loading.tsx`) with placeholder bars for stat cards, chart, and table while data is being fetched.
+- AC30: The loading skeleton shall use design system tokens (`bg-muted`, `animate-pulse`).
+
+_Final Verification:_
+
+- AC31: Lint and build shall pass with zero errors.
+- AC32: All existing tests (166+) shall continue to pass.
+
+**Tasks:** T1 (AC1-AC3) Data layer · T2 (AC4-AC9) Signups-over-time chart · T3 (AC10-AC13) Qualification breakdown panel · T4 (AC14-AC18) Quality score + top referrers · T5 (AC19-AC22) Warmth distribution · T6 (AC23-AC26) Subscriber table enhancements · T7 (AC27-AC28) CSV export enhancement · T8 (AC29-AC30) Loading skeleton · T9 (AC31-AC32) Final verification
+
+**Out of scope:** Real-time warmth scoring engine (Sprint 3), traffic source breakdown (v1.1), device breakdown (v1.1), A/B testing (out of scope), dashboard navigation to other pages, qualification breakdown over time, referral quality score tooltip.
+
+**Dev Notes:** See [story-9.6](../stories/story-9.6-dashboard-remediation.md) for full implementation details, API endpoint specs, design token reference, and code patterns.
+
+---
+
+### Story 9.7 — Epic 9 Final Tests
+
+**Status:** ready
+**Design Refs:** — (no UI)
+
+**Story:** As the founder, I want comprehensive tests covering every Epic 9 component, page, and API endpoint — including the remediation work from Story 9.6 — so that the entire dashboard is regression-proof and production-ready.
+
+**Test Infrastructure:** Vitest + @testing-library/react for component tests. Config: `vitest.config.mts` (happy-dom, `src/**/*.test.{ts,tsx}`). Test location: `src/__tests__/components/` for component tests, `src/__tests__/api/` for API route tests. Setup: `src/__tests__/setup.ts`. Pattern: `@testing-library/react` + `@testing-library/user-event` + `vitest`.
+
+**Acceptance Criteria (EARS):**
+
+- AC1: The system shall have component tests for the dashboard sidebar covering: renders all 8 navigation items, active state highlighting, disabled/locked states, mobile hamburger toggle, sign-out button.
+- AC2: The system shall have component tests for stat cards covering: renders 4 cards (Total Signups, Referrals, Today, Warmth), displays real subscriber count, displays referral percentage, displays today count, shows warmth locked state, shows em-dash when no data.
+- AC3: The system shall have component tests for the signups-over-time chart covering: renders chart with data, renders empty state, 30d/All Time toggle, tooltip content.
+- AC4: The system shall have component tests for the qualification breakdown panel covering: renders question + answer bars, empty state (no questions), empty state (no answers).
+- AC5: The system shall have component tests for the top referrers panel covering: renders top 5, sorts by quality score, empty state (0 referrers), CTA in empty state.
+- AC6: The system shall have component tests for the warmth distribution panel covering: renders 4 bars (Hot/Warm/Cold/Unscored), locked state for Free tier, live data for Pro tier, em-dash when no data.
+- AC7: The system shall have component tests for the subscriber table covering: renders all columns (#, Email, Date, Referrals, Quality, Warmth), search filters by email, warmth filter dropdown, sort by position/referrals/quality, expandable row shows qual answers, row click navigation, empty state.
+- AC8: The system shall have component tests for CSV export covering: button visible for Pro tier, button hidden for Free tier, CSV contains all 7 columns, CSV filename format.
+- AC9: The system shall have component tests for the subscriber detail page covering: renders subscriber info, renders referral data, renders qualification answers, back button, not found state.
+- AC10: The system shall have API route tests for `/api/dashboard/chart` covering: returns daily counts, handles empty data, requires auth.
+- AC11: The system shall have API route tests for `/api/dashboard/qualification` covering: returns question distributions, handles no questions, requires auth.
+- AC12: The system shall have API route tests for `/api/warmth/[subdomain]` covering: returns warmth counts, handles missing waitlist.
+- AC13: All tests shall pass with `pnpm test`.
+- AC14: Lint and build shall pass with zero errors.
+- AC15: Total test count across the project shall be ≥200.
+
+**Tasks:** T1 (AC1) Sidebar tests · T2 (AC2) Stat cards tests · T3 (AC3) Chart tests · T4 (AC4) Qualification panel tests · T5 (AC5) Top referrers tests · T6 (AC6) Warmth panel tests · T7 (AC7) Subscriber table tests · T8 (AC8) CSV export tests · T9 (AC9) Subscriber detail tests · T10 (AC10) Chart API tests · T11 (AC11) Qualification API tests · T12 (AC12) Warmth API tests · T13 (AC13-AC15) Full verification
+
+**Out of scope:** E2E tests (Playwright), tests for Epic 7/8/10 features, performance testing, visual regression testing.
+
+**Dev Notes:** See [story-9.7](../stories/story-9.7-epic9-final-tests.md) for full test specifications, mock factories, test data patterns, and coverage map.

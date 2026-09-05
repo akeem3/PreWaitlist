@@ -78,8 +78,8 @@ describe("Subscriber Table", () => {
   it("renders 4 column headers", () => {
     render(<DashboardClient {...baseProps} subscribers={mockSubscribers} />);
     expect(screen.getByText("#")).toBeDefined();
-    expect(screen.getByText("Subscriber Email")).toBeDefined();
-    expect(screen.getByText("Signup Date")).toBeDefined();
+    expect(screen.getByText("Email")).toBeDefined();
+    expect(screen.getByText("Date")).toBeDefined();
     expect(screen.getByText("Referrals")).toBeDefined();
   });
 

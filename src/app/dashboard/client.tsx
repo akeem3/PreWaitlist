@@ -40,7 +40,7 @@ const CHECKLIST_ITEMS = [
   },
 ];
 
-const TABLE_COLUMNS = ["#", "Subscriber Email", "Signup Date", "Referrals"];
+const TABLE_COLUMNS = ["#", "Email", "Date", "Referrals"];
 
 function formatStat(value: number): string {
   return value > 0 ? String(value) : "—";
@@ -393,7 +393,7 @@ export default function DashboardClient({
                 placeholder="Search by email"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="mb-4 w-full rounded-lg border border-border bg-background px-4 py-2 text-body-sm text-foreground placeholder:text-muted-foreground"
+                className="mb-4 w-full rounded-xl border border-border bg-background px-4 py-2 text-body-sm text-foreground placeholder:text-muted-foreground"
               />
               <div className="mb-4 flex items-center justify-between">
                 <p className="text-body-sm text-muted-foreground">
