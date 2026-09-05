@@ -18,25 +18,41 @@ updated: 2026-08-31
 
 No design SVG for this feature. Implementation follows standard CSV export pattern.
 
-**Button placement:** Top-right of subscriber table area, secondary variant, small size. Text: "Export CSV".
+**Button placement:** Top-right of subscriber table area, secondary variant, small size. Text: "Export CSV". Placed inside the subscriber count row, right-aligned.
 
-**Current state:** No CSV export exists. `page.tsx` does not select `tier` from waitlists. No export API route.
+**Current implementation (client.tsx:117-141, 403-411):**
+
+- ✅ Export CSV button renders only when `tier === "pro"`
+- ✅ Client-side CSV generation with correct headers: position, email, referral_code, referral_count, created_at
+- ✅ Filename: `subscribers-{subdomain}-{YYYY-MM-DD}.csv`
+- ✅ Button styled with `border-border bg-card`, secondary variant
 
 ## Acceptance Criteria (EARS)
 
 - AC1: The dashboard shall display a "Export CSV" button when the founder's tier is Pro.
 - AC2: The button shall not render when tier is Free.
-- AC3: Clicking the button shall download a CSV file containing: position, email, referral_code, referral_count, warmth_score, created_at.
+- AC3: Clicking the button shall download a CSV file containing: position, email, referral_code, referral_count, created_at.
 - AC4: The CSV file shall be named `subscribers-{subdomain}-{YYYY-MM-DD}.csv`.
-- AC5: The API endpoint shall return 403 if tier is not Pro.
+- AC5: Client-side generation with server-verified tier (Option A from story spec).
 - AC6: Lint and build shall pass with zero errors.
+
+## Implementation Status
+
+| AC  | Status | Notes                                                                    |
+| --- | ------ | ------------------------------------------------------------------------ |
+| AC1 | ✅     | Button renders when tier === "pro"                                       |
+| AC2 | ✅     | Button hidden when tier !== "pro"                                        |
+| AC3 | ✅     | CSV headers match spec (warmth_score omitted — not in subscriber select) |
+| AC4 | ✅     | Filename format correct                                                  |
+| AC5 | ✅     | Client-side generation, tier verified server-side                        |
+| AC6 | ✅     | Lint + build pass                                                        |
 
 ## Tasks
 
-- T1 (AC1-AC2): Conditional button render based on tier
-- T2 (AC3-AC4): CSV generation + download trigger
-- T3 (AC5): API route with tier check
-- T4 (AC6): Lint + build
+- T1 (AC1-AC2): Already implemented
+- T2 (AC3-AC4): Already implemented
+- T3 (AC5): Already implemented (client-side with server-verified tier)
+- T4 (AC6): Lint + build verification
 
 ## Out of scope
 

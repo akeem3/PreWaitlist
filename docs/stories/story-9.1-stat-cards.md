@@ -14,92 +14,74 @@ updated: 2026-08-31
 
 **Story:** As a founder, I want to see real subscriber statistics in my dashboard so that I can track my waitlist performance.
 
-## Design Specs (from SVG analysis)
+## Design Specs (from SVG analysis + align-design)
 
 **Active state stat cards (Dashboard_active_state_HF5.svg):**
 
-- 4 cards in a row, green background (`#0F7A5E` = accent), white text
-- Each card: rounded corners, padding
-- Card 1: "Page Views" — value "500"
-- Card 2: "Heat Score" — value "40"
-- Card 3: "Referrals" — value "50%"
-- Card 4: "Waitlist Position" — value "32"
-- Note: Design labels don't match PRD data model. Follow PRD: Total Signups, Referrals (%), Hot, Warm.
+- 4 cards in a row, white background (`#FFFFFF`), rounded corners, border
+- Card 1: "Total signups" — value (subscriber count)
+- Card 2: "Referral %" — value (percentage)
+- Card 3: "Today" — value (today's signups)
+- Card 4: "Warmth" — locked state (🔒 overlay, Pro-only)
 
 **Empty state stat cards (Dashboard_Empty_state_HF4.svg):**
 
-- No stat cards visible in empty state (dashboard shows getting-started checklist instead)
+- 4 cards visible with placeholder values
+- Warmth card shows locked state (🔒 overlay, Pro-only)
 - Fallback: show em-dashes when no data
 
-**Current implementation (client.tsx:248-267):**
+**Current implementation (client.tsx:307-361):**
 
-- 5 cards (total signups, referral, hot, warm, cold) — design shows 4
-- All show hardcoded em-dashes
-- White bg (`bg-card`), not green (`bg-accent`) as design shows
+- 4 cards: Total signups, Referral %, Today, Warmth (locked)
+- Stat cards use `bg-card` (white), `rounded-[var(--card-radius)]`, `border border-border`
+- Warmth card has lock icon overlay
+- All show real data or em-dashes
 
 ## Acceptance Criteria (EARS)
 
-- AC1: The dashboard shall display 4 stat cards: Total Signups, Referrals, Hot, Warm.
+- AC1: The dashboard shall display 4 stat cards: Total Signups, Referral %, Today, Warmth.
 - AC2: The Total Signups card shall show the actual subscriber count for the founder's waitlist.
-- AC3: The Referrals card shall show the percentage of subscribers who were referred (referred_count / total_count × 100).
-- AC4: The Hot and Warm cards shall show the count of subscribers with `warmth_score` of 'hot' and 'warm' respectively.
-- AC5: When no data exists (empty waitlist), stat cards shall display em-dashes (—) instead of 0.
-- AC6: Stat cards shall be styled with white background (`bg-card`), rounded corners (`rounded-[var(--card-radius)]`), and border (`border-border`).
-- AC7: Lint and build shall pass with zero errors.
+- AC3: The Referral % card shall show the percentage of subscribers who were referred (referred_count / total_count × 100).
+- AC4: The Today card shall show the count of subscribers who signed up today.
+- AC5: The Warmth card shall display a locked state (🔒 overlay, Pro-only feature).
+- AC6: When no data exists (empty waitlist), stat cards shall display em-dashes (—) instead of 0.
+- AC7: Stat cards shall be styled with white background (`bg-card`), rounded corners (`rounded-[var(--card-radius)]`), and border (`border-border`).
+- AC8: Lint and build shall pass with zero errors.
 
 ## Tasks
 
 - T1 (AC1-AC2): Total Signups card with real subscriber count
-- T2 (AC3): Referrals percentage card with calculation
-- T3 (AC4): Hot/Warm warmth cards with counts
-- T4 (AC5): Empty state em-dash rendering
-- T5 (AC6-AC7): Styling + lint + build
+- T2 (AC3): Referral % card with calculation
+- T3 (AC4): Today card with count of today's signups
+- T4 (AC5): Warmth card with locked state (Pro-only)
+- T5 (AC6-AC7): Empty state em-dashes + styling
+- T6 (AC8): Lint + build
 
 ## Out of scope
 
-Cold/Unscored stat cards (not in design SVG), chart/signups-over-time (placeholder), qualification breakdown panel (not in Sprint 2 scope), "Page Views" and "Heat Score" labels (design uses different data model than PRD — follow PRD).
+Cold/Unscored stat cards (not in design SVG), chart/signups-over-time (placeholder), qualification breakdown panel (not in Sprint 2 scope). Stat cards follow design labels: Total signups, Referral %, Today, Warmth (locked).
 
 ## Ambiguity Resolutions
 
-- **Stat card colors:** Design SVG shows green cards (`bg-accent`, white text). Story AC6 explicitly says `bg-card` (white). Resolution: Follow story AC6 — white cards with border. Story ACs are the source of truth per AGENTS.md.
+- **Stat card colors:** Design SVG shows white cards (`bg-card`, border) with dark text. Story AC7 confirms `bg-card` (white) with border. Follow story AC7.
+- **Warmth card locked:** Design shows Warmth card as locked/Pro-only with lock icon overlay. Not a live data card.
+- **"Today" card:** Shows count of subscribers who signed up today (same day). Not a "Page Views" or "Heat Score" card.
 
 ## Dev Notes
 
 ### T1 — Total Signups Card
 
-In `src/app/dashboard/page.tsx`, derive count from subscriber array length. No separate count query needed since we already fetch all subscribers.
+In `src/app/dashboard/page.tsx`, derive count from subscriber array length.
 
 ```tsx
-// page.tsx — pass stats to client
 const stats = {
   totalSignups: subscribersWithCounts.length,
-  referralPercentage:
-    subscribersWithCounts.length > 0
-      ? Math.round(
-          (subscribersWithCounts.filter((s) => s.referral_count > 0).length /
-            subscribersWithCounts.length) *
-            100
-        )
-      : null,
-  hotCount:
-    subscribersWithCounts.filter((s) => s.warmth_score === "hot").length ||
-    null,
-  warmCount:
-    subscribersWithCounts.filter((s) => s.warmth_score === "warm").length ||
-    null,
+  referralPercentage: ...,
+  todaySignups: ...,
 };
 ```
 
-**Status:** not started — current `page.tsx:28-32` queries subscribers but doesn't compute stats. `client.tsx:251` shows hardcoded `"— —"`.
-
-**Important:** Need to add `warmth_score` to the subscriber select query in `page.tsx:30`:
-
-```diff
-- .select("id, email, position, created_at")
-+ .select("id, email, position, warmth_score, created_at")
-```
-
-### T2 — Referrals Percentage
+### T2 — Referral % Card
 
 Calculate: `(subscribers with referral_count > 0) / total * 100`. Round to nearest integer. Show em-dash when total is 0.
 
@@ -108,54 +90,49 @@ const referralPct = stats.referralPercentage;
 // Render: {referralPct !== null ? `${referralPct}%` : "—"}
 ```
 
-**Status:** not started — `client.tsx:252` shows hardcoded `"—%"`.
+### T3 — Today Card
 
-### T3 — Hot/Warm Warmth Cards
-
-The `warmth_score` column exists on `subscribers` table (added in Story 7.6 migration). Values: `'hot'`, `'warm'`, `'cold'`, or NULL.
+Count subscribers where `created_at` starts with today's date (YYYY-MM-DD).
 
 ```tsx
-// page.tsx query already selects warmth_score after T1 change
-// client.tsx renders:
-{
-  stats.hotCount !== null ? stats.hotCount : "—";
-}
-{
-  stats.warmCount !== null ? stats.warmCount : "—";
-}
+const today = new Date().toISOString().split("T")[0];
+const todaySignups = subscribersWithCounts.filter((s) =>
+  s.created_at.startsWith(today)
+).length;
 ```
 
-**Status:** schema exists, `src/app/api/warmth/[subdomain]/route.ts:22-29` queries warmth data, but `page.tsx` does NOT select `warmth_score`. `client.tsx:253-255` shows hardcoded `"—"`.
+### T4 — Warmth Card (Locked)
 
-### T4 — Empty State Em-dashes
+Display locked state with lock icon overlay. No live data.
+
+```tsx
+<div className="relative rounded-[var(--card-radius)] border border-border bg-card px-4 py-3 text-center">
+  <div className="mb-1 text-h3 text-foreground">—</div>
+  <div className="text-caption text-muted-foreground">Warmth</div>
+  <div className="absolute inset-0 flex items-center justify-center rounded-[var(--card-radius)] bg-background/80">
+    {/* lock icon SVG */}
+  </div>
+</div>
+```
+
+### T5 — Empty State Em-dashes
 
 When count is 0 or null, display `"—"`. Never render "0":
 
 ```tsx
-function formatStat(value: number | null): string {
-  return value !== null && value > 0 ? String(value) : "—";
+function formatStat(value: number): string {
+  return value > 0 ? String(value) : "—";
 }
 ```
 
-**Status:** not started — current implementation always shows em-dash regardless of data.
+### T6 — Lint + Build
 
-### T5 — Styling
-
-Use existing card styling from current dashboard:
-
-```tsx
-<div className="rounded-[var(--card-radius)] border border-border bg-card px-4 py-3 text-center">
-  <div className="mb-1 text-h3 text-foreground">{formatStat(value)}</div>
-  <div className="text-caption text-muted-foreground">{label}</div>
-</div>
-```
-
-Card radius: `var(--card-radius)`. Text: `text-h3` for value, `text-caption` for label.
+Run `pnpm lint` and `pnpm build`.
 
 **Files modified:**
 
-- `src/app/dashboard/page.tsx` (add `warmth_score` to select, compute stats, pass to client)
-- `src/app/dashboard/client.tsx` (replace 5 hardcoded cards with 4 real-data cards)
+- `src/app/dashboard/page.tsx` (compute stats: totalSignups, referralPercentage, todaySignups, pass to client)
+- `src/app/dashboard/client.tsx` (replace stat cards with correct labels: Total signups, Referral %, Today, Warmth locked)
 
 **Available components:** None needed — inline stat cards
-**Available tokens:** `bg-card`, `rounded-[var(--card-radius)]`, `border-border`, `text-h3`, `text-caption`, `text-foreground`, `text-muted-foreground`
+**Available tokens:** `bg-card`, `rounded-[var(--card-radius)]`, `border-border`, `text-h3`, `text-caption`, `text-foreground`, `text-muted-foreground`, `bg-background/80` (for lock overlay)

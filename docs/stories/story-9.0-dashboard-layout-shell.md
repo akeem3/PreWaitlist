@@ -14,27 +14,37 @@ updated: 2026-08-31
 
 **Story:** As a founder, I want the dashboard to use a left-sidebar navigation layout so that I can easily navigate between dashboard sections.
 
-## Design Specs (from SVG analysis)
+## Design Specs (from SVG analysis + align-design)
 
 **Empty state (Dashboard_Empty_state_HF4.svg):**
 
-- Canvas: 1440×947px
+- Canvas: 1440×1126px, `#FAF8F4` background
 - Left sidebar: 268px wide, bg `#FCFCFB` (warm white, slightly lighter than main bg)
-- Sidebar top: PreWaitlist logo + waitlist name (e.g. "Waitly") with green border (`#0F7A5E`)
-- Sidebar nav: 4 items — Overview, Subscribers, Broadcasts, Settings
-  - Active item: left accent border, `text-foreground font-semibold`, `bg-accent/5`
+- Sidebar top: PreWaitlist logo + waitlist name in green bordered box (`#0F7A5E` stroke, 1px) with dropdown chevron (▼)
+- Sidebar nav: 8 items — Overview, Subscribers, Qualification, Leaderboard, Warmth (locked 🔒), Updates, Broadcast (locked 🔒), Settings
+  - Active item: Green filled pill (`bg-accent rounded-full`), white text (`text-accent-foreground`)
   - Inactive item: `text-muted-foreground`, no hover effect
-  - Placeholder items (Broadcasts, Settings): `opacity-50 cursor-not-allowed`, grayed
-- Sidebar bottom: "Sign out" button
+  - Locked items (Warmth, Broadcast): `opacity-50 cursor-not-allowed` with lock icon
+  - Each nav item has an icon (chart, people, check, trophy, flame, bell, megaphone, gear)
+- Sidebar bottom: "Upgrade to pro" button (dashed green border) + "Sign out" button
 - Main content area: bg `#FAF8F4` (warm ivory), `ml-[268px]` on desktop
-- Main content top: stat cards row (4 green cards), then subscriber table
+- Top bar: Domain slug (e.g. "yourslug.prewaitlist.com") in green text + copy icon + "Share on Twitter" button + checkmark icon
+- Main heading: "Get your first signups" (large, bold)
+- Share CTA: Large "Share your link →" green button
+- Checklist: "Post in one relevant community", "Tell 5 people personally" with checkboxes
+- Preview section: "Preview — this is what it'll look like once signups arrive"
+- Stat cards row: 4 white cards (Total signups, Referral %, Today, Warmth locked 🔒)
+- Subscriber table: 4 columns (#, Email, Date, Referrals)
 
 **Active state (Dashboard_active_state_HF5.svg):**
 
 - Same sidebar layout as empty state
-- Active nav item: Overview has left accent border + bold text
-- Sidebar shows waitlist name with green left border (`#0F7A5E` stroke)
-- Sign-out button at bottom of sidebar
+- Active nav item: Green filled pill (same as empty state)
+- Sidebar shows waitlist name with green bordered box + dropdown
+- Stat cards show real data values
+- Subscriber table populated with real data
+- Bar chart below stat cards (out of scope for Epic 9)
+- "Pending Rewards" card below table (out of scope for Epic 10)
 
 **Mobile (≤768px):**
 
@@ -44,31 +54,38 @@ updated: 2026-08-31
 
 ## Acceptance Criteria (EARS)
 
-- AC1: The dashboard shall render a persistent left sidebar with a width of 268px.
-- AC2: The sidebar shall display the PreWaitlist logo and waitlist name at the top.
-- AC3: The sidebar shall display navigation items: Overview, Subscribers, Broadcasts (placeholder), Settings (placeholder).
-- AC4: The Overview and Subscribers items shall be clickable links. Broadcasts and Settings shall be visually present but disabled (grayed out, no hover effect).
-- AC5: The main content area shall have a background color of `#FAF8F4` (warm ivory).
-- AC6: The sidebar shall collapse to a hamburger menu on mobile viewports (≤768px).
-- AC7: The active navigation item shall be visually highlighted (bold text, accent color indicator).
-- AC8: Lint and build shall pass with zero errors.
+- AC1: The dashboard shall render a persistent left sidebar with a width of 268px and `#FCFCFB` background.
+- AC2: The sidebar shall display the PreWaitlist logo and waitlist name in a green bordered box (`border border-accent rounded-lg`) with a dropdown chevron.
+- AC3: The sidebar shall display 8 navigation items: Overview, Subscribers, Qualification, Leaderboard, Warmth (locked), Updates, Broadcast (locked), Settings — each with an icon.
+- AC4: The Overview and Subscribers items shall be clickable links. Qualification, Leaderboard, Updates, and Settings shall be visually present but disabled (grayed out, no hover effect). Warmth and Broadcast shall show a lock icon (Pro-only features).
+- AC5: The active navigation item shall use a green filled pill background (`bg-accent rounded-full`) with white text (`text-accent-foreground`).
+- AC6: The sidebar bottom shall contain an "Upgrade to pro" button (dashed green border) and a "Sign out" button.
+- AC7: The main content area shall have a background color of `#FAF8F4` (warm ivory) and `ml-[268px]` on desktop.
+- AC8: The main content area shall include a top bar with domain slug, copy icon, "Share on Twitter" button, and checkmark icon.
+- AC9: The main content area shall display "Get your first signups" heading, "Share your link →" CTA button, checklist section, and preview section.
+- AC10: The sidebar shall collapse to a hamburger menu on mobile viewports (≤768px).
+- AC11: Lint and build shall pass with zero errors.
 
 ## Tasks
 
-- T1 (AC1-AC3): Create sidebar component with logo, waitlist name, and nav items
-- T2 (AC4): Disabled state for Broadcasts and Settings placeholder items
-- T3 (AC5-AC6): Main content area layout + mobile responsive sidebar collapse
-- T4 (AC7): Active state highlighting with accent border and bold text
-- T5 (AC8): Lint + build verification
+- T1 (AC1-AC3): Create sidebar component with logo, bordered waitlist name, 8 nav items with icons, and locked states
+- T2 (AC4-AC5): Active state (green pill) + disabled/locked states for placeholder items
+- T3 (AC6): Sidebar bottom with Upgrade button + Sign out
+- T4 (AC7-AC9): Main content area layout with top bar, heading, CTA, checklist, preview
+- T5 (AC10): Mobile responsive sidebar collapse
+- T6 (AC11): Lint + build verification
 
 ## Out of scope
 
-Sidebar search/filter (Story 9.2), sidebar subscriber list (Story 9.2), stat cards (Story 9.1), subscriber table redesign (Story 9.2).
+Sidebar search/filter (Story 9.2), stat cards (Story 9.1), subscriber table redesign (Story 9.2), bar chart (placeholder), "Pending Rewards" card (Epic 10).
 
 ## Ambiguity Resolutions
 
-- **Sign-out button:** Header is being removed (replaced by sidebar). "Keep existing header sign-out" is impossible. Resolution: Move sign-out to sidebar bottom (within scope — necessary consequence of replacing the header). Design SVGs show sign-out at sidebar bottom.
+- **Sign-out button:** Header is being removed (replaced by sidebar). Move sign-out to sidebar bottom (within scope — necessary consequence of replacing the header). Design SVGs show sign-out at sidebar bottom.
 - **Sidebar bg `#FCFCFB`:** Not a design token. AGENTS.md says "never use hardcoded hex" but this is a one-off layout color. Resolution: Use `bg-[#FCFCFB]` — matches existing pattern for layout-specific values.
+- **8 nav items vs 4:** Design SVGs show 8 items (Overview, Subscribers, Qualification, Leaderboard, Warmth, Updates, Broadcast, Settings). Story originally listed only 4. Updated to match design.
+- **Active nav style:** Design uses green filled pill (`bg-accent rounded-full`), NOT left-border indicator. Updated from original spec.
+- **Locked items:** Warmth and Broadcast show lock icons (Pro-only features). Other items (Qualification, Leaderboard, Updates, Settings) are disabled but not locked.
 
 ## Dev Notes
 
@@ -76,157 +93,47 @@ Sidebar search/filter (Story 9.2), sidebar subscriber list (Story 9.2), stat car
 
 Create `components/dashboard/sidebar.tsx` as a client component (needs `usePathname` for active state).
 
-```tsx
-"use client";
-
-import { usePathname } from "next/navigation";
-import Image from "next/image";
-import Link from "next/link";
-
-interface SidebarProps {
-  waitlistName: string | null;
-  logoUrl: string | null;
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-const NAV_ITEMS = [
-  { label: "Overview", href: "/dashboard", disabled: false },
-  { label: "Subscribers", href: "/dashboard/subscribers", disabled: false },
-  { label: "Broadcasts", href: "#", disabled: true },
-  { label: "Settings", href: "#", disabled: true },
-];
-
-export function Sidebar({
-  waitlistName,
-  logoUrl,
-  isOpen,
-  onClose,
-}: SidebarProps) {
-  const pathname = usePathname();
-
-  return (
-    <>
-      {/* Mobile overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          onClick={onClose}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        className={`
-          fixed top-0 left-0 z-50 h-full w-[268px] bg-[#FCFCFB] border-r border-border
-          transition-transform duration-200
-          lg:translate-x-0
-          ${isOpen ? "translate-x-0" : "-translate-x-full"}
-        `}
-      >
-        {/* Logo + waitlist name */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
-          {logoUrl ? (
-            <Image
-              src={logoUrl}
-              alt={waitlistName || "Logo"}
-              width={32}
-              height={32}
-              className="rounded"
-              unoptimized
-            />
-          ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded bg-accent/10">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                className="text-accent"
-              >
-                <path
-                  d="M2 4L8 2L14 4V12L8 14L2 12V4Z"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-          )}
-          <span className="text-body-sm font-semibold text-foreground truncate">
-            {waitlistName || "PreWaitlist"}
-          </span>
-        </div>
-
-        {/* Nav items */}
-        <nav className="flex flex-col gap-1 px-3 py-4">
-          {NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.href;
-            return item.disabled ? (
-              <span
-                key={item.label}
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-body-sm text-muted-foreground opacity-50 cursor-not-allowed"
-              >
-                {item.label}
-              </span>
-            ) : (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={onClose}
-                className={`
-                  flex items-center gap-3 rounded-lg px-3 py-2 text-body-sm transition-colors
-                  ${
-                    isActive
-                      ? "font-semibold text-foreground bg-accent/5 border-l-2 border-accent"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  }
-                `}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Sign out at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 border-t border-border px-3 py-4">
-          <button
-            type="button"
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-body-sm text-muted-foreground transition-colors hover:text-foreground hover:bg-muted/50 w-full"
-          >
-            Sign out
-          </button>
-        </div>
-      </aside>
-    </>
-  );
-}
-```
-
 **Key details:**
 
-- Sidebar bg: `#FCFCFB` (from design SVG `fill="#FCFCFB"` at x=0-268px). Use inline hex since this isn't a design token — it's a one-off layout color.
-- Active nav: `border-l-2 border-accent` + `bg-accent/5` + `font-semibold text-foreground`.
-- Disabled nav: `opacity-50 cursor-not-allowed`, no `href`, no hover effect.
+- Sidebar bg: `#FCFCFB` (from design SVG `fill="#FCFCFB"` at x=0-268px). Use `bg-[#FCFCFB]`.
+- Logo area: Green bordered box (`border border-accent rounded-lg`) with logo image + waitlist name + dropdown chevron (▼).
+- Nav items: 8 items with icons. Use SVG icons for each item.
+- Active nav: `bg-accent rounded-full text-accent-foreground font-medium` (green pill).
+- Inactive nav: `text-muted-foreground`, no hover effect.
+- Locked items (Warmth, Broadcast): `opacity-50 cursor-not-allowed` with lock icon (🔒 SVG).
+- Disabled items (Qualification, Leaderboard, Updates, Settings): `opacity-50 cursor-not-allowed`, no lock icon.
 - Mobile: `translate-x` transition with overlay backdrop. Toggle via `isOpen` prop.
 - Logo: use `unoptimized` for user-provided URLs (project convention from Story 1.6).
 
-### T2 — Disabled State
+### T2 — Active/Disabled/Locked States
 
-Already handled in T1. Disabled items render as `<span>` (not `<Link>`), with `opacity-50 cursor-not-allowed`. No `href` attribute means no navigation. No hover class.
+Already handled in T1. Active state uses green pill. Locked items render as `<span>` with lock icon. Disabled items render as `<span>` without lock icon.
 
-### T3 — Main Content Area + Mobile
+### T3 — Sidebar Bottom
 
-Wrap the dashboard page content in a `<main>` with `ml-[268px]` on desktop, full-width on mobile:
+"Upgrade to pro" button: dashed green border (`border-dashed border-accent`), accent text.
+"Sign out" button: below upgrade, `text-muted-foreground`, hover effect.
+
+### T4 — Main Content Area
+
+Wrap dashboard page content in `<main>` with `ml-[268px]` on desktop:
 
 ```tsx
 <main className="min-h-screen bg-background lg:ml-[268px]">
+  {/* top bar */}
   {/* page content */}
 </main>
 ```
 
-Add mobile hamburger button to the header (or as a floating button):
+Top bar: Domain slug + copy icon + "Share on Twitter" button + checkmark icon.
+Main heading: "Get your first signups" (large, bold).
+Share CTA: Large "Share your link →" green button.
+Checklist: Two items with checkboxes.
+Preview section: "Preview — this is what it'll look like once signups arrive".
+
+### T5 — Mobile Responsive
+
+Add mobile hamburger button (floating, top-left):
 
 ```tsx
 <button
@@ -234,30 +141,9 @@ Add mobile hamburger button to the header (or as a floating button):
   onClick={() => setIsSidebarOpen(true)}
   className="fixed top-4 left-4 z-30 rounded-lg border border-border bg-card p-2 lg:hidden"
 >
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-    <path
-      d="M3 5H17M3 10H17M3 15H17"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    />
-  </svg>
-</button>
 ```
 
-### T4 — Active State Highlighting
-
-Use `usePathname()` from `next/navigation` to detect current route. Match against `item.href`:
-
-```tsx
-const pathname = usePathname();
-const isActive = pathname === item.href;
-```
-
-Active state: `font-semibold text-foreground bg-accent/5 border-l-2 border-accent`.
-Inactive state: `text-muted-foreground hover:text-foreground hover:bg-muted/50`.
-
-### T5 — Lint + Build
+### T6 — Lint + Build
 
 Run `pnpm lint` and `pnpm build`.
 
@@ -267,8 +153,8 @@ Run `pnpm lint` and `pnpm build`.
 
 **Files modified:**
 
-- `src/app/dashboard/client.tsx` (replace top-tab header with sidebar layout)
+- `src/app/dashboard/client.tsx` (replace top-tab header with sidebar layout, add top bar, heading, CTA, checklist, preview)
 - `src/app/dashboard/page.tsx` (pass `logoUrl` to client component for sidebar)
 
 **Available components:** `cn()` ✓, `Image` (next/image) ✓
-**Available tokens:** `bg-background` (#FAF8F4), `border-border` (#CCC9C3), `text-foreground`, `text-muted-foreground`, `bg-accent/5`, `border-accent`
+**Available tokens:** `bg-background` (#FAF8F4), `bg-[#FCFCFB]` (sidebar), `border-border` (#CCC9C3), `text-foreground`, `text-muted-foreground`, `bg-accent`, `text-accent-foreground`, `border-accent`

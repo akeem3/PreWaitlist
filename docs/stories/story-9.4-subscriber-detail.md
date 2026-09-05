@@ -30,6 +30,13 @@ updated: 2026-08-31
 - `qualification_questions` table exists (Story 2.1 schema)
 - `subscribers` table may have `qual_answers` JSONB column (needs verification)
 
+**Current implementation status:**
+
+- ❌ `src/app/dashboard/subscribers/[id]/page.tsx` does NOT exist — needs to be created
+- ✅ `GET /api/subscribers/:id` route exists at `src/app/api/subscribers/[id]/route.ts`
+- ✅ `GET /api/subscribers/:id/referrals` route exists at `src/app/api/subscribers/[id]/referrals/route.ts`
+- ✅ Row click navigation in subscriber table works (`client.tsx:449-451`)
+
 ## Acceptance Criteria (EARS)
 
 - AC1: The system shall render `/dashboard/subscribers/:id` as a protected route (requires auth).
@@ -39,6 +46,18 @@ updated: 2026-08-31
 - AC5: The page shall include a back button returning to `/dashboard`.
 - AC6: The page shall display "Subscriber not found" if the ID doesn't belong to the founder's waitlist.
 - AC7: Lint and build shall pass with zero errors.
+
+## Implementation Status
+
+| AC  | Status | Notes                                              |
+| --- | ------ | -------------------------------------------------- |
+| AC1 | ❌     | Page route does not exist — needs creation         |
+| AC2 | ❌     | Depends on AC1                                     |
+| AC3 | ❌     | Depends on AC1, API routes exist                   |
+| AC4 | ❌     | Depends on AC1, need to verify qual_answers column |
+| AC5 | ❌     | Depends on AC1                                     |
+| AC6 | ❌     | Depends on AC1                                     |
+| AC7 | ✅     | Lint + build pass (no new code yet)                |
 
 ## Tasks
 

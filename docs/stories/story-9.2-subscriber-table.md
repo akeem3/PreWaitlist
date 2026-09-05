@@ -18,42 +18,57 @@ updated: 2026-08-31
 
 **Active state table (Dashboard_active_state_HF5.svg):**
 
-- Search input above table: placeholder "Search by email", text input with border
-- Column order: # (position), Email, Date, Referrals
+- Search input above table: placeholder "Search by email", text input with `bg-[#FCFCFB]` fill, `border: 1.67px #CCC9C3`, `border-radius: 12.164px`, height ~40px
+- Column order: # (position), Email, Date, Referrals — 4-column grid
+- Column header text: exactly "#", "Email", "Date", "Referrals" (not "Subscriber Email", not "Signup Date")
 - Table header: `text-body-sm font-medium` (14px), `text-muted-foreground`
 - Table rows: `text-body-sm`, email in `text-foreground`, date in `text-muted-foreground`
 - Referrals column: right-aligned, `font-medium` for non-zero, `text-muted-foreground` for zero
 - Row hover: subtle background change
-- "Export CSV" button: top-right of table area, secondary variant
+- Subscriber count: shown above table (e.g. "12 subscribers")
 - Empty state: "No subscribers yet. Share your link to get started." centered
+- Table container: white `bg-card`, `rounded-[12px]`, `border: 1px #E0DDD8`
 
-**Current implementation (client.tsx:360-428):**
+**Current implementation vs design (client.tsx:389-484):**
 
-- 6 columns: Name, Email, Position, Warmth, Referrals, Date
-- No search input
-- Sort works on position and referral_count
-- Rows not clickable
-- No subscriber count display
-- No "Export CSV" button (that's Story 9.3)
+- ✅ 4 columns: #, Subscriber Email, Signup Date, Referrals — **column header text differs from design** ("Subscriber Email" → should be "Email", "Signup Date" → should be "Date")
+- ✅ Search input exists with correct placeholder
+- ⚠️ Search input uses `bg-background` (#FAF8F4) — design shows `bg-[#FCFCFB]` (slightly lighter warm white)
+- ✅ Sort by position (default asc) and referral_count with toggle
+- ✅ Row click navigates to `/dashboard/subscribers/:id`
+- ✅ Subscriber count displayed above table
+- ✅ Empty state message matches design
+- ✅ Export CSV button (Pro tier only)
 
 ## Acceptance Criteria (EARS)
 
-- AC1: The subscriber table shall display columns: #, Email, Date, Referrals (following design order).
+- AC1: The subscriber table shall display columns: #, Email, Date, Referrals (following design order and exact header text).
 - AC2: The table shall include a search input above the table that filters subscribers by email.
-- AC3: The table shall sort by position (default) and referral count (click column header to toggle).
+- AC3: The table shall sort by position (default asc) and referral count (click column header to toggle).
 - AC4: Each row shall be clickable, navigating to `/dashboard/subscribers/:id`.
 - AC5: The empty state shall display "No subscribers yet. Share your link to get started."
 - AC6: The table shall display the total subscriber count above the table (e.g., "12 subscribers").
 - AC7: The table shall be styled with white background (`bg-card`), rounded corners, and border.
 - AC8: Lint and build shall pass with zero errors.
 
+## Implementation Status
+
+| AC  | Status | Notes                                                                                                             |
+| --- | ------ | ----------------------------------------------------------------------------------------------------------------- |
+| AC1 | ⚠️     | Columns correct order, but header text says "Subscriber Email" and "Signup Date" — design says "Email" and "Date" |
+| AC2 | ✅     | Search input exists, filters by email                                                                             |
+| AC3 | ✅     | Sort by position (default asc), referral_count toggle                                                             |
+| AC4 | ✅     | Row click → `/dashboard/subscribers/:id`                                                                          |
+| AC5 | ✅     | Empty state message matches                                                                                       |
+| AC6 | ✅     | Subscriber count displayed                                                                                        |
+| AC7 | ✅     | White bg, rounded, border                                                                                         |
+| AC8 | ✅     | Lint + build pass                                                                                                 |
+
 ## Tasks
 
-- T1 (AC1-AC2): Table columns redesign + search input
-- T2 (AC3): Sort by position/referrals with correct default
-- T3 (AC4): Row click navigation to subscriber detail
-- T4 (AC5-AC6): Empty state + subscriber count display
-- T5 (AC7-AC8): Styling alignment + lint + build
+- T1 (AC1): Fix column header text — "Subscriber Email" → "Email", "Signup Date" → "Date"
+- T2 (AC2-AC7): Already implemented — no changes needed
+- T3 (AC8): Lint + build verification
 
 ## Out of scope
 
