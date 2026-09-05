@@ -406,7 +406,7 @@ Work through these in dependency order, one at a time. Each has a `status` you s
 - AC1: The page shall render in two-pane layout with LivePreview in the right pane (matching `HF 4 onboard step 4 pt 1.svg`).
 - AC2: The page shall render a dynamic form where the founder can add and edit qualification questions (no delete — cards have no trash icon).
 - AC3: While the founder's tier is Free, the system shall enforce a hard cap of 2 questions and shall render an accent upgrade card as upsell, not a functioning control, past that cap (REQ-6.10.1).
-- AC4: The Pro cap shall be 5; the Growth cap shall be unlimited — read from the founder's tier field, not hardcoded per-screen (REQ-6.10.2).
+- AC4: The Pro cap shall be 5 — read from the founder's tier field, not hardcoded per-screen (REQ-6.10.2). Growth tier is out of scope for MVP.
 - AC5: Each question shall have a text input for the question text and a dropdown for "Multiple Choice" vs "Free Text" answer type.
 - AC6: The example question text "What are you currently using?" shall be used verbatim as the first scaffolding default; no rephrased variant shall ship (REQ-6.10.3).
 - AC7: The live preview shall show 2 question scaffolding slots with default text ("What are you currently using?" and "What is your role?"). As the founder types, the preview updates reactively. When empty, scaffolding text shows in muted gray — text stays muted even when user types.

@@ -14,8 +14,6 @@ function get_max_questions(tier: string): number {
   switch (tier) {
     case "pro":
       return 5;
-    case "growth":
-      return Infinity;
     default:
       return 2;
   }

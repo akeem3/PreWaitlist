@@ -207,7 +207,8 @@ Additional screens built beyond PRD scope:
 | `subscribers` table                       | 2      | Not yet created                                                   |
 | Warmth tracking engine                    | 3      | Email opens + page returns + qual answers                         |
 | Broadcast email                           | 3      | Full list + warmth-segmented                                      |
-| Paddle billing integration                | 3      | Pro $15/mo, Growth $29/mo                                         |
+| Paddle billing integration                | 3      | Pro $15/mo                                                        |
 | Upgrade modal                             | 3      | 7 context-sensitive triggers                                      |
 | Domain authentication (SPF/DKIM)          | 3      | Walkthrough UI                                                    |
-| Automated warmth alerts                   | 3      | Growth tier cron job                                              |
+
+**Note:** Growth tier ($29/mo) is out of scope for MVP. Only Free and Pro tiers ship.

@@ -1,7 +1,7 @@
 # Product Requirements Document
 
 **Product:** Pre-Launch Waitlist Tool ("PreWaitlist")
-**Sprints:** 4 total — Sprint 1 (Foundation) ✅ Complete, Sprint 2 (Public Page & Dashboard) In Progress, Sprint 3 (Email & Warmth), Sprint 4 (Billing & Growth)
+**Sprints:** 3 total — Sprint 1 (Foundation) ✅ Complete, Sprint 2 (Public Page & Dashboard) ✅ Complete, Sprint 3 (Email, Warmth & Billing)
 **Prepared by:** Abdul-Hakeem Hassan, with Claude
 **Date:** July 2026 (v3 — multi-sprint scalable structure)
 **Status:** Sprint 1 complete, Sprint 2 active
@@ -25,7 +25,7 @@ This PRD is the single authoritative build spec for PreWaitlist. Where it disagr
 
 ## 1. Product Summary
 
-A pre-launch waitlist tool for bootstrapped indie hackers, solo founders, and early-stage startup teams (US market). Differentiates on three things no competitor bundles at this price: **qualification** (who's serious), **warmth tracking** (who's going cold), and **referral quality** (which referrers actually matter) — free up to 500 signups, Pro at $15/mo, Growth at $29/mo.
+A pre-launch waitlist tool for bootstrapped indie hackers, solo founders, and early-stage startup teams (US market). Differentiates on three things no competitor bundles at this price: **qualification** (who's serious), **warmth tracking** (who's going cold), and **referral quality** (which referrers actually matter) — free up to 500 signups, Pro at $15/mo.
 
 **The one-sentence product position:**
 
@@ -51,7 +51,7 @@ A pre-launch waitlist tool for bootstrapped indie hackers, solo founders, and ea
 
 **Exit condition:** A visitor can sign up via the public waitlist page, answer qualification questions, receive a thank-you page with referral link, and see their position on a public leaderboard. Founders can view subscribers, export CSV, and see real-time stats on a restructured dashboard.
 
-**Status:** 🔄 Active — scanning and planning phase
+**Status:** ✅ Complete — 23 stories across Epics 7–9 (2026-08-13 → 2026-09-05)
 
 **Screens in Scope (Sprint 2):**
 
@@ -147,7 +147,7 @@ _(Unchanged in substance from PRD v1 — repeated here at the level needed for b
 - REQ-6.1.2: When a visitor clicks any "Build it free" CTA, the system shall navigate to `/signup`.
 - REQ-6.1.3: When a visitor clicks "Sign in", the system shall navigate to `/signin`.
 - REQ-6.1.4: When `/` is requested with a `ref` or any `utm_*` query parameter, the system shall persist those values (cookie or equivalent, 30-day expiry) so they can be attributed to an account created later in the same browser session.
-- REQ-6.1.5: While no Growth-tier pricing card exists in the design, the system shall never render one on this route regardless of the founder's actual tier data (this route is static marketing content, not tier-aware).
+- REQ-6.1.5: No Growth-tier pricing card shall render on this route. Growth tier is out of scope for MVP — only Free and Pro tiers exist.
 
 ### 6.2 Marketing Homepage — "Powered by" Visitor (F-A3)
 
@@ -221,7 +221,7 @@ _(Unchanged in substance from PRD v1 — repeated here at the level needed for b
 **Route:** `/onboarding/4a`
 
 - REQ-6.10.1: While the founder's tier is Free, the system shall enforce a hard cap of 2 questions and shall render the "Add new question" affordance as an upsell, not a functioning control, past that cap.
-- REQ-6.10.2: The Pro cap shall be 5; the Growth cap shall be unlimited -- read from the founder's tier field, not hardcoded per-screen.
+- REQ-6.10.2: The Pro cap shall be 5 questions -- read from the founder's tier field, not hardcoded per-screen. Growth tier is out of scope for MVP.
 - REQ-6.10.3: The example question text "What are you currently using?" shall be used verbatim everywhere it appears in the product; no rephrased variant shall ship.
 - REQ-6.10.4: Each question's live-preview rendering shall show "(optional)" in the design system's secondary text color.
 
@@ -251,7 +251,7 @@ _(Unchanged in substance from PRD v1 — repeated here at the level needed for b
   - Placement: centered, bottom of page, 24px vertical padding, 1px Border Subtle #E5E0D6 top divider on light templates (Minimal, Bold).
   - No drop shadow, no gradient, no background box.
   - Links to the F-A3 "powered by" homepage variant.
-  - Renders across all onboarding steps that include the preview, and must not render at all when tier is Pro or Growth.
+  - Renders across all onboarding steps that include the preview, and must not render at all when tier is Pro.
   - Shared component: `components/share/powered-by-footer.tsx`, reused by Sprint 2's real public page.
 
 ### 6.13 Empty Dashboard (F-G1)

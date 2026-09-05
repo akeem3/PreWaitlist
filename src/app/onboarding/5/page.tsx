@@ -13,7 +13,7 @@ export default function OnboardingStep5() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [domainPanelOpen, setDomainPanelOpen] = useState(false);
 
-  const isPro = form.tier === "pro" || form.tier === "growth";
+  const isPro = form.tier === "pro";
 
   useEffect(() => {
     form.setLoading(false);

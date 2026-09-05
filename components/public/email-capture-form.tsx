@@ -16,7 +16,7 @@ interface EmailCaptureFormProps {
   ctaText: string;
   brandColor: string;
   template: "minimal" | "bold" | "dark";
-  tier: "free" | "pro" | "growth";
+  tier: "free" | "pro";
   questions: Question[];
   qualificationEnabled: boolean;
 }
@@ -26,7 +26,6 @@ const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 const MAX_QUESTIONS: Record<string, number> = {
   free: 2,
   pro: 5,
-  growth: Infinity,
 };
 
 export function EmailCaptureForm({

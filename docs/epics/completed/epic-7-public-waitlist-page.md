@@ -216,7 +216,7 @@ Work through these in dependency order, one at a time. Story 7.0 must be complet
 - AC1: The system shall fetch qualification questions for the waitlist and display them inline on the signup form, below the email field.
 - AC2: Each question shall render as a text input (`free_text` only — `multiple_choice` excluded from public page).
 - AC3: Questions marked as optional shall display "(optional)" in the design system's secondary text color.
-- AC4: The system shall enforce tier-based question caps: Free = 2 questions, Pro = 5, Growth = unlimited (read from founder's tier field, not hardcoded).
+- AC4: The system shall enforce tier-based question caps: Free = 2 questions, Pro = 5 (read from founder's tier field, not hardcoded). Growth tier is out of scope for MVP.
 - AC5: The system shall collect answers as a JSON object and store them in the subscriber's qual_answers column.
 - AC6: Lint and build shall pass with zero errors.
 
@@ -232,7 +232,7 @@ Work through these in dependency order, one at a time. Story 7.0 must be complet
 **Additional work done (onboarding Step 4a — `src/app/onboarding/4a/page.tsx`):**
 
 - **Starts with 1 question field** (not 3) — founder adds more as needed.
-- **"+ Add new question"** button adds fields, up to tier cap (Free=2, Pro=5, Growth=∞).
+- **"+ Add new question"** button adds fields, up to tier cap (Free=2, Pro=5).
 - **"×" button** removes individual questions (minimum 1 question required).
 - **At tier cap:** "Add" button transforms into "Upgrade to add more questions" — dashed border style (`border border-dashed border-accent bg-accent/5 text-accent`), navigates to `/dashboard?upgrade=true`.
 - **Submit disabled** when no questions have text — inline error shown ("At least one question is required").

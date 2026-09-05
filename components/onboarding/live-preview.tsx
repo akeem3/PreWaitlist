@@ -6,7 +6,7 @@ import { PoweredByFooter } from "../share/powered-by-footer";
 
 type Template = "minimal" | "bold" | "dark";
 type ViewMode = "desktop" | "mobile";
-type Tier = "free" | "pro" | "growth";
+type Tier = "free" | "pro";
 
 interface MilestoneReward {
   threshold: number;

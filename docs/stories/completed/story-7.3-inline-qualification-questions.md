@@ -20,7 +20,7 @@ updated: 2026-08-17
 - AC2: Each question shall render as a text input (`<input type="text">`).
 - AC3: Only `free_text` question type is supported — `multiple_choice` is excluded from public page scope.
 - AC4: Questions marked as optional (not required) shall display `"(optional)"` label in the design system's secondary text color (`text-muted-foreground`).
-- AC5: The system shall enforce tier-based question caps: Free tier = max 2 questions, Pro tier = max 5, Growth tier = unlimited. The cap is read from the founder's `tier` field (via `founder_profiles.tier`), not hardcoded.
+- AC5: The system shall enforce tier-based question caps: Free tier = max 2 questions, Pro tier = max 5. The cap is read from the founder's `tier` field (via `founder_profiles.tier`), not hardcoded. Growth tier is out of scope for MVP.
 - AC6: The system shall collect answers as a JSON object `{ "question_id": "answer_text" }` and include it in the `POST /api/subscribers` request body as `qual_answers`.
 - AC7: The system shall not require answers to optional questions — empty optional questions are excluded from `qual_answers`.
 - AC8: The system shall pass `qual_answers` through to the subscriber record, stored in the `qual_answers` jsonb column.

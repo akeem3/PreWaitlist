@@ -14,7 +14,7 @@ import {
 // Shared types
 // ---------------------------------------------------------------------------
 
-type Tier = "free" | "pro" | "growth";
+type Tier = "free" | "pro";
 
 interface MilestoneReward {
   threshold: number;

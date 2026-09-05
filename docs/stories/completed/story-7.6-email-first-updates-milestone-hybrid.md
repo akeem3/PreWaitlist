@@ -149,7 +149,7 @@ Warmth tracking has zero implementation — no schema, no signal collection, no 
 
 - **Broadcast compose UI** (dashboard) — deferred to Epic 10
 - **Warmth-segmented broadcast** — depends on broadcast compose + warmth scoring
-- **Automated warmth alerts** (Growth tier) — depends on warmth scoring
+- **Automated warmth alerts** — deferred to post-MVP (Growth tier feature removed from scope)
 - **Email open/click webhook handler** — Resend webhooks are Sprint 3
 - **Warmth scoring algorithm execution** — schema + formula defined here, runtime is Sprint 3
 - **Update editing/deletion** — not planned

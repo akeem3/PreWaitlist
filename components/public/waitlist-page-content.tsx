@@ -14,7 +14,7 @@ interface WaitlistPageContentProps {
   logoUrl: string | null;
   ctaText: string | null;
   brandColor: string;
-  tier: "free" | "pro" | "growth";
+  tier: "free" | "pro";
   signupCounter: number;
   signupCounterVisible: boolean;
   milestoneRewards: { threshold: number; label: string }[];
