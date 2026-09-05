@@ -2,7 +2,7 @@
 id: epic9.story06
 epic: epic-9-dashboard-restructure
 title: Dashboard Remediation — MVP Gap Fill
-status: ready
+status: done
 depends_on:
   [epic9.story00, epic9.story01, epic9.story02, epic9.story03, epic9.story04]
 updated: 2026-09-05

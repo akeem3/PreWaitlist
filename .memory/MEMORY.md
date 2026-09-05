@@ -445,29 +445,33 @@ Implementation order:
 
 ## Component Inventory
 
-| File                                          | Component               | Status                                                                                                              |
-| --------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `components/ui/button.tsx`                    | Button                  | ✅ Done — 4 variants (primary/secondary/destructive/ghost), 3 sizes (sm/md/lg)                                      |
-| `components/ui/card.tsx`                      | Card + 5 sub-components | ✅ Done — CardHeader, CardTitle, CardDescription, CardContent, CardFooter                                           |
-| `components/ui/input.tsx`                     | Input                   | ✅ Done — label, error, helperText, auto-ID, aria-invalid/describedby                                               |
-| `components/ui/badge.tsx`                     | Badge                   | ✅ Done — 6 variants (default/success/warning/error/info/outline)                                                   |
-| `components/ui/toggle.tsx`                    | Toggle                  | ✅ Done — onCheckedChange, label, token-based styling                                                               |
-| `components/ui/select.tsx`                    | Select                  | ✅ Done — native select, placeholder, error/helperText                                                              |
-| `components/ui/textarea.tsx`                  | Textarea                | ✅ Done — label, error/helperText, resize-y                                                                         |
-| `components/share/share-copy-link.tsx`        | ShareCopyLink           | ✅ Done — Web Share API + clipboard, 2s confirmation                                                                |
-| `components/share/referral-link.tsx`          | ReferralLink            | ✅ Done — clipboard copy with execCommand fallback, 2s "Copied!" confirmation, unique URL display                   |
-| `components/share/share-buttons.tsx`          | ShareButtons            | ✅ Done — Twitter URL, LinkedIn URL, Copy Link with execCommand fallback, 2s confirmation                           |
-| `components/share/powered-by-footer.tsx`      | PoweredByFooter         | ✅ Done — dark template border fix applied, scoped to Free tier                                                     |
-| `components/onboarding/live-preview.tsx`      | LivePreview             | ✅ Done — 3 templates, BrowserFrame with dark mode (`data-theme`), desktop/mobile toggle, dark template tokens      |
-| `components/layout/marketing-layout.tsx`      | MarketingLayout         | ✅ Done — Header (sticky, backdrop-blur, scroll border, logo image, mobile drawer) + Footer (warm ivory, 16px text) |
-| `components/marketing/hero.tsx`               | Hero                    | ✅ Done — conditional "Powered by" variant, text-display, Button CTA                                                |
-| `components/marketing/problem-section.tsx`    | ProblemSection          | ✅ Done — 3 cards, SVG icons, rounded-[10px], muted-foreground                                                      |
-| `components/marketing/difference-section.tsx` | DifferenceSection       | ✅ Done — single-column centered, accent overline, Sarah/James example                                              |
-| `components/marketing/comparison-section.tsx` | ComparisonSection       | ✅ Done — white bg-card, ✗/✓ SVG marks, gap-4 list spacing                                                          |
-| `components/marketing/feature-grid.tsx`       | FeatureGrid             | ✅ Done — 2×2 grid, green SVG icons, centered max-w-4xl                                                             |
-| `components/marketing/confidence-section.tsx` | ConfidenceSection       | ✅ Done — standalone callout, accent text, border-y                                                                 |
-| `components/marketing/pricing-section.tsx`    | PricingSection          | ✅ Done — Free + Pro, aligned CTAs, ✓ checkmarks, flex-1 spacer                                                     |
-| `components/lib/cn.ts`                        | cn()                    | ✅ Done — clsx + tailwind-merge                                                                                     |
+| File                                           | Component               | Status                                                                                                              |
+| ---------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `components/ui/button.tsx`                     | Button                  | ✅ Done — 4 variants (primary/secondary/destructive/ghost), 3 sizes (sm/md/lg)                                      |
+| `components/ui/card.tsx`                       | Card + 5 sub-components | ✅ Done — CardHeader, CardTitle, CardDescription, CardContent, CardFooter                                           |
+| `components/ui/input.tsx`                      | Input                   | ✅ Done — label, error, helperText, auto-ID, aria-invalid/describedby                                               |
+| `components/ui/badge.tsx`                      | Badge                   | ✅ Done — 6 variants (default/success/warning/error/info/outline)                                                   |
+| `components/ui/toggle.tsx`                     | Toggle                  | ✅ Done — onCheckedChange, label, token-based styling                                                               |
+| `components/ui/select.tsx`                     | Select                  | ✅ Done — native select, placeholder, error/helperText                                                              |
+| `components/ui/textarea.tsx`                   | Textarea                | ✅ Done — label, error/helperText, resize-y                                                                         |
+| `components/share/share-copy-link.tsx`         | ShareCopyLink           | ✅ Done — Web Share API + clipboard, 2s confirmation                                                                |
+| `components/share/referral-link.tsx`           | ReferralLink            | ✅ Done — clipboard copy with execCommand fallback, 2s "Copied!" confirmation, unique URL display                   |
+| `components/share/share-buttons.tsx`           | ShareButtons            | ✅ Done — Twitter URL, LinkedIn URL, Copy Link with execCommand fallback, 2s confirmation                           |
+| `components/share/powered-by-footer.tsx`       | PoweredByFooter         | ✅ Done — dark template border fix applied, scoped to Free tier                                                     |
+| `components/onboarding/live-preview.tsx`       | LivePreview             | ✅ Done — 3 templates, BrowserFrame with dark mode (`data-theme`), desktop/mobile toggle, dark template tokens      |
+| `components/layout/marketing-layout.tsx`       | MarketingLayout         | ✅ Done — Header (sticky, backdrop-blur, scroll border, logo image, mobile drawer) + Footer (warm ivory, 16px text) |
+| `components/marketing/hero.tsx`                | Hero                    | ✅ Done — conditional "Powered by" variant, text-display, Button CTA                                                |
+| `components/marketing/problem-section.tsx`     | ProblemSection          | ✅ Done — 3 cards, SVG icons, rounded-[10px], muted-foreground                                                      |
+| `components/marketing/difference-section.tsx`  | DifferenceSection       | ✅ Done — single-column centered, accent overline, Sarah/James example                                              |
+| `components/marketing/comparison-section.tsx`  | ComparisonSection       | ✅ Done — white bg-card, ✗/✓ SVG marks, gap-4 list spacing                                                          |
+| `components/marketing/feature-grid.tsx`        | FeatureGrid             | ✅ Done — 2×2 grid, green SVG icons, centered max-w-4xl                                                             |
+| `components/marketing/confidence-section.tsx`  | ConfidenceSection       | ✅ Done — standalone callout, accent text, border-y                                                                 |
+| `components/marketing/pricing-section.tsx`     | PricingSection          | ✅ Done — Free + Pro, aligned CTAs, ✓ checkmarks, flex-1 spacer                                                     |
+| `components/dashboard/sidebar.tsx`             | Sidebar                 | ✅ Done — 8 nav items, active green pill, locked/disabled states, mobile overlay, upgrade CTA                       |
+| `components/dashboard/signup-chart.tsx`        | SignupChart             | ✅ Done — Recharts BarChart, 30d/All Time toggle, custom tooltip, horizontal scroll on mobile, skeleton loader      |
+| `components/dashboard/qualification-panel.tsx` | QualificationPanel      | ✅ Done — question distribution bars, empty states (no questions / no answers), skeleton loader                     |
+| `components/dashboard/top-referrers.tsx`       | TopReferrers            | ✅ Done — top 5 by quality score, anonymized emails, referral count badge, empty state CTA                          |
+| `components/dashboard/warmth-panel.tsx`        | WarmthPanel             | ✅ Done — 4 warmth bars (Hot/Warm/Cold/Unscored), locked overlay for Free, real data fetch for Pro                  |     | `components/lib/cn.ts` | cn() | ✅ Done — clsx + tailwind-merge |
 
 ## Layout Structure
 
@@ -481,7 +485,10 @@ Implementation order:
 | `src/app/api/waitlist/check-slug/route.ts`        | GET slug availability check                                              |
 | `src/app/api/subscribers/route.ts`                | POST (create subscriber, referral_code resolution)                       |
 | `src/app/api/subscribers/[id]/route.ts`           | GET (single subscriber + referral_count)                                 |
-| `src/app/api/subscribers/[id]/referrals/route.ts` | GET (referral list, founder ownership auth)                              |
+| `src/app/api/subscribers/[id]/referrals/route.ts` | GET (referral list, founder ownership auth)                              |     | `src/app/api/dashboard/chart/route.ts` | GET (daily signup aggregation, 30d/all-time) |
+| `src/app/api/dashboard/qualification/route.ts`    | GET (qualification answer distribution per question)                     |
+| `src/app/api/dashboard/warmth/route.ts`           | GET (warmth score distribution: hot/warm/cold/unscored)                  |
+| `src/app/api/warmth/[subdomain]/route.ts`         | GET (public warmth distribution for subdomain)                           |
 
 ## Testing
 
@@ -680,6 +687,19 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 **Branch:** `epic-8` (merged to `dev`, pushed)
 
+## Epic 9 Progress (Dashboard Restructure)
+
+| Story | Status   | Summary                                                                                                                                |
+| ----- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 9.0   | ✅ done  | Dashboard Layout Shell — left sidebar (268px, 8 nav items), active state (green pill), locked items, mobile hamburger, upgrade CTA     |
+| 9.1   | ✅ done  | Stat Cards with Real Data — Total Signups, Referral %, Today, Warmth (locked), em-dash for empty                                       |
+| 9.2   | ✅ done  | Subscriber Table Design Alignment — 4-column table (#, Email, Date, Referrals), search, sort, row click, empty state                   |
+| 9.3   | ✅ done  | CSV Export (Pro Tier) — client-side generation, correct filename, 7 headers                                                            |
+| 9.4   | ✅ done  | Subscriber Detail Page — auth check, back button, position/email/grid, referral code, referred list, qual answers, 404                 |
+| 9.5   | ✅ done  | Epic 9 Tests — 8 test files (sidebar, stat-cards, subscriber-table, csv-export, subscriber-detail, chart, qualification-panel, warmth) |
+| 9.6   | ✅ done  | Dashboard Remediation — MVP Gap Fill — chart, qual breakdown, quality scores, top referrers, warmth distribution, table enhancements   |
+| 9.7   | 🔲 ready | Epic 9 Final Tests — comprehensive test pass (target ≥200 tests)                                                                       |
+
 ## Next Steps
 
 1. ~~Implement Story 1.2 (Toggle, Select, Textarea)~~ ✅ Done
@@ -724,10 +744,17 @@ Design specs use hex values that don't always match the token system exactly. Ma
 40. ~~investigate [ step 3 ] — referral link dynamic URL~~ ✅ Done
 41. ~~investigate [ step 3 ] — thank-you page copy/share icons + leaderboard link + referred submit~~ ✅ Done
 42. ~~investigate [ step 2 ] — referred thank-you design mismatch~~ ✅ Done
-43. Epic 9 — Dashboard Restructure (left sidebar, stat cards, subscriber table) ← NEXT
-44. Epic 10 — Store Features (settings, domain config, email customization)
-45. Epic 11 — Email Nurture Sequences
-46. Epic 12 — Billing & Paddle Integration (Sprint 3)
+43. ~~Story 9.0 — Dashboard Layout Shell~~ ✅ Done
+44. ~~Story 9.1 — Stat Cards with Real Data~~ ✅ Done
+45. ~~Story 9.2 — Subscriber Table Design Alignment~~ ✅ Done
+46. ~~Story 9.3 — CSV Export (Pro Tier)~~ ✅ Done
+47. ~~Story 9.4 — Subscriber Detail Page~~ ✅ Done
+48. ~~Story 9.5 — Epic 9 Tests~~ ✅ Done
+49. ~~Story 9.6 — Dashboard Remediation — MVP Gap Fill~~ ✅ Done
+50. Story 9.7 — Epic 9 Final Tests ← NEXT
+51. Epic 10 — Store Features (settings, domain config, email customization)
+52. Epic 11 — Email Nurture Sequences
+53. Epic 12 — Billing & Paddle Integration (Sprint 3)
 
 ## Decision + bug fix: "Powered by PreWaitlist" footer (2026-07)
 

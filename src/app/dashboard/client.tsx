@@ -461,7 +461,7 @@ export default function DashboardClient({
 
           <div className="mb-6 grid grid-cols-2 gap-4">
             <QualificationPanel subdomain={subdomain} />
-            <WarmthPanel />
+            <WarmthPanel tier={tier} subdomain={subdomain} />
           </div>
 
           <div className="rounded-[var(--card-radius)] border border-border bg-card">
