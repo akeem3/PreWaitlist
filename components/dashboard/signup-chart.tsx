@@ -85,7 +85,7 @@ function ChartBody({ subdomain, range }: { subdomain: string; range: string }) {
 
   if (data.length === 0) {
     return (
-      <div className="flex h-[200px] items-center justify-center">
+      <div className="flex h-200px items-center justify-center">
         <span className="text-body-sm text-muted-foreground">
           No signups in this period
         </span>
@@ -135,7 +135,7 @@ export default function SignupChart({ subdomain }: SignupChartProps) {
   const [range, setRange] = useState<"30d" | "all">("30d");
 
   return (
-    <div className="rounded-[var(--card-radius)] border border-border bg-card p-5">
+    <div className="rounded-(--card-radius) border border-border bg-card p-5">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-lg font-semibold text-foreground">
           Signups Over Time
