@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
       subdomain: body.subdomain,
       headline: body.headline ?? null,
       subheadline: body.subheadline ?? null,
+      product_name: body.product_name ?? null,
     };
     if (body.template !== undefined) updatePayload.template = body.template;
     if (body.brand_color !== undefined)
@@ -122,6 +123,7 @@ export async function POST(request: NextRequest) {
     subdomain: body.subdomain,
     headline: body.headline ?? null,
     subheadline: body.subheadline ?? null,
+    product_name: body.product_name ?? null,
   };
   if (body.template !== undefined) insertPayload.template = body.template;
   if (body.brand_color !== undefined)
@@ -207,6 +209,9 @@ export async function PATCH(request: NextRequest) {
   if (Array.isArray(milestone_rewards)) {
     updates.milestone_rewards_enabled = milestone_rewards.length > 0;
   }
+
+  // Explicit handling for product_name (also included via ...updates spread)
+  if (body.product_name !== undefined) updates.product_name = body.product_name;
 
   // Update waitlists table (excluding questions — that's a child table)
   const { error } = await supabase
@@ -324,6 +329,7 @@ export async function GET() {
   return NextResponse.json({
     waitlistId: waitlist.id,
     slug: waitlist.subdomain || "",
+    productName: waitlist.product_name || waitlist.headline || "",
     headline: waitlist.headline || "",
     subheadline: waitlist.subheadline || "",
     template: waitlist.template || "minimal",
