@@ -70,9 +70,8 @@ export default async function PublicSubdomainPage({ params }: Props) {
   }));
 
   const questions = (questionsResult.data || []).map((q) => ({
-    id: q.id,
     text: q.question_text,
-    type: q.question_type as "free_text",
+    required: false,
   }));
 
   const signupCount = countResult.count ?? 0;

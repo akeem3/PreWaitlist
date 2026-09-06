@@ -1,6 +1,6 @@
 # Epic 10 — Public Waitlist Page & Onboarding Redesign
 
-**Status:** ready
+**Status:** done
 **Source:** [PRD S6.6 Onboarding Step 1](../PRD.md#66-onboarding-step-1--name-your-waitlist-f-c1), [PRD S6.8 Onboarding Step 3](../PRD.md#68-onboarding-step-3--make-it-yours-f-c3), [PRD S6.12a PoweredByFooter](../PRD.md#612a-powered-by-prewaitlist-footer--onboarding-preview--public-pages), [PRD S2a Sprint 2](../PRD.md#2a-sprint-2--public-page-dashboard-active), [MVP Vision](../product-vision-mvp-waitlist-tool.md)
 
 ## Design References
@@ -25,14 +25,14 @@ All 7 critical bugs are fixed. All public and onboarding forms are WCAG 2.1 AA c
 
 | ID   | Title                         | Depends on | Status |
 | ---- | ----------------------------- | ---------- | ------ |
-| 10.0 | Schema Migration              | —          | ready  |
-| 10.1 | Fix Critical Bugs             | 10.0       | ready  |
-| 10.2 | Accessibility Fixes           | —          | ready  |
-| 10.3 | Design System Normalization   | —          | ready  |
-| 10.4 | Public Page Layout Redesign   | 10.3       | ready  |
-| 10.5 | Onboarding Field Architecture | 10.0       | ready  |
-| 10.6 | "I'll Name It Later" Fix      | 10.5       | ready  |
-| 10.7 | Inconsistency Resolution      | 10.1, 10.3 | ready  |
+| 10.0 | Schema Migration              | —          | done   |
+| 10.1 | Fix Critical Bugs             | 10.0       | done   |
+| 10.2 | Accessibility Fixes           | —          | done   |
+| 10.3 | Design System Normalization   | —          | done   |
+| 10.4 | Public Page Layout Redesign   | 10.3       | done   |
+| 10.5 | Onboarding Field Architecture | 10.0       | done   |
+| 10.6 | "I'll Name It Later" Fix      | 10.5       | done   |
+| 10.7 | Inconsistency Resolution      | 10.1, 10.3 | done   |
 
 Work through these in dependency order, one at a time. Stories 10.0, 10.2, and 10.3 have no dependencies and can be started in any order. Story 10.1 depends on 10.0 (schema must exist before API fixes). Story 10.4 depends on 10.3 (design system must be normalized before layout changes). Story 10.5 depends on 10.0 (productName column must exist). Story 10.6 depends on 10.5 (field architecture must be in place). Story 10.7 depends on 10.1 and 10.3 (bugs fixed and design system normalized before consistency pass).
 
@@ -40,7 +40,7 @@ Work through these in dependency order, one at a time. Stories 10.0, 10.2, and 1
 
 ### Story 10.0 — Schema Migration
 
-**Status:** ready
+**Status:** done
 **Design Refs:** None (database-only change)
 
 **Story:** As a developer, I want a `product_name` column on the `waitlists` table so that the product's internal display name is separate from the public page headline.
@@ -68,7 +68,7 @@ Work through these in dependency order, one at a time. Stories 10.0, 10.2, and 1
 
 ### Story 10.1 — Fix Critical Bugs
 
-**Status:** ready
+**Status:** done
 **Design Refs:** None (bug fixes)
 
 **Story:** As a developer, I want 7 critical bugs fixed across the public page, onboarding context, live preview, and thank-you page so that the product functions correctly.
@@ -102,7 +102,7 @@ Work through these in dependency order, one at a time. Stories 10.0, 10.2, and 1
 
 ### Story 10.2 — Accessibility Fixes
 
-**Status:** ready
+**Status:** done
 **Design Refs:** None (accessibility compliance)
 
 **Story:** As a user relying on assistive technology, I want all form inputs on the public waitlist page and onboarding steps to have proper labels so that screen readers can announce their purpose.
@@ -130,7 +130,7 @@ Work through these in dependency order, one at a time. Stories 10.0, 10.2, and 1
 
 ### Story 10.3 — Design System Normalization
 
-**Status:** ready
+**Status:** done
 **Design Refs:** `src/app/globals.css` (design system tokens)
 
 **Story:** As a developer, I want all inline styles, arbitrary Tailwind values, and hardcoded hex fallbacks replaced with design system tokens so that the codebase is consistent and maintainable.
@@ -164,7 +164,7 @@ Work through these in dependency order, one at a time. Stories 10.0, 10.2, and 1
 
 ### Story 10.4 — Public Page Layout Redesign
 
-**Status:** ready
+**Status:** done
 **Design Refs:** `docs/design/High-fidelity-Sprit2/Public_page_HF2.svg` (reference only — layout improvements are best-practice-driven, not design-SVG-driven)
 
 **Story:** As a visitor, I want the public waitlist page to be wider, have a larger headline, show social proof near the form, include a trust line, and display a "how it works" section so that the page is more compelling and converts better.
@@ -196,7 +196,7 @@ Work through these in dependency order, one at a time. Stories 10.0, 10.2, and 1
 
 ### Story 10.5 — Onboarding Field Architecture
 
-**Status:** ready
+**Status:** done
 **Design Refs:** None (field architecture cleanup)
 
 **Story:** As a founder, I want onboarding Step 1 to have clear, accurate labels ("Product Name" and "Subdomain") so that I understand what each field is for without confusion.
@@ -225,7 +225,7 @@ Work through these in dependency order, one at a time. Stories 10.0, 10.2, and 1
 
 ### Story 10.6 — "I'll Name It Later" Fix
 
-**Status:** ready
+**Status:** done
 **Design Refs:** None (UX improvement based on competitor research)
 
 **Story:** As a founder who wants to explore the product before committing to a name, I want "I'll name it later" to generate a readable URL, auto-fill a default headline and subheadline, and keep the slug input editable so that I can proceed without friction and change my mind later.
@@ -255,7 +255,7 @@ Work through these in dependency order, one at a time. Stories 10.0, 10.2, and 1
 
 ### Story 10.7 — Inconsistency Resolution
 
-**Status:** ready
+**Status:** done
 **Design Refs:** None (consistency pass)
 
 **Story:** As a developer, I want all input heights, focus border patterns, error display patterns, and type definitions unified across the public page and onboarding steps so that the codebase is consistent and maintainable.

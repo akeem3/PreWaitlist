@@ -5,21 +5,17 @@ type Template = "minimal" | "bold" | "dark";
 
 interface PoweredByFooterProps {
   template: Template;
-  brandColor?: string;
 }
 
-export function PoweredByFooter({
-  template,
-  brandColor,
-}: PoweredByFooterProps) {
+export function PoweredByFooter({ template }: PoweredByFooterProps) {
   const isDark = template === "dark";
 
   return (
     <div
       className={`flex items-center justify-center gap-1 py-6 text-xs font-normal leading-none ${
         isDark
-          ? "border-t border-dark-template-border"
-          : "border-t border-border"
+          ? "border-t border-dark-template-border bg-dark-template-bg text-dark-template-text"
+          : "border-t border-border bg-card text-foreground"
       }`}
     >
       <span className="inline-flex items-center gap-1">
@@ -28,9 +24,7 @@ export function PoweredByFooter({
           className="inline-flex items-center gap-1 no-underline"
         >
           <span
-            className={
-              isDark ? "text-muted-foreground" : "text-muted-foreground"
-            }
+            className={isDark ? "text-dark-template-text" : "text-foreground"}
           >
             Powered by
           </span>

@@ -2,9 +2,8 @@ import { WaitlistTemplateContent } from "../share/waitlist-template-content";
 import { PoweredByFooter } from "../share/powered-by-footer";
 
 interface Question {
-  id: string;
   text: string;
-  type: "free_text";
+  required: boolean;
 }
 
 interface WaitlistPageContentProps {
@@ -45,7 +44,7 @@ export function WaitlistPageContent({
         isDark ? "bg-dark-template-bg" : "bg-background"
       }`}
     >
-      <div className="w-full max-w-lg flex-1">
+      <div className="w-full max-w-2xl flex-1">
         <WaitlistTemplateContent
           template={template}
           headline={headline ?? ""}
@@ -59,10 +58,8 @@ export function WaitlistPageContent({
           latestUpdateSlot={latestUpdateSlot}
         />
       </div>
-      <div className="w-full max-w-lg">
-        {tier === "free" && (
-          <PoweredByFooter template={template} brandColor={brandColor} />
-        )}
+      <div className="w-full max-w-2xl">
+        {tier === "free" && <PoweredByFooter template={template} />}
       </div>
     </main>
   );

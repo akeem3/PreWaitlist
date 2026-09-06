@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useOnboardingForm } from "../context";
 import { Toggle } from "../../../../components/ui/toggle";
 import { Badge } from "../../../../components/ui/badge";
+import { cn } from "../../../../components/lib/cn";
 import MetaPreview from "../../../../components/onboarding/meta-preview";
 import { createClient } from "../../../../src/lib/supabase/client";
 
@@ -315,10 +316,14 @@ export default function OnboardingStep3() {
 
       {/* Headline */}
       <div className="mb-3">
-        <label className="mb-1 block text-xs text-muted-foreground">
+        <label
+          htmlFor="headline-step3"
+          className="mb-1 block text-xs text-muted-foreground"
+        >
           Headline
         </label>
         <input
+          id="headline-step3"
           type="text"
           placeholder="e.g Buildly"
           value={headline}
@@ -327,16 +332,20 @@ export default function OnboardingStep3() {
             form.updateField("headline", e.target.value);
           }}
           disabled={isSubmitting}
-          className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-15 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-10 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 
       {/* Sub-headline */}
       <div className="mb-3">
-        <label className="mb-1 block text-xs text-muted-foreground">
+        <label
+          htmlFor="subheadline-step3"
+          className="mb-1 block text-xs text-muted-foreground"
+        >
           Sub-headline
         </label>
         <textarea
+          id="subheadline-step3"
           placeholder="The Smarter way to manage Projects"
           value={subheadline}
           onChange={(e) => {
@@ -344,7 +353,7 @@ export default function OnboardingStep3() {
             form.updateField("subheadline", e.target.value);
           }}
           disabled={isSubmitting}
-          className="flex w-full resize-none items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-15 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full resize-none items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-10 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 
@@ -366,11 +375,12 @@ export default function OnboardingStep3() {
                 setBrandColorError(null);
                 form.updateField("brandColor", color.hex);
               }}
-              className={`h-8 w-8 rounded-lg border-2 transition-all ${
+              className={cn(
+                "h-8 w-8 rounded-lg border-2 transition-all",
                 brandColor === color.hex
                   ? "border-white scale-110 ring-1 ring-black/20"
                   : "border-border hover:scale-105"
-              }`}
+              )}
               style={{ backgroundColor: color.hex }}
               disabled={isSubmitting}
             />
@@ -379,7 +389,7 @@ export default function OnboardingStep3() {
         {/* Hex input */}
         <div className="flex items-center gap-3">
           <div
-            className="h-15 w-15 shrink-0 rounded-(--radius-lg) border border-border"
+            className="h-10 w-10 shrink-0 rounded-(--radius-lg) border border-border"
             style={{ backgroundColor: brandColor }}
           />
           <input
@@ -389,7 +399,7 @@ export default function OnboardingStep3() {
             onChange={(e) => handleBrandColorChange(e.target.value)}
             onBlur={handleBrandColorBlur}
             disabled={isSubmitting}
-            className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-15 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-10 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
         {brandColorError && (
@@ -404,7 +414,7 @@ export default function OnboardingStep3() {
           type="button"
           onClick={handleLogoClick}
           disabled={isSubmitting || logoUploading}
-          className="flex w-full items-center justify-center rounded-(--radius-lg) border-2 border-dashed border-border bg-card px-3 py-3 text-sm h-15 text-muted-foreground transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center justify-center rounded-(--radius-lg) border-2 border-dashed border-border bg-card px-3 py-3 text-sm h-10 text-muted-foreground transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
           {logoUploading
             ? "Uploading..."
@@ -425,10 +435,14 @@ export default function OnboardingStep3() {
 
       {/* CTA Text */}
       <div className="mb-3">
-        <label className="mb-1 block text-xs text-muted-foreground">
+        <label
+          htmlFor="cta-text"
+          className="mb-1 block text-xs text-muted-foreground"
+        >
           Button Text
         </label>
         <input
+          id="cta-text"
           type="text"
           placeholder="Join Waitlist"
           value={ctaText}
@@ -437,7 +451,7 @@ export default function OnboardingStep3() {
             form.updateField("ctaText", e.target.value);
           }}
           disabled={isSubmitting}
-          className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-15 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-10 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 
@@ -468,9 +482,7 @@ export default function OnboardingStep3() {
             {rewards.map((reward, index) => (
               <div key={index} className="flex items-start gap-2">
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] text-muted-foreground">
-                    Refer
-                  </label>
+                  <label className="text-xs text-muted-foreground">Refer</label>
                   <input
                     type="number"
                     min="1"
@@ -480,11 +492,11 @@ export default function OnboardingStep3() {
                     }
                     placeholder="3"
                     disabled={isSubmitting}
-                    className="w-16 rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm text-center placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-16 rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm text-center placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] text-muted-foreground">
+                  <label className="text-xs text-muted-foreground">
                     friends → reward
                   </label>
                   <input
@@ -496,7 +508,7 @@ export default function OnboardingStep3() {
                       "e.g. Special reward"
                     }
                     disabled={isSubmitting}
-                    className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-15 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-10 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
                 {rewards.length > 1 && (
@@ -579,7 +591,7 @@ export default function OnboardingStep3() {
               onChange={(e) => handleThresholdInput(e.target.value)}
               placeholder="10"
               disabled={isSubmitting}
-              className="w-20 rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm text-center placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-20 rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm text-center placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
             />
             <label className="text-xs text-muted-foreground">
               or more signups
@@ -593,7 +605,7 @@ export default function OnboardingStep3() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex h-14.75 w-114.5 items-center justify-center rounded-(--radius-md) bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex h-12 w-full items-center justify-center rounded-(--radius-md) bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50"
         >
           {isSubmitting ? (
             <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />

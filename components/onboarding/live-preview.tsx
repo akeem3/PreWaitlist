@@ -1,6 +1,7 @@
 "use client";
 
 import { useDeferredValue, useState } from "react";
+import { cn } from "../lib/cn";
 import { WaitlistTemplateContent } from "../share/waitlist-template-content";
 import { PoweredByFooter } from "../share/powered-by-footer";
 
@@ -20,6 +21,7 @@ interface Question {
 
 interface LivePreviewProps {
   template: Template;
+  productName: string;
   headline: string;
   subheadline: string;
   brandColor: string;
@@ -27,6 +29,7 @@ interface LivePreviewProps {
   ctaText: string;
   milestoneRewards: MilestoneReward[];
   signupCounterEnabled?: boolean;
+  signupCounterThreshold?: number;
   questions?: Question[];
   showQuestions?: boolean;
   tier?: Tier;
@@ -47,77 +50,29 @@ function BrowserFrame({
 
   return (
     <div
-      style={{
-        borderRadius: "var(--radius-lg)",
-        boxShadow: "var(--shadow-float)",
-        border: "1px solid var(--color-border, #CCC9C3)",
-        overflow: "hidden",
-        width: "100%",
-        background: isDark
-          ? "var(--color-dark-template-bg, #1C1917)"
-          : "var(--color-card, #fff)",
-      }}
+      className={cn(
+        "w-full overflow-hidden rounded-(--radius-lg) shadow-(--shadow-float) border border-border",
+        isDark ? "bg-dark-template-bg" : "bg-card"
+      )}
     >
       <div
-        style={{
-          height: 36,
-          background: isDark
-            ? "var(--color-dark-template-bg, #1C1917)"
-            : "var(--color-card, #fff)",
-          borderBottom: `1px solid ${isDark ? "var(--color-dark-template-border, #6B6459)" : "var(--color-border, #E5E5E5)"}`,
-          display: "flex",
-          alignItems: "center",
-          padding: "0 12px",
-          gap: 6,
-        }}
+        className={cn(
+          "flex h-9 items-center border-b px-3 gap-1.5",
+          isDark
+            ? "bg-dark-template-bg border-dark-template-border"
+            : "bg-card border-border"
+        )}
       >
-        <span
-          style={{
-            width: 10,
-            height: 10,
-            borderRadius: "50%",
-            background: "var(--color-border, #C3C2C2)",
-          }}
-        />
-        <span
-          style={{
-            width: 10,
-            height: 10,
-            borderRadius: "50%",
-            background: "var(--color-border, #C3C2C2)",
-          }}
-        />
-        <span
-          style={{
-            width: 10,
-            height: 10,
-            borderRadius: "50%",
-            background: "var(--color-border, #C3C2C2)",
-          }}
-        />
+        <span className="h-2.5 w-2.5 rounded-full bg-dot-inactive" />
+        <span className="h-2.5 w-2.5 rounded-full bg-dot-inactive" />
+        <span className="h-2.5 w-2.5 rounded-full bg-dot-inactive" />
         {slug && (
-          <span
-            style={{
-              flex: 1,
-              textAlign: "center",
-              fontSize: "var(--text-xs, 0.75rem)",
-              color: "var(--color-muted-foreground, #6B6B6B)",
-            }}
-          >
+          <span className="flex-1 text-center text-xs text-muted-foreground">
             {slug}.prewaitlist.com
           </span>
         )}
       </div>
-      <div
-        style={{
-          padding: "24px 32px",
-          minHeight: 200,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {children}
-      </div>
+      <div className="flex flex-col py-8 px-32 min-h-[200px]">{children}</div>
     </div>
   );
 }
@@ -136,7 +91,7 @@ function PreviewEmailForm({
   const isBold = template === "bold";
   const isDark = template === "dark";
 
-  const inputHeight = isBold ? "h-11" : "h-10";
+  const inputHeight = "h-10";
   const inputBorder = isBold
     ? "border-2 border-foreground"
     : isDark
@@ -148,30 +103,47 @@ function PreviewEmailForm({
     ? "placeholder:text-dark-template-muted"
     : "placeholder:text-muted-foreground";
   const textSize = isBold ? "text-base" : "text-sm";
-  const btnHeight = isBold ? "h-11" : "h-10";
+  const btnHeight = "h-10";
   const btnPadding = isBold ? "px-7" : "px-4";
   const btnText = isBold ? "text-base font-semibold" : "text-sm font-medium";
 
   return (
     <div
-      className={`flex gap-2 w-full max-w-md ${
+      className={cn(
+        "flex gap-2 w-full max-w-md",
         isMobile ? "flex-col" : "flex-row"
-      }`}
+      )}
     >
       <input
         type="email"
         placeholder="Email address"
         readOnly
-        className={`${inputHeight} flex-1 min-w-0 rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none ${
-          isMobile ? "w-full flex-none" : ""
-        }`}
+        className={cn(
+          inputHeight,
+          "flex-1 min-w-0 rounded-[var(--input-radius)]",
+          inputBorder,
+          inputBg,
+          inputText,
+          "px-[var(--input-padding-x)] py-[var(--input-padding-y)]",
+          textSize,
+          inputPlaceholder,
+          "focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent",
+          isMobile && "w-full flex-none"
+        )}
       />
       <button
         type="button"
-        style={{ backgroundColor: brandColor }}
-        className={`inline-flex items-center justify-center ${btnHeight} ${btnPadding} rounded-[var(--button-radius)] ${btnText} text-white transition-colors whitespace-nowrap ${
-          isMobile ? "w-full" : ""
-        }`}
+        className={cn(
+          "inline-flex items-center justify-center",
+          btnHeight,
+          btnPadding,
+          "rounded-[var(--button-radius)]",
+          btnText,
+          "text-white transition-colors whitespace-nowrap",
+          "bg-[var(--brand-color)]",
+          isMobile && "w-full"
+        )}
+        style={{ "--brand-color": brandColor } as React.CSSProperties}
       >
         {ctaText || "Join Waitlist"}
       </button>
@@ -193,7 +165,7 @@ function PreviewQuestionForm({
   const isBold = template === "bold";
   const isDark = template === "dark";
 
-  const inputHeight = isBold ? "h-11" : "h-10";
+  const inputHeight = "h-10";
   const inputBorder = isBold
     ? "border-2 border-foreground"
     : isDark
@@ -205,7 +177,7 @@ function PreviewQuestionForm({
     ? "placeholder:text-dark-template-muted"
     : "placeholder:text-muted-foreground";
   const textSize = isBold ? "text-base" : "text-sm";
-  const btnHeight = isBold ? "h-11" : "h-10";
+  const btnHeight = "h-10";
   const btnPadding = isBold ? "px-7" : "px-4";
   const btnText = isBold ? "text-base font-semibold" : "text-sm font-medium";
   const cardBorder = isBold
@@ -229,13 +201,29 @@ function PreviewQuestionForm({
         type="email"
         placeholder="Email address"
         readOnly
-        className={`${inputHeight} w-full rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none`}
+        className={cn(
+          inputHeight,
+          "w-full rounded-[var(--input-radius)]",
+          inputBorder,
+          inputBg,
+          inputText,
+          "px-[var(--input-padding-x)] py-[var(--input-padding-y)]",
+          textSize,
+          inputPlaceholder,
+          "focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent"
+        )}
       />
-      <div className={`flex flex-col ${cardGap}`}>
+      <div className={cn("flex flex-col", cardGap)}>
         {questionSlots.map((q, i) => (
           <div
             key={i}
-            className={`flex justify-between items-center rounded-[var(--radius-md)] ${cardBorder} px-3.5 py-2.5 ${textSize} ${cardText}`}
+            className={cn(
+              "flex justify-between items-center rounded-[var(--radius-md)]",
+              cardBorder,
+              "px-3.5 py-2.5",
+              textSize,
+              cardText
+            )}
           >
             <span>
               {q.text
@@ -245,15 +233,24 @@ function PreviewQuestionForm({
                 : "Your question here"}
             </span>
             {!q.required && (
-              <span className={`text-xs ${cardText}`}>(optional)</span>
+              <span className={cn("text-xs", cardText)}>(optional)</span>
             )}
           </div>
         ))}
       </div>
       <button
         type="button"
-        style={{ backgroundColor: brandColor }}
-        className={`inline-flex items-center justify-center ${btnHeight} w-full ${btnPadding} rounded-[var(--button-radius)] ${btnText} text-white transition-colors`}
+        className={cn(
+          "inline-flex items-center justify-center",
+          btnHeight,
+          "w-full",
+          btnPadding,
+          "rounded-[var(--button-radius)]",
+          btnText,
+          "text-white transition-colors",
+          "bg-[var(--brand-color)]"
+        )}
+        style={{ "--brand-color": brandColor } as React.CSSProperties}
       >
         {ctaText || "Join Waitlist"}
       </button>
@@ -263,6 +260,7 @@ function PreviewQuestionForm({
 
 export function LivePreview({
   template,
+  productName,
   headline,
   subheadline,
   brandColor,
@@ -270,6 +268,7 @@ export function LivePreview({
   ctaText,
   milestoneRewards,
   signupCounterEnabled,
+  signupCounterThreshold = 0,
   questions,
   showQuestions,
   tier = "free",
@@ -308,93 +307,65 @@ export function LivePreview({
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div className="flex flex-col gap-3">
       <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          gap: 4,
-        }}
+        className="flex justify-end gap-1"
+        style={
+          {
+            "--brand-color": deferredBrandColor || "var(--color-accent)",
+          } as React.CSSProperties
+        }
       >
         <button
           type="button"
           onClick={() => setViewMode("desktop")}
-          style={{
-            padding: "6px 12px",
-            fontSize: "var(--text-xs, 0.75rem)",
-            fontWeight: "500",
-            border: !isMobile
-              ? "none"
-              : "1px solid var(--color-border, #E5E5E5)",
-            borderRadius: "var(--radius-md, 0.5rem)",
-            background: !isMobile
-              ? deferredBrandColor || "#0C6350"
-              : "var(--color-card, #fff)",
-            color: !isMobile ? "#fff" : "var(--color-foreground, #333)",
-            cursor: "pointer",
-          }}
+          className={cn(
+            "rounded-(--radius-md) px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors",
+            !isMobile
+              ? "bg-[var(--brand-color)] text-white"
+              : "border border-border bg-card text-foreground"
+          )}
         >
           Desktop
         </button>
         <button
           type="button"
           onClick={() => setViewMode("mobile")}
-          style={{
-            padding: "6px 12px",
-            fontSize: "var(--text-xs, 0.75rem)",
-            fontWeight: "500",
-            border: isMobile
-              ? "none"
-              : "1px solid var(--color-border, #E5E5E5)",
-            borderRadius: "var(--radius-md, 0.5rem)",
-            background: isMobile
-              ? deferredBrandColor || "#0C6350"
-              : "var(--color-card, #fff)",
-            color: isMobile ? "#fff" : "var(--color-foreground, #333)",
-            cursor: "pointer",
-          }}
+          className={cn(
+            "rounded-(--radius-md) px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors",
+            isMobile
+              ? "bg-[var(--brand-color)] text-white"
+              : "border border-border bg-card text-foreground"
+          )}
         >
           Mobile
         </button>
       </div>
       <div
-        style={{
-          display: "flex",
-          justifyContent: isMobile ? "center" : "stretch",
-        }}
+        className={cn("flex", isMobile ? "justify-center" : "justify-stretch")}
       >
         <div
-          style={{
-            width: isMobile ? 375 : "100%",
-            maxWidth: isMobile ? 375 : 787,
-          }}
+          className={cn("w-full", isMobile ? "max-w-[375px]" : "max-w-[787px]")}
         >
           <BrowserFrame slug={deferredSlug} template={deferredTemplate}>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                minHeight: "100%",
-              }}
-            >
-              <div style={{ flex: 1 }}>
+            <div className="flex flex-col min-h-full">
+              <div className="flex-1">
                 <WaitlistTemplateContent
                   template={deferredTemplate}
                   headline={deferredHeadline}
                   subheadline={deferredSubheadline}
                   brandColor={deferredBrandColor}
                   logoUrl={deferredLogoUrl}
-                  signupCounter={1189}
+                  signupCounter={
+                    signupCounterEnabled ? signupCounterThreshold : 0
+                  }
                   signupCounterVisible={!!deferredSignupCounter}
                   milestoneRewards={deferredRewards}
                   emailCaptureForm={emailCaptureForm}
                 />
               </div>
               {tier === "free" && (
-                <PoweredByFooter
-                  template={deferredTemplate}
-                  brandColor={deferredBrandColor}
-                />
+                <PoweredByFooter template={deferredTemplate} />
               )}
             </div>
           </BrowserFrame>

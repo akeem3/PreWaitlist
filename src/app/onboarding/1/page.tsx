@@ -16,8 +16,56 @@ function deriveSlug(value: string): string {
     .slice(0, 63);
 }
 
+const ADJECTIVES = [
+  "brave",
+  "swift",
+  "bright",
+  "calm",
+  "eager",
+  "fair",
+  "grand",
+  "keen",
+  "noble",
+  "proud",
+  "quick",
+  "sharp",
+  "stark",
+  "vivid",
+  "warm",
+  "bold",
+  "cool",
+  "deep",
+  "fresh",
+  "green",
+];
+const NOUNS = [
+  "fox",
+  "hawk",
+  "oak",
+  "pine",
+  "star",
+  "wave",
+  "wind",
+  "stone",
+  "tree",
+  "cloud",
+  "river",
+  "spring",
+  "crest",
+  "peak",
+  "vale",
+  "bay",
+  "cove",
+  "dune",
+  "fern",
+  "moss",
+];
+
 function generateFallbackSlug(): string {
-  return crypto.randomUUID().slice(0, 8);
+  const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+  const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
+  const hex = crypto.randomUUID().slice(0, 4);
+  return `${adj}-${noun}-${hex}`;
 }
 
 export default function OnboardingStep1() {
@@ -179,7 +227,10 @@ export default function OnboardingStep1() {
     setSlugStatus("idle");
     setSlugError(null);
     form.updateField("slug", fallback);
-  }, [form]);
+    form.updateField("headline", "My Waitlist");
+    form.updateField("subheadline", "Join the waitlist");
+    router.push("/onboarding/2");
+  }, [form, router]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -267,54 +318,66 @@ export default function OnboardingStep1() {
         <p className="text-sm text-muted-foreground">Name your waitlist</p>
       </div>
 
-      <h1 className="mb-1 text-h2">What are you building?</h1>
+      <h1 className="mb-1 text-h2">What&apos;s your product called?</h1>
       <p className="mb-8 text-body-lg text-muted-foreground">
-        Your page goes live as you type.
+        Don&apos;t worry — you can change all of this later.
       </p>
 
-      {/* Field 1: Headline */}
+      {/* Field 1: Product Name */}
       <div className="mb-3">
-        <label className="mb-1 block text-xs text-muted-foreground">
-          Headline
+        <label
+          htmlFor="headline"
+          className="mb-1 block text-xs text-muted-foreground"
+        >
+          Product Name
         </label>
         <input
+          id="headline"
           type="text"
-          placeholder="e.g Buildly"
+          placeholder="e.g. Buildly"
           value={headline}
           onChange={(e) => setHeadline(e.target.value)}
           disabled={isSubmitting}
-          className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-15 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-10 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 
-      {/* Field 2: Sub-headline */}
+      {/* Field 2: Subheadline */}
       <div className="mb-3">
-        <label className="mb-1 block text-xs text-muted-foreground">
-          Sub-headline
+        <label
+          htmlFor="subheadline"
+          className="mb-1 block text-xs text-muted-foreground"
+        >
+          Subheadline
         </label>
         <textarea
+          id="subheadline"
           placeholder="The Smarter way to manage Projects"
           value={subheadline}
           onChange={(e) => setSubheadline(e.target.value)}
           disabled={isSubmitting}
-          className="flex w-full resize-none items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-15 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full resize-none items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-10 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 
-      {/* Field 3: Tagline (slug) */}
+      {/* Field 3: Subdomain (slug) */}
       <div className="mb-3">
-        <label className="mb-1 block text-xs text-muted-foreground">
-          tagline
+        <label
+          htmlFor="slug"
+          className="mb-1 block text-xs text-muted-foreground"
+        >
+          Subdomain
         </label>
         <input
+          id="slug"
           type="text"
           placeholder={
             headline ? deriveSlug(headline) || "my-product" : "buildly"
           }
           value={slugInput}
           onChange={(e) => handleSlugChange(e.target.value)}
-          disabled={isSubmitting || usedFallback}
-          className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-15 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={isSubmitting}
+          className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-10 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
         />
         {/* URL preview with availability */}
         <div className="mt-1 flex items-center gap-1 text-xs">
@@ -332,6 +395,15 @@ export default function OnboardingStep1() {
           )}
           {slugError && <span className="text-destructive">{slugError}</span>}
         </div>
+        {usedFallback && slug && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Your page will be at{" "}
+            <span className="font-medium text-accent">
+              {slug}.prewaitlist.com
+            </span>{" "}
+            — you can change this anytime in Settings.
+          </p>
+        )}
       </div>
 
       {/* Submit button + I'll name it later */}
@@ -342,7 +414,7 @@ export default function OnboardingStep1() {
         <button
           type="submit"
           disabled={isSubmitting || !isValid}
-          className="inline-flex h-14.75 w-114.5 items-center justify-center rounded-md bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex h-12 w-full items-center justify-center rounded-md bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50"
         >
           {isSubmitting ? (
             <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />

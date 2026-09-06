@@ -5,9 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Spinner } from "../ui/spinner";
 
 interface Question {
-  id: string;
   text: string;
-  type: "free_text";
+  required: boolean;
 }
 
 interface EmailCaptureFormProps {
@@ -122,7 +121,7 @@ export function EmailCaptureForm({
   const hasQuestions = visibleQuestions.length > 0;
 
   // Template-specific styling to match onboarding preview exactly
-  const inputHeight = isBold ? "h-11" : "h-10";
+  const inputHeight = "h-10";
   const inputBorder = isBold
     ? "border-2 border-foreground"
     : isDark
@@ -134,10 +133,9 @@ export function EmailCaptureForm({
     ? "placeholder:text-dark-template-muted"
     : "placeholder:text-muted-foreground";
   const textSize = isBold ? "text-base" : "text-sm";
-  const btnHeight = isBold ? "h-11" : "h-10";
+  const btnHeight = "h-10";
   const btnPadding = isBold ? "px-7" : "px-4";
   const btnText = isBold ? "text-base font-semibold" : "text-sm font-medium";
-  const cardGap = isBold ? "gap-2.5" : "gap-2";
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-md mt-2">
@@ -154,8 +152,9 @@ export function EmailCaptureForm({
             }}
             disabled={loading}
             autoComplete="email"
+            aria-label="Email address"
             aria-invalid={!!emailError}
-            className={`${inputHeight} w-full rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none focus-visible:border-[var(--input-border-color-focus)] disabled:cursor-not-allowed disabled:opacity-50`}
+            className={`${inputHeight} w-full rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50`}
           />
           {emailError && (
             <p className="mt-1.5 text-xs text-destructive" role="alert">
@@ -163,9 +162,9 @@ export function EmailCaptureForm({
             </p>
           )}
 
-          <div className={`flex flex-col ${cardGap} mt-4`}>
-            {visibleQuestions.map((q) => (
-              <div key={q.id} className="relative">
+          <div className="flex flex-col gap-3 mt-4">
+            {visibleQuestions.map((q, i) => (
+              <div key={i} className="relative">
                 <input
                   type="text"
                   placeholder={
@@ -173,12 +172,16 @@ export function EmailCaptureForm({
                       ? q.text.trim()
                       : `${q.text.trim()}?`
                   }
-                  value={answers[q.id] || ""}
+                  value={answers[q.text] || ""}
                   onChange={(e) =>
-                    setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
+                    setAnswers((prev) => ({
+                      ...prev,
+                      [q.text]: e.target.value,
+                    }))
                   }
                   disabled={loading}
-                  className={`${inputHeight} w-full rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none focus-visible:border-[var(--input-border-color-focus)] disabled:cursor-not-allowed disabled:opacity-50 pr-16`}
+                  aria-label={q.text}
+                  className={`${inputHeight} w-full rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50 pr-16`}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-status-warm pointer-events-none">
                   (optional)
@@ -202,39 +205,48 @@ export function EmailCaptureForm({
               ctaText || "Join Waitlist"
             )}
           </button>
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            No spam. Unsubscribe anytime.
+          </p>
         </>
       ) : (
-        <div className="flex gap-2">
-          <input
-            type="email"
-            placeholder="Email address"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              if (apiError) setApiError(null);
-              if (emailError) setEmailError(null);
-            }}
-            disabled={loading}
-            autoComplete="email"
-            aria-invalid={!!emailError}
-            className={`${inputHeight} flex-1 min-w-0 rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none focus-visible:border-[var(--input-border-color-focus)] disabled:cursor-not-allowed disabled:opacity-50`}
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            style={{ backgroundColor: brandColor }}
-            className={`inline-flex items-center justify-center ${btnHeight} ${btnPadding} rounded-[var(--button-radius)] ${btnText} text-white transition-colors whitespace-nowrap disabled:pointer-events-none disabled:opacity-50`}
-          >
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <Spinner className="h-4 w-4" />
-                Joining...
-              </span>
-            ) : (
-              ctaText || "Join Waitlist"
-            )}
-          </button>
-        </div>
+        <>
+          <div className="flex gap-2">
+            <input
+              type="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (apiError) setApiError(null);
+                if (emailError) setEmailError(null);
+              }}
+              disabled={loading}
+              autoComplete="email"
+              aria-label="Email address"
+              aria-invalid={!!emailError}
+              className={`${inputHeight} flex-1 min-w-0 rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50`}
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              style={{ backgroundColor: brandColor }}
+              className={`inline-flex items-center justify-center ${btnHeight} ${btnPadding} rounded-[var(--button-radius)] ${btnText} text-white transition-colors whitespace-nowrap disabled:pointer-events-none disabled:opacity-50`}
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <Spinner className="h-4 w-4" />
+                  Joining...
+                </span>
+              ) : (
+                ctaText || "Join Waitlist"
+              )}
+            </button>
+          </div>
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            No spam. Unsubscribe anytime.
+          </p>
+        </>
       )}
 
       {apiError && (
