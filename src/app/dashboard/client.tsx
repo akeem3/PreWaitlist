@@ -10,12 +10,12 @@ const SignupChart = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="rounded-[var(--card-radius)] border border-border bg-card p-5">
+      <div className="rounded-(--card-radius) border border-border bg-card p-5">
         <div className="mb-4 flex items-center justify-between">
           <div className="h-5 w-40 animate-pulse rounded bg-muted" />
           <div className="h-5 w-20 animate-pulse rounded bg-muted" />
         </div>
-        <div className="h-[200px] animate-pulse rounded bg-muted" />
+        <div className="h-50 animate-pulse rounded bg-muted" />
       </div>
     ),
   }
@@ -256,7 +256,7 @@ export default function DashboardClient({
         </svg>
       </button>
 
-      <main className="min-h-screen lg:ml-[268px]">
+      <main className="min-h-screen lg:ml-67">
         <div className="border-b border-border bg-background px-6 py-4">
           <div className="flex items-center gap-3">
             <span className="text-body-sm font-medium text-accent">
@@ -346,7 +346,7 @@ export default function DashboardClient({
             </button>
           </div>
 
-          <div className="mb-6 rounded-[var(--card-radius)] border border-border bg-card p-5">
+          <div className="mb-6 rounded-(--card-radius) border border-border bg-card p-5">
             <ul className="space-y-3">
               {CHECKLIST_ITEMS.map((item) => {
                 const isChecked = checkedItems.has(item.id);
@@ -396,7 +396,7 @@ export default function DashboardClient({
           </p>
 
           <div className="mb-6 grid grid-cols-4 gap-3">
-            <div className="rounded-[var(--card-radius)] border border-border bg-card px-4 py-3 text-center">
+            <div className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
               <div className="mb-1 text-h3 text-foreground">
                 {stats ? formatStat(stats.totalSignups) : "—"}
               </div>
@@ -404,7 +404,7 @@ export default function DashboardClient({
                 Total signups
               </div>
             </div>
-            <div className="rounded-[var(--card-radius)] border border-border bg-card px-4 py-3 text-center">
+            <div className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
               <div className="mb-1 text-h3 text-foreground">
                 {stats && stats.referralPercentage !== null
                   ? `${stats.referralPercentage}%`
@@ -414,16 +414,16 @@ export default function DashboardClient({
                 Referral %
               </div>
             </div>
-            <div className="rounded-[var(--card-radius)] border border-border bg-card px-4 py-3 text-center">
+            <div className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
               <div className="mb-1 text-h3 text-foreground">
                 {stats ? formatStat(stats.todaySignups) : "—"}
               </div>
               <div className="text-caption text-muted-foreground">Today</div>
             </div>
-            <div className="relative rounded-[var(--card-radius)] border border-border bg-card px-4 py-3 text-center">
+            <div className="relative rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
               <div className="mb-1 text-h3 text-foreground">—</div>
               <div className="text-caption text-muted-foreground">Warmth</div>
-              <div className="absolute inset-0 flex items-center justify-center rounded-[var(--card-radius)] bg-background/80">
+              <div className="absolute inset-0 flex items-center justify-center rounded-(--card-radius) bg-background/80">
                 <svg
                   width="16"
                   height="16"
@@ -464,7 +464,7 @@ export default function DashboardClient({
             <WarmthPanel tier={tier} subdomain={subdomain} />
           </div>
 
-          <div className="rounded-[var(--card-radius)] border border-border bg-card">
+          <div className="rounded-(--card-radius) border border-border bg-card">
             <div className="px-5 pt-5">
               <input
                 type="text"
@@ -660,7 +660,7 @@ export default function DashboardClient({
                 ))}
               </div>
             ) : (
-              <div className="flex min-h-[80px] items-center justify-center">
+              <div className="flex min-h-20 items-center justify-center">
                 <span className="text-body-sm text-muted-foreground">
                   {searchQuery
                     ? "No subscribers match your search."

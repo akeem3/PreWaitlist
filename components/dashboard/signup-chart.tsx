@@ -95,7 +95,7 @@ function ChartBody({ subdomain, range }: { subdomain: string; range: string }) {
 
   return (
     <div className="overflow-x-auto">
-      <div className="min-w-[400px]">
+      <div className="min-w-100">
         <ResponsiveContainer width="100%" height={200}>
           <BarChart
             data={data}
