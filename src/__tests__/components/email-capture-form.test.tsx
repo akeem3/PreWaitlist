@@ -54,9 +54,7 @@ describe("EmailCaptureForm", () => {
       <EmailCaptureForm
         {...defaultProps}
         qualificationEnabled={true}
-        questions={[
-          { id: "q1", text: "What brings you here?", type: "free_text" },
-        ]}
+        questions={[{ text: "What brings you here?", required: false }]}
       />
     );
 
@@ -75,9 +73,7 @@ describe("EmailCaptureForm", () => {
       <EmailCaptureForm
         {...defaultProps}
         qualificationEnabled={true}
-        questions={[
-          { id: "q1", text: "What brings you here?", type: "free_text" },
-        ]}
+        questions={[{ text: "What brings you here?", required: false }]}
       />
     );
 
@@ -174,8 +170,8 @@ describe("EmailCaptureForm", () => {
         {...defaultProps}
         qualificationEnabled={true}
         questions={[
-          { id: "q1", text: "What brings you here?", type: "free_text" },
-          { id: "q2", text: "How did you hear about us", type: "free_text" },
+          { text: "What brings you here?", required: false },
+          { text: "How did you hear about us", required: false },
         ]}
       />
     );
@@ -190,9 +186,7 @@ describe("EmailCaptureForm", () => {
       <EmailCaptureForm
         {...defaultProps}
         qualificationEnabled={false}
-        questions={[
-          { id: "q1", text: "What brings you here?", type: "free_text" },
-        ]}
+        questions={[{ text: "What brings you here?", required: false }]}
       />
     );
     expect(screen.queryByPlaceholderText("What brings you here?")).toBeNull();
@@ -210,9 +204,7 @@ describe("EmailCaptureForm", () => {
       <EmailCaptureForm
         {...defaultProps}
         qualificationEnabled={true}
-        questions={[
-          { id: "q1", text: "What brings you here?", type: "free_text" },
-        ]}
+        questions={[{ text: "What brings you here?", required: false }]}
       />
     );
 
@@ -229,7 +221,7 @@ describe("EmailCaptureForm", () => {
     await waitFor(() => {
       const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(callBody.qual_answers).toEqual({
-        q1: "Friend recommendation",
+        "What brings you here?": "Friend recommendation",
       });
     });
   });

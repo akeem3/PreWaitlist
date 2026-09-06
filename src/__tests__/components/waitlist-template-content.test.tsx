@@ -85,16 +85,16 @@ describe("WaitlistTemplateContent", () => {
     expect(screen.queryByText("people in line")).toBeNull();
   });
 
-  it("uses bold heading for bold template", () => {
+  it("uses text-4xl heading for bold template", () => {
     render(<WaitlistTemplateContent {...defaultProps} template="bold" />);
     const heading = screen.getByText("Join our waitlist");
-    expect(heading.className).toContain("text-h2");
+    expect(heading.className).toContain("text-4xl");
   });
 
-  it("uses h3 heading for minimal template", () => {
+  it("uses text-4xl heading for minimal template", () => {
     render(<WaitlistTemplateContent {...defaultProps} />);
     const heading = screen.getByText("Join our waitlist");
-    expect(heading.className).toContain("text-h3");
+    expect(heading.className).toContain("text-4xl");
   });
 
   it("renders latestUpdate slot when provided", () => {

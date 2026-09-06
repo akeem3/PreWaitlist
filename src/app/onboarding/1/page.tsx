@@ -272,41 +272,53 @@ export default function OnboardingStep1() {
         Your page goes live as you type.
       </p>
 
-      {/* Field 1: Headline */}
+      {/* Field 1: Product Name */}
       <div className="mb-3">
-        <label className="mb-1 block text-xs text-muted-foreground">
-          Headline
+        <label
+          htmlFor="headline"
+          className="mb-1 block text-xs text-muted-foreground"
+        >
+          Product Name
         </label>
         <input
+          id="headline"
           type="text"
-          placeholder="e.g Buildly"
+          placeholder="e.g. Buildly"
           value={headline}
           onChange={(e) => setHeadline(e.target.value)}
           disabled={isSubmitting}
-          className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-15 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-10 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 
-      {/* Field 2: Sub-headline */}
+      {/* Field 2: Subheadline */}
       <div className="mb-3">
-        <label className="mb-1 block text-xs text-muted-foreground">
-          Sub-headline
+        <label
+          htmlFor="subheadline"
+          className="mb-1 block text-xs text-muted-foreground"
+        >
+          Subheadline
         </label>
         <textarea
+          id="subheadline"
           placeholder="The Smarter way to manage Projects"
           value={subheadline}
           onChange={(e) => setSubheadline(e.target.value)}
           disabled={isSubmitting}
-          className="flex w-full resize-none items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-15 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full resize-none items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-10 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 
-      {/* Field 3: Tagline (slug) */}
+      {/* Field 3: Subdomain (slug) */}
       <div className="mb-3">
-        <label className="mb-1 block text-xs text-muted-foreground">
-          tagline
+        <label
+          htmlFor="slug"
+          className="mb-1 block text-xs text-muted-foreground"
+        >
+          Subdomain
         </label>
         <input
+          id="slug"
           type="text"
           placeholder={
             headline ? deriveSlug(headline) || "my-product" : "buildly"
@@ -314,7 +326,7 @@ export default function OnboardingStep1() {
           value={slugInput}
           onChange={(e) => handleSlugChange(e.target.value)}
           disabled={isSubmitting || usedFallback}
-          className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-15 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-10 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
         />
         {/* URL preview with availability */}
         <div className="mt-1 flex items-center gap-1 text-xs">
@@ -342,7 +354,7 @@ export default function OnboardingStep1() {
         <button
           type="submit"
           disabled={isSubmitting || !isValid}
-          className="inline-flex h-14.75 w-114.5 items-center justify-center rounded-md bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex h-12 w-full items-center justify-center rounded-md bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50"
         >
           {isSubmitting ? (
             <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
