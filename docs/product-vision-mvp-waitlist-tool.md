@@ -385,13 +385,18 @@ The build is structured in four sprints. Each sprint has a clear scope, a define
 
 **What gets built:**
 
-- Warmth score calculation engine (email open via Resend webhooks + email clicks via Resend webhooks + qual answers)
-- Hot/Warm/Cold assignment per subscriber, updating in real time
+- Warmth score calculation engine (email clicks via Resend webhooks + referral activity + qual answers — daily batch recalculation)
+- Hot/Warm/Cold assignment per subscriber
 - Warmth column and filter in subscriber list
 - Warmth distribution panel in dashboard
 - Dashboard warning state trigger (when Cold % > threshold)
+- Schema migration (consolidated Sprint 3 DDL)
+- Confirmation email (position + referral link) on signup
+- Position recalculation on referral
+- "You moved up" trigger email
 - Warmth-segmented broadcast compose + send (Pro)
 - Broadcast email to full list (Pro)
+- Email infrastructure separation (transactional vs marketing domains)
 - Paddle integration — Pro $15/mo
 - Upgrade modal with 7 context-sensitive trigger variants
 - Feature gating across all tiers

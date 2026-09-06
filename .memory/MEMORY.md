@@ -239,6 +239,41 @@ picking up a paying customer.
 
 **Design Reference:** 5 high-fidelity SVGs in `docs/design/High-fidelity-Sprit2/`
 
+## Sprint 3 Scope (from product vision + audit)
+
+**Goal:** Warmth tracking live. Founders send warmth-segmented broadcasts. Paddle billing gates Pro features. Domain auth walkable. Product feature-complete for MVP.
+
+**Pre-requisite:** Epic 10 (Public Waitlist Page & Onboarding Redesign) ships before Sprint 3 begins.
+
+**3 Epics, 22 Stories:**
+
+- **Epic 11 — Warmth Tracking Engine** (8 stories): Resend webhooks, score calculation (daily batch), Hot/Warm/Cold badges, distribution panel, warning state, decay rules, schema migration
+- **Epic 12 — Email System** (7 stories): Confirmation emails, position recalculation, "you moved up" trigger, broadcast, segmented broadcast, sender customisation, email infrastructure separation
+- **Epic 13 — Billing & Feature Gating** (7 stories): Paddle checkout ($15/mo), upgrade modal (7 triggers), tier enforcement, 500 signup cap, billing management, domain auth walkthrough
+
+**Key decisions (from web research + audit):**
+
+- **Decay starts at 60 days (not 30):** Waitlist subscribers go quiet while waiting for launch — this is not disengagement. 30-day decay penalizes early adopters unfairly.
+- **Email opens NOT tracked as warmth signal:** Apple Mail Privacy Protection preloads pixels for ~40-50% of email clients, making open data unreliable. Clicks (+5) and referrals (+15) are the primary intent signals.
+- **Cold bar color = blue (not red):** Both Hot (green) and Cold (red) being red-family is confusing. Blue is more distinct.
+- **Email infrastructure separation:** Transactional emails from `notifications@prewaitlist.com`, marketing from `updates@prewaitlist.com`. Protects deliverability if a broadcast triggers spam complaints.
+- **Confirmation email uses Emails API, not Batch API:** Batch is for bulk sends. Single transactional send uses `resend.emails.send()`.
+- **Paddle Billing uses `Paddle.Initialize()` (not `Paddle.Setup()`):** Classic vs Billing distinction. `customData` not `passthrough`. `subscription.canceled` (one L) not `cancelled`.
+- **Page views table is NOT populated:** No code inserts into it. Warmth scoring uses email events only. Page-visit tracking deferred to v1.1.
+- **Cached subscriber count for 500 cap:** `waitlists.subscriber_count` column, atomic increment/decrement. Avoids `COUNT(*)` on every signup.
+- **Multiple waitlists is Sprint 4 scope:** Product vision line 415 says "Second waitlist creation flow" is Sprint 4, not Sprint 3.
+- **Schema migration consolidated:** Story 11.7 adds all Sprint 3 columns in one migration (6 columns + 1 table).
+
+**New tables/columns:**
+
+- `broadcasts` (id, waitlist_id, subject, sent_at, recipient_count, created_at)
+- `email_events.event_data` (jsonb, nullable)
+- `waitlists.sender_name` (text, nullable)
+- `waitlists.cold_threshold` (integer, default 40)
+- `waitlists.sending_domain` (text, nullable)
+- `waitlists.subscriber_count` (integer, default 0)
+- `founder_profiles.paddle_subscription_id` (text, nullable)
+
 ## Epic 0 Progress (All 12 Stories Done)
 
 | Story | Status     | Summary                                                                           |
@@ -753,9 +788,10 @@ Design specs use hex values that don't always match the token system exactly. Ma
 48. ~~Story 9.5 — Epic 9 Tests~~ ✅ Done
 49. ~~Story 9.6 — Dashboard Remediation — MVP Gap Fill~~ ✅ Done
 50. Story 9.7 — Epic 9 Final Tests ← NEXT
-51. Epic 10 — Store Features (settings, domain config, email customization)
-52. Epic 11 — Email Nurture Sequences
-53. Epic 12 — Billing & Paddle Integration (Sprint 3)
+51. Epic 10 — Public Waitlist Page & Onboarding Redesign (pre-Sprint 3)
+52. Epic 11 — Warmth Tracking Engine (Sprint 3)
+53. Epic 12 — Email System (Sprint 3)
+54. Epic 13 — Billing & Feature Gating (Sprint 3)
 
 ## Decision + bug fix: "Powered by PreWaitlist" footer (2026-07)
 
