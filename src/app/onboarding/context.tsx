@@ -30,6 +30,7 @@ interface Question {
 export interface OnboardingFormState {
   waitlistId: string | null;
   slug: string;
+  productName: string;
   headline: string;
   subheadline: string;
   template: "minimal" | "bold" | "dark";
@@ -82,9 +83,25 @@ const STORAGE_KEY = "prewaitlist_onboarding";
 const SESSION_FLAG_KEY = "prewaitlist_onboarding_active";
 const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
+// camelCase → snake_case mapping for API PATCH requests
+const FIELD_MAP: Record<string, string> = {
+  productName: "product_name",
+  brandColor: "brand_color",
+  ctaText: "cta_text",
+  logoUrl: "logo_url",
+  milestoneRewards: "milestone_rewards",
+  signupCounterEnabled: "signup_counter_enabled",
+  signupCounterThreshold: "signup_counter_threshold",
+  emailSubject: "email_subject",
+  emailSenderName: "email_sender_name",
+  emailBody: "email_body",
+  qualificationEnabled: "qualification_enabled",
+};
+
 const initialState: OnboardingFormState = {
   waitlistId: null,
   slug: "",
+  productName: "",
   headline: "",
   subheadline: "",
   template: "minimal",
@@ -263,6 +280,7 @@ export function LocalOnboardingProvider({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           subdomain: slug,
+          product_name: data.productName || undefined,
           headline: data.headline || undefined,
           subheadline: data.subheadline || undefined,
           template: data.template || undefined,
@@ -270,8 +288,8 @@ export function LocalOnboardingProvider({
           logo_url: data.logoUrl || undefined,
           cta_text: data.ctaText || undefined,
           milestone_rewards: data.milestoneRewards || undefined,
-          qualification_enabled: data.qualificationEnabled || undefined,
-          signup_counter_enabled: data.signupCounterEnabled || undefined,
+          qualification_enabled: data.qualificationEnabled ?? undefined,
+          signup_counter_enabled: data.signupCounterEnabled ?? undefined,
           signup_counter_threshold: data.signupCounterThreshold || undefined,
           questions: data.questions || undefined,
           email_subject: data.emailSubject || undefined,
@@ -398,7 +416,7 @@ export function AuthedOnboardingProvider({
       setState((s) => ({ ...s, [key]: value }));
 
       // Debounce PATCH to server
-      const apiKey = key === "brandColor" ? "brand_color" : key;
+      const apiKey = FIELD_MAP[key] || key;
       pendingRef.current[apiKey] = value;
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {

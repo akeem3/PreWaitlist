@@ -26,6 +26,7 @@ function mapServerToState(
   return {
     waitlistId: (record.waitlistId as string) ?? null,
     slug: (record.slug as string) ?? "",
+    productName: (record.productName as string) ?? "",
     headline: (record.headline as string) ?? "",
     subheadline: (record.subheadline as string) ?? "",
     template: (record.template as "minimal" | "bold" | "dark") ?? "minimal",
@@ -86,6 +87,7 @@ export function FlushGate({ children }: { children: React.ReactNode }) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               subdomain: edits.slug || undefined,
+              product_name: edits.productName || undefined,
               headline: edits.headline || undefined,
               subheadline: edits.subheadline || undefined,
               template: edits.template || undefined,

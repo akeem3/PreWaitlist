@@ -113,6 +113,7 @@ function TwoPaneLayout({
           <div className="w-full max-w-2xl">
             <LivePreview
               template={form.template}
+              productName={form.productName}
               headline={form.headline}
               subheadline={form.subheadline}
               brandColor={form.brandColor}
@@ -120,6 +121,7 @@ function TwoPaneLayout({
               ctaText={form.ctaText}
               milestoneRewards={form.milestoneRewards}
               signupCounterEnabled={form.signupCounterEnabled}
+              signupCounterThreshold={form.signupCounterThreshold}
               questions={form.questions}
               showQuestions={showQuestions}
               tier={form.tier}

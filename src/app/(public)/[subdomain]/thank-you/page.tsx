@@ -26,7 +26,8 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
       `
       id, email, position, referral_code, referrer_id,
       waitlists!inner (
-        id, subdomain, headline, milestone_rewards_enabled,
+        id, subdomain, headline, template, brand_color, logo_url, cta_text,
+        milestone_rewards_enabled,
         founder_profiles!inner ( tier )
       )
     `
@@ -41,6 +42,10 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
     id: string;
     subdomain: string;
     headline: string;
+    template: string;
+    brand_color: string;
+    logo_url: string | null;
+    cta_text: string;
     milestone_rewards_enabled: boolean;
     founder_profiles: { tier: string }[];
   };
@@ -83,6 +88,11 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
       referrerEmail.split("@")[0].slice(1)
     : null;
 
+  const { count: referralCount } = await supabase
+    .from("subscribers")
+    .select("id", { count: "exact", head: true })
+    .eq("referrer_id", subscriber.id);
+
   return (
     <div className="flex min-h-screen flex-col items-center bg-background px-4 py-16">
       <div className="flex w-full max-w-[400px] flex-col items-center">
@@ -117,16 +127,10 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
           </span>
         )}
 
-        <input
-          type="text"
-          placeholder="What should we call you? (optional)"
-          className="mt-8 h-[52px] w-full rounded-[12px] border border-border bg-card px-4 text-body text-center placeholder:text-muted-foreground/60 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-        />
-
         {milestoneRewards.length > 0 ? (
           <div className="mt-8 w-full text-center">
             <p className="text-body-sm text-muted-foreground mb-3">
-              {`You've referred 0 of ${milestoneRewards[0].threshold} friends toward: ${milestoneRewards[0].label}`}
+              {`You've referred ${referralCount ?? 0} of ${milestoneRewards[0].threshold} friends toward: ${milestoneRewards[0].label}`}
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               {milestoneRewards.map((r) => (
@@ -159,7 +163,9 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
 
       {tier === "free" && (
         <div className="mt-auto w-full max-w-[400px] pt-8">
-          <PoweredByFooter template="minimal" />
+          <PoweredByFooter
+            template={waitlist.template as "minimal" | "bold" | "dark"}
+          />
         </div>
       )}
     </div>

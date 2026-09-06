@@ -11,7 +11,7 @@ export default function MetaPreview({
   subheadline,
   ctaText,
   slug,
-  brandColor = "#0F7A5E",
+  brandColor,
 }: MetaPreviewProps) {
   const liveUrl = slug
     ? `${slug}.prewaitlist.com`
@@ -33,26 +33,30 @@ export default function MetaPreview({
         </p>
         <div className="mt-3 flex w-full max-w-[260px] items-center gap-2">
           <div className="h-7 flex-1 shrink-0 rounded border border-border bg-background px-2">
-            <span className="text-[10px] leading-7 text-muted-foreground">
+            <span className="text-xs leading-7 text-muted-foreground">
               Enter your email
             </span>
           </div>
           <div
-            className="h-7 shrink-0 rounded px-3"
-            style={{ backgroundColor: brandColor }}
+            className="h-7 shrink-0 rounded px-3 bg-[var(--brand-color)]"
+            style={
+              {
+                "--brand-color": brandColor || "var(--color-accent)",
+              } as React.CSSProperties
+            }
           >
-            <span className="text-[10px] leading-7 font-medium text-white whitespace-nowrap">
+            <span className="text-xs leading-7 font-medium text-white whitespace-nowrap">
               {ctaText || "Join Waitlist"}
             </span>
           </div>
         </div>
       </div>
       <div className="border-t border-border px-4 py-2.5 text-center">
-        <p className="text-[10px] text-muted-foreground">{liveUrl}</p>
+        <p className="text-xs text-muted-foreground">{liveUrl}</p>
         <p className="mt-0.5 text-xs font-bold text-foreground leading-tight">
           {headline || "Your Headline"} — Join the waitlist
         </p>
-        <p className="text-[10px] text-muted-foreground leading-snug">
+        <p className="text-xs text-muted-foreground leading-snug">
           {subheadline || "Your subheadline goes here"}
         </p>
       </div>

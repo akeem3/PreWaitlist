@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useOnboardingForm } from "../context";
+import { cn } from "../../../../components/lib/cn";
 
 type Template = "minimal" | "bold" | "dark";
 
@@ -116,11 +117,12 @@ export default function OnboardingStep2() {
             type="button"
             onClick={() => handleSelect(template.id)}
             disabled={isSubmitting}
-            className={`flex h-[123px] w-full items-center rounded-[23px] border bg-card p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={cn(
+              "flex h-[123px] w-full items-center rounded-[23px] border bg-card p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50",
               selected === template.id
                 ? "border-2 border-accent"
                 : "border border-border"
-            }`}
+            )}
           >
             <div className="mr-4 h-[95px] w-[137px] shrink-0 overflow-hidden rounded-[16px] border border-border">
               <MiniPreview template={template.id} />
@@ -141,7 +143,7 @@ export default function OnboardingStep2() {
         <button
           type="submit"
           disabled={!selected || isSubmitting}
-          className="inline-flex h-14.75 w-114.5 items-center justify-center rounded-(--radius-md) bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex h-12 w-full items-center justify-center rounded-(--radius-md) bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50"
         >
           {isSubmitting ? (
             <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
