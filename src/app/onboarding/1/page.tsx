@@ -16,8 +16,56 @@ function deriveSlug(value: string): string {
     .slice(0, 63);
 }
 
+const ADJECTIVES = [
+  "brave",
+  "swift",
+  "bright",
+  "calm",
+  "eager",
+  "fair",
+  "grand",
+  "keen",
+  "noble",
+  "proud",
+  "quick",
+  "sharp",
+  "stark",
+  "vivid",
+  "warm",
+  "bold",
+  "cool",
+  "deep",
+  "fresh",
+  "green",
+];
+const NOUNS = [
+  "fox",
+  "hawk",
+  "oak",
+  "pine",
+  "star",
+  "wave",
+  "wind",
+  "stone",
+  "tree",
+  "cloud",
+  "river",
+  "spring",
+  "crest",
+  "peak",
+  "vale",
+  "bay",
+  "cove",
+  "dune",
+  "fern",
+  "moss",
+];
+
 function generateFallbackSlug(): string {
-  return crypto.randomUUID().slice(0, 8);
+  const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+  const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
+  const hex = crypto.randomUUID().slice(0, 4);
+  return `${adj}-${noun}-${hex}`;
 }
 
 export default function OnboardingStep1() {
@@ -179,7 +227,10 @@ export default function OnboardingStep1() {
     setSlugStatus("idle");
     setSlugError(null);
     form.updateField("slug", fallback);
-  }, [form]);
+    form.updateField("headline", "My Waitlist");
+    form.updateField("subheadline", "Join the waitlist");
+    router.push("/onboarding/2");
+  }, [form, router]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -267,9 +318,9 @@ export default function OnboardingStep1() {
         <p className="text-sm text-muted-foreground">Name your waitlist</p>
       </div>
 
-      <h1 className="mb-1 text-h2">What are you building?</h1>
+      <h1 className="mb-1 text-h2">What&apos;s your product called?</h1>
       <p className="mb-8 text-body-lg text-muted-foreground">
-        Your page goes live as you type.
+        Don&apos;t worry — you can change all of this later.
       </p>
 
       {/* Field 1: Product Name */}
@@ -325,7 +376,7 @@ export default function OnboardingStep1() {
           }
           value={slugInput}
           onChange={(e) => handleSlugChange(e.target.value)}
-          disabled={isSubmitting || usedFallback}
+          disabled={isSubmitting}
           className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-10 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
         />
         {/* URL preview with availability */}
@@ -344,6 +395,15 @@ export default function OnboardingStep1() {
           )}
           {slugError && <span className="text-destructive">{slugError}</span>}
         </div>
+        {usedFallback && slug && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Your page will be at{" "}
+            <span className="font-medium text-accent">
+              {slug}.prewaitlist.com
+            </span>{" "}
+            — you can change this anytime in Settings.
+          </p>
+        )}
       </div>
 
       {/* Submit button + I'll name it later */}
