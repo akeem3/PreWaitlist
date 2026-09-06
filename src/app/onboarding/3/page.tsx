@@ -435,10 +435,14 @@ export default function OnboardingStep3() {
 
       {/* CTA Text */}
       <div className="mb-3">
-        <label className="mb-1 block text-xs text-muted-foreground">
+        <label
+          htmlFor="cta-text"
+          className="mb-1 block text-xs text-muted-foreground"
+        >
           Button Text
         </label>
         <input
+          id="cta-text"
           type="text"
           placeholder="Join Waitlist"
           value={ctaText}

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { cn } from "../lib/cn";
 
 type Template = "minimal" | "bold" | "dark";
 
@@ -35,7 +36,7 @@ export function WaitlistTemplateContent({
   const isDark = template === "dark";
   const isBold = template === "bold";
 
-  const headingClass = isBold ? "text-h2" : "text-h3";
+  const headingClass = "text-4xl";
   const headingColor = isDark ? "text-dark-template-text" : "text-foreground";
   const subheadlineSize = isBold ? "text-base" : "text-sm";
   const subheadlineColor = isDark
@@ -51,11 +52,10 @@ export function WaitlistTemplateContent({
         <Image
           src={logoUrl}
           alt="Logo"
-          width={isBold ? 144 : 120}
-          height={isBold ? 48 : 40}
+          width={144}
+          height={48}
           unoptimized
-          className="object-contain"
-          style={{ height: isBold ? 48 : 40 }}
+          className={cn("max-w-[144px] max-h-[48px] object-contain")}
         />
       )}
 
@@ -66,12 +66,6 @@ export function WaitlistTemplateContent({
       <p className={`${subheadlineSize} max-w-md ${subheadlineColor}`}>
         {subheadline || "Your subheadline goes here"}
       </p>
-
-      {latestUpdateSlot && (
-        <div className="w-full max-w-md mt-2">{latestUpdateSlot}</div>
-      )}
-
-      <div className="w-full max-w-md mt-2">{emailCaptureForm}</div>
 
       {signupCounterVisible && signupCounter !== undefined && (
         <div
@@ -89,6 +83,56 @@ export function WaitlistTemplateContent({
           people in line
         </div>
       )}
+
+      {latestUpdateSlot && (
+        <div className="w-full max-w-md mt-2">{latestUpdateSlot}</div>
+      )}
+
+      <div className="w-full max-w-md mt-2">{emailCaptureForm}</div>
+
+      <p
+        className={`text-xs font-medium mt-6 w-full max-w-md text-left ${
+          isDark ? "text-dark-template-text" : "text-foreground"
+        }`}
+      >
+        How it works
+      </p>
+      <div
+        className={`flex flex-col sm:flex-row gap-4 sm:gap-8 mt-6 w-full max-w-md text-left ${
+          isDark ? "text-dark-template-muted" : "text-muted-foreground"
+        }`}
+      >
+        <div className="flex items-start gap-2">
+          <span
+            className={`text-sm font-semibold ${
+              isDark ? "text-dark-template-text" : "text-foreground"
+            }`}
+          >
+            1.
+          </span>
+          <span className="text-sm">Enter your email</span>
+        </div>
+        <div className="flex items-start gap-2">
+          <span
+            className={`text-sm font-semibold ${
+              isDark ? "text-dark-template-text" : "text-foreground"
+            }`}
+          >
+            2.
+          </span>
+          <span className="text-sm">Get your position</span>
+        </div>
+        <div className="flex items-start gap-2">
+          <span
+            className={`text-sm font-semibold ${
+              isDark ? "text-dark-template-text" : "text-foreground"
+            }`}
+          >
+            3.
+          </span>
+          <span className="text-sm">Refer friends to move up</span>
+        </div>
+      </div>
 
       {milestoneRewards.length > 0 && (
         <div className="flex gap-2 justify-center flex-wrap mt-4 w-full max-w-md">
@@ -111,15 +155,15 @@ export function WaitlistTemplateContent({
                 {r.threshold}
               </div>
               <div
-                className={`text-[10px] mt-0.5 ${
+                className={`text-xs mt-0.5 ${
                   isDark ? "text-dark-template-muted" : "text-muted-foreground"
                 }`}
               >
                 Refer friends
               </div>
               <div
-                className="text-[11px] font-medium mt-1"
-                style={{ color: brandColor }}
+                className="text-2xs font-medium mt-1 text-[var(--brand-color)]"
+                style={{ "--brand-color": brandColor } as React.CSSProperties}
               >
                 {r.label || "Unlock reward"}
               </div>
