@@ -101,7 +101,7 @@ export default function OnboardingStep5() {
                   <span className="font-medium text-foreground">From:</span>{" "}
                   {form.headline || "Your Product"} via PreWaitlist
                 </p>
-                <span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                <span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-2xs text-muted-foreground">
                   auto-sent
                 </span>
               </div>
@@ -120,13 +120,13 @@ export default function OnboardingStep5() {
                   Share your referral link to move up:
                 </p>
                 <div className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-1.5">
-                  <span className="flex-1 truncate font-mono text-[10px] text-muted-foreground">
+                  <span className="flex-1 truncate font-mono text-2xs text-muted-foreground">
                     {form.slug
                       ? `${form.slug}.prewaitlist.com/?ref=abc123`
                       : "your-page.prewaitlist.com/?ref=abc123"}
                   </span>
                 </div>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-2xs text-muted-foreground">
                   The earlier you sign up, the higher your position.
                 </p>
               </div>
@@ -161,7 +161,7 @@ export default function OnboardingStep5() {
             {/* Comparison: Free vs Pro */}
             <div className="mt-3 grid grid-cols-2 gap-2.5">
               <div className="rounded-lg border border-border bg-muted/50 p-3">
-                <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                <p className="mb-1.5 text-2xs font-medium uppercase tracking-wide text-muted-foreground">
                   Free
                 </p>
                 <ul className="space-y-1">
@@ -216,7 +216,7 @@ export default function OnboardingStep5() {
                 </ul>
               </div>
               <div className="rounded-lg border border-border bg-muted/50 p-3">
-                <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                <p className="mb-1.5 text-2xs font-medium uppercase tracking-wide text-muted-foreground">
                   Pro
                 </p>
                 <ul className="space-y-1">

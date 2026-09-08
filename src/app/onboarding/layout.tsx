@@ -55,16 +55,18 @@ function ProgressDots({
   currentStep,
   showDots,
   centered = false,
+  className,
 }: {
   currentStep: number;
   showDots: boolean;
   centered?: boolean;
+  className?: string;
 }) {
   if (!showDots) return null;
 
   return (
     <nav
-      className={`relative flex items-center px-14 pt-14 pb-6 ${centered ? "justify-center" : ""}`}
+      className={`relative flex items-center px-14 pt-14 pb-6 ${centered ? "justify-center" : ""} ${className ?? ""}`}
       aria-label="Onboarding progress"
     >
       {STEPS.map((step) => (
@@ -113,11 +115,11 @@ function TwoPaneLayout({
           <div className="w-full max-w-2xl">
             <LivePreview
               template={form.template}
-              productName={form.productName}
               headline={form.headline}
               subheadline={form.subheadline}
               brandColor={form.brandColor}
               logoUrl={form.logoUrl}
+              productName={form.productName}
               ctaText={form.ctaText}
               milestoneRewards={form.milestoneRewards}
               signupCounterEnabled={form.signupCounterEnabled}

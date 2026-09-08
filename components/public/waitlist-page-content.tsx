@@ -11,6 +11,7 @@ interface WaitlistPageContentProps {
   headline: string | null;
   subheadline: string | null;
   logoUrl: string | null;
+  productName?: string;
   ctaText: string | null;
   brandColor: string;
   tier: "free" | "pro";
@@ -34,6 +35,7 @@ export function WaitlistPageContent({
   headline,
   subheadline,
   logoUrl,
+  productName,
   latestUpdateSlot,
 }: WaitlistPageContentProps) {
   const isDark = template === "dark";
@@ -51,6 +53,7 @@ export function WaitlistPageContent({
           subheadline={subheadline ?? ""}
           brandColor={brandColor}
           logoUrl={logoUrl}
+          productName={productName}
           signupCounter={signupCounter}
           signupCounterVisible={signupCounterVisible}
           milestoneRewards={milestoneRewards}
@@ -59,7 +62,7 @@ export function WaitlistPageContent({
         />
       </div>
       <div className="w-full max-w-2xl">
-        {tier === "free" && <PoweredByFooter template={template} />}
+        {tier === "free" && <PoweredByFooter template={template} standalone />}
       </div>
     </main>
   );

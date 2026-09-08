@@ -16,7 +16,7 @@ export default async function PublicSubdomainPage({ params }: Props) {
     .select(
       `
       id, subdomain, template, headline, subheadline, cta_text,
-      logo_url, brand_color, qualification_enabled, milestone_rewards_enabled,
+      logo_url, product_name, brand_color, qualification_enabled, milestone_rewards_enabled,
       signup_counter_enabled, signup_counter_threshold,
       founder_profiles!inner ( tier )
     `
@@ -87,6 +87,7 @@ export default async function PublicSubdomainPage({ params }: Props) {
       headline={waitlist.headline}
       subheadline={waitlist.subheadline}
       logoUrl={waitlist.logo_url}
+      productName={waitlist.product_name}
       ctaText={waitlist.cta_text}
       brandColor={waitlist.brand_color}
       tier={tier}

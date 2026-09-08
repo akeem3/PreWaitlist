@@ -69,7 +69,7 @@ export function ShareButtons({
       <button
         type="button"
         onClick={handleShare}
-        className="flex flex-1 items-center justify-center gap-2 rounded-[12px] bg-accent px-6 py-3 text-body-sm font-semibold text-accent-foreground transition-colors hover:bg-accent-hover"
+        className="flex flex-1 items-center justify-center gap-2 rounded-(--card-radius) bg-accent px-6 py-3 text-body-sm font-semibold text-accent-foreground transition-colors hover:bg-accent-hover"
       >
         <svg
           className="h-4 w-4"
@@ -89,7 +89,7 @@ export function ShareButtons({
       <button
         type="button"
         onClick={handleCopyLink}
-        className="flex flex-1 items-center justify-center gap-2 rounded-[12px] border border-border bg-card px-6 py-3 text-body-sm font-medium text-foreground transition-colors hover:bg-muted"
+        className="flex flex-1 items-center justify-center gap-2 rounded-(--card-radius) border border-border bg-card px-6 py-3 text-body-sm font-medium text-foreground transition-colors hover:bg-muted"
       >
         {copied ? "Copied!" : "Copy link"}
       </button>

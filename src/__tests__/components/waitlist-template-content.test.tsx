@@ -71,7 +71,7 @@ describe("WaitlistTemplateContent", () => {
       />
     );
     expect(screen.getByText("42")).toBeDefined();
-    expect(screen.getByText("people in line")).toBeDefined();
+    expect(screen.getByText("people on the waitlist")).toBeDefined();
   });
 
   it("does not render signup counter when not visible", () => {

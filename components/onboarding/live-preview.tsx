@@ -21,11 +21,11 @@ interface Question {
 
 interface LivePreviewProps {
   template: Template;
-  productName: string;
   headline: string;
   subheadline: string;
   brandColor: string;
   logoUrl: string | null;
+  productName?: string;
   ctaText: string;
   milestoneRewards: MilestoneReward[];
   signupCounterEnabled?: boolean;
@@ -51,13 +51,13 @@ function BrowserFrame({
   return (
     <div
       className={cn(
-        "w-full overflow-hidden rounded-(--radius-lg) shadow-(--shadow-float) border border-border",
+        "w-full flex flex-col max-h-[calc(100vh-6rem)] overflow-hidden rounded-(--radius-lg) shadow-(--shadow-float) border border-border",
         isDark ? "bg-dark-template-bg" : "bg-card"
       )}
     >
       <div
         className={cn(
-          "flex h-9 items-center border-b px-3 gap-1.5",
+          "flex h-9 shrink-0 items-center border-b px-3 gap-1.5",
           isDark
             ? "bg-dark-template-bg border-dark-template-border"
             : "bg-card border-border"
@@ -72,7 +72,9 @@ function BrowserFrame({
           </span>
         )}
       </div>
-      <div className="flex flex-col py-8 px-32 min-h-[200px]">{children}</div>
+      <div className="flex flex-col px-6 pt-2 pb-6 min-h-0 flex-1 overflow-y-auto">
+        {children}
+      </div>
     </div>
   );
 }
@@ -260,11 +262,11 @@ function PreviewQuestionForm({
 
 export function LivePreview({
   template,
-  productName,
   headline,
   subheadline,
   brandColor,
   logoUrl,
+  productName,
   ctaText,
   milestoneRewards,
   signupCounterEnabled,
@@ -281,6 +283,7 @@ export function LivePreview({
   const deferredSubheadline = useDeferredValue(subheadline);
   const deferredBrandColor = useDeferredValue(brandColor);
   const deferredLogoUrl = useDeferredValue(logoUrl);
+  const deferredProductName = useDeferredValue(productName);
   const deferredCtaText = useDeferredValue(ctaText);
   const deferredRewards = useDeferredValue(milestoneRewards);
   const deferredSignupCounter = useDeferredValue(signupCounterEnabled);
@@ -356,6 +359,7 @@ export function LivePreview({
                   subheadline={deferredSubheadline}
                   brandColor={deferredBrandColor}
                   logoUrl={deferredLogoUrl}
+                  productName={deferredProductName}
                   signupCounter={
                     signupCounterEnabled ? signupCounterThreshold : 0
                   }

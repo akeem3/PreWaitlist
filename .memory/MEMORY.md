@@ -410,16 +410,16 @@ picking up a paying customer.
 
 ### Story Status — Epic 4
 
-| Story | Status         | Summary                                                                                                                                                                                                                                                                                                                                                                                 |
-| ----- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 4.0   | ✅ done        | API routes (POST/PATCH waitlist, GET check-slug), OnboardingFormContext (14 fields, loading state), layout switching (two-pane Steps 1–3, centered Steps 4/4a/5/Success), progress dots with touch targets, sticky mobile CTA, back links in Steps 2+3                                                                                                                                  |
-| 4.1   | ✅ done        | Step 1: Headline, subheadline, subdomain input with debounced availability check, "I'll name it later" fallback, POST to create waitlist, arrow-only submit                                                                                                                                                                                                                             |
-| 4.2   | ✅ done        | Step 2: Template selector (Minimal/Bold/Dark) with MiniPreviews, PATCH to save selection, dark template CSS tokens (5 tokens in globals.css), dark theme selector thumbnail fix (h-full w-full), BrowserFrame dark mode fix (utility class names not var() arbitrary values), Bold template hero headline (text-h1), Bold email input dark border (border-2 border-foreground)          |
-| 4.3   | ✅ done        | Step 3: Headline/subheadline/brand color/logo upload/CTA text, Meta Preview OG-card mock (browser chrome + mini page + domain/title/description), milestone rewards (fixed 3/10/25 tiers, editable reward_label inputs, required validation), live preview real-time sync (headline/subheadline/ctaText/brandColor update on every keystroke), PoweredByFooter dark template border fix |
-| 4.4   | ✅ done        | Step 4: Qualification Decision — two-card choice UI (centered layout), arrow-only submit, PATCH + conditional navigation to /onboarding/4a or /onboarding/5                                                                                                                                                                                                                             |
-| 4.5   | ✅ done        | Step 4a: Configure Qualification Questions — dynamic form with add/edit/remove, tier-based cap (Free=2, Pro=5), required/optional toggle, example placeholder, PATCH + navigation                                                                                                                                                                                                       |
-| 4.6   | 🔲 placeholder | Step 5: Email Setup + Launch — not started                                                                                                                                                                                                                                                                                                                                              |
-| 4.7   | 🔲 placeholder | Success Screen — not started                                                                                                                                                                                                                                                                                                                                                            |
+| Story | Status  | Summary                                                                                                                                                                                                                                                                                                                                                                                 |
+| ----- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4.0   | ✅ done | API routes (POST/PATCH waitlist, GET check-slug), OnboardingFormContext (14 fields, loading state), layout switching (two-pane Steps 1–3, centered Steps 4/4a/5/Success), progress dots with touch targets, sticky mobile CTA, back links in Steps 2+3                                                                                                                                  |
+| 4.1   | ✅ done | Step 1: Headline, subheadline, subdomain input with debounced availability check, "I'll name it later" fallback, POST to create waitlist, arrow-only submit                                                                                                                                                                                                                             |
+| 4.2   | ✅ done | Step 2: Template selector (Minimal/Bold/Dark) with MiniPreviews, PATCH to save selection, dark template CSS tokens (5 tokens in globals.css), dark theme selector thumbnail fix (h-full w-full), BrowserFrame dark mode fix (utility class names not var() arbitrary values), Bold template hero headline (text-h1), Bold email input dark border (border-2 border-foreground)          |
+| 4.3   | ✅ done | Step 3: Headline/subheadline/brand color/logo upload/CTA text, Meta Preview OG-card mock (browser chrome + mini page + domain/title/description), milestone rewards (fixed 3/10/25 tiers, editable reward_label inputs, required validation), live preview real-time sync (headline/subheadline/ctaText/brandColor update on every keystroke), PoweredByFooter dark template border fix |
+| 4.4   | ✅ done | Step 4: Qualification Decision — two-card choice UI (centered layout), arrow-only submit, PATCH + conditional navigation to /onboarding/4a or /onboarding/5                                                                                                                                                                                                                             |
+| 4.5   | ✅ done | Step 4a: Configure Qualification Questions — dynamic form with add/edit/remove, tier-based cap (Free=2, Pro=5), required/optional toggle, example placeholder, PATCH + navigation                                                                                                                                                                                                       |
+| 4.6   | ✅ done | Step 5: Email Setup + Launch — done (part of Epic 6, Story 6.3)                                                                                                                                                                                                                                                                                                                         |
+| 4.7   | ✅ done | Success Screen — done (part of Epic 6, Story 6.4)                                                                                                                                                                                                                                                                                                                                       |
 
 ### Extra Work Done (Beyond Story Scope)
 
@@ -621,49 +621,6 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - `#6B6459` (warm grey) and `#C3C2C2` (light label grey) have no exact token match. Using `--color-muted-foreground` (#6b6b6b) as closest semantic equivalent. These may need dedicated tokens in a future design system update.
 - Dark template secondary text color (`--color-dark-template-secondary`) is a PLACEHOLDER using `rgba(250, 248, 244, 0.7)`. Needs a real token decision from design.
 
-## Gotchas / Corrected Assumptions
-
-- **Onboarding architecture overhaul (2026-08-11):** The single `OnboardingProvider` with `useSyncExternalStore` was replaced by a two-provider split: `LocalOnboardingProvider` (Phase A, Steps 1-3, localStorage) + `AuthedOnboardingProvider` (Phase B, Steps 4-5, API). `FlushGate` handles the transition. This eliminated the hydration race, persist-effect-overwrite, and `DONE_KEY` issues entirely. The old gotcha about `useSyncExternalStore` returning `getServerSnapshot()` during hydration is no longer relevant — the new architecture uses plain `useState` with a lazy initializer that reads localStorage directly.
-- **`react-hooks/set-state-in-effect` (ESLint):** calling `setState` synchronously in an effect body is an error in this config. Workaround: use lazy `useState` initializer for localStorage reads, or `useRef` for values that don't need to trigger renders.
-- **Tailwind v4 scans ALL project files** — including `.md` files. If documentation contains text like `text-[length:var(...)]` or `text-[var(--badge-font-size)]` (even in backtick code spans), Tailwind generates broken CSS utilities from them. Fix: add `@source not "../../docs"` and `@source not "../../.memory"` to `globals.css`.
-- **`--text-*` tokens in `@theme` conflict with Tailwind's `text-` utility namespace** — Tailwind v4 auto-generates utilities from `@theme` token names. Tokens starting with `--text-` get interpreted as color utilities, not font-size. Use direct Tailwind classes (`text-xs`, `text-sm`) instead of `text-[var(--text-xs)]`.
-- **`components/` directory is at project root, NOT under `src/`** — Files at `components/` cannot be imported with `@/components/` from `src/` files. Use relative paths (`../../components/...`) or move shared components to `src/components/`. Only `src/components/auth/` exists under `src/`.
-- **`anonymizeEmail` extracted to `src/lib/format.ts`** — Both leaderboard page and API route import from `@/lib/format`. Don't duplicate the function.
-- **Social proof counter is inline in `WaitlistTemplateContent`** — Not a separate component. Lives at lines 70-85 of `components/share/waitlist-template-content.tsx`.
-- **`milestone_rewards` table schema:** `{ id, waitlist_id, tier_referrals (int), reward_label (text) }`. Default tiers in onboarding being changed from 3/10/25 to 1/5/10/25. PRD check constraint updated to `> 0` (was `in (3,10,25)`).
-- **`founder_updates` table:** `{ id, waitlist_id, body, sent_at (nullable, added Story 7.6), created_at }`. Post/insert exists, public read RLS exists. No edit/delete. Plain text only.
-- **`sent_at` column on founder_updates:** Nullable timestamptz. NULL = email not yet sent. Updated after Resend batch send completes. Not used for on-page display ordering (use `created_at`).
-- **`subscribers` table additions (Story 7.6):** `warmth_score` (text, nullable, check: in hot/warm/cold), `milestones_earned` (jsonb, nullable — format: `[{ threshold, label, earned_at }]`), `milestones_notified` (jsonb, nullable — format: `[5, 10, 25]`). All for Sprint 3 scoring + milestone trigger tracking.
-- **`page_views` table (Story 7.6):** `{ id, subscriber_id (FK, nullable), waitlist_id (FK), path (text), created_at }`. For warmth tracking foundation. No real-time scoring yet. RLS: founders manage own, public insert for anonymous visitors.
-- **`email_events` table (Story 7.6):** `{ id, subscriber_id (FK), waitlist_id (FK), event_type (text, check: in sent/delivered/opened/clicked/bounced), created_at }`. For warmth tracking foundation. RLS: founders manage own only (no public insert — server-side only).
-- **Warmth tracking:** Schema created in Story 7.6. Runtime scoring deferred to Sprint 3.
-- **Email-first engagement data:** Email nurture 35-50% open rate, 5-12% CTR. On-page updates have zero proven engagement data. Every major waitlist platform uses email exclusively.
-- **Milestone fulfillment research:** KickoffLabs, Viral Loops, Prefinery, SparkLoop, Morning Brew all follow tracker+notifier model. No platform fulfills rewards.
-- **Resend SDK:** `resend` package installed (v6.23.0). API key in .env.local. Client at `src/lib/resend.ts`. Batch API: `resend.batch.send([...])`, max 100/batch.
-- **Milestone trigger scope:** In Story 7.6, `src/lib/milestones.ts` checks + notifies (sends congratulatory email) + auto-boosts position to 1 for "skip the line" rewards. Accumulator pattern prevents stale array bugs.
-- **Supabase join type quirk:** When using `.single()` with `waitlists!inner ( founder_profiles!inner ( ... ) )`, TypeScript types `waitlists` as an array. Workaround: `subscriber.waitlists as unknown as { id: string; subdomain: string; headline: string; founder_profiles: { tier: string }[] }`.
-- **`shadow-float`** is used via `shadow-[var(--shadow-float)]` (not a Tailwind utility class). `--card-shadow: none` in globals.css.
-- **Import path for components from nested routes:** From `src/app/(public)/[subdomain]/thank-you/page.tsx`, components at project root need 5 `..` levels: `../../../../../components/share/...`.
-- **Referral flow architecture:** `EmailCaptureForm` sends `referral_code` (from `?ref=` URL param) to `POST /api/subscribers`. API resolves `referral_code` → subscriber UUID (`referrer_id`) by looking up subscriber, validates same-waitlist and prevents self-referral. Self-referral is silently nullified (safety net, not a hard rejection).
-- **POST /api/subscribers body field:** Uses `referral_code` (renamed from original `referrer_id` to avoid conflict with generated referral code). Internal variable is `incomingRefCode`.
-- **Story 8.4 batch query pattern:** Fetch subscribers (1 query) + `.in("referrer_id", subscriberIds)` (1 query) → count in memory via Map. 2 total queries, not N+1.
-- **Story 8.4 TABLE_COLUMNS:** `["Name", "Email", "Position", "Warmth", "Referrals", "Date"]` — 6-column grid. Name and Warmth show "—" (no data). Referrals right-aligned, muted for zero, font-medium for non-zero.
-- **Story 8.4 sort:** Client-side sort via `useMemo`, default `referral_count` desc. Clickable headers for Referrals and Position columns with ↑/↓ indicator.
-- **Story 8.4 Subscriber interface:** `{ id: string; email: string; position: number; referral_count: number; created_at: string }`
-- **Dashboard subscriber data flow:** `page.tsx` (server) fetches subscribers + batch referral counts, passes `subscribersWithCounts` to `DashboardClient` (client).
-- **Self-referral behavior mismatch:** Story AC5 says "rejects self-referral (returns 400)" but implementation silently nullifies referrer_id. Tests match actual behavior, not story AC wording.
-- **E2E test limitation:** Thank-you flow e2e test (`tests/e2e/thank-you-flow.spec.ts`) requires running server with seed data; tests use minimal assertions (page loads without JS errors, missing params → 404/500).
-- **Playwright config exists:** `playwright.config.ts` with `webServer: { command: "pnpm build && pnpm start" }`.
-- **ReferralLink component:** Now has copy icon button with execCommand fallback (not just clipboard API). Also used `copyToClipboard` helper function in both ReferralLink and ShareButtons.
-- **Thank-you page dynamic referral link:** Uses `headers()` to read `host` and `x-forwarded-proto` from request headers — referral link is now `http://` on localhost, `https://` in production. Not hardcoded to `prewaitlist.com`.
-- **Thank-you referred variant design:** Uses inline pill badge (`bg-accent/10 px-3 py-1 rounded-full`) with "Referred by {FirstName}" — NOT a separate section above the card. Referrer name derived from email local part, capitalized.
-- **Middleware double-subdomain guard:** Middleware rewrite at line 110 checks if path already starts with `/${subdomain}` before prepending — prevents double-subdomain on routes like `/:subdomain/leaderboard`.
-- **Leaderboard pagination:** Uses page-based prev/next (not "View More" append). `page` state (0-indexed), `rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)`. "Showing X–Y of Z" counter.
-- **Leaderboard column alignment:** All columns centered (`text-center`) with uniform `gap-8` between columns. Grid: `[80px_1fr_120px_140px]` on desktop.
-- **Leaderboard headers:** Use `text-body-sm font-medium` (14px) — NOT `text-caption` (12px). Design SVG showed larger headers than initially implemented.
-- **Leaderboard tiebreaker:** Secondary sort by `created_at ASC` (earlier signup = higher rank for ties). Previously returned `0` for equal referral counts.
-- **EmailCaptureForm Suspense:** Wrapped in `<Suspense>` boundary on public page to prevent SSR hydration issues with `?ref=` URL param reading.
-
 ## Epic 7 Progress (Public Waitlist Page)
 
 | Story | Status  | Summary                                                                                                                               |
@@ -690,12 +647,11 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - `GET /api/warmth/[subdomain]` returns distribution breakdown (organic vs referred vs direct)
 - Social proof counter is inline in `WaitlistTemplateContent` (not a separate component)
 
-**Blocked items:**
+**Blocked items (resolved by Epic 10):**
 
-- "You're #12" position banner — needs viewer identification mechanism (no auth/cookie on public page)
-- Founder updates compose UI — no dashboard UI to create updates (deferred to Epic 10)
-- Founder updates styling — no design SVG exists (needs design pass)
-- Dashboard panels — deferred to Sprint 2 dashboard restructure (Epic 10)
+- ~~Founder updates compose UI — no dashboard UI to create updates~~ — Still pending (no compose UI built)
+- ~~Dashboard panels — deferred to Sprint 2 dashboard restructure~~ — Done (Epic 9)
+- ~~"You're #12" position banner — needs viewer identification mechanism~~ — Still pending
 
 **Branch:** `epic-7` (merged to `dev`, pushed)
 
@@ -787,11 +743,14 @@ Design specs use hex values that don't always match the token system exactly. Ma
 47. ~~Story 9.4 — Subscriber Detail Page~~ ✅ Done
 48. ~~Story 9.5 — Epic 9 Tests~~ ✅ Done
 49. ~~Story 9.6 — Dashboard Remediation — MVP Gap Fill~~ ✅ Done
-50. Story 9.7 — Epic 9 Final Tests ← NEXT
-51. Epic 10 — Public Waitlist Page & Onboarding Redesign (pre-Sprint 3)
-52. Epic 11 — Warmth Tracking Engine (Sprint 3)
-53. Epic 12 — Email System (Sprint 3)
-54. Epic 13 — Billing & Feature Gating (Sprint 3)
+50. ~~Story 9.7 — Epic 9 Final Tests~~ ✅ Done
+51. ~~Epic 10 — Public Waitlist Page & Onboarding Redesign~~ ✅ Done (all 8 stories, merged to dev)
+52. Fix: milestone rewards disappearing + signup counter not displaying (stale closure fix)
+53. Fix: PoweredByFooter inheriting preview styles on public pages (standalone prop)
+54. Investigate/gap-fill remaining onboarding issues ← NEXT
+55. Epic 11 — Warmth Tracking Engine (Sprint 3)
+56. Epic 12 — Email System (Sprint 3)
+57. Epic 13 — Billing & Feature Gating (Sprint 3)
 
 ## Decision + bug fix: "Powered by PreWaitlist" footer (2026-07)
 
@@ -1080,3 +1039,75 @@ canonical. The API routes (`POST /api/updates`) and auth callback logic
 - Database: Add `signup_counter_enabled` column to waitlists table
 
 **PRD ref:** New requirement — worth writing up as REQ-6.8.x (counter toggle in Step 3).
+
+## Epic 10 Progress (Public Waitlist Page & Onboarding Redesign)
+
+| Story | Status  | Summary                                                                     |
+| ----- | ------- | --------------------------------------------------------------------------- |
+| 10.0  | ✅ done | Schema migration — `product_name` column on waitlists, API support          |
+| 10.1  | ✅ done | Fix critical bugs — headless UI, hydration, preview styling                 |
+| 10.2  | ✅ done | Accessibility fixes — ARIA, keyboard nav, focus management                  |
+| 10.3  | ✅ done | Design system normalization — Tailwind canonical classes, token consistency |
+| 10.4  | ✅ done | Public page layout redesign — product name/logo on public page + preview    |
+| 10.5  | ✅ done | Onboarding field architecture — headline vs productName separation          |
+| 10.6  | ✅ done | Name-it-later fix — deferred naming flow                                    |
+| 10.7  | ✅ done | Inconsistency resolution — cross-story fixes, final cleanup                 |
+
+**Branch:** `epic-10` (merged to `dev`)
+
+**Key decisions (Epic 10):**
+
+- Product name is internal metadata; headline is what displays on the public page
+- Product name + logo removed from onboarding sidebar — now only on preview and public page
+- `WaitlistTemplateContent` is the shared rendering component for both preview and public page
+- BrowserFrame uses `max-h` + `overflow-y-auto` + `shrink-0` header for scroll fix
+- Signup counter wrapped in `rounded-full` pill with `bg-muted` background
+- Headline typography: `font-semibold` (not `font-bold`)
+- Subheadline typography: `font-medium` added
+
+## Gotchas / Corrected Assumptions
+
+- **Onboarding architecture overhaul (2026-08-11):** The single `OnboardingProvider` with `useSyncExternalStore` was replaced by a two-provider split: `LocalOnboardingProvider` (Phase A, Steps 1-3, localStorage) + `AuthedOnboardingProvider` (Phase B, Steps 4-5, API). `FlushGate` handles the transition. This eliminated the hydration race, persist-effect-overwrite, and `DONE_KEY` issues entirely. The old gotcha about `useSyncExternalStore` returning `getServerSnapshot()` during hydration is no longer relevant — the new architecture uses plain `useState` with a lazy initializer that reads localStorage directly.
+- **`react-hooks/set-state-in-effect` (ESLint):** calling `setState` synchronously in an effect body is an error in this config. Workaround: use lazy `useState` initializer for localStorage reads, or `useRef` for values that don't need to trigger renders.
+- **Tailwind v4 scans ALL project files** — including `.md` files. If documentation contains text like `text-[length:var(...)]` or `text-[var(--badge-font-size)]` (even in backtick code spans), Tailwind generates broken CSS utilities from them. Fix: add `@source not "../../docs"` and `@source not "../../.memory"` to `globals.css`.
+- **`--text-*` tokens in `@theme` conflict with Tailwind's `text-` utility namespace** — Tailwind v4 auto-generates utilities from `@theme` token names. Tokens starting with `--text-` get interpreted as color utilities, not font-size. Use direct Tailwind classes (`text-xs`, `text-sm`) instead of `text-[var(--text-xs)]`.
+- **`components/` directory is at project root, NOT under `src/`** — Files at `components/` cannot be imported with `@/components/` from `src/` files. Use relative paths (`../../components/...`) or move shared components to `src/components/`. Only `src/components/auth/` exists under `src/`.
+- **`anonymizeEmail` extracted to `src/lib/format.ts`** — Both leaderboard page and API route import from `@/lib/format`. Don't duplicate the function.
+- **Social proof counter is inline in `WaitlistTemplateContent`** — Not a separate component. Lives at lines 70-85 of `components/share/waitlist-template-content.tsx`.
+- **`milestone_rewards` table schema:** `{ id, waitlist_id, tier_referrals (int), reward_label (text) }`. Default tiers in onboarding being changed from 3/10/25 to 1/5/10/25. PRD check constraint updated to `> 0` (was `in (3,10,25)`).
+- **`founder_updates` table:** `{ id, waitlist_id, body, sent_at (nullable, added Story 7.6), created_at }`. Post/insert exists, public read RLS exists. No edit/delete. Plain text only.
+- **`sent_at` column on founder_updates:** Nullable timestamptz. NULL = email not yet sent. Updated after Resend batch send completes. Not used for on-page display ordering (use `created_at`).
+- **`subscribers` table additions (Story 7.6):** `warmth_score` (text, nullable, check: in hot/warm/cold), `milestones_earned` (jsonb, nullable — format: `[{ threshold, label, earned_at }]`), `milestones_notified` (jsonb, nullable — format: `[5, 10, 25]`). All for Sprint 3 scoring + milestone trigger tracking.
+- **`page_views` table (Story 7.6):** `{ id, subscriber_id (FK, nullable), waitlist_id (FK), path (text), created_at }`. For warmth tracking foundation. No real-time scoring yet. RLS: founders manage own, public insert for anonymous visitors.
+- **`email_events` table (Story 7.6):** `{ id, subscriber_id (FK), waitlist_id (FK), event_type (text, check: in sent/delivered/opened/clicked/bounced), created_at }`. For warmth tracking foundation. RLS: founders manage own only (no public insert — server-side only).
+- **Warmth tracking:** Schema created in Story 7.6. Runtime scoring deferred to Sprint 3.
+- **Email-first engagement data:** Email nurture 35-50% open rate, 5-12% CTR. On-page updates have zero proven engagement data. Every major waitlist platform uses email exclusively.
+- **Milestone fulfillment research:** KickoffLabs, Viral Loops, Prefinery, SparkLoop, Morning Brew all follow tracker+notifier model. No platform fulfills rewards.
+- **Resend SDK:** `resend` package installed (v6.23.0). API key in .env.local. Client at `src/lib/resend.ts`. Batch API: `resend.batch.send([...])`, max 100/batch.
+- **Milestone trigger scope:** In Story 7.6, `src/lib/milestones.ts` checks + notifies (sends congratulatory email) + auto-boosts position to 1 for "skip the line" rewards. Accumulator pattern prevents stale array bugs.
+- **Supabase join type quirk:** When using `.single()` with `waitlists!inner ( founder_profiles!inner ( ... ) )`, TypeScript types `waitlists` as an array. Workaround: `subscriber.waitlists as unknown as { id: string; subdomain: string; headline: string; founder_profiles: { tier: string }[] }`.
+- **`shadow-float`** is used via `shadow-[var(--shadow-float)]` (not a Tailwind utility class). `--card-shadow: none` in globals.css.
+- **Import path for components from nested routes:** From `src/app/(public)/[subdomain]/thank-you/page.tsx`, components at project root need 5 `..` levels: `../../../../../components/share/...`.
+- **Referral flow architecture:** `EmailCaptureForm` sends `referral_code` (from `?ref=` URL param) to `POST /api/subscribers`. API resolves `referral_code` → subscriber UUID (`referrer_id`) by looking up subscriber, validates same-waitlist and prevents self-referral. Self-referral is silently nullified (safety net, not a hard rejection).
+- **POST /api/subscribers body field:** Uses `referral_code` (renamed from original `referrer_id` to avoid conflict with generated referral code). Internal variable is `incomingRefCode`.
+- **Story 8.4 batch query pattern:** Fetch subscribers (1 query) + `.in("referrer_id", subscriberIds)` (1 query) → count in memory via Map. 2 total queries, not N+1.
+- **Story 8.4 TABLE_COLUMNS:** `["Name", "Email", "Position", "Warmth", "Referrals", "Date"]` — 6-column grid. Name and Warmth show "—" (no data). Referrals right-aligned, muted for zero, font-medium for non-zero.
+- **Story 8.4 sort:** Client-side sort via `useMemo`, default `referral_count` desc. Clickable headers for Referrals and Position columns with ↑/↓ indicator.
+- **Story 8.4 Subscriber interface:** `{ id: string; email: string; position: number; referral_count: number; created_at: string }`
+- **Dashboard subscriber data flow:** `page.tsx` (server) fetches subscribers + batch referral counts, passes `subscribersWithCounts` to `DashboardClient` (client).
+- **Self-referral behavior mismatch:** Story AC5 says "rejects self-referral (returns 400)" but implementation silently nullifies referrer_id. Tests match actual behavior, not story AC wording.
+- **E2E test limitation:** Thank-you flow e2e test (`tests/e2e/thank-you-flow.spec.ts`) requires running server with seed data; tests use minimal assertions (page loads without JS errors, missing params → 404/500).
+- **Playwright config exists:** `playwright.config.ts` with `webServer: { command: "pnpm build && pnpm start" }`.
+- **ReferralLink component:** Now has copy icon button with execCommand fallback (not just clipboard API). Also used `copyToClipboard` helper function in both ReferralLink and ShareButtons.
+- **Thank-you page dynamic referral link:** Uses `headers()` to read `host` and `x-forwarded-proto` from request headers — referral link is now `http://` on localhost, `https://` in production. Not hardcoded to `prewaitlist.com`.
+- **Thank-you referred variant design:** Uses inline pill badge (`bg-accent/10 px-3 py-1 rounded-full`) with "Referred by {FirstName}" — NOT a separate section above the card. Referrer name derived from email local part, capitalized.
+- **Middleware double-subdomain guard:** Middleware rewrite at line 110 checks if path already starts with `/${subdomain}` before prepending — prevents double-subdomain on routes like `/:subdomain/leaderboard`.
+- **Leaderboard pagination:** Uses page-based prev/next (not "View More" append). `page` state (0-indexed), `rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)`. "Showing X–Y of Z" counter.
+- **Leaderboard column alignment:** All columns centered (`text-center`) with uniform `gap-8` between columns. Grid: `[80px_1fr_120px_140px]` on desktop.
+- **Leaderboard headers:** Use `text-body-sm font-medium` (14px) — NOT `text-caption` (12px). Design SVG showed larger headers than initially implemented.
+- **Leaderboard tiebreaker:** Secondary sort by `created_at ASC` (earlier signup = higher rank for ties). Previously returned `0` for equal referral counts.
+- **EmailCaptureForm Suspense:** Wrapped in `<Suspense>` boundary on public page to prevent SSR hydration issues with `?ref=` URL param reading.
+- **React 18 batching + async event handlers (CRITICAL):** `useEffect(() => { stateRef.current = state; }, [state])` only runs AFTER React commits state and re-renders. React 18 batches `setState` calls and commits them only when the async event handler's call stack fully unwinds. An `await` inside an async event handler does NOT cause React to commit the batch. Therefore, `stateRef` synced via `useEffect` is STALE when read within the same event handler — the old `flushToAPI` closure reads the pre-update values. Fix: update `stateRef.current` synchronously inside `updateField`/`setWaitlistId`/`setLoading`, not via useEffect.
+- **PoweredByFooter standalone mode:** The `PoweredByFooter` component renders with a white background by default. On public waitlist pages and thank-you pages (which have `bg-background` warm ivory), this creates a visible white band. Fix: add `standalone?: boolean` prop — when true, no bg class (inherits parent bg), template-aware border/text. Pass `standalone` from `waitlist-page-content.tsx` and `thank-you/page.tsx`.
+- **Dashboard product name:** `src/app/dashboard/page.tsx` must select `product_name` from the waitlists query and pass it as `waitlistName` to `DashboardClient`. The sidebar uses this prop. If not selected, sidebar shows empty.
+- **Headline/subheadline typography on public page:** `WaitlistTemplateContent` headline uses `font-semibold` (not `font-bold`), subheadline uses `font-medium`. These match the design spec more closely.

@@ -50,7 +50,7 @@ export function ReferralLink({ url, className }: ReferralLinkProps) {
   return (
     <div
       className={cn(
-        "flex items-center rounded-[12px] border border-border bg-card px-4 py-3",
+        "flex items-center rounded-(--card-radius) border border-border bg-card px-4 py-3",
         className
       )}
     >

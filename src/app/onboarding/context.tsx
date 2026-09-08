@@ -205,6 +205,12 @@ export function LocalOnboardingProvider({
     return initialState;
   });
 
+  // Ref always holds the latest state — fixes stale closures in async callbacks
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
   // Persist to localStorage on every change (skip if server owns the data)
   useEffect(() => {
     if (state.waitlistId) return; // flushToAPI set the ID — server is authoritative
@@ -266,7 +272,9 @@ export function LocalOnboardingProvider({
     if (!stored) return null;
 
     // Merge current in-memory state on top of localStorage
-    const { waitlistId: _, loading: __, ...edits } = state;
+    // Read from ref to avoid stale closure — updateField calls before this
+    // won't have committed to state yet
+    const { waitlistId: _, loading: __, ...edits } = stateRef.current;
     void _;
     void __;
     const data = { ...stored, ...edits };
@@ -317,7 +325,7 @@ export function LocalOnboardingProvider({
     } catch {
       return null;
     }
-  }, [state]);
+  }, []);
 
   const clearPersisted = useCallback(() => {
     if (typeof window === "undefined") return;

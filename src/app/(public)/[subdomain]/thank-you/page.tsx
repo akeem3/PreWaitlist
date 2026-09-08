@@ -165,6 +165,7 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
         <div className="mt-auto w-full max-w-[400px] pt-8">
           <PoweredByFooter
             template={waitlist.template as "minimal" | "bold" | "dark"}
+            standalone
           />
         </div>
       )}

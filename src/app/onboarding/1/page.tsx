@@ -73,7 +73,6 @@ export default function OnboardingStep1() {
   const form = useOnboardingForm();
   const supabase = createClient();
 
-  const [headline, setHeadline] = useState(form.headline);
   const [subheadline, setSubheadline] = useState(form.subheadline);
   const [slugInput, setSlugInput] = useState(form.slug);
   const [slug, setSlug] = useState(form.slug);
@@ -82,22 +81,31 @@ export default function OnboardingStep1() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [usedFallback, setUsedFallback] = useState(false);
 
-  // Compute resume prompt state during initial render
-  const [resumeState, setResumeState] = useState(() => {
+  // Mount guard — slug preview reads localStorage, must wait for client hydration
+  const [mounted, setMounted] = useState(false);
+
+  // Resume prompt — hidden on server, populated from localStorage in useEffect
+  const [resumeState, setResumeState] = useState<{
+    show: boolean;
+    staleName: string;
+  }>({ show: false, staleName: "" });
+
+  useEffect(() => {
     if (hasStaleDraft()) {
       try {
         const raw = localStorage.getItem("prewaitlist_onboarding");
         if (raw) {
           const parsed = JSON.parse(raw);
-          const name = parsed.headline || parsed.slug || "";
-          return { show: true, staleName: name };
+          const name = parsed.productName || parsed.slug || "";
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setResumeState({ show: true, staleName: name });
         }
       } catch {
         // Ignore
       }
     }
-    return { show: false, staleName: "" };
-  });
+    setMounted(true);
+  }, []);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -142,11 +150,6 @@ export default function OnboardingStep1() {
     form.setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    form.updateField("headline", headline);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [headline]);
 
   useEffect(() => {
     form.updateField("subheadline", subheadline);
@@ -227,7 +230,7 @@ export default function OnboardingStep1() {
     setSlugStatus("idle");
     setSlugError(null);
     form.updateField("slug", fallback);
-    form.updateField("headline", "My Waitlist");
+    form.updateField("productName", "My Waitlist");
     form.updateField("subheadline", "Join the waitlist");
     router.push("/onboarding/2");
   }, [form, router]);
@@ -244,7 +247,6 @@ export default function OnboardingStep1() {
       try {
         // Store in context/localStorage only — no API call yet
         form.updateField("slug", slug);
-        form.updateField("headline", headline);
         form.updateField("subheadline", subheadline);
         router.push("/onboarding/2");
       } catch {
@@ -252,7 +254,7 @@ export default function OnboardingStep1() {
         form.setLoading(false);
       }
     },
-    [slug, slugStatus, headline, subheadline, form, router]
+    [slug, slugStatus, subheadline, form, router]
   );
 
   const isSubmitting = form.loading;
@@ -270,8 +272,8 @@ export default function OnboardingStep1() {
       form.clearDraft();
     }
     // Reset local state
-    setHeadline("");
-    setSubheadline("");
+    form.updateField("headline", "");
+    form.updateField("subheadline", "");
     setSlugInput("");
     setSlug("");
     setSlugStatus("idle");
@@ -326,17 +328,17 @@ export default function OnboardingStep1() {
       {/* Field 1: Product Name */}
       <div className="mb-3">
         <label
-          htmlFor="headline"
+          htmlFor="productName"
           className="mb-1 block text-xs text-muted-foreground"
         >
           Product Name
         </label>
         <input
-          id="headline"
+          id="productName"
           type="text"
           placeholder="e.g. Buildly"
-          value={headline}
-          onChange={(e) => setHeadline(e.target.value)}
+          value={form.productName}
+          onChange={(e) => form.updateField("productName", e.target.value)}
           disabled={isSubmitting}
           className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-10 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
         />
@@ -350,13 +352,14 @@ export default function OnboardingStep1() {
         >
           Subheadline
         </label>
-        <textarea
+        <input
           id="subheadline"
+          type="text"
           placeholder="The Smarter way to manage Projects"
           value={subheadline}
           onChange={(e) => setSubheadline(e.target.value)}
           disabled={isSubmitting}
-          className="flex w-full resize-none items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-10 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-10 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 
@@ -371,9 +374,7 @@ export default function OnboardingStep1() {
         <input
           id="slug"
           type="text"
-          placeholder={
-            headline ? deriveSlug(headline) || "my-product" : "buildly"
-          }
+          placeholder="my-product"
           value={slugInput}
           onChange={(e) => handleSlugChange(e.target.value)}
           disabled={isSubmitting}
@@ -382,7 +383,7 @@ export default function OnboardingStep1() {
         {/* URL preview with availability */}
         <div className="mt-1 flex items-center gap-1 text-xs">
           <span className="text-muted-foreground">Your Page:</span>
-          {slug && (
+          {mounted && slug && (
             <span className="font-medium text-accent">
               {slug}.prewaitlist.com
             </span>
