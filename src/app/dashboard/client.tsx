@@ -81,7 +81,7 @@ const CHECKLIST_ITEMS = [
   },
 ];
 
-const TABLE_COLUMNS = ["#", "Email", "Date", "Referrals", "Quality", "Warmth"];
+const TABLE_COLUMNS = ["#", "Email", "Date", "Warmth", "Referrals", "Quality"];
 
 const WARMTH_ORDER: Record<string, number> = {
   hot: 0,
@@ -420,34 +420,9 @@ export default function DashboardClient({
               </div>
               <div className="text-caption text-muted-foreground">Today</div>
             </div>
-            <div className="relative rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
+            <div className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
               <div className="mb-1 text-h3 text-foreground">—</div>
               <div className="text-caption text-muted-foreground">Warmth</div>
-              <div className="absolute inset-0 flex items-center justify-center rounded-(--card-radius) bg-background/80">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  className="text-muted-foreground"
-                >
-                  <rect
-                    x="2.5"
-                    y="5"
-                    width="7"
-                    height="5.5"
-                    rx="1"
-                    stroke="currentColor"
-                    strokeWidth="1.2"
-                  />
-                  <path
-                    d="M4 5V3.5C4 2.4 4.9 1.5 6 1.5C7.1 1.5 8 2.4 8 3.5V5"
-                    stroke="currentColor"
-                    strokeWidth="1.2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </div>
             </div>
           </div>
 
@@ -554,6 +529,25 @@ export default function DashboardClient({
                       <span className="text-body-sm text-muted-foreground">
                         {sub.created_at.split("T")[0]}
                       </span>
+                      <span className="text-body-sm">
+                        {sub.warmth_score ? (
+                          <span
+                            className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                              sub.warmth_score === "hot"
+                                ? "bg-accent/10 text-accent"
+                                : sub.warmth_score === "warm"
+                                  ? "bg-status-warm text-white"
+                                  : "bg-status-cold text-white"
+                            }`}
+                          >
+                            {sub.warmth_score}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            Unscored
+                          </span>
+                        )}
+                      </span>
                       <span
                         className={`text-right text-body-sm ${
                           sub.referral_count === 0
@@ -573,25 +567,6 @@ export default function DashboardClient({
                         {sub.quality_score !== null
                           ? `${sub.quality_score}%`
                           : "—"}
-                      </span>
-                      <span className="text-body-sm">
-                        {sub.warmth_score ? (
-                          <span
-                            className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                              sub.warmth_score === "hot"
-                                ? "bg-red-100 text-red-700"
-                                : sub.warmth_score === "warm"
-                                  ? "bg-amber-100 text-amber-700"
-                                  : "bg-blue-100 text-blue-700"
-                            }`}
-                          >
-                            {sub.warmth_score}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            Unscored
-                          </span>
-                        )}
                       </span>
                     </div>
                     {expandedRows.has(sub.id) && (

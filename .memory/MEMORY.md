@@ -30,7 +30,9 @@
 
 - **Decision:** Use memsearch with ONNX embeddings (bge-m3) for fork-agnostic semantic search over markdown memory files.
 - **Reason:** Stores data as plain markdown files readable even without the tool. Uses local ONNX embeddings — zero API key, zero cost, zero dependency on whichever model provider is active.
-- **Date:** 2026-07-26
+- **Status:** ✅ Working — CLI v0.4.16, Docker v29.7.2, Milvus v2.5.1 containers running, 126 chunks indexed.
+- **Fix:** Windows console encoding bug — must set `$env:PYTHONIOENCODING="utf-8"` before running memsearch commands (or add to PowerShell profile permanently). Without this, `click.echo` crashes on Unicode characters (emojis, arrows).
+- **Date:** 2026-07-26 (updated 2026-09-09)
 
 ### Wildcard subdomain routing via Vercel nameservers
 

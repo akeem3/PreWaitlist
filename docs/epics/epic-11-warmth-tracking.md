@@ -64,11 +64,11 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 **Dev Notes:**
 
-- T1: Write the migration as `docs/stories/epic11-story7-sprint3-schema.sql`. Run against Supabase SQL editor or via `supabase db push`. All columns use nullable or DEFAULT — safe to apply on tables with existing data.
-- T1 (AC7): The `broadcasts` table stores broadcast history for the dashboard activity feed. No RLS needed — founders access via authenticated API only.
-- T1 (AC8): `subscriber_count` is an optimization: atomic increment on insert, decrement on delete, avoids `COUNT(*)` on every signup for the 500-cap check (Story 13.4).
-- T1 (AC9): The current `email_events.event_type` constraint only allows `sent/delivered/opened/clicked/bounced`. Story 11.0 needs `complained` and `failed` from Resend webhooks. Must `DROP CONSTRAINT` then `ADD CONSTRAINT` — Postgres does not support `ALTER CONSTRAINT`.
-- T1: **Untracked columns:** `email_subject`, `email_sender_name`, `email_body` are referenced in code (`src/app/api/waitlist/route.ts` GET handler, `src/app/onboarding/context.tsx` FIELD_MAP) but have no migration file in `docs/stories/sql-writeups/`. Verify they exist in the live DB before running this migration — if not, add them here.
+- T1: Write the migration as `docs/stories/epic11-story7-sprint3-schema.sql`. Run against Supabase SQL editor or via `supabase db push`. All columns use nullable or DEFAULT — safe to apply on tables with existing data. **Status: NOT STARTED — file does not exist.**
+- T1 (AC7): The `broadcasts` table stores broadcast history for the dashboard activity feed. No RLS needed — founders access via authenticated API only. **Status: NOT STARTED.**
+- T1 (AC8): `subscriber_count` is an optimization: atomic increment on insert, decrement on delete, avoids `COUNT(*)` on every signup for the 500-cap check (Story 13.4). **Status: NOT STARTED.**
+- T1 (AC9): The current `email_events.event_type` constraint only allows `sent/delivered/opened/clicked/bounced`. Story 11.0 needs `complained` and `failed` from Resend webhooks. Must `DROP CONSTRAINT` then `ADD CONSTRAINT` — Postgres does not support `ALTER CONSTRAINT`. **Status: NOT STARTED — current constraint in `epic7-story6-warmth-schema.sql` line 40 still shows original 5-value CHECK.**
+- T1: **Untracked columns:** `email_subject`, `email_sender_name`, `email_body` are referenced in code (`src/app/api/waitlist/route.ts` GET handler, `src/app/onboarding/context.tsx` FIELD_MAP) but have no migration file in `docs/stories/sql-writeups/`. Verify they exist in the live DB before running this migration — if not, add them here. **Status: NOT VERIFIED.**
 
 ---
 
@@ -95,14 +95,14 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 **Dev Notes:**
 
-- T1: Resend webhook events: `email.sent`, `email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.complained`, `email.opened`, `email.clicked`, `email.failed`. Payload includes `email_id` (UUID), `from`, `to`, `subject`, event-specific data (e.g., `bounce.type`, `bounce.subType`).
-- T1: **Critical:** Use `req.text()` (NOT `req.json()`) for the raw body — Svix signature verification breaks if the body is re-serialized via `JSON.stringify()`.
-- T1: Svix verification: `resend.webhooks.verify({ payload, headers: { 'svix-id', 'svix-timestamp', 'svix-signature' }, secret })`. Use `RESEND_WEBHOOK_SECRET` env var.
-- T2: Use `waitUntil()` or background task for Postgres writes to keep response fast (Resend has a 15-second response timeout).
-- T2: `email_events` table already exists (Story 7.6) — but needs `event_data jsonb` column added via Story 11.7. Must run 11.7 first or in parallel.
-- T3: Events arrive out of order and at-least-once — dedupe on `svix-id` (store in `event_data` or a separate `webhook_msg_id` column), use `created_at` from payload for sequencing.
-- T3: Webhook auto-disables after ~5 days of continuous failures — monitor and alert (manual monitoring for MVP).
-- T4: Rate estimate: 10,000 emails/month → 30,000–50,000 events/month (~50–100 MB storage).
+- T1: Resend webhook events: `email.sent`, `email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.complained`, `email.opened`, `email.clicked`, `email.failed`. Payload includes `email_id` (UUID), `from`, `to`, `subject`, event-specific data (e.g., `bounce.type`, `bounce.subType`). **Status: NOT STARTED — `src/app/api/webhooks/resend/route.ts` does not exist, no `webhooks/` directory.**
+- T1: **Critical:** Use `req.text()` (NOT `req.json()`) for the raw body — Svix signature verification breaks if the body is re-serialized via `JSON.stringify()`. **Status: NOT STARTED.**
+- T1: Svix verification: `resend.webhooks.verify({ payload, headers: { 'svix-id', 'svix-timestamp', 'svix-signature' }, secret })`. Use `RESEND_WEBHOOK_SECRET` env var. **Status: NOT STARTED — `svix` package not installed, `RESEND_WEBHOOK_SECRET` not in `.env.local`.**
+- T2: Use `waitUntil()` or background task for Postgres writes to keep response fast (Resend has a 15-second response timeout). **Status: NOT STARTED.**
+- T2: `email_events` table already exists (Story 7.6) — but needs `event_data jsonb` column added via Story 11.7. Must run 11.7 first or in parallel. **Status: NOT STARTED.**
+- T3: Events arrive out of order and at-least-once — dedupe on `svix-id` (store in `event_data` or a separate `webhook_msg_id` column), use `created_at` from payload for sequencing. **Status: NOT STARTED.**
+- T3: Webhook auto-disables after ~5 days of continuous failures — monitor and alert (manual monitoring for MVP). **Status: NOT STARTED.**
+- T4: Rate estimate: 10,000 emails/month → 30,000–50,000 events/month (~50–100 MB storage). **Status: NOT STARTED.**
 
 ---
 
@@ -130,16 +130,16 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 **Dev Notes:**
 
-- T1: Create `src/lib/warmth.ts` with `calculateWarmthScore(subscriberId, supabase)` and `assignTier(score) => "hot" | "warm" | "cold" | null`.
-- T1: Query `email_events` for the subscriber (count clicks, bounces), `subscribers` for referral count and `qual_answers` (JSONB — check if populated for qual coverage).
-- T1: **Apple MPP caveat:** Email opens are NOT included as a warmth signal. Apple Mail Privacy Protection preloads tracking pixels for ~40-50% of email clients, making open data unreliable. Clicks (+5) and referrals (+15) are the primary intent signals.
-- T1: **Decay starts at 60 days (not 30):** Waitlist subscribers may go quiet while waiting for launch. This is not disengagement — it's expected behavior. 30-day decay would penalize early adopters unfairly.
-- T1: Time decay: calculate days since last `email_events.created_at` for the subscriber; if >60 days, apply -25 penalty; if >90 days, reset to 0.
-- T1: Score formula: `min(100, max(0, rawScore - decayPenalty))`.
-- T2: The `warmth_score` column stores the tier string ("hot", "warm", "cold"), NOT the numeric score. The numeric score is transient — recalculated in batch.
-- T3: For MVP, the daily cron is sufficient. Real-time recalculation on every webhook event is v1.1. Use `pg_cron` or a scheduled API route.
-- T3: Existing `GET /api/dashboard/warmth` route already queries by `warmth_score` column — just needs data to exist.
-- T1: **Effective score range:** With the signal weights defined above, the theoretical max is ~53 points (referral + qual + click + leaderboard). Most active subscribers will score 15-40. The 0-100 scale provides headroom for future signals.
+- T1: Create `src/lib/warmth.ts` with `calculateWarmthScore(subscriberId, supabase)` and `assignTier(score) => "hot" | "warm" | "cold" | null`. **Status: NOT STARTED — file does not exist.**
+- T1: Query `email_events` for the subscriber (count clicks, bounces), `subscribers` for referral count and `qual_answers` (JSONB — check if populated for qual coverage). **Status: NOT STARTED.**
+- T1: **Apple MPP caveat:** Email opens are NOT included as a warmth signal. Apple Mail Privacy Protection preloads tracking pixels for ~40-50% of email clients, making open data unreliable. Clicks (+5) and referrals (+15) are the primary intent signals. **Status: NOT STARTED.**
+- T1: **Decay starts at 60 days (not 30):** Waitlist subscribers may go quiet while waiting for launch. This is not disengagement — it's expected behavior. 30-day decay would penalize early adopters unfairly. **Status: NOT STARTED.**
+- T1: Time decay: calculate days since last `email_events.created_at` for the subscriber; if >60 days, apply -25 penalty; if >90 days, reset to 0. **Status: NOT STARTED.**
+- T1: Score formula: `min(100, max(0, rawScore - decayPenalty))`. **Status: NOT STARTED.**
+- T2: The `warmth_score` column stores the tier string ("hot", "warm", "cold"), NOT the numeric score. The numeric score is transient — recalculated in batch. **Status: NOT STARTED.**
+- T3: For MVP, the daily cron is sufficient. Real-time recalculation on every webhook event is v1.1. Use `pg_cron` or a scheduled API route. **Status: NOT STARTED.**
+- T3: Existing `GET /api/dashboard/warmth` route already queries by `warmth_score` column — just needs data to exist. **Status: API exists at `src/app/api/dashboard/warmth/route.ts` (44 lines), correct shape `{hot, warm, cold, unscored, total}`.**
+- T1: **Effective score range:** With the signal weights defined above, the theoretical max is ~53 points (referral + qual + click + leaderboard). Most active subscribers will score 15-40. The 0-100 scale provides headroom for future signals. **Status: NOT STARTED.**
 
 ---
 
@@ -164,7 +164,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 **Dev Notes:**
 
-- T1–T4: **Status: Fully implemented.** Warmth column, badge (red/amber/blue/grey), filter dropdown, client-side filtering, and sorting all exist in `src/app/dashboard/client.tsx` (lines 84, 112, 129-133, 140-146, 483-493, 577-595). No work needed.
+- T1–T4: **Status: Partially implemented — color bugs.** Warmth column, badge, filter dropdown, client-side filtering, and sorting all exist in `src/app/dashboard/client.tsx` (lines 84, 112, 129-133, 140-146, 483-493, 577-595). **BUT:** Hot badge uses `bg-red-100 text-red-700` (line 581) — AC specifies `bg-accent/10 text-accent` (green). Design tokens `bg-status-hot`, `bg-status-warm`, `bg-status-cold` exist in `globals.css` lines 33-35 but are NOT used by any component. Also: Warmth column is at position 6 (far right), not "between Position and Referrals" as AC1 states. Warmth stat card (lines 423-451) still shows locked overlay with Pro badge — AC6 says warmth viewing should be available to all tiers.
 
 ---
 
@@ -190,12 +190,12 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 **Dev Notes:**
 
-- T1: `components/dashboard/warmth-panel.tsx` currently shows a neutral placeholder — rewrite to fetch and display real data.
-- T2: **Data source swap needed:** The panel currently fetches from `/api/warmth/${subdomain}` (public, unauthenticated). Rewrite to fetch from `GET /api/dashboard/warmth` (authenticated, returns `{ hot, warm, cold, unscored, total }`). Remove the `subdomain` prop.
-- T3: Remove the `tier` prop dependency — warmth is visible to all tiers. Remove blur overlay and locked state.
-- T1: Bar width: `Math.round((count / total) * 100)`% of container. Design guide: horizontal bars, 8px height, rounded-full.
-- T1: Bar colors: Hot = `bg-status-hot`, Warm = `bg-status-warm`, Cold = `bg-status-cold`, Unscored = `bg-muted`. Use design system tokens from `globals.css`, not hardcoded colors.
-- T3: Empty state: when total = 0, show em-dashes for all counts and 0% for all percentages.
+- T1: `components/dashboard/warmth-panel.tsx` currently shows a neutral placeholder — rewrite to fetch and display real data. **Status: PARTIALLY IMPLEMENTED — has real bar rendering but with 3 blocking issues.**
+- T2: **Data source swap needed:** The panel currently fetches from `/api/warmth/${subdomain}` (public, unauthenticated). Rewrite to fetch from `GET /api/dashboard/warmth` (authenticated, returns `{ hot, warm, cold, unscored, total }`). Remove the `subdomain` prop. **Status: NOT DONE — line 91 still fetches from public endpoint. The correct authenticated endpoint exists at `src/app/api/dashboard/warmth/route.ts` but is not used.**
+- T3: Remove the `tier` prop dependency — warmth is visible to all tiers. Remove blur overlay and locked state. **Status: NOT DONE — `LockedOverlay` component still exists (lines 18-51), blur applied when `isFree` (line 116), overlay rendered (line 144). Props interface still requires `tier` and `subdomain` (lines 13-16).**
+- T1: Bar width: `Math.round((count / total) * 100)`% of container. Design guide: horizontal bars, 8px height, rounded-full. **Status: Bar rendering exists but uses wrong colors.**
+- T1: Bar colors: Hot = `bg-status-hot`, Warm = `bg-status-warm`, Cold = `bg-status-cold`, Unscored = `bg-muted`. Use design system tokens from `globals.css`, not hardcoded colors. **Status: NOT DONE — lines 122/128/134/140 use `bg-red-500`, `bg-amber-500`, `bg-blue-500`, `bg-gray-400` (hardcoded). Design tokens exist in `globals.css` lines 33-35 but are unused.**
+- T3: Empty state: when total = 0, show em-dashes for all counts and 0% for all percentages. **Status: DONE — line 70 shows em-dash when total=0.**
 
 ---
 
@@ -220,11 +220,11 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 **Dev Notes:**
 
-- T1: Calculate cold %: `(coldCount / totalCount) * 100` from warmth distribution data.
-- T1: Banner placement: top of main content area, below the stat cards row.
-- T2: Only show banner when `totalCount >= 10` — avoid false alarms on tiny lists.
-- T3: Settings storage: add `cold_threshold` column to `waitlists` table (integer, default 40) — already created in Story 11.7. Settings page: `src/app/dashboard/settings/page.tsx`.
-- T3: This is the visual warning only — automated email alert was a Growth feature, now deferred.
+- T1: Calculate cold %: `(coldCount / totalCount) * 100` from warmth distribution data. **Status: NOT STARTED — no warning banner component exists.**
+- T1: Banner placement: top of main content area, below the stat cards row. **Status: NOT STARTED.**
+- T2: Only show banner when `totalCount >= 10` — avoid false alarms on tiny lists. **Status: NOT STARTED.**
+- T3: Settings storage: add `cold_threshold` column to `waitlists` table (integer, default 40) — already created in Story 11.7. Settings page: `src/app/dashboard/settings/page.tsx`. **Status: NOT STARTED — `cold_threshold` column does not exist in DB (not in any migration file), `src/app/dashboard/settings/page.tsx` does not exist, sidebar shows Settings as disabled.**
+- T3: This is the visual warning only — automated email alert was a Growth feature, now deferred. **Status: NOT STARTED.**
 
 ---
 
@@ -249,11 +249,11 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 **Dev Notes:**
 
-- T1: Decay is applied in `calculateWarmthScore()` — after summing all signal points, subtract decay penalty.
-- T1: Last engagement: use `MAX(created_at)` from `email_events` where `subscriber_id = $1`.
-- T2: **`page_views` table is NOT populated.** No code inserts into this table. Decay relies solely on `email_events.created_at` for last engagement signal. Page-visit-based warmth scoring is deferred to v1.1 when the tracking middleware is built.
-- T3: For MVP, daily batch is sufficient. Real-time decay (every read) is v1.1.
-- T3: Decay is integrated into Story 11.1's batch recalculation job — this story provides the algorithm, Story 11.1 provides the execution trigger.
+- T1: Decay is applied in `calculateWarmthScore()` — after summing all signal points, subtract decay penalty. **Status: NOT STARTED — `src/lib/warmth.ts` does not exist.**
+- T1: Last engagement: use `MAX(created_at)` from `email_events` where `subscriber_id = $1`. **Status: NOT STARTED.**
+- T2: **`page_views` table is NOT populated.** No code inserts into this table. Decay relies solely on `email_events.created_at` for last engagement signal. Page-visit-based warmth scoring is deferred to v1.1 when the tracking middleware is built. **Status: NOT STARTED.**
+- T3: For MVP, daily batch is sufficient. Real-time decay (every read) is v1.1. **Status: NOT STARTED.**
+- T3: Decay is integrated into Story 11.1's batch recalculation job — this story provides the algorithm, Story 11.1 provides the execution trigger. **Status: NOT STARTED.**
 
 ---
 
@@ -279,9 +279,9 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 **Dev Notes:**
 
-- T1: Test file: `src/__tests__/api/webhook-resend.test.ts`. Mock Supabase client, mock Svix verification. Test cases: valid event → row in email_events, invalid signature → 401, duplicate svix-id → no duplicate row, unknown event type → 400.
-- T2: Test file: `src/__tests__/lib/warmth.test.ts`. Pure function tests — no DB calls. Test cases: score with clicks+refs+qual, score clamped at 0 and 100, tier assignment thresholds, decay at 60/90 days, zero events → score 0 / tier null.
-- T3: Test file: `src/__tests__/components/warmth-badge.test.ts`. Render with each tier prop, verify correct color class and label text.
-- T4: Test file: `src/__tests__/components/warmth-filter.test.ts`. Render dropdown, select each option, verify callback fires with correct tier.
-- T4: Test file: `src/__tests__/components/warmth-panel.test.ts`. Mock fetch, verify bars render with correct widths, empty state shows em-dashes.
-- T5: Run `pnpm test` and count total tests. Current baseline: 231 tests. Sprint 3 target: ≥250.
+- T1: Test file: `src/__tests__/api/webhook-resend.test.ts`. Mock Supabase client, mock Svix verification. Test cases: valid event → row in email_events, invalid signature → 401, duplicate svix-id → no duplicate row, unknown event type → 400. **Status: NOT STARTED — file does not exist.**
+- T2: Test file: `src/__tests__/lib/warmth.test.ts`. Pure function tests — no DB calls. Test cases: score with clicks+refs+qual, score clamped at 0 and 100, tier assignment thresholds, decay at 60/90 days, zero events → score 0 / tier null. **Status: NOT STARTED — file does not exist.**
+- T3: Test file: `src/__tests__/components/warmth-badge.test.tsx`. Render with each tier prop, verify correct color class and label text. **Status: NOT STARTED — file does not exist.**
+- T4: Test file: `src/__tests__/components/warmth-filter.test.tsx`. Render dropdown, select each option, verify callback fires with correct tier. **Status: NOT STARTED — file does not exist.**
+- T4: Test file: `src/__tests__/components/warmth-panel.test.tsx`. Mock fetch, verify bars render with correct widths, empty state shows em-dashes. **Status: NOT STARTED — file does not exist.**
+- T5: Run `pnpm test` and count total tests. Current baseline: 231 tests. Sprint 3 target: ≥250. **Note:** Existing test `src/__tests__/api/warmth.test.ts` (109 lines) tests the PUBLIC endpoint, not Epic 11 functionality. Will need updating or replacement.
