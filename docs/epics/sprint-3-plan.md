@@ -88,7 +88,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 | ---- | ----------------------------------------- | ---------- | ------ |
 | 11.0 | Resend Webhook Endpoint                   | —          | ready  |
 | 11.1 | Warmth Score Calculation Engine           | 11.0       | ready  |
-| 11.2 | Warmth Column + Filter in Subscriber List | 11.1       | ready  |
+| 11.2 | Warmth Column + Filter in Subscriber List | 11.1       | done   |
 | 11.3 | Warmth Distribution Panel (Real Data)     | 11.1       | ready  |
 | 11.4 | Dashboard Warning State                   | 11.1       | ready  |
 | 11.5 | Warmth Score Decay + Time-Based Rules     | 11.1       | ready  |
@@ -169,7 +169,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 ### Story 11.2 — Warmth Column + Filter in Subscriber List
 
-**Status:** ready
+**Status:** done
 **Story:** As a founder, I want to see a warmth badge (Hot/Warm/Cold/Unscored) next to each subscriber and filter by warmth tier so that I can identify engaged vs. disengaged subscribers.
 
 **Acceptance Criteria (EARS):**
@@ -185,11 +185,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 **Dev Notes:**
 
-- Update `Subscriber` interface in `client.tsx` to include `warmth_score: string | null`
-- Server component `page.tsx` already fetches `warmth_score` — just needs to pass it through
-- Filter state: `const [warmthFilter, setWarmthFilter] = useState<string>("all")`
-- Badge component: use existing `components/ui/badge.tsx` with custom variant classes or inline Tailwind
-- Design guide compliance: 12px caption, badge height ~20px, border-radius full (pill)
+- **Status: Fully implemented.** Warmth column, badge (red/amber/blue/grey), filter dropdown, client-side filtering, and sorting all exist in `src/app/dashboard/client.tsx` (lines 84, 112, 129-133, 140-146, 483-493, 577-595). No work needed.
 
 ---
 
@@ -305,10 +301,11 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 - AC6: The migration shall add `paddle_subscription_id text DEFAULT NULL` to the `founder_profiles` table.
 - AC7: The migration shall create the `broadcasts` table: `{ id uuid PK, waitlist_id uuid FK, subject text NOT NULL, sent_at timestamptz, recipient_count integer, created_at timestamptz DEFAULT now() }`.
 - AC8: The migration shall add `subscriber_count integer DEFAULT 0` to the `waitlists` table (cached counter for 500-cap check).
-- AC9: All columns shall be nullable or have defaults — no NOT NULL without defaults (avoids breaking existing rows).
-- AC10: Lint and build shall pass with zero errors.
+- AC9: The migration shall DROP and recreate the `email_events.event_type` CHECK constraint to add `complained`, `failed`, and `delivery_delayed` to the allowed values. New constraint: `CHECK (event_type IN ('sent','delivered','opened','clicked','bounced','complained','failed','delivery_delayed'))`.
+- AC10: All columns shall be nullable or have defaults — no NOT NULL without defaults (avoids breaking existing rows).
+- AC11: Lint and build shall pass with zero errors.
 
-**Tasks:** T1 (AC1-AC9) Write and apply SQL migration · T2 (AC10) Lint + build
+**Tasks:** T1 (AC1-AC10) Write and apply SQL migration · T2 (AC11) Lint + build
 
 **Dev Notes:**
 
@@ -317,6 +314,8 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 - All columns use nullable or DEFAULT — safe to apply on tables with existing data
 - The `broadcasts` table stores broadcast history for the dashboard activity feed
 - `subscriber_count` is an optimization: atomic increment on insert, decrement on delete, avoids `COUNT(*)` on every signup for the 500-cap check (Story 12.4)
+- **CHECK constraint update (AC9):** The current `email_events.event_type` constraint only allows `sent/delivered/opened/clicked/bounced`. Story 11.0 needs `complained` and `failed` from Resend webhooks. Must `DROP CONSTRAINT` then `ADD CONSTRAINT` — Postgres does not support `ALTER CONSTRAINT`.
+- **Untracked columns:** `email_subject`, `email_sender_name`, `email_body` are referenced in code (`src/app/api/waitlist/route.ts` GET handler, `src/app/onboarding/context.tsx` FIELD_MAP) but have no migration file in `docs/stories/sql-writeups/`. Verify they exist in the live DB before running this migration — if not, add them here.
 
 ---
 
@@ -356,17 +355,19 @@ Every new subscriber receives a confirmation email with their position and refer
 
 - AC1: The system shall send a confirmation email via Resend immediately after a subscriber is created via `POST /api/subscribers`.
 - AC2: The email shall include: position number ("You're #{position} in line"), referral link, share prompt.
-- AC3: The email shall be branded with the founder's product name (headline from the waitlist), not "PreWaitlist".
+- AC3: The email shall be branded with the founder's product name (`product_name` from the waitlist, falling back to `headline` if null), not "PreWaitlist".
 - AC4: The email shall be sent from the founder's configured sender name (or default "PreWaitlist <notifications@prewaitlist.com>" if not customised).
 - AC5: The email shall be sent via Resend's Emails API (transactional, single send — not Batch or Broadcast).
 - AC6: If the email send fails, the subscriber shall still be created (email failure must not block signup).
-- AC7: Lint and build shall pass with zero errors.
+- AC7: The system shall provide an email sending utility (`src/lib/email.ts`) that resolves the correct `from` address based on sender name and stream (transactional vs broadcast).
+- AC8: Lint and build shall pass with zero errors.
 
-**Tasks:** T1 (AC1-AC3) Build confirmation email template + Resend send · T2 (AC4) Sender name resolution (custom or default) · T3 (AC5-AC6) Emails API integration + error handling · T4 (AC7) Lint + build
+**Tasks:** T1 (AC1-AC3) Build confirmation email template + Resend send · T2 (AC4, AC7) Create email utility with from-address resolution + sender name fallback · T3 (AC5-AC6) Emails API integration + error handling · T4 (AC8) Lint + build
 
 **Dev Notes:**
 
 - The `POST /api/subscribers` route already exists and creates the subscriber — add email send after insert
+- **Email utility (AC7):** `src/lib/resend.ts` is currently a bare 9-line wrapper (`new Resend(apiKey)`). Must create `src/lib/email.ts` with: `sendEmail({ to, subject, html, stream, senderName, waitlistId })`. The `stream` parameter ("transactional" | "broadcast") determines the `from` address: transactional → `notifications@prewaitlist.com`, broadcast → `updates@prewaitlist.com`. Sender name resolution: `senderName` → `product_name` (from DB) → `headline` (from DB) → "PreWaitlist" (hardcoded fallback).
 - Use `resend.emails.send({ from, to, subject, html })` — single transactional send, not Batch API (Batch is for bulk sends of 100+)
 - Email template: position + referral link + share CTA. Keep it short (3-5 lines).
 - `from` address: `{senderName} <notifications@prewaitlist.com>` — transactional stream, separate from marketing
@@ -396,7 +397,7 @@ Every new subscriber receives a confirmation email with their position and refer
 **Dev Notes:**
 
 - Create `src/lib/positions.ts` with `recalculatePositions(waitlistId, supabase)` and `getSpotsMoved(subscriberId, oldPosition, supabase)`
-- The current `POST /api/subscribers` assigns `position = maxPos + 1` — add recalculation after insert
+- **Critical: Current position logic is append-only.** `POST /api/subscribers` (line 67-75) calculates `position = maxPos + 1` — it never recalculates existing subscribers' positions. Story 12.1 must REPLACE this logic with full recalculation. The `maxPos + 1` code becomes dead code after this story.
 - SQL approach: `UPDATE subscribers SET position = subquery.new_pos FROM (SELECT id, ROW_NUMBER() OVER (ORDER BY referral_count DESC, created_at ASC) as new_pos FROM subscribers WHERE waitlist_id = $1) subquery WHERE subscribers.id = subquery.id`
 - Or: fetch all subscribers, sort in JS, batch update positions
 - Store `old_position` before recalculation to calculate spots moved for the trigger email
@@ -499,11 +500,11 @@ Every new subscriber receives a confirmation email with their position and refer
 **Acceptance Criteria (EARS):**
 
 - AC1: The dashboard Settings page shall include an "Email" section with editable fields: sender name, subject prefix.
-- AC2: The sender name shall default to the waitlist headline (e.g., "Buildly" from "Buildly — the build tracker").
+- AC2: The sender name shall default to the waitlist `product_name` (falling back to `headline` if null).
 - AC3: The customised sender name shall be used in all transactional emails (confirmation, moved-up, milestone).
 - AC4: The customised sender name shall be used in broadcast emails.
 - AC5: Changes shall be saved to the `waitlists` table (`sender_name` column, nullable).
-- AC6: When `sender_name` is null, the system shall fall back to the waitlist headline.
+- AC6: When `sender_name` is null, the system shall fall back to `product_name`, then to `headline`.
 - AC7: Lint and build shall pass with zero errors.
 
 **Tasks:** T1 (AC1-AC2) Settings UI with sender name field · T2 (AC3-AC4) Wire sender name into email sending logic · T3 (AC5-AC6) DB storage + fallback · T4 (AC7) Lint + build
@@ -512,7 +513,8 @@ Every new subscriber receives a confirmation email with their position and refer
 
 - Add `sender_name` column to `waitlists` table (text, nullable) — already created in Story 11.7
 - Settings page: `src/app/dashboard/settings/page.tsx` (may need to create)
-- Wire into `src/lib/resend.ts` or wherever emails are composed — pass `senderName` parameter
+- Wire into `src/lib/email.ts` (created in Story 12.0) — pass `senderName` parameter
+- Fallback chain: `senderName` (from DB) → `product_name` (from DB) → `headline` (from DB) → "PreWaitlist" (hardcoded)
 - Format: `{senderName} <notifications@prewaitlist.com>` for transactional, `{senderName} <updates@prewaitlist.com>` for broadcast
 - For MVP, only sender name is customisable. Subject prefix and body templates are v1.1.
 
@@ -529,13 +531,14 @@ Every new subscriber receives a confirmation email with their position and refer
 - AC2: Marketing emails (broadcasts) shall be sent from `updates@prewaitlist.com`.
 - AC3: The `from` address resolution shall check: (1) founder's custom sender name + verified domain, (2) fallback to default prewaitlist.com addresses.
 - AC4: When a founder verifies their own domain (Story 12.5), transactional emails shall use `{sender_name}@{verified_domain}` and broadcasts shall use `{sender_name}@{verified_domain}`.
-- AC5: The email sending utility (`src/lib/resend.ts`) shall accept a `stream` parameter ("transactional" | "broadcast") to resolve the correct `from` address.
+- AC5: The email sending utility (`src/lib/email.ts`, created in Story 12.0) shall accept a `stream` parameter ("transactional" | "broadcast") to resolve the correct `from` address.
 - AC6: Lint and build shall pass with zero errors.
 
-**Tasks:** T1 (AC1-AC2) Define default from addresses per stream · T2 (AC3-AC4) Build from-address resolver with verified domain fallback · T3 (AC5) Add stream parameter to email utility · T4 (AC6) Lint + build
+**Tasks:** T1 (AC1-AC2) Define default from addresses per stream · T2 (AC3-AC4) Build from-address resolver with verified domain fallback · T3 (AC5) Add stream parameter to email utility (extends Story 12.0 utility) · T4 (AC6) Lint + build
 
 **Dev Notes:**
 
+- **Depends on Story 12.0:** The email utility (`src/lib/email.ts`) must already exist with basic `sendEmail()` and `stream` parameter. Story 12.6 extends it with verified domain fallback logic.
 - **Why separate domains:** If a broadcast triggers spam complaints, Gmail/Yahoo may flag the sending domain. Transactional emails (which users depend on for login, confirmations) must not be affected.
 - `notifications@prewaitlist.com` — transactional stream (signup confirm, moved-up, milestone, position update)
 - `updates@prewaitlist.com` — marketing stream (broadcasts, launch announcements)
@@ -709,6 +712,7 @@ A free founder who hits the 500-signup cap sees an upgrade modal. Pro founders h
 - Add cap check at the top of `POST /api/subscribers` handler, before position calculation
 - Query tier: join `waitlists` with `founder_profiles` to get tier
 - **Cached counter approach:** Use `waitlists.subscriber_count` (integer, DEFAULT 0 — created in Story 11.7). On insert: `UPDATE waitlists SET subscriber_count = subscriber_count + 1 WHERE id = $1`. On delete: `UPDATE waitlists SET subscriber_count = subscriber_count - 1 WHERE id = $1`. The cap check becomes: `if (tier === 'free' && subscriber_count >= 500) return 403`.
+- **Counter increment (must not be missed):** After the successful subscriber insert in `POST /api/subscribers` (currently at line 84-91 of `src/app/api/subscribers/route.ts`), add: `await supabase.rpc('increment_subscriber_count', { p_waitlist_id: waitlist_id })` or a direct `UPDATE waitlists SET subscriber_count = subscriber_count + 1 WHERE id = $1`. This is currently NOT implemented — the counter column doesn't exist yet (Story 11.7 adds it), and no code increments it.
 - The public page (`[subdomain]/page.tsx`) needs to check count before rendering the email capture form
 - For MVP, 500 is the cap. This is configurable in the tier definition.
 - Use a database transaction for the insert + counter increment to prevent race conditions

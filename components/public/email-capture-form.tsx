@@ -162,7 +162,7 @@ export function EmailCaptureForm({
             </p>
           )}
 
-          <div className="flex flex-col gap-3 mt-4">
+          <div className="flex flex-col gap-3">
             {visibleQuestions.map((q, i) => (
               <div key={i} className="relative">
                 <input

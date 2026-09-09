@@ -172,7 +172,7 @@ export default function OnboardingStep4a() {
               value={question.text}
               onChange={(e) => handle_update_question(index, e.target.value)}
               disabled={isSubmitting}
-              className="flex h-10 w-full rounded-[var(--input-radius)] border border-border bg-card px-[var(--input-padding-x)] py-[var(--input-padding-y)] text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-[var(--input-border-color-focus)] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-10 w-full rounded-[var(--input-radius)] border border-border bg-card px-[var(--input-padding-x)] py-[var(--input-padding-y)] text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
             />
             <span className="text-xs text-muted-foreground">(optional)</span>
           </div>

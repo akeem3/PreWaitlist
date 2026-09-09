@@ -28,23 +28,6 @@ export default async function PublicSubdomainPage({ params }: Props) {
     notFound();
   }
 
-  // Diagnostic logging — remove after debugging
-  console.log(
-    "[PublicPage] waitlist raw:",
-    JSON.stringify(
-      {
-        id: waitlist.id,
-        subdomain: waitlist.subdomain,
-        milestone_rewards_enabled: waitlist.milestone_rewards_enabled,
-        signup_counter_enabled: waitlist.signup_counter_enabled,
-        signup_counter_threshold: waitlist.signup_counter_threshold,
-        qualification_enabled: waitlist.qualification_enabled,
-      },
-      null,
-      2
-    )
-  );
-
   const founderProfile = Array.isArray(waitlist.founder_profiles)
     ? waitlist.founder_profiles[0]
     : waitlist.founder_profiles;
@@ -95,24 +78,6 @@ export default async function PublicSubdomainPage({ params }: Props) {
   const signupCounterVisible =
     waitlist.signup_counter_enabled &&
     signupCount >= (waitlist.signup_counter_threshold || 10);
-
-  // Diagnostic logging — remove after debugging
-  console.log(
-    "[PublicPage] query results:",
-    JSON.stringify(
-      {
-        milestoneRewardsCount: milestoneRewards.length,
-        milestoneRewards: milestoneRewards,
-        signupCount: signupCount,
-        signupCounterVisible: signupCounterVisible,
-        signupCounterEnabled: waitlist.signup_counter_enabled,
-        signupCounterThreshold: waitlist.signup_counter_threshold,
-        questionsCount: questions.length,
-      },
-      null,
-      2
-    )
-  );
 
   const latestUpdate = latestUpdateResult.data;
 

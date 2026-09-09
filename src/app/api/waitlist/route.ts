@@ -15,25 +15,6 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
 
-  // Diagnostic logging — remove after debugging
-  console.log(
-    "[API POST] Received body:",
-    JSON.stringify(
-      {
-        subdomain: body.subdomain,
-        milestone_rewards: body.milestone_rewards,
-        milestone_rewards_type: Array.isArray(body.milestone_rewards)
-          ? `array(${body.milestone_rewards.length})`
-          : typeof body.milestone_rewards,
-        signup_counter_enabled: body.signup_counter_enabled,
-        signup_counter_threshold: body.signup_counter_threshold,
-        qualification_enabled: body.qualification_enabled,
-      },
-      null,
-      2
-    )
-  );
-
   // Ensure founder_profiles exists (required FK for waitlists table)
   const { data: profile, error: profileError } = await supabase
     .from("founder_profiles")
@@ -96,22 +77,6 @@ export async function POST(request: NextRequest) {
       console.error("Failed to update waitlist:", updateError);
       return NextResponse.json({ error: updateError.message }, { status: 400 });
     }
-
-    // Diagnostic logging — remove after debugging
-    console.log(
-      "[API POST] Updated waitlist:",
-      JSON.stringify(
-        {
-          id: existing.id,
-          updatePayload_keys: Object.keys(updatePayload),
-          milestone_rewards_enabled: updatePayload.milestone_rewards_enabled,
-          signup_counter_enabled: updatePayload.signup_counter_enabled,
-          signup_counter_threshold: updatePayload.signup_counter_threshold,
-        },
-        null,
-        2
-      )
-    );
 
     // Upsert milestone_rewards if provided
     if (Array.isArray(body.milestone_rewards)) {
@@ -189,22 +154,6 @@ export async function POST(request: NextRequest) {
 
   const waitlistId = data.id;
 
-  // Diagnostic logging — remove after debugging
-  console.log(
-    "[API POST] Created waitlist:",
-    JSON.stringify(
-      {
-        id: waitlistId,
-        insertPayload_keys: Object.keys(insertPayload),
-        milestone_rewards_enabled: insertPayload.milestone_rewards_enabled,
-        signup_counter_enabled: insertPayload.signup_counter_enabled,
-        signup_counter_threshold: insertPayload.signup_counter_threshold,
-      },
-      null,
-      2
-    )
-  );
-
   // Upsert milestone_rewards if provided
   if (
     Array.isArray(body.milestone_rewards) &&
@@ -217,23 +166,13 @@ export async function POST(request: NextRequest) {
         reward_label: String(r.label),
       })
     );
-    console.log(
-      "[API POST] Inserting milestone_rewards:",
-      JSON.stringify(rewardRows, null, 2)
-    );
-    const { data: insertedRewards, error: rewardsError } = await supabase
+    const { error: rewardsError } = await supabase
       .from("milestone_rewards")
-      .insert(rewardRows)
-      .select();
+      .insert(rewardRows);
     if (rewardsError) {
       console.error(
         "[API POST] Failed to insert milestone_rewards:",
         JSON.stringify(rewardsError, null, 2)
-      );
-    } else {
-      console.log(
-        "[API POST] milestone_rewards inserted:",
-        JSON.stringify(insertedRewards, null, 2)
       );
     }
   }
@@ -328,17 +267,6 @@ export async function PATCH(request: NextRequest) {
 
   // Upsert milestone_rewards if provided
   if (Array.isArray(milestone_rewards)) {
-    console.log(
-      "[API PATCH] milestone_rewards array:",
-      JSON.stringify(
-        {
-          count: milestone_rewards.length,
-          items: milestone_rewards,
-        },
-        null,
-        2
-      )
-    );
     // Delete existing rewards for this waitlist
     const { error: deleteError } = await supabase
       .from("milestone_rewards")
@@ -361,10 +289,9 @@ export async function PATCH(request: NextRequest) {
         })
       );
 
-      const { data: insertedRewards, error: rewardsError } = await supabase
+      const { error: rewardsError } = await supabase
         .from("milestone_rewards")
-        .insert(rewardRows)
-        .select();
+        .insert(rewardRows);
 
       if (rewardsError) {
         console.error(
@@ -374,11 +301,6 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json(
           { error: rewardsError.message },
           { status: 400 }
-        );
-      } else {
-        console.log(
-          "[API PATCH] milestone_rewards inserted:",
-          JSON.stringify(insertedRewards, null, 2)
         );
       }
     }

@@ -100,23 +100,6 @@ export function FlushGate({ children }: { children: React.ReactNode }) {
             email_sender_name: edits.emailSenderName || undefined,
             email_body: edits.emailBody || undefined,
           };
-          console.log(
-            "[FlushGate] POST body:",
-            JSON.stringify(
-              {
-                milestone_rewards: postBody.milestone_rewards,
-                milestone_rewards_count: Array.isArray(
-                  postBody.milestone_rewards
-                )
-                  ? postBody.milestone_rewards.length
-                  : 0,
-                signup_counter_enabled: postBody.signup_counter_enabled,
-                signup_counter_threshold: postBody.signup_counter_threshold,
-              },
-              null,
-              2
-            )
-          );
           const postRes = await fetch("/api/waitlist", {
             method: "POST",
             headers: { "Content-Type": "application/json" },

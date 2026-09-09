@@ -231,6 +231,7 @@ export default function OnboardingStep1() {
     setSlugError(null);
     form.updateField("slug", fallback);
     form.updateField("productName", "My Waitlist");
+    form.updateField("headline", "My Waitlist");
     form.updateField("subheadline", "Join the waitlist");
     router.push("/onboarding/2");
   }, [form, router]);
