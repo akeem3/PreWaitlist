@@ -82,28 +82,45 @@ export function FlushGate({ children }: { children: React.ReactNode }) {
           void _;
           void __;
 
+          const postBody = {
+            subdomain: edits.slug || undefined,
+            product_name: edits.productName || undefined,
+            headline: edits.headline || undefined,
+            subheadline: edits.subheadline || undefined,
+            template: edits.template || undefined,
+            brand_color: edits.brandColor || undefined,
+            logo_url: edits.logoUrl || undefined,
+            cta_text: edits.ctaText || undefined,
+            milestone_rewards: edits.milestoneRewards || undefined,
+            qualification_enabled: edits.qualificationEnabled ?? undefined,
+            signup_counter_enabled: edits.signupCounterEnabled ?? undefined,
+            signup_counter_threshold: edits.signupCounterThreshold ?? undefined,
+            questions: edits.questions || undefined,
+            email_subject: edits.emailSubject || undefined,
+            email_sender_name: edits.emailSenderName || undefined,
+            email_body: edits.emailBody || undefined,
+          };
+          console.log(
+            "[FlushGate] POST body:",
+            JSON.stringify(
+              {
+                milestone_rewards: postBody.milestone_rewards,
+                milestone_rewards_count: Array.isArray(
+                  postBody.milestone_rewards
+                )
+                  ? postBody.milestone_rewards.length
+                  : 0,
+                signup_counter_enabled: postBody.signup_counter_enabled,
+                signup_counter_threshold: postBody.signup_counter_threshold,
+              },
+              null,
+              2
+            )
+          );
           const postRes = await fetch("/api/waitlist", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              subdomain: edits.slug || undefined,
-              product_name: edits.productName || undefined,
-              headline: edits.headline || undefined,
-              subheadline: edits.subheadline || undefined,
-              template: edits.template || undefined,
-              brand_color: edits.brandColor || undefined,
-              logo_url: edits.logoUrl || undefined,
-              cta_text: edits.ctaText || undefined,
-              milestone_rewards: edits.milestoneRewards || undefined,
-              qualification_enabled: edits.qualificationEnabled || undefined,
-              signup_counter_enabled: edits.signupCounterEnabled || undefined,
-              signup_counter_threshold:
-                edits.signupCounterThreshold || undefined,
-              questions: edits.questions || undefined,
-              email_subject: edits.emailSubject || undefined,
-              email_sender_name: edits.emailSenderName || undefined,
-              email_body: edits.emailBody || undefined,
-            }),
+            body: JSON.stringify(postBody),
           });
 
           if (cancelled) return;

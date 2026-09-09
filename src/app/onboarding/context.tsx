@@ -251,17 +251,29 @@ export function LocalOnboardingProvider({
       key: K,
       value: OnboardingFormState[K]
     ) => {
-      setState((s) => ({ ...s, [key]: value }));
+      setState((s) => {
+        const next = { ...s, [key]: value };
+        stateRef.current = next; // sync ref immediately so flushToAPI reads fresh values
+        return next;
+      });
     },
     []
   );
 
   const setWaitlistId = useCallback((id: string) => {
-    setState((s) => ({ ...s, waitlistId: id }));
+    setState((s) => {
+      const next = { ...s, waitlistId: id };
+      stateRef.current = next;
+      return next;
+    });
   }, []);
 
   const setLoading = useCallback((loading: boolean) => {
-    setState((s) => ({ ...s, loading }));
+    setState((s) => {
+      const next = { ...s, loading };
+      stateRef.current = next;
+      return next;
+    });
   }, []);
 
   // Flush localStorage to API. Returns waitlistId on success.
