@@ -10,46 +10,6 @@ interface WarmthData {
   total: number;
 }
 
-interface WarmthPanelProps {
-  tier: string;
-  subdomain: string;
-}
-
-function LockedOverlay() {
-  return (
-    <div className="absolute inset-0 flex items-center justify-center rounded-[var(--card-radius)] bg-background/80">
-      <div className="flex items-center gap-2">
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 12 12"
-          fill="none"
-          className="text-muted-foreground"
-        >
-          <rect
-            x="2.5"
-            y="5"
-            width="7"
-            height="5.5"
-            rx="1"
-            stroke="currentColor"
-            strokeWidth="1.2"
-          />
-          <path
-            d="M4 5V3.5C4 2.4 4.9 1.5 6 1.5C7.1 1.5 8 2.4 8 3.5V5"
-            stroke="currentColor"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-          />
-        </svg>
-        <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">
-          Pro
-        </span>
-      </div>
-    </div>
-  );
-}
-
 function WarmthBar({
   label,
   count,
@@ -61,34 +21,32 @@ function WarmthBar({
   total: number;
   color: string;
 }) {
-  const width = total > 0 ? (count / total) * 100 : 0;
+  const width = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium text-foreground">
-          {total > 0 ? count : "\u2014"}
-        </span>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-muted">
+    <div className="flex items-center gap-3">
+      <span className="w-16 shrink-0 text-xs font-medium text-foreground">
+        {label}
+      </span>
+      <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
         <div
           className={`h-full rounded-full ${color}`}
           style={{ width: `${width}%` }}
         />
       </div>
+      <span className="min-w-20 shrink-0 text-right text-xs text-muted-foreground">
+        {total > 0 ? `${count} (${width}%)` : "\u2014"}
+      </span>
     </div>
   );
 }
 
-export default function WarmthPanel({ tier, subdomain }: WarmthPanelProps) {
+export default function WarmthPanel() {
   const [data, setData] = useState<WarmthData | null>(null);
-  const isFree = tier === "free";
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isFree) return;
-
     let cancelled = false;
-    fetch(`/api/warmth/${subdomain}`)
+    fetch("/api/dashboard/warmth")
       .then((res) => res.json())
       .then((json) => {
         if (!cancelled && json.total !== undefined) {
@@ -97,51 +55,64 @@ export default function WarmthPanel({ tier, subdomain }: WarmthPanelProps) {
       })
       .catch(() => {
         if (!cancelled) setData(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [isFree, subdomain]);
+  }, []);
 
-  const displayData = isFree
-    ? { hot: 0, warm: 0, cold: 0, unscored: 0, total: 0 }
-    : data;
+  if (loading) {
+    return (
+      <div className="rounded-[var(--card-radius)] border border-border bg-card p-5">
+        <h3 className="mb-4 text-lg font-semibold text-foreground">
+          Warmth Distribution
+        </h3>
+        <div className="space-y-3">
+          {["Hot", "Warm", "Cold", "Unscored"].map((label) => (
+            <div key={label} className="flex items-center gap-3">
+              <div className="h-3 w-12 animate-pulse rounded bg-muted" />
+              <div className="h-2 flex-1 animate-pulse rounded-full bg-muted" />
+              <div className="h-3 w-10 animate-pulse rounded bg-muted" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-[var(--card-radius)] border border-border bg-card p-5">
       <h3 className="mb-4 text-lg font-semibold text-foreground">
         Warmth Distribution
       </h3>
-      <div className="relative">
-        <div className={isFree ? "pointer-events-none blur-[2px]" : ""}>
-          <div className="space-y-3">
-            <WarmthBar
-              label="Hot"
-              count={displayData?.hot ?? 0}
-              total={displayData?.total ?? 0}
-              color="bg-red-500"
-            />
-            <WarmthBar
-              label="Warm"
-              count={displayData?.warm ?? 0}
-              total={displayData?.total ?? 0}
-              color="bg-amber-500"
-            />
-            <WarmthBar
-              label="Cold"
-              count={displayData?.cold ?? 0}
-              total={displayData?.total ?? 0}
-              color="bg-blue-500"
-            />
-            <WarmthBar
-              label="Unscored"
-              count={displayData?.unscored ?? 0}
-              total={displayData?.total ?? 0}
-              color="bg-gray-400"
-            />
-          </div>
-        </div>
-        {isFree && <LockedOverlay />}
+      <div className="space-y-3">
+        <WarmthBar
+          label="Hot"
+          count={data?.hot ?? 0}
+          total={data?.total ?? 0}
+          color="bg-status-hot"
+        />
+        <WarmthBar
+          label="Warm"
+          count={data?.warm ?? 0}
+          total={data?.total ?? 0}
+          color="bg-status-warm"
+        />
+        <WarmthBar
+          label="Cold"
+          count={data?.cold ?? 0}
+          total={data?.total ?? 0}
+          color="bg-status-cold"
+        />
+        <WarmthBar
+          label="Unscored"
+          count={data?.unscored ?? 0}
+          total={data?.total ?? 0}
+          color="bg-muted"
+        />
       </div>
     </div>
   );

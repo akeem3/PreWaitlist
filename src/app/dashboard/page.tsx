@@ -15,7 +15,9 @@ export default async function DashboardPage() {
 
   const { data: waitlist } = await supabase
     .from("waitlists")
-    .select("id, headline, subdomain, template, logo_url, product_name")
+    .select(
+      "id, headline, subdomain, template, logo_url, product_name, cold_threshold"
+    )
     .eq("founder_id", user.id)
     .single();
 
@@ -103,6 +105,7 @@ export default async function DashboardPage() {
       subdomain={waitlist.subdomain}
       subscribers={subscribersWithQuality}
       stats={stats}
+      coldThreshold={waitlist.cold_threshold ?? 40}
     />
   );
 }

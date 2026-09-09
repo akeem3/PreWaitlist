@@ -42,6 +42,13 @@ const WarmthPanel = dynamic(
   }
 );
 
+const WarningBanner = dynamic(
+  () => import("../../../components/dashboard/warning-banner"),
+  {
+    ssr: false,
+  }
+);
+
 interface Subscriber {
   id: string;
   email: string;
@@ -66,6 +73,7 @@ interface DashboardClientProps {
     referralPercentage: number | null;
     todaySignups: number;
   };
+  coldThreshold: number;
 }
 
 const CHECKLIST_ITEMS = [
@@ -101,6 +109,7 @@ export default function DashboardClient({
   subdomain,
   subscribers = [],
   stats,
+  coldThreshold,
 }: DashboardClientProps) {
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
@@ -427,6 +436,10 @@ export default function DashboardClient({
           </div>
 
           <div className="mb-6">
+            <WarningBanner coldThreshold={coldThreshold} />
+          </div>
+
+          <div className="mb-6">
             <SignupChart subdomain={subdomain} />
           </div>
 
@@ -436,7 +449,7 @@ export default function DashboardClient({
 
           <div className="mb-6 grid grid-cols-2 gap-4">
             <QualificationPanel subdomain={subdomain} />
-            <WarmthPanel tier={tier} subdomain={subdomain} />
+            <WarmthPanel />
           </div>
 
           <div className="rounded-(--card-radius) border border-border bg-card">
