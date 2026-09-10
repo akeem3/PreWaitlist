@@ -81,7 +81,6 @@ describe("Sidebar", () => {
     const qualification = screen.getByText("Qualification").closest("span");
     const leaderboard = screen.getByText("Leaderboard").closest("span");
     const updates = screen.getByText("Updates").closest("span");
-    const settings = screen.getByText("Settings").closest("span");
 
     expect(qualification?.className).toContain("opacity-50");
     expect(qualification?.className).toContain("cursor-not-allowed");
@@ -92,9 +91,6 @@ describe("Sidebar", () => {
 
     expect(updates?.className).toContain("opacity-50");
     expect(updates).not.toHaveAttribute("href");
-
-    expect(settings?.className).toContain("opacity-50");
-    expect(settings).not.toHaveAttribute("href");
   });
 
   it("renders locked items with lock icon and no href", () => {
@@ -114,9 +110,11 @@ describe("Sidebar", () => {
     render(<Sidebar {...defaultProps} />);
     const overview = screen.getByText("Overview").closest("a");
     const subscribers = screen.getByText("Subscribers").closest("a");
+    const settings = screen.getByText("Settings").closest("a");
 
     expect(overview).toHaveAttribute("href", "/dashboard");
     expect(subscribers).toHaveAttribute("href", "/dashboard");
+    expect(settings).toHaveAttribute("href", "/dashboard/settings");
   });
 
   it("toggles mobile sidebar visibility", () => {

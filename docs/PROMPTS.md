@@ -2,6 +2,19 @@
 
 Reusable prompts for story and epic workflow.
 
+## Prompt Shortcuts
+
+| Shortcut             | Action                                |
+| -------------------- | ------------------------------------- |
+| `scan [story]`       | Execute Prompt #1 — Scan & plan       |
+| `execute [story]`    | Execute Prompt #2 — Implement         |
+| `audit [story]`      | Execute Prompt #3 — Audit             |
+| `epic-check`         | Execute Prompt #4 — Epic verification |
+| `create-epic [N]`    | Execute Prompt #5 — Create epic doc   |
+| `align-epic [N]`     | Execute Prompt #6 — Align epic doc    |
+| `align-design [N.S]` | Execute Prompt #7 — Design analysis   |
+| `investigate [ ]`    | Execute Prompt #8 — Debug & solve     |
+
 ---
 
 ## Global Execution Rules

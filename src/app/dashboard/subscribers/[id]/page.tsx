@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "../../../../lib/supabase/server";
 import Link from "next/link";
+import { EmailEventLog } from "../../../../../components/dashboard/email-event-log";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -137,6 +138,13 @@ export default async function SubscriberDetailPage({ params }: Props) {
             </dl>
           </div>
         )}
+
+        <div className="mb-6 rounded-[var(--card-radius)] border border-border bg-card p-5">
+          <h3 className="mb-3 text-body-sm font-medium text-foreground">
+            Email events
+          </h3>
+          <EmailEventLog subscriberId={id} />
+        </div>
       </main>
     </div>
   );
