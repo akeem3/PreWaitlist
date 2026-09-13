@@ -30,7 +30,7 @@
 
 - **Decision:** Use memsearch with ONNX embeddings (bge-m3) for fork-agnostic semantic search over markdown memory files.
 - **Reason:** Stores data as plain markdown files readable even without the tool. Uses local ONNX embeddings — zero API key, zero cost, zero dependency on whichever model provider is active.
-- **Status:** ✅ Working — CLI v0.4.16, Docker v29.7.2, Milvus v2.5.1 containers running, 526 chunks indexed.
+- **Status:** ✅ Working — CLI v0.4.16, Docker v29.7.2, Milvus v2.5.1 containers running, 708 chunks indexed.
 - **Fix:** Windows console encoding bug — must set `$env:PYTHONIOENCODING="utf-8"` before running memsearch commands (or add to PowerShell profile permanently). Without this, `click.echo` crashes on Unicode characters (emojis, arrows).
 - **Gotcha:** Collection name defaults to `memsearch_chunks` for CLI. When indexing with `--force`, it may create a separate collection. Always verify with `memsearch stats` and use `-c memsearch_chunks` if needed.
 - **Date:** 2026-07-26 (updated 2026-09-13)
@@ -246,15 +246,19 @@ picking up a paying customer.
 
 ## Sprint 3 Scope (from product vision + audit)
 
-**Goal:** Warmth tracking live. Founders send warmth-segmented broadcasts. Paddle billing gates Pro features. Domain auth walkable. Product feature-complete for MVP.
+**Goal:** Warmth tracking live. Founders send warmth-segmented broadcasts. Dashboard complete. Legal compliance in place. Paddle billing gates Pro features. Product feature-complete for MVP.
 
 **Pre-requisite:** Epic 10 (Public Waitlist Page & Onboarding Redesign) ships before Sprint 3 begins.
 
-**3 Epics, 22 Stories:**
+**5 Epics, 39 Stories:**
 
 - **Epic 11 — Warmth Tracking Engine** (8 stories): Resend webhooks, score calculation (daily batch), Hot/Warm/Cold badges, distribution panel, warning state, decay rules, schema migration
 - **Epic 12 — Email System** (7 stories): Confirmation emails, position recalculation, "you moved up" trigger, broadcast, segmented broadcast, sender customisation, email infrastructure separation
+- **Epic 12.1 — Dashboard Overhaul** (11 stories): Sidebar redesign, empty state, stat cards, tier gating, founder updates compose, mobile, settings/bug fixes, design tokens, broadcast/duplicate fixes, data/performance, tests
+- **Epic 12.2 — Gap Fixes** (10 stories): Schema migration, archive waitlist, edit after onboarding, Privacy Policy, ToS, consent tracking, unsubscribe mechanism, bounce suppression, physical address in emails, tests
 - **Epic 13 — Billing & Feature Gating** (7 stories): Paddle checkout ($15/mo), upgrade modal (7 triggers), tier enforcement, 500 signup cap, billing management, domain auth walkthrough
+
+**Execution order:** Epic 11 → Epic 12 → Epic 12.1 → Epic 12.2 → Epic 13
 
 **Key decisions (from web research + audit):**
 
@@ -278,6 +282,16 @@ picking up a paying customer.
 - `waitlists.sending_domain` (text, nullable)
 - `waitlists.subscriber_count` (integer, default 0)
 - `founder_profiles.paddle_subscription_id` (text, nullable)
+
+**New tables/columns (Epic 12.2 — Gap Fixes):**
+
+- `subscribers.consent_given_at` (timestamptz, nullable) — GDPR consent timestamp
+- `subscribers.consent_ip_address` (text, nullable) — IP at signup for audit trail
+- `subscribers.unsubscribed_at` (timestamptz, nullable) — when subscriber clicked unsubscribe
+- `waitlists.is_archived` (boolean, default false) — archive status
+- `waitlists.archived_at` (timestamptz, nullable) — when archived
+- `waitlists.business_address` (text, nullable) — CAN-SPAM physical address
+- `bounced_emails` (new table) — id, waitlist_id, email, email_type, bounce_type, created_at
 
 ## Epic 0 Progress (All 12 Stories Done)
 
@@ -737,26 +751,37 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - Badge colors: green=hot (#d0492f → #22c55e), orange=warm (#c7841a), blue=cold (#3b6fa6)
 - `email_events.event_data` column added (jsonb, nullable) for full webhook payload storage
 
-## Epic 12 Progress (Email System) — PLANNING COMPLETE, NOT YET IMPLEMENTED
+## Epic 12 Progress (Email System)
 
-| Story | Status   | Summary                                                                                        |
-| ----- | -------- | ---------------------------------------------------------------------------------------------- |
-| 12.0  | 🔲 ready | Confirmation Email — `src/lib/email.ts` (email utility), email send in `POST /api/subscribers` |
-| 12.1  | 🔲 ready | Position Recalculation — `src/lib/positions.ts`, replaces append-only logic                    |
-| 12.2  | 🔲 ready | "You Moved Up" Email — trigger email after position recalc                                     |
-| 12.3  | 🔲 ready | Broadcast Email (Pro) — `src/app/dashboard/broadcast/page.tsx`, Batch API route                |
-| 12.4  | 🔲 ready | Warmth-Segmented Broadcast — segment selector, `GET /api/dashboard/broadcast/segments`         |
-| 12.5  | 🔲 ready | Email Customisation (Pro) — Settings sender name field, fallback chain                         |
-| 12.6  | 🔲 ready | Email Infrastructure Separation — verified domain fallback in `resolveFromAddress()`           |
+| Story | Status  | Summary                                                                                                  |
+| ----- | ------- | -------------------------------------------------------------------------------------------------------- |
+| 12.0  | ✅ done | Confirmation Email — `src/lib/email.ts` (email utility), fire-and-forget IIFE in subscribers route       |
+| 12.1  | ✅ done | Position Recalculation — `src/lib/positions.ts` (RPC + getPositionUpdate), route.ts integration          |
+| 12.2  | ✅ done | "You Moved Up" Email — moved-up trigger after `recalculatePositions()`, idempotent                       |
+| 12.3  | ✅ done | Broadcast Email (Pro) — compose UI, Batch API + CAN-SPAM + unsubscribe + storage, `tier` prop on Sidebar |
+| 12.4  | ✅ done | Warmth-Segmented Broadcast — segment selector (All/Hot+Warm/Cold), warmth_score filtering                |
+| 12.5  | ✅ done | Email Customisation (Pro) — sender_name wired through `sendEmail()` with fallback chain                  |
+| 12.6  | ✅ done | Email Infrastructure Separation — `sendingDomain` param added to `resolveFromAddress()` + all callers    |
 
-**Branch:** `epic-11` (Sprint 3 branch, Epic 12 stories will be added here)
+**Branch:** `epic-12` (created from `dev`, all stories merged)
+
+**Key architecture decisions (Epic 12):**
+
+- `src/lib/email.ts`: `resolveFromAddress(senderName, productName, headline, stream, sendingDomain?)` + `sendEmail()` (never throws, returns `{ ok, id?, error? }`)
+- `src/lib/positions.ts`: `recalculatePositions()` (RPC) + `getPositionUpdate()` — returns `PositionUpdate[]` with `spots_moved`
+- Resend Batch API: `resend.batch.send([...])`, max 100/batch, `{{{RESEND_UNSUBSCRIBE_URL}}}` merge tag for CAN-SPAM unsubscribe
+- CAN-SPAM: requires unsubscribe mechanism + physical postal address in footer for broadcast emails
+- Sidebar (`components/dashboard/sidebar.tsx`): has `tier` prop (optional, defaults to "free"), Broadcast locked for free tier
+- Tier stored in `founder_profiles.tier` (text, default 'free', check: 'free','pro','growth')
+- Tier switching for testing: SQL in Supabase Dashboard: `UPDATE founder_profiles SET tier = 'pro' WHERE id = (SELECT id FROM auth.users WHERE email = 'your-email@gmail.com');`
+- Warmth doesn't work locally: depends on Resend webhooks (need public URL) and cron `/api/cron/warmth` (needs Vercel schedule)
 
 **Planning artifacts created:**
 
 - `docs/epics/epic-12-email-system.md` — full epic document with 7 stories
-- `docs/stories/story-12.0-confirmation-email.md` through `story-12.6-email-infrastructure-separation.md` — 7 detailed story files
+- `docs/stories/completed/story-12.0-confirmation-email.md` through `story-12.6-email-infrastructure-separation.md` — 7 detailed story files (moved to completed/)
 
-**NOT YET IMPLEMENTED:** No code files exist. `src/lib/email.ts`, `src/lib/positions.ts`, broadcast routes/page all need to be built.
+**All stories implemented and merged.** Code files exist: `src/lib/email.ts`, `src/lib/positions.ts`, `src/app/api/dashboard/broadcast/route.ts`, `src/app/dashboard/broadcast/page.tsx`, `src/app/dashboard/broadcast/client.tsx`.
 
 ## Dashboard Overhaul Decisions (2026-09-13)
 
@@ -781,6 +806,48 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - **Legal must-haves:** Privacy Policy, Terms of Service, consent checkbox, consent records, unsubscribe mechanism, physical address in emails, bounce suppression, DPAs with sub-processors.
 - **Product must-haves:** Founder updates compose UI, archive waitlist, edit page after onboarding, Paddle dunning flow, settings danger zone.
 - **Date:** 2026-09-13
+
+## Epic 12.1 Progress (Dashboard Overhaul)
+
+| Story   | Status   | Summary                                                                                        |
+| ------- | -------- | ---------------------------------------------------------------------------------------------- |
+| 12.1.0  | 🔲 ready | Sidebar Redesign — grouped nav sections, "Coming soon" labels, tooltips, remove upgrade button |
+| 12.1.1  | 🔲 ready | Empty State Redesign — welcome heading, guidance steps, ghost stat cards, remove checklist     |
+| 12.1.2  | 🔲 ready | Stat Card Upgrades — comparison deltas, warmth summary, new `/api/dashboard/stats` endpoint    |
+| 12.1.3  | 🔲 ready | Tier Gating Consistency — WarmthPanel locked overlay, lock icon on stat card                   |
+| 12.1.4  | 🔲 ready | Founder Updates Compose UI — `/dashboard/updates` page, textarea, publish API                  |
+| 12.1.5  | 🔲 ready | Mobile Responsiveness Fix — table overflow, responsive grids, header wrap                      |
+| 12.1.6  | 🔲 ready | Settings & Bug Fixes — button tooltips, error handling, typos                                  |
+| 12.1.7  | 🔲 ready | Design Token Compliance — sidebar bg, warning tokens, chart colors                             |
+| 12.1.8  | 🔲 ready | Broadcast & Duplicate API Fixes — default "all", confirmation, shared warmth fetch             |
+| 12.1.9  | 🔲 ready | Data & Performance — cache headers, query optimization                                         |
+| 12.1.10 | 🔲 ready | Epic 12.1 Tests — 10 test files, ≥270 total tests                                              |
+
+**Planning artifacts:**
+
+- `docs/epics/epic-12.1-dashboard-overhaul.md` — full epic document with 11 stories
+- `docs/stories/story-12.1.0-sidebar-redesign.md` through `story-12.1.10-epic-tests.md` — 11 detailed story files
+
+## Epic 12.2 Progress (Gap Fixes)
+
+| Story  | Status   | Summary                                                                  |
+| ------ | -------- | ------------------------------------------------------------------------ |
+| 12.2.0 | 🔲 ready | Schema Migration — consent/unsub/archive columns, bounced_emails table   |
+| 12.2.1 | 🔲 ready | Archive Waitlist — danger zone, 410 on public page, sidebar banner       |
+| 12.2.2 | 🔲 ready | Edit After Onboarding — editable fields, save per field, live preview    |
+| 12.2.3 | 🔲 ready | Privacy Policy — `/legal/privacy` page, footer links                     |
+| 12.2.4 | 🔲 ready | Terms of Service — `/legal/terms` page, footer links                     |
+| 12.2.5 | 🔲 ready | Consent Tracking — GDPR checkbox, IP capture, validation                 |
+| 12.2.6 | 🔲 ready | Unsubscribe Mechanism — HMAC tokens, `/unsubscribe` page, resubscribe    |
+| 12.2.7 | 🔲 ready | Bounce Suppression — webhook handler, suppression logic, dashboard badge |
+| 12.2.8 | 🔲 ready | Physical Address in Emails — settings field, email footer, CAN-SPAM      |
+| 12.2.9 | 🔲 ready | Epic 12.2 Tests — 8 test files, ≥280 total tests                         |
+
+**Planning artifacts:**
+
+- `docs/epics/epic-12.2-gap-fixes.md` — full epic document with 10 stories
+- `docs/stories/story-12.2.0-schema-migration.md` through `story-12.2.9-epic-tests.md` — 10 detailed story files
+- `docs/stories/sql-writeups/epic12.2-story0-bounced-emails.sql` — idempotent migration SQL
 
 ## Next Steps
 
@@ -838,17 +905,13 @@ Design specs use hex values that don't always match the token system exactly. Ma
 52. ~~Fix: milestone rewards disappearing + signup counter not displaying (stale closure fix)~~ ✅ Done
 53. ~~Fix: PoweredByFooter inheriting preview styles on public pages (standalone prop)~~ ✅ Done
 54. ~~Epic 11 — Warmth Tracking Engine~~ ✅ Done (all 8 stories, 257 tests)
-55. ~~Epic 12 planning — epic doc + 7 story files created~~ ✅ Done
-56. **Execute Story 12.0 — Confirmation Email** ← NEXT
-57. Execute Story 12.1 — Position Recalculation
-58. Execute Story 12.2 — "You Moved Up" Email
-59. Execute Story 12.3 — Broadcast Email (Pro)
-60. Execute Story 12.4 — Warmth-Segmented Broadcast (Pro)
-61. Execute Story 12.5 — Email Customisation (Pro)
-62. Execute Story 12.6 — Email Infrastructure Separation
-63. **Epic 12.1 — Dashboard Overhaul** (11 stories: sidebar, empty state, stat cards, tier gating, mobile, updates compose, settings, tokens, fixes, data, tests)
-64. **Epic 12.2 — Gap Fixes** (8 stories: archive waitlist, edit page, Privacy Policy, ToS, consent tracking, unsubscribe, bounce suppression, tests)
-65. Epic 13 — Billing & Feature Gating (Sprint 3)
+55. ~~Epic 12 — Email System~~ ✅ Done (all 7 stories, merged to dev)
+56. ~~Epic 12.1 planning — epic doc + 11 story files created~~ ✅ Done
+57. ~~Epic 12.2 planning — epic doc + 10 story files created + SQL migration~~ ✅ Done
+58. **Execute Story 12.1.0 — Sidebar Redesign** ← NEXT
+59. Execute Epic 12.1 (remaining: 12.1.1–12.1.10)
+60. Execute Epic 12.2 (12.2.0–12.2.9)
+61. Epic 13 — Billing & Feature Gating (Sprint 3)
 
 ## Decision + bug fix: "Powered by PreWaitlist" footer (2026-07)
 
