@@ -248,6 +248,7 @@ export default function DashboardClient({
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         onSignOut={handleSignOut}
+        tier={tier}
       />
 
       <button

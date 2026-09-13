@@ -12,6 +12,7 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   onSignOut: () => void;
+  tier?: string;
 }
 
 const NAV_ITEMS = [
@@ -219,6 +220,7 @@ export function Sidebar({
   isOpen,
   onClose,
   onSignOut,
+  tier = "free",
 }: SidebarProps) {
   const pathname = usePathname();
   const [isLogoOpen, setIsLogoOpen] = useState(false);
@@ -302,7 +304,9 @@ export function Sidebar({
               pathname === item.href &&
               NAV_ITEMS.findIndex((n) => n.href === item.href) === index;
             const isActive = isFirstMatchingHref;
-            const isLocked = "locked" in item && item.locked;
+            const isLocked =
+              ("locked" in item && item.locked) ||
+              (item.label === "Broadcast" && tier === "free");
             const isDisabled = "disabled" in item && item.disabled;
 
             if (isLocked) {

@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
   (async () => {
     const { data: waitlist } = await supabase
       .from("waitlists")
-      .select("product_name, headline, subdomain, sender_name")
+      .select("product_name, headline, subdomain, sender_name, sending_domain")
       .eq("id", waitlist_id)
       .single();
 
@@ -177,6 +177,7 @@ export async function POST(request: NextRequest) {
       senderName: waitlist.sender_name,
       productName: waitlist.product_name,
       headline: waitlist.headline,
+      sendingDomain: waitlist.sending_domain,
       idempotencyKey: `confirmation-email/${data.id}`,
     });
 
@@ -191,6 +192,91 @@ export async function POST(request: NextRequest) {
       });
     }
   })();
+
+  // --- Moved-up email (fire-and-forget) ---
+  // AC1: Send when referrer moves up ≥1 position
+  // AC2: Subject includes new position + product name
+  // AC3: Body includes new position, spots moved, referral link
+  // AC4: Skip if self-referral
+  // AC6: Error handling — email failure must not block signup
+  if (
+    subscriberUpdate &&
+    subscriberUpdate.spots_moved >= 1 &&
+    resolvedReferrerId
+  ) {
+    (async () => {
+      const { data: referrer } = await supabase
+        .from("subscribers")
+        .select("email, referral_code")
+        .eq("id", resolvedReferrerId)
+        .single();
+
+      if (!referrer) return;
+
+      const { data: waitlist } = await supabase
+        .from("waitlists")
+        .select(
+          "product_name, headline, subdomain, sender_name, sending_domain"
+        )
+        .eq("id", waitlist_id)
+        .single();
+
+      if (!waitlist) return;
+
+      const productName =
+        waitlist.product_name || waitlist.headline || "PreWaitlist";
+
+      const referralLink = `https://${waitlist.subdomain}.prewaitlist.com?ref=${referrer.referral_code}`;
+
+      const subject = `You moved up to #${subscriberUpdate.new_position} for ${productName}!`;
+
+      const html = `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 16px;">
+          <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 12px;">
+            Nice! You moved up <strong>${subscriberUpdate.spots_moved} ${subscriberUpdate.spots_moved === 1 ? "spot" : "spots"}</strong> to <strong>#${subscriberUpdate.new_position}</strong> in line for <strong>${productName}</strong>.
+          </p>
+          <p style="font-size: 14px; color: #6b6459; margin: 0 0 24px;">
+            Share your referral link to keep climbing:
+          </p>
+          <p style="font-size: 14px; color: #6b6459; margin: 0 0 24px;">
+            <a href="${referralLink}" style="color: #0f7a5e; text-decoration: underline;">${referralLink}</a>
+          </p>
+          <hr style="border: none; border-top: 1px solid #ccc9c3; margin: 24px 0;" />
+          <p style="font-size: 12px; color: #6b6459; margin: 0;">
+            ${productName} — powered by PreWaitlist
+          </p>
+        </div>
+      `;
+
+      const emailResult = await sendEmail({
+        to: referrer.email,
+        subject,
+        html,
+        stream: "transactional",
+        senderName: waitlist.sender_name,
+        productName: waitlist.product_name,
+        headline: waitlist.headline,
+        sendingDomain: waitlist.sending_domain,
+        idempotencyKey: `moved-up/${resolvedReferrerId}/${subscriberUpdate.new_position}`,
+      });
+
+      // AC7: Log event to email_events
+      if (emailResult.ok) {
+        await supabase.from("email_events").insert({
+          subscriber_id: resolvedReferrerId,
+          waitlist_id,
+          event_type: "sent",
+          event_data: {
+            email_id: emailResult.id,
+            type: "moved_up",
+            new_position: subscriberUpdate.new_position,
+            spots_moved: subscriberUpdate.spots_moved,
+          },
+          created_at: new Date().toISOString(),
+        });
+      }
+    })();
+  }
 
   return NextResponse.json(
     {

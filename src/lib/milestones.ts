@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { resend } from "@/lib/resend";
+import { sendEmail } from "@/lib/email";
 
 interface MilestoneTier {
   threshold: number;
@@ -10,20 +10,21 @@ interface MilestoneTier {
 function buildMilestoneEmailHTML(
   tier: { tier_referrals: number; reward_label: string },
   referralCount: number,
-  waitlist: { name: string | null } | null
+  waitlist: { product_name: string | null; headline: string | null } | null
 ): string {
+  const name = waitlist?.product_name || waitlist?.headline || "the waitlist";
   return `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h1 style="color: #1a1a1a; font-size: 24px;">Congratulations!</h1>
       <p style="color: #6b6459; font-size: 16px; line-height: 1.5;">
-        You've referred ${referralCount} friends to ${waitlist?.name || "the waitlist"} and earned: <strong>${tier.reward_label}</strong>
+        You've referred ${referralCount} friends to ${name} and earned: <strong>${tier.reward_label}</strong>
       </p>
       <p style="color: #6b6459; font-size: 16px; line-height: 1.5;">
         Keep sharing to unlock more rewards!
       </p>
       <hr style="border: none; border-top: 1px solid #ccc9c3; margin: 20px 0;" />
       <p style="color: #6b6459; font-size: 12px;">
-        Sent by ${waitlist?.name || "Waitlist"} via PreWaitlist
+        Sent by ${name} via PreWaitlist
       </p>
     </div>
   `;
@@ -62,7 +63,12 @@ export async function checkAndFulfillMilestones(
     const newNotified: number[] = [...notified];
     const emailsToSend: {
       tier: { tier_referrals: number; reward_label: string };
-      waitlist: { name: string | null } | null;
+      waitlist: {
+        product_name: string | null;
+        headline: string | null;
+        sender_name: string | null;
+        sending_domain: string | null;
+      } | null;
     }[] = [];
     let positionUpdate: { position?: number } = {};
 
@@ -83,7 +89,7 @@ export async function checkAndFulfillMilestones(
 
         const { data: waitlist } = await supabase
           .from("waitlists")
-          .select("name")
+          .select("product_name, headline, sender_name, sending_domain")
           .eq("id", waitlistId)
           .single();
 
@@ -111,8 +117,7 @@ export async function checkAndFulfillMilestones(
 
     for (const email of emailsToSend) {
       try {
-        await resend.emails.send({
-          from: `${email.waitlist?.name || "Waitlist"} <updates@prewaitlist.com>`,
+        await sendEmail({
           to: subscriber.email,
           subject: `Congratulations! You earned: ${email.tier.reward_label}`,
           html: buildMilestoneEmailHTML(
@@ -120,6 +125,11 @@ export async function checkAndFulfillMilestones(
             referralCount,
             email.waitlist
           ),
+          stream: "transactional",
+          senderName: email.waitlist?.sender_name,
+          productName: email.waitlist?.product_name,
+          headline: email.waitlist?.headline,
+          sendingDomain: email.waitlist?.sending_domain,
         });
       } catch (err) {
         console.error(

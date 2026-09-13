@@ -84,6 +84,7 @@ export default function SettingsClient({
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         onSignOut={handleSignOut}
+        tier={tier}
       />
 
       <button

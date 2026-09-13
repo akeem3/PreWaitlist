@@ -10,28 +10,35 @@ interface SendEmailParams {
   senderName?: string | null;
   productName?: string | null;
   headline?: string | null;
+  sendingDomain?: string | null;
   idempotencyKey?: string;
 }
 
 const DEFAULT_SENDER_NAME = "PreWaitlist";
 
 /**
- * AC7: Resolve the from-address based on stream and sender name.
+ * AC1-AC4: Resolve the from-address based on stream, sender name, and verified domain.
  *
  * Resolution chain: senderName → productName → headline → "PreWaitlist"
- * Domain: notifications@ (transactional) | updates@ (broadcast)
+ * Domain: verified custom domain (if set) | notifications@ (transactional) | updates@ (broadcast)
  */
 export function resolveFromAddress(
   senderName: string | null | undefined,
   productName: string | null | undefined,
   headline: string | null | undefined,
-  stream: Stream
+  stream: Stream,
+  sendingDomain?: string | null
 ): string {
   const name =
     senderName?.trim() ||
     productName?.trim() ||
     headline?.trim() ||
     DEFAULT_SENDER_NAME;
+
+  if (sendingDomain) {
+    const prefix = stream === "transactional" ? "notifications" : "updates";
+    return `${name} <${prefix}@${sendingDomain}>`;
+  }
 
   const email =
     stream === "transactional"
@@ -54,7 +61,8 @@ export async function sendEmail(params: SendEmailParams): Promise<{
     params.senderName,
     params.productName,
     params.headline,
-    params.stream
+    params.stream,
+    params.sendingDomain
   );
 
   try {
