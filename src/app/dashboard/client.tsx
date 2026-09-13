@@ -76,19 +76,6 @@ interface DashboardClientProps {
   coldThreshold: number;
 }
 
-const CHECKLIST_ITEMS = [
-  {
-    id: "community",
-    label: "Post in one relevant community",
-    autoCheck: false,
-  },
-  {
-    id: "personal",
-    label: "Tell 5 people personally",
-    autoCheck: false,
-  },
-];
-
 const TABLE_COLUMNS = ["#", "Email", "Date", "Warmth", "Referrals", "Quality"];
 
 const WARMTH_ORDER: Record<string, number> = {
@@ -98,7 +85,7 @@ const WARMTH_ORDER: Record<string, number> = {
 };
 
 function formatStat(value: number): string {
-  return value > 0 ? String(value) : "—";
+  return value > 0 ? String(value) : "\u2014";
 }
 
 export default function DashboardClient({
@@ -111,7 +98,6 @@ export default function DashboardClient({
   stats,
   coldThreshold,
 }: DashboardClientProps) {
-  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<
@@ -196,14 +182,6 @@ export default function DashboardClient({
     setTimeout(() => setCopied(false), 2000);
   }
 
-  function handleShareTwitter() {
-    const text = encodeURIComponent(
-      `Check out our waitlist: https://${liveUrl}`
-    );
-    window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank");
-    setCheckedItems((prev) => new Set(prev).add("community"));
-  }
-
   async function handleSignOut() {
     await fetch("/api/auth/signout", { method: "POST" });
     router.push("/signin");
@@ -239,6 +217,8 @@ export default function DashboardClient({
     a.click();
     URL.revokeObjectURL(url);
   }
+
+  const isEmpty = subscribers.length === 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -295,120 +275,95 @@ export default function DashboardClient({
               </svg>
               {copied ? "Copied!" : "Copy"}
             </button>
-            <button
-              type="button"
-              onClick={handleShareTwitter}
-              className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-1.5 text-xs font-medium text-accent-foreground transition-colors hover:bg-accent/90"
-            >
-              Share on Twitter
-            </button>
-            {checkedItems.has("community") && (
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                className="text-accent"
-              >
-                <circle
-                  cx="8"
-                  cy="8"
-                  r="6"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                />
-                <path
-                  d="M5 8L7 10L11 6"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            )}
           </div>
         </div>
 
         <div className="mx-auto max-w-6xl px-6 py-8">
-          <h1 className="mb-6 text-h2 text-foreground">
-            Get your first signups
-          </h1>
+          {isEmpty ? (
+            <>
+              <h1 className="mb-2 text-h2 text-foreground">
+                Your waitlist is live at {liveUrl}
+              </h1>
+              <p className="mb-6 text-body text-muted-foreground">
+                Share your link and start collecting signups.
+              </p>
 
-          <div className="mb-6">
-            <button
-              type="button"
-              onClick={() => {
-                handleCopy();
-                setCheckedItems((prev) => new Set(prev).add("community"));
-              }}
-              className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-body font-medium text-accent-foreground transition-colors hover:bg-accent/90"
-            >
-              Share your link
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path
-                  d="M1 7H13M8 2L13 7L8 12"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-          </div>
+              <div className="mb-8 flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-body-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
+                >
+                  Copy Link
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <rect
+                      x="4"
+                      y="4"
+                      width="8"
+                      height="8"
+                      rx="1.5"
+                      stroke="currentColor"
+                      strokeWidth="1.3"
+                    />
+                    <path
+                      d="M10 4V2.5C10 2 9.5 1.5 9 1.5H3.5C3 1.5 2.5 2 2.5 2.5V9C2.5 9.5 3 10 3.5 10H4"
+                      stroke="currentColor"
+                      strokeWidth="1.3"
+                    />
+                  </svg>
+                </button>
+                <a
+                  href={`https://${liveUrl}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg border border-border px-5 py-2.5 text-body-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+                >
+                  View Public Page
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path
+                      d="M5.5 2.5H3C2.5 2.5 2 3 2 3.5V11C2 11.5 2.5 12 3 12H11C11.5 12 12 11.5 12 11V8.5M9 2.5H12M12 2.5V5.5M12 2.5L7 7.5"
+                      stroke="currentColor"
+                      strokeWidth="1.3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </a>
+              </div>
 
-          <div className="mb-6 rounded-(--card-radius) border border-border bg-card p-5">
-            <ul className="space-y-3">
-              {CHECKLIST_ITEMS.map((item) => {
-                const isChecked = checkedItems.has(item.id);
-                return (
-                  <li key={item.id} className="flex items-center gap-3">
-                    <span
-                      className={`flex h-4 w-4 items-center justify-center rounded-sm border ${
-                        isChecked
-                          ? "border-accent bg-accent text-white"
-                          : "border-border bg-background"
-                      }`}
-                    >
-                      {isChecked && (
-                        <svg
-                          width="10"
-                          height="10"
-                          viewBox="0 0 12 12"
-                          fill="none"
-                        >
-                          <path
-                            d="M2.5 6L5 8.5L9.5 3.5"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      )}
+              <div className="mb-8 rounded-(--card-radius) border border-border bg-card p-5">
+                <h2 className="mb-3 text-body-sm font-semibold text-foreground">
+                  What to do next
+                </h2>
+                <ol className="space-y-3">
+                  <li className="flex items-start gap-3 text-body-sm text-foreground">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-medium text-accent-foreground">
+                      1
                     </span>
-                    <span
-                      className={`text-body-sm ${
-                        isChecked
-                          ? "text-muted-foreground line-through"
-                          : "text-foreground"
-                      }`}
-                    >
-                      {item.label}
-                    </span>
+                    Share your page in 1\u20132 relevant communities
                   </li>
-                );
-              })}
-            </ul>
-          </div>
+                  <li className="flex items-start gap-3 text-body-sm text-foreground">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-medium text-accent-foreground">
+                      2
+                    </span>
+                    Tell 5 people personally \u2014 personal asks convert 3x
+                    better
+                  </li>
+                  <li className="flex items-start gap-3 text-body-sm text-foreground">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-medium text-accent-foreground">
+                      3
+                    </span>
+                    Post on social with your referral link
+                  </li>
+                </ol>
+              </div>
+            </>
+          ) : null}
 
-          <p className="mb-6 text-body-sm text-muted-foreground">
-            Preview — this is what it&apos;ll look like once signups arrive
-          </p>
-
-          <div className="mb-6 grid grid-cols-4 gap-3">
+          <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
             <div className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
               <div className="mb-1 text-h3 text-foreground">
-                {stats ? formatStat(stats.totalSignups) : "—"}
+                {stats ? formatStat(stats.totalSignups) : "\u2014"}
               </div>
               <div className="text-caption text-muted-foreground">
                 Total signups
@@ -418,7 +373,7 @@ export default function DashboardClient({
               <div className="mb-1 text-h3 text-foreground">
                 {stats && stats.referralPercentage !== null
                   ? `${stats.referralPercentage}%`
-                  : "—"}
+                  : "\u2014"}
               </div>
               <div className="text-caption text-muted-foreground">
                 Referral %
@@ -426,32 +381,36 @@ export default function DashboardClient({
             </div>
             <div className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
               <div className="mb-1 text-h3 text-foreground">
-                {stats ? formatStat(stats.todaySignups) : "—"}
+                {stats ? formatStat(stats.todaySignups) : "\u2014"}
               </div>
               <div className="text-caption text-muted-foreground">Today</div>
             </div>
             <div className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
-              <div className="mb-1 text-h3 text-foreground">—</div>
+              <div className="mb-1 text-h3 text-foreground">{"\u2014"}</div>
               <div className="text-caption text-muted-foreground">Warmth</div>
             </div>
           </div>
 
-          <div className="mb-6">
-            <WarningBanner coldThreshold={coldThreshold} />
-          </div>
+          {!isEmpty && (
+            <>
+              <div className="mb-6">
+                <WarningBanner coldThreshold={coldThreshold} />
+              </div>
 
-          <div className="mb-6">
-            <SignupChart subdomain={subdomain} />
-          </div>
+              <div className="mb-6">
+                <SignupChart subdomain={subdomain} />
+              </div>
 
-          <div className="mb-6">
-            <TopReferrers subscribers={subscribers} />
-          </div>
+              <div className="mb-6">
+                <TopReferrers subscribers={subscribers} />
+              </div>
 
-          <div className="mb-6 grid grid-cols-2 gap-4">
-            <QualificationPanel subdomain={subdomain} />
-            <WarmthPanel />
-          </div>
+              <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <QualificationPanel subdomain={subdomain} />
+                <WarmthPanel />
+              </div>
+            </>
+          )}
 
           <div className="rounded-(--card-radius) border border-border bg-card">
             <div className="px-5 pt-5">
@@ -492,171 +451,173 @@ export default function DashboardClient({
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-6 gap-4 border-b border-border px-5 py-3">
-              {TABLE_COLUMNS.map((col) => {
-                const field =
-                  col === "Referrals"
-                    ? "referral_count"
-                    : col === "#"
-                      ? "position"
-                      : col === "Quality"
-                        ? "quality_score"
-                        : col === "Warmth"
-                          ? "warmth_score"
-                          : null;
-                const isActive = field === sortField;
-                return (
-                  <button
-                    key={col}
-                    type="button"
-                    onClick={() => field && handleSort(field)}
-                    className={`text-left text-body-sm font-medium transition-colors ${
-                      field
-                        ? "cursor-pointer hover:text-foreground"
-                        : "cursor-default"
-                    } ${isActive ? "text-foreground" : "text-muted-foreground"}`}
-                  >
-                    {col}
-                    {isActive && (
-                      <span className="ml-1">
-                        {sortDir === "asc" ? "↑" : "↓"}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            {filteredSubscribers.length > 0 ? (
-              <div>
-                {filteredSubscribers.map((sub) => (
-                  <div key={sub.id}>
-                    <div
-                      onClick={() => toggleRow(sub.id)}
-                      className="grid grid-cols-6 gap-4 border-b border-border px-5 py-3 cursor-pointer transition-colors hover:bg-muted/30"
+            <div className="overflow-x-auto">
+              <div className="grid min-w-[600px] grid-cols-6 gap-4 border-b border-border px-5 py-3">
+                {TABLE_COLUMNS.map((col) => {
+                  const field =
+                    col === "Referrals"
+                      ? "referral_count"
+                      : col === "#"
+                        ? "position"
+                        : col === "Quality"
+                          ? "quality_score"
+                          : col === "Warmth"
+                            ? "warmth_score"
+                            : null;
+                  const isActive = field === sortField;
+                  return (
+                    <button
+                      key={col}
+                      type="button"
+                      onClick={() => field && handleSort(field)}
+                      className={`text-left text-body-sm font-medium transition-colors ${
+                        field
+                          ? "cursor-pointer hover:text-foreground"
+                          : "cursor-default"
+                      } ${isActive ? "text-foreground" : "text-muted-foreground"}`}
                     >
-                      <span className="text-body-sm text-muted-foreground">
-                        {sub.position}
-                      </span>
-                      <span className="truncate text-body-sm text-foreground">
-                        {sub.email}
-                      </span>
-                      <span className="text-body-sm text-muted-foreground">
-                        {sub.created_at.split("T")[0]}
-                      </span>
-                      <span className="text-body-sm">
-                        {sub.warmth_score ? (
-                          <span
-                            className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                              sub.warmth_score === "hot"
-                                ? "bg-accent/10 text-accent"
-                                : sub.warmth_score === "warm"
-                                  ? "bg-status-warm text-white"
-                                  : "bg-status-cold text-white"
-                            }`}
-                          >
-                            {sub.warmth_score}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            Unscored
-                          </span>
-                        )}
-                      </span>
-                      <span
-                        className={`text-right text-body-sm ${
-                          sub.referral_count === 0
-                            ? "text-muted-foreground"
-                            : "font-medium text-foreground"
-                        }`}
+                      {col}
+                      {isActive && (
+                        <span className="ml-1">
+                          {sortDir === "asc" ? "\u2191" : "\u2193"}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {filteredSubscribers.length > 0 ? (
+                <div>
+                  {filteredSubscribers.map((sub) => (
+                    <div key={sub.id}>
+                      <div
+                        onClick={() => toggleRow(sub.id)}
+                        className="grid min-w-[600px] grid-cols-6 gap-4 border-b border-border px-5 py-3 cursor-pointer transition-colors hover:bg-muted/30"
                       >
-                        {sub.referral_count}
-                      </span>
-                      <span
-                        className={`text-right text-body-sm ${
-                          sub.quality_score === null
-                            ? "text-muted-foreground"
-                            : "font-medium text-foreground"
-                        }`}
-                      >
-                        {sub.quality_score !== null
-                          ? `${sub.quality_score}%`
-                          : "—"}
-                      </span>
-                    </div>
-                    {expandedRows.has(sub.id) && (
-                      <div className="border-b border-border bg-muted/20 px-5 py-3">
-                        <div className="grid grid-cols-3 gap-4 text-body-sm">
-                          <div>
-                            <span className="text-muted-foreground">
-                              Position:{" "}
+                        <span className="text-body-sm text-muted-foreground">
+                          {sub.position}
+                        </span>
+                        <span className="truncate text-body-sm text-foreground">
+                          {sub.email}
+                        </span>
+                        <span className="text-body-sm text-muted-foreground">
+                          {sub.created_at.split("T")[0]}
+                        </span>
+                        <span className="text-body-sm">
+                          {sub.warmth_score ? (
+                            <span
+                              className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                                sub.warmth_score === "hot"
+                                  ? "bg-accent/10 text-accent"
+                                  : sub.warmth_score === "warm"
+                                    ? "bg-status-warm text-white"
+                                    : "bg-status-cold text-white"
+                              }`}
+                            >
+                              {sub.warmth_score}
                             </span>
-                            <span className="font-medium text-foreground">
-                              #{sub.position}
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              Unscored
                             </span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">
-                              Referrals:{" "}
-                            </span>
-                            <span className="font-medium text-foreground">
-                              {sub.referral_count}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">
-                              Signed up:{" "}
-                            </span>
-                            <span className="font-medium text-foreground">
-                              {sub.created_at.split("T")[0]}
-                            </span>
-                          </div>
-                        </div>
-                        {sub.qual_answers &&
-                          Object.keys(sub.qual_answers).length > 0 && (
-                            <div className="mt-3 border-t border-border pt-3">
-                              <p className="mb-1 text-xs font-medium text-muted-foreground">
-                                Qualification Answers
-                              </p>
-                              <div className="grid grid-cols-2 gap-2 text-xs">
-                                {Object.entries(sub.qual_answers).map(
-                                  ([q, a]) => (
-                                    <div key={q}>
-                                      <span className="text-muted-foreground">
-                                        {q}:{" "}
-                                      </span>
-                                      <span className="text-foreground">
-                                        {String(a)}
-                                      </span>
-                                    </div>
-                                  )
-                                )}
-                              </div>
-                            </div>
                           )}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/dashboard/subscribers/${sub.id}`);
-                          }}
-                          className="mt-3 text-xs font-medium text-accent hover:underline"
+                        </span>
+                        <span
+                          className={`text-right text-body-sm ${
+                            sub.referral_count === 0
+                              ? "text-muted-foreground"
+                              : "font-medium text-foreground"
+                          }`}
                         >
-                          View full profile →
-                        </button>
+                          {sub.referral_count}
+                        </span>
+                        <span
+                          className={`text-right text-body-sm ${
+                            sub.quality_score === null
+                              ? "text-muted-foreground"
+                              : "font-medium text-foreground"
+                          }`}
+                        >
+                          {sub.quality_score !== null
+                            ? `${sub.quality_score}%`
+                            : "\u2014"}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex min-h-20 items-center justify-center">
-                <span className="text-body-sm text-muted-foreground">
-                  {searchQuery
-                    ? "No subscribers match your search."
-                    : "No subscribers yet. Share your link to get started."}
-                </span>
-              </div>
-            )}
+                      {expandedRows.has(sub.id) && (
+                        <div className="border-b border-border bg-muted/20 px-5 py-3">
+                          <div className="grid grid-cols-3 gap-4 text-body-sm">
+                            <div>
+                              <span className="text-muted-foreground">
+                                Position:{" "}
+                              </span>
+                              <span className="font-medium text-foreground">
+                                #{sub.position}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">
+                                Referrals:{" "}
+                              </span>
+                              <span className="font-medium text-foreground">
+                                {sub.referral_count}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">
+                                Signed up:{" "}
+                              </span>
+                              <span className="font-medium text-foreground">
+                                {sub.created_at.split("T")[0]}
+                              </span>
+                            </div>
+                          </div>
+                          {sub.qual_answers &&
+                            Object.keys(sub.qual_answers).length > 0 && (
+                              <div className="mt-3 border-t border-border pt-3">
+                                <p className="mb-1 text-xs font-medium text-muted-foreground">
+                                  Qualification Answers
+                                </p>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  {Object.entries(sub.qual_answers).map(
+                                    ([q, a]) => (
+                                      <div key={q}>
+                                        <span className="text-muted-foreground">
+                                          {q}:{" "}
+                                        </span>
+                                        <span className="text-foreground">
+                                          {String(a)}
+                                        </span>
+                                      </div>
+                                    )
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/dashboard/subscribers/${sub.id}`);
+                            }}
+                            className="mt-3 text-xs font-medium text-accent hover:underline"
+                          >
+                            View full profile \u2192
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex min-h-20 items-center justify-center">
+                  <span className="text-body-sm text-muted-foreground">
+                    {searchQuery
+                      ? "No subscribers match your search."
+                      : "No subscribers yet. Share your link to get started."}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </main>
