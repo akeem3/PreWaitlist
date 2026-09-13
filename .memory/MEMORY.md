@@ -30,9 +30,10 @@
 
 - **Decision:** Use memsearch with ONNX embeddings (bge-m3) for fork-agnostic semantic search over markdown memory files.
 - **Reason:** Stores data as plain markdown files readable even without the tool. Uses local ONNX embeddings — zero API key, zero cost, zero dependency on whichever model provider is active.
-- **Status:** ✅ Working — CLI v0.4.16, Docker v29.7.2, Milvus v2.5.1 containers running, 126 chunks indexed.
+- **Status:** ✅ Working — CLI v0.4.16, Docker v29.7.2, Milvus v2.5.1 containers running, 526 chunks indexed.
 - **Fix:** Windows console encoding bug — must set `$env:PYTHONIOENCODING="utf-8"` before running memsearch commands (or add to PowerShell profile permanently). Without this, `click.echo` crashes on Unicode characters (emojis, arrows).
-- **Date:** 2026-07-26 (updated 2026-09-09)
+- **Gotcha:** Collection name defaults to `memsearch_chunks` for CLI. When indexing with `--force`, it may create a separate collection. Always verify with `memsearch stats` and use `-c memsearch_chunks` if needed.
+- **Date:** 2026-07-26 (updated 2026-09-13)
 
 ### Wildcard subdomain routing via Vercel nameservers
 
@@ -103,6 +104,8 @@
 ### Resend (Story 0.4)
 
 - **Status:** Account created, API key in .env.local. Client module at `src/lib/resend.ts`. Domain `prewaitlist.com` verified. Batch API: `resend.batch.send([...])`, max 100/batch. Sender: `updates@prewaitlist.com`.
+- **Webhook:** `RESEND_WEBHOOK_SECRET` added to .env.local (2026-09-13). Endpoint: `https://waitlist-build.vercel.app/api/webhooks/resend`. Events: sent, delivered, opened, clicked, bounced, complained.
+- **CRON_SECRET:** Added to .env.local (2026-09-13). Used for `/api/cron/warmth` endpoint auth.
 
 ### Paddle (Story 0.5)
 
@@ -531,9 +534,10 @@ Implementation order:
 
 - **Framework:** Vitest 4.1.10 + happy-dom 20.11.1 + @testing-library/react 16.3.2 + @testing-library/user-event 14.6.1
 - **Config:** `vitest.config.mts` — setup file `src/__tests__/setup.ts`
-- **Test files:** 16 files in `src/__tests__/` — badge, card, button, input, toggle, select, textarea, share-copy-link, thank-you-page, referral-link, share-buttons, referred-variant, dashboard-referral-column, subscribers-referral, subscribers-referrals, leaderboard-client
+- **Test files:** 16+ files in `src/__tests__/` — badge, card, button, input, toggle, select, textarea, share-copy-link, thank-you-page, referral-link, share-buttons, referred-variant, dashboard-referral-column, subscribers-referral, subscribers-referrals, leaderboard-client, warmth (19 tests), email-events API (5 tests), email-event-log (7 tests), dashboard-sidebar
 - **E2E:** Playwright with `playwright.config.ts` — `tests/e2e/thank-you-flow.spec.ts` (2 tests)
-- **Total tests:** 166 passing (all green)
+- **Total tests:** 257 passing (≥250 target met)
+- **Pre-existing failures (unrelated to Epic 11):** referred-variant, thank-you-page, csv-export — 5 tests failing
 - **Critical fix:** happy-dom over jsdom (jsdom 30 has ESM issues on Windows)
 - **Critical fix:** `@rolldown/binding-win32-x64-msvc` required explicit install for Vitest 4 on Windows
 - **Critical fix:** `vitest.config.mts` uses `import { defineConfig } from "vitest/config"` (NOT `vite/config`) to avoid plugin import errors
@@ -683,16 +687,76 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 ## Epic 9 Progress (Dashboard Restructure)
 
-| Story | Status   | Summary                                                                                                                                |
-| ----- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| 9.0   | ✅ done  | Dashboard Layout Shell — left sidebar (268px, 8 nav items), active state (green pill), locked items, mobile hamburger, upgrade CTA     |
-| 9.1   | ✅ done  | Stat Cards with Real Data — Total Signups, Referral %, Today, Warmth (locked), em-dash for empty                                       |
-| 9.2   | ✅ done  | Subscriber Table Design Alignment — 4-column table (#, Email, Date, Referrals), search, sort, row click, empty state                   |
-| 9.3   | ✅ done  | CSV Export (Pro Tier) — client-side generation, correct filename, 7 headers                                                            |
-| 9.4   | ✅ done  | Subscriber Detail Page — auth check, back button, position/email/grid, referral code, referred list, qual answers, 404                 |
-| 9.5   | ✅ done  | Epic 9 Tests — 8 test files (sidebar, stat-cards, subscriber-table, csv-export, subscriber-detail, chart, qualification-panel, warmth) |
-| 9.6   | ✅ done  | Dashboard Remediation — MVP Gap Fill — chart, qual breakdown, quality scores, top referrers, warmth distribution, table enhancements   |
-| 9.7   | 🔲 ready | Epic 9 Final Tests — comprehensive test pass (target ≥200 tests)                                                                       |
+| Story | Status  | Summary                                                                                                                                |
+| ----- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 9.0   | ✅ done | Dashboard Layout Shell — left sidebar (268px, 8 nav items), active state (green pill), locked items, mobile hamburger, upgrade CTA     |
+| 9.1   | ✅ done | Stat Cards with Real Data — Total Signups, Referral %, Today, Warmth (locked), em-dash for empty                                       |
+| 9.2   | ✅ done | Subscriber Table Design Alignment — 4-column table (#, Email, Date, Referrals), search, sort, row click, empty state                   |
+| 9.3   | ✅ done | CSV Export (Pro Tier) — client-side generation, correct filename, 7 headers                                                            |
+| 9.4   | ✅ done | Subscriber Detail Page — auth check, back button, position/email/grid, referral code, referred list, qual answers, 404                 |
+| 9.5   | ✅ done | Epic 9 Tests — 8 test files (sidebar, stat-cards, subscriber-table, csv-export, subscriber-detail, chart, qualification-panel, warmth) |
+| 9.6   | ✅ done | Dashboard Remediation — MVP Gap Fill — chart, qual breakdown, quality scores, top referrers, warmth distribution, table enhancements   |
+| 9.7   | ✅ done | Epic 9 Final Tests — 257 tests passing (≥250 target met)                                                                               |
+
+## Epic 10 Progress (Public Waitlist Page & Onboarding Redesign)
+
+| Story | Status  | Summary                                                                     |
+| ----- | ------- | --------------------------------------------------------------------------- |
+| 10.0  | ✅ done | Schema migration — `product_name` column on waitlists, API support          |
+| 10.1  | ✅ done | Fix critical bugs — headless UI, hydration, preview styling                 |
+| 10.2  | ✅ done | Accessibility fixes — ARIA, keyboard nav, focus management                  |
+| 10.3  | ✅ done | Design system normalization — Tailwind canonical classes, token consistency |
+| 10.4  | ✅ done | Public page layout redesign — product name/logo on public page + preview    |
+| 10.5  | ✅ done | Onboarding field architecture — headline vs productName separation          |
+| 10.6  | ✅ done | Name-it-later fix — deferred naming flow                                    |
+| 10.7  | ✅ done | Inconsistency resolution — cross-story fixes, final cleanup                 |
+
+**Branch:** `epic-10` (merged to `dev`)
+
+## Epic 11 Progress (Warmth Tracking Engine)
+
+| Story | Status  | Summary                                                                                                                                |
+| ----- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 11.0  | ✅ done | Resend Webhook — `src/app/api/webhooks/resend/route.ts`, `src/lib/supabase/admin.ts`, Svix signature verification, idempotent events   |
+| 11.1  | ✅ done | Warmth Calculation — `src/lib/warmth.ts` (score 0-100, signal weights, decay), `src/app/api/cron/warmth/route.ts` (daily batch recalc) |
+| 11.2  | ✅ done | Warmth Column + Filter — Badge colors fixed (blue=cold, not red), column reordered                                                     |
+| 11.3  | ✅ done | Warmth Distribution Panel — `components/dashboard/warmth-panel.tsx` rewritten (4 bars, skeleton, empty states)                         |
+| 11.4  | ✅ done | Dashboard Warning State — `components/dashboard/warning-banner.tsx`, settings page enabled                                             |
+| 11.5  | ✅ done | Warmth Score Decay — `src/__tests__/lib/warmth.test.ts` (19 tests), decay logic already in warmth.ts                                   |
+| 11.6  | ✅ done | Email Event Log — `src/app/api/dashboard/email-events/route.ts`, `components/dashboard/email-event-log.tsx`, subscriber detail page    |
+| 11.7  | ✅ done | Schema Migration — SQL at `docs/stories/sql-writeups/epic11-story7-sprint3-schema.sql`, 11 ACs verified                                |
+
+**Branch:** `epic-11` (created from `dev` for Sprint 3)
+
+**Key architecture decisions (Epic 11):**
+
+- `src/lib/warmth.ts` — score calculation + tier assignment (hot ≥70, warm ≥40, cold >0, unscored = null)
+- `src/lib/supabase/admin.ts` — service role client for webhook (bypasses RLS)
+- Webhook uses `req.text()` (NOT `req.json()`) — Svix HMAC breaks if body re-serialized
+- Cron endpoint protected by `CRON_SECRET` Bearer token
+- Badge colors: green=hot (#d0492f → #22c55e), orange=warm (#c7841a), blue=cold (#3b6fa6)
+- `email_events.event_data` column added (jsonb, nullable) for full webhook payload storage
+
+## Epic 12 Progress (Email System) — PLANNING COMPLETE, NOT YET IMPLEMENTED
+
+| Story | Status   | Summary                                                                                        |
+| ----- | -------- | ---------------------------------------------------------------------------------------------- |
+| 12.0  | 🔲 ready | Confirmation Email — `src/lib/email.ts` (email utility), email send in `POST /api/subscribers` |
+| 12.1  | 🔲 ready | Position Recalculation — `src/lib/positions.ts`, replaces append-only logic                    |
+| 12.2  | 🔲 ready | "You Moved Up" Email — trigger email after position recalc                                     |
+| 12.3  | 🔲 ready | Broadcast Email (Pro) — `src/app/dashboard/broadcast/page.tsx`, Batch API route                |
+| 12.4  | 🔲 ready | Warmth-Segmented Broadcast — segment selector, `GET /api/dashboard/broadcast/segments`         |
+| 12.5  | 🔲 ready | Email Customisation (Pro) — Settings sender name field, fallback chain                         |
+| 12.6  | 🔲 ready | Email Infrastructure Separation — verified domain fallback in `resolveFromAddress()`           |
+
+**Branch:** `epic-11` (Sprint 3 branch, Epic 12 stories will be added here)
+
+**Planning artifacts created:**
+
+- `docs/epics/epic-12-email-system.md` — full epic document with 7 stories
+- `docs/stories/story-12.0-confirmation-email.md` through `story-12.6-email-infrastructure-separation.md` — 7 detailed story files
+
+**NOT YET IMPLEMENTED:** No code files exist. `src/lib/email.ts`, `src/lib/positions.ts`, broadcast routes/page all need to be built.
 
 ## Next Steps
 
@@ -747,12 +811,18 @@ Design specs use hex values that don't always match the token system exactly. Ma
 49. ~~Story 9.6 — Dashboard Remediation — MVP Gap Fill~~ ✅ Done
 50. ~~Story 9.7 — Epic 9 Final Tests~~ ✅ Done
 51. ~~Epic 10 — Public Waitlist Page & Onboarding Redesign~~ ✅ Done (all 8 stories, merged to dev)
-52. Fix: milestone rewards disappearing + signup counter not displaying (stale closure fix)
-53. Fix: PoweredByFooter inheriting preview styles on public pages (standalone prop)
-54. Investigate/gap-fill remaining onboarding issues ← NEXT
-55. Epic 11 — Warmth Tracking Engine (Sprint 3)
-56. Epic 12 — Email System (Sprint 3)
-57. Epic 13 — Billing & Feature Gating (Sprint 3)
+52. ~~Fix: milestone rewards disappearing + signup counter not displaying (stale closure fix)~~ ✅ Done
+53. ~~Fix: PoweredByFooter inheriting preview styles on public pages (standalone prop)~~ ✅ Done
+54. ~~Epic 11 — Warmth Tracking Engine~~ ✅ Done (all 8 stories, 257 tests)
+55. ~~Epic 12 planning — epic doc + 7 story files created~~ ✅ Done
+56. **Execute Story 12.0 — Confirmation Email** ← NEXT
+57. Execute Story 12.1 — Position Recalculation
+58. Execute Story 12.2 — "You Moved Up" Email
+59. Execute Story 12.3 — Broadcast Email (Pro)
+60. Execute Story 12.4 — Warmth-Segmented Broadcast (Pro)
+61. Execute Story 12.5 — Email Customisation (Pro)
+62. Execute Story 12.6 — Email Infrastructure Separation
+63. Epic 13 — Billing & Feature Gating (Sprint 3)
 
 ## Decision + bug fix: "Powered by PreWaitlist" footer (2026-07)
 
