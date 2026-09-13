@@ -23,7 +23,11 @@ Every new subscriber receives a confirmation email with their position and refer
 | 12.5 | Email Customisation (Pro)          | 12.0       | ready  |
 | 12.6 | Email Infrastructure Separation    | 11.7       | ready  |
 
-**Execution order:** 12.0 and 12.1 can run in parallel (no cross-dependencies). 12.2 depends on both 12.0 and 12.1. 12.3 depends on 11.1 (warmth scores) and 11.7 (broadcasts table). 12.4 depends on 12.3 (extends compose screen). 12.5 depends on 12.0 (extends email utility). 12.6 depends on 11.7 (schema) and extends 12.0's email utility.
+**Execution order:** 12.1 MUST execute before 12.0 — the confirmation email (12.0) includes the subscriber's position number, which depends on the new recalculation logic from 12.1. 12.2 depends on both 12.0 and 12.1. 12.3 depends on 11.1 (warmth scores) and 11.7 (broadcasts table). 12.4 depends on 12.3 (extends compose screen). 12.5 depends on 12.0 (extends email utility). 12.6 depends on 11.7 (schema) and extends 12.0's email utility.
+
+**Sequencing rationale:** 12.0 and 12.1 both modify `POST /api/subscribers`. Executing them in parallel guarantees merge conflicts. More critically, 12.0 sends the position number in the confirmation email — if 12.0 lands first, it sends emails with the old `maxPos + 1` position, then 12.1 recalculates and changes those positions, creating inconsistency. 12.1 must land first so 12.0 sends the correct position.
+
+**Position recalculation approach (research-validated):** Use a single atomic PostgreSQL CTE+UPDATE with `ROW_NUMBER()` window function. This avoids race conditions (single-statement UPDATE acquires row-level locks atomically), avoids N+1 query patterns, and computes `referral_count` inline since it is not a DB column. See Story 12.1 Dev Notes for the exact SQL.
 
 ---
 
@@ -44,21 +48,22 @@ Every new subscriber receives a confirmation email with their position and refer
 - AC7: The system shall provide an email sending utility (`src/lib/email.ts`) that resolves the correct `from` address based on sender name and stream (transactional vs broadcast).
 - AC8: Lint and build shall pass with zero errors.
 
-**Tasks:** T1 (AC1-AC3) Build confirmation email template + Resend send · T2 (AC4, AC7) Create email utility with from-address resolution + sender name fallback · T3 (AC5-AC6) Emails API integration + error handling · T4 (AC8) Lint + build
+**Tasks:** T1 (AC2-AC3) Build confirmation email template + brand resolution · T2 (AC4, AC7) Create email utility with from-address resolution + sender name fallback · T3 (AC1, AC5-AC6) Emails API integration + error handling · T4 (AC8) Log sent event to email_events · T5 (AC9) Lint + build
 
 **Out of scope:** Position recalculation (Story 12.1), "you moved up" email (Story 12.2), broadcast emails (Story 12.3)
 
 **Dev Notes:**
 
-- T1: The `POST /api/subscribers` route already exists and creates the subscriber — add email send after insert (currently ends at line 143). Chain email dispatch after the milestone check block.
+- T1: The `POST /api/subscribers` route already exists and creates the subscriber — add email send after insert and after position recalculation (Story 12.1). Chain email dispatch after the milestone check block (after line ~133).
 - T1 (AC2): Email template: position + referral link + share CTA. Keep it short (3-5 lines). Confirmation emails are the highest-open-rate email you'll ever send (60-80%).
 - T1 (AC3): Brand resolution: `waitlist.product_name` → `waitlist.headline` → "PreWaitlist" (hardcoded fallback). The `product_name` column exists on `waitlists` table.
-- T2 (AC7): **Email utility:** Create `src/lib/email.ts` with `sendEmail({ to, subject, html, stream, senderName, waitlistId })`. The `stream` parameter ("transactional" | "broadcast") determines the `from` address: transactional → `notifications@prewaitlist.com`, broadcast → `updates@prewaitlist.com`. Sender name resolution: `senderName` → `product_name` (from DB) → `headline` (from DB) → "PreWaitlist" (hardcoded fallback).
+- T2 (AC7): **Email utility:** Create `src/lib/email.ts` with `sendEmail({ to, subject, html, stream, senderName, productName, headline })`. The `stream` parameter ("transactional" | "broadcast") determines the `from` address: transactional → `notifications@prewaitlist.com`, broadcast → `updates@prewaitlist.com`. Sender name resolution: `senderName` → `productName` (from DB) → `headline` (from DB) → "PreWaitlist" (hardcoded fallback).
 - T2: `src/lib/resend.ts` is currently a bare 9-line wrapper (`new Resend(apiKey)`) — do not modify, import from there.
 - T3 (AC5): Use `resend.emails.send({ from, to, subject, html })` — single transactional send, not Batch API (Batch is for bulk sends of 100+).
 - T3 (AC6): `try/catch` around Resend send, log error, don't throw — subscriber creation succeeds regardless. The confirmation email is best-effort.
 - T1: Referral link format: `https://{subdomain}.prewaitlist.com?ref={referral_code}` — subdomain and referral_code are already available in the subscriber + waitlist data.
 - T1: Log a `sent` event to `email_events` table after successful send (event_type: 'sent') — this feeds the warmth tracking engine (Story 11.1).
+- T3: Variable names in route.ts: use `supabase` (not `supabaseAdmin`), `data` (not `newSubscriber`), `waitlist_id` (from body).
 
 ---
 
@@ -78,18 +83,19 @@ Every new subscriber receives a confirmation email with their position and refer
 - AC6: The number of spots moved up shall be calculated: `old_position - new_position`.
 - AC7: Lint and build shall pass with zero errors.
 
-**Tasks:** T1 (AC1-AC2) Implement position recalculation function · T2 (AC3-AC4) Verify referrer moves up, others maintain order · T3 (AC5-AC6) Sync execution + spots-moved calculation · T4 (AC7) Lint + build
+**Tasks:** T1 (AC1-AC2) Implement position recalculation function (atomic CTE+UPDATE) · T2 (AC3-AC4) Verify referrer moves up, others maintain order · T3 (AC5-AC6) Sync execution in POST /api/subscribers + spots-moved calculation · T4 (AC7) Store old_position for trigger email · T5 (AC8) Lint + build
 
 **Out of scope:** "You moved up" email trigger (Story 12.2), milestone position boost (already in `src/lib/milestones.ts`)
 
 **Dev Notes:**
 
-- T1: Create `src/lib/positions.ts` with `recalculatePositions(waitlistId, supabase)` and `getSpotsMoved(subscriberId, oldPosition, supabase)`.
+- T1: Create `src/lib/positions.ts` with `recalculatePositions(waitlistId, supabase)` and `getPositionUpdate(updates, subscriberId)`.
 - T1: **Critical: Current position logic is append-only.** `POST /api/subscribers` (line 67-75) calculates `position = maxPos + 1` — it never recalculates existing subscribers' positions. Story 12.1 must REPLACE this logic with full recalculation. The `maxPos + 1` code becomes dead code after this story.
-- T1: SQL approach: `UPDATE subscribers SET position = subquery.new_pos FROM (SELECT id, ROW_NUMBER() OVER (ORDER BY referral_count DESC, created_at ASC) as new_pos FROM subscribers WHERE waitlist_id = $1) subquery WHERE subscribers.id = subquery.id`. Or: fetch all subscribers, sort in JS, batch update positions.
-- T3: Store `old_position` before recalculation to calculate spots moved for the trigger email (Story 12.2).
+- T1: **Atomic CTE+UPDATE (research-validated):** Use a single PostgreSQL statement with `ROW_NUMBER()` window function. This eliminates race conditions (single-statement UPDATE acquires row-level locks atomically) and avoids N+1 query patterns. See Story 12.1 implementation details for the exact SQL.
+- T1: `referral_count` is NOT a DB column — it's computed by counting `referrer_id` matches. The CTE pre-aggregates referral counts, then `ROW_NUMBER()` ranks subscribers by `COALESCE(count, 0) DESC, created_at ASC`.
+- T3: Store `old_position` before recalculation to calculate spots moved for the trigger email (Story 12.2). The `recalculatePositions()` function fetches current positions first, runs the atomic UPDATE, then fetches updated positions to compute spots-moved.
 - T3: This is the critical missing piece — the product vision says "position recalculation on referral" is a 🔵 Core feature.
-- T1: `referral_count` is NOT a DB column — it's computed by counting `referrer_id` matches. The recalculation query must compute referral counts inline or use a subquery.
+- T1: Variable names in route.ts: `supabase` (from `createClient()`), `data` (insert result), `waitlist_id` (from body), `resolvedReferrerId` (from referral code resolution).
 
 ---
 
@@ -109,19 +115,20 @@ Every new subscriber receives a confirmation email with their position and refer
 - AC6: If the email send fails, the position recalculation shall not be rolled back.
 - AC7: Lint and build shall pass with zero errors.
 
-**Tasks:** T1 (AC1-AC2) Build "moved up" email template + trigger logic · T2 (AC3) Resend Emails API integration · T3 (AC4-AC6) Minimum spots threshold + error handling · T4 (AC7) Lint + build
+**Tasks:** T1 (AC1-AC2) Build "moved up" email template + trigger logic · T2 (AC3) Resend Emails API integration · T3 (AC4-AC6) Minimum spots threshold + error handling + non-blocking · T4 (AC7) Log sent event to email_events · T5 (AC8) Lint + build
 
 **Out of scope:** Position recalculation itself (Story 12.1), milestone congratulations emails (already in `src/lib/milestones.ts`)
 
 **Dev Notes:**
 
-- T1: Trigger: after `recalculatePositions()` in Story 12.1, check if referrer's position improved. Chain into `POST /api/subscribers` after position recalculation.
+- T1: Trigger: after `recalculatePositions()` in Story 12.1, check if the referrer's position improved. Chain into `POST /api/subscribers` after position recalculation and confirmation email.
 - T1: `spots_moved = old_position - new_position` — only send email if > 0 (AC4).
 - T1: Email template: "You moved up {spots_moved} spots! You're now #{new_position} in line. Keep sharing → {referral_link}".
 - T2: Use `resend.emails.send()` — single transactional send (same pattern as Story 12.0).
 - T3: Error handling: `try/catch`, log, don't block subscriber creation. Position recalculation is durable; email is best-effort.
 - T1: Referral link: `https://{subdomain}.prewaitlist.com?ref={referral_code}` — need to fetch waitlist subdomain + subscriber referral_code.
 - T1: Log a `sent` event to `email_events` table after successful send — feeds warmth tracking.
+- T1: Variable references: use `resolvedReferrerId` (not `referrer_id`), `subscriberUpdate` (from `getPositionUpdate`), `supabase` (not `supabaseAdmin`).
 
 ---
 

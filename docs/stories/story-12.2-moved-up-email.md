@@ -32,7 +32,7 @@ Position recalculation itself (Story 12.1), milestone congratulations emails (al
 
 ### T1: Build "moved up" email template + trigger logic
 
-**Trigger point:** After `recalculatePositions()` in `POST /api/subscribers` (from Story 12.1), check if the referrer's position improved.
+**Trigger point:** After `recalculatePositions()` in `POST /api/subscribers` (from Story 12.1), check if the REFFERRER's position improved. This fires AFTER position recalculation but independently of the confirmation email (which goes to the new subscriber).
 
 **Integration in `src/app/api/subscribers/route.ts`** — add AFTER the confirmation email send (Story 12.0):
 
@@ -40,21 +40,28 @@ Position recalculation itself (Story 12.1), milestone congratulations emails (al
 import { sendEmail } from "@/lib/email";
 import { getPositionUpdate } from "@/lib/positions";
 
-// ... (after recalculatePositions)
+// ... (after recalculatePositions and confirmation email)
+
+// The referrer is resolvedReferrerId (from lines 38-65 of route.ts)
+// The new subscriber's position update is subscriberUpdate (from recalculatePositions)
 
 // AC4: Only send if referrer moved up by ≥1 spot
-if (subscriberUpdate && subscriberUpdate.spots_moved >= 1 && referrer_id) {
+if (
+  subscriberUpdate &&
+  subscriberUpdate.spots_moved >= 1 &&
+  resolvedReferrerId
+) {
   // Fetch the referrer's details
-  const { data: referrer } = await supabaseAdmin
+  const { data: referrer } = await supabase
     .from("subscribers")
     .select("id, email, referral_code")
-    .eq("id", referrer_id)
+    .eq("id", resolvedReferrerId)
     .single();
 
   if (referrer) {
     // AC1-AC2: Build and send "moved up" email
     (async () => {
-      const { data: waitlist } = await supabaseAdmin
+      const { data: waitlist } = await supabase
         .from("waitlists")
         .select("product_name, headline, subdomain, sender_name")
         .eq("id", waitlist_id)
@@ -101,7 +108,7 @@ if (subscriberUpdate && subscriberUpdate.spots_moved >= 1 && referrer_id) {
 
       // AC7: Log event
       if (emailResult.ok) {
-        await supabaseAdmin.from("email_events").insert({
+        await supabase.from("email_events").insert({
           subscriber_id: referrer.id,
           waitlist_id,
           event_type: "sent",
@@ -113,6 +120,16 @@ if (subscriberUpdate && subscriberUpdate.spots_moved >= 1 && referrer_id) {
   }
 }
 ```
+
+**Variable reference map (matching actual route.ts):**
+
+| Story variable       | Actual route.ts variable | Source                                                  |
+| -------------------- | ------------------------ | ------------------------------------------------------- |
+| `resolvedReferrerId` | `resolvedReferrerId`     | Lines 38-65, resolved from `incomingRefCode`            |
+| `subscriberUpdate`   | `subscriberUpdate`       | From `getPositionUpdate(updates, data.id)` (Story 12.1) |
+| `waitlist_id`        | `waitlist_id`            | From `body.waitlist_id` (line 14)                       |
+| `supabase`           | `supabase`               | From `createClient()` (line 10) — NOT `supabaseAdmin`   |
+| `data.id`            | `data.id`                | The new subscriber's ID (line 78-92)                    |
 
 **Template content (short, motivational):**
 
@@ -144,6 +161,17 @@ Keep sharing to move up even more:
 - Log the error for debugging but don't propagate it
 
 **Non-blocking:** The `(async () => { ... })()` wrapper means the email send runs in the background. The subscriber creation response returns immediately.
+
+**Variable flow through the route handler:**
+
+```
+1. supabase = createClient()          ← SSR client, used everywhere
+2. resolvedReferrerId = ...            ← from referral code resolution (lines 38-65)
+3. data = await supabase.insert(...)   ← new subscriber record
+4. updates = await recalculatePositions(waitlist_id, supabase)
+5. subscriberUpdate = getPositionUpdate(updates, data.id)
+6. if (subscriberUpdate.spots_moved >= 1 && resolvedReferrerId) → send email
+```
 
 ### T4: Log sent event to email_events
 

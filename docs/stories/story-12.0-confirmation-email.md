@@ -167,37 +167,49 @@ export async function sendEmail(params: SendEmailParams): Promise<{
 
 - **File to modify:** `src/app/api/subscribers/route.ts`
 
-Current flow ends at line 143 (after milestone check). Add email dispatch AFTER subscriber creation and milestone check.
+Current flow ends at line 144 (after milestone check). Add email dispatch AFTER subscriber creation, position recalculation (Story 12.1), and milestone check.
+
+**Variable names in route.ts (actual codebase):**
+
+| Variable             | Source                                    | Notes                            |
+| -------------------- | ----------------------------------------- | -------------------------------- |
+| `supabase`           | `createClient()` at line 10               | SSR client — NOT `supabaseAdmin` |
+| `data`               | `.select().single()` result at line 78-92 | The newly created subscriber     |
+| `waitlist_id`        | `body.waitlist_id` at line 14             | From request body                |
+| `resolvedReferrerId` | Resolved at lines 38-65                   | The referrer's UUID (or null)    |
 
 **Changes to make:**
 
 1. Import `sendEmail` from `@/lib/email`
-2. After the subscriber is created (line ~143, after milestone block), chain the confirmation email send
-3. The email send is fire-and-forget: don't `await` it (or `await` it but catch errors — subscriber must be created regardless)
+2. After the milestone check block (line ~133), chain the confirmation email send
+3. The email send is fire-and-forget: use `(async () => { ... })()` wrapper — subscriber must be created regardless
 
-**Integration point — add AFTER the milestone check block (after line ~143):**
+**Integration point — add AFTER the milestone check block (after line ~133):**
 
 ```typescript
 // --- Confirmation email (fire-and-forget) ---
 // AC1: Send immediately after subscriber creation
 // AC6: Error handling — email failure must not block signup
 (async () => {
-  const { data: waitlist } = await supabaseAdmin
+  const { data: waitlist } = await supabase
     .from("waitlists")
     .select("product_name, headline, subdomain, sender_name")
-    .eq("id", subscriberData.waitlist_id)
+    .eq("id", waitlist_id)
     .single();
 
   if (!waitlist) return;
 
-  const referralLink = `https://${waitlist.subdomain}.prewaitlist.com?ref=${newSubscriber.referral_code}`;
+  const referralLink = `https://${waitlist.subdomain}.prewaitlist.com?ref=${data.referral_code}`;
 
-  const subject = `You're #${newSubscriber.position} in line for ${waitlist.product_name || waitlist.headline || "PreWaitlist"}`;
+  const productName =
+    waitlist.product_name || waitlist.headline || "PreWaitlist";
+
+  const subject = `You're #${data.position} in line for ${productName}`;
 
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 16px;">
       <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 12px;">
-        You're <strong>#${newSubscriber.position}</strong> in line for <strong>${waitlist.product_name || waitlist.headline || "PreWaitlist"}</strong>.
+        You're <strong>#${data.position}</strong> in line for <strong>${productName}</strong>.
       </p>
       <p style="font-size: 14px; color: #6b6459; margin: 0 0 24px;">
         Share your referral link to move up:
@@ -207,14 +219,14 @@ Current flow ends at line 143 (after milestone check). Add email dispatch AFTER 
       </p>
       <hr style="border: none; border-top: 1px solid #ccc9c3; margin: 24px 0;" />
       <p style="font-size: 12px; color: #6b6459; margin: 0;">
-        ${waitlist.product_name || waitlist.headline || "PreWaitlist"} — powered by PreWaitlist
+        ${productName} — powered by PreWaitlist
       </p>
     </div>
   `;
 
   // AC5: Resend Emails API (single transactional send)
-  await sendEmail({
-    to: newSubscriber.email,
+  const emailResult = await sendEmail({
+    to: data.email,
     subject,
     html,
     stream: "transactional",
@@ -229,6 +241,8 @@ Current flow ends at line 143 (after milestone check). Add email dispatch AFTER 
 
 **Critical:** The `(async () => { ... })()` wrapper means the email send runs in the background. The subscriber creation response returns immediately (fast response time). The email send completes independently.
 
+**Why `data` not `newSubscriber`:** The actual route.ts destructures the insert result as `data` (line 78: `const { data, error } = await supabase.from("subscribers").insert(...).select(...).single()`). The story must match the actual variable name.
+
 ### T4: Log sent event to email_events
 
 Add event logging after the email send. This feeds the warmth tracking engine (Story 11.1).
@@ -238,15 +252,17 @@ Add event logging after the email send. This feeds the warmth tracking engine (S
 const emailResult = await sendEmail({ ... });
 
 if (emailResult.ok) {
-  await supabaseAdmin.from("email_events").insert({
-    subscriber_id: newSubscriber.id,
-    waitlist_id: newSubscriber.waitlist_id,
+  await supabase.from("email_events").insert({
+    subscriber_id: data.id,
+    waitlist_id,
     event_type: "sent",
     event_data: { email_id: emailResult.id, type: "confirmation" },
     created_at: new Date().toISOString(),
   });
 }
 ```
+
+**Note:** Uses `supabase` (not `supabaseAdmin`) and `data.id` (not `newSubscriber.id`) to match actual route.ts variable names.
 
 ### T5: Lint + build
 
