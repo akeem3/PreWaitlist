@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkAndFulfillMilestones } from "@/lib/milestones";
+import { recalculatePositions, getPositionUpdate } from "@/lib/positions";
+import { sendEmail } from "@/lib/email";
 
 function generateReferralCode(): string {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 8);
@@ -64,15 +66,8 @@ export async function POST(request: NextRequest) {
     resolvedReferrerId = referrer.id;
   }
 
-  const { data: maxPos } = await supabase
-    .from("subscribers")
-    .select("position")
-    .eq("waitlist_id", waitlist_id)
-    .order("position", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const position = (maxPos?.position ?? 0) + 1;
+  // Temporary position — will be corrected by recalculatePositions after insert
+  const position = 1;
   const referral_code = generateReferralCode();
 
   const { data, error } = await supabase
@@ -132,12 +127,77 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // AC5: Synchronous recalculate — must complete before response returns
+  const updates = await recalculatePositions(waitlist_id, supabase);
+  const subscriberUpdate = getPositionUpdate(updates, data.id);
+  const correctedPosition = subscriberUpdate?.new_position ?? data.position;
+
+  // --- Confirmation email (fire-and-forget) ---
+  // AC1: Send immediately after subscriber creation
+  // AC6: Error handling — email failure must not block signup
+  (async () => {
+    const { data: waitlist } = await supabase
+      .from("waitlists")
+      .select("product_name, headline, subdomain, sender_name")
+      .eq("id", waitlist_id)
+      .single();
+
+    if (!waitlist) return;
+
+    const productName =
+      waitlist.product_name || waitlist.headline || "PreWaitlist";
+
+    const referralLink = `https://${waitlist.subdomain}.prewaitlist.com?ref=${data.referral_code}`;
+
+    const subject = `You're #${correctedPosition} in line for ${productName}`;
+
+    const html = `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 16px;">
+        <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 12px;">
+          You're <strong>#${correctedPosition}</strong> in line for <strong>${productName}</strong>.
+        </p>
+        <p style="font-size: 14px; color: #6b6459; margin: 0 0 24px;">
+          Share your referral link to move up:
+        </p>
+        <p style="font-size: 14px; color: #6b6459; margin: 0 0 24px;">
+          <a href="${referralLink}" style="color: #0f7a5e; text-decoration: underline;">${referralLink}</a>
+        </p>
+        <hr style="border: none; border-top: 1px solid #ccc9c3; margin: 24px 0;" />
+        <p style="font-size: 12px; color: #6b6459; margin: 0;">
+          ${productName} — powered by PreWaitlist
+        </p>
+      </div>
+    `;
+
+    const emailResult = await sendEmail({
+      to: data.email,
+      subject,
+      html,
+      stream: "transactional",
+      senderName: waitlist.sender_name,
+      productName: waitlist.product_name,
+      headline: waitlist.headline,
+      idempotencyKey: `confirmation-email/${data.id}`,
+    });
+
+    // AC8: Log sent event to email_events
+    if (emailResult.ok) {
+      await supabase.from("email_events").insert({
+        subscriber_id: data.id,
+        waitlist_id,
+        event_type: "sent",
+        event_data: { email_id: emailResult.id, type: "confirmation" },
+        created_at: new Date().toISOString(),
+      });
+    }
+  })();
+
   return NextResponse.json(
     {
       id: data.id,
       email: data.email,
       referral_code: data.referral_code,
-      position: data.position,
+      position: correctedPosition,
     },
     { status: 201 }
   );
