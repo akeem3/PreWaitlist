@@ -7,6 +7,13 @@
 
 **Pre-requisite:** Epic 10 (Public Waitlist Page & Onboarding Redesign) must ship before Sprint 3 begins.
 
+**[UPDATED — 2026-09-13]** Sprint 3 now includes two additional epics that ship before Epic 13 (Billing):
+
+- **Epic 12.1 — Dashboard Overhaul:** Dashboard redesign, empty states, stat cards, tier gating, mobile, founder updates compose UI
+- **Epic 12.2 — Gap Fixes:** Legal compliance (Privacy Policy, ToS, consent), archive waitlist, edit after onboarding, unsubscribe mechanism, bounce suppression
+
+**Execution order:** Epic 11 → Epic 12 → Epic 12.1 → Epic 12.2 → Epic 13
+
 ---
 
 ## Exit Condition
@@ -36,6 +43,25 @@ A founder on the free tier who hits the 500-signup cap sees the upgrade modal. A
 | Billing management (view plan, cancel, upgrade)                      | 🔵 Core   | 13   |
 | Sender domain authentication walkthrough (SPF/DKIM)                  | 🟢 Should | 13   |
 | Email infrastructure separation (transactional vs marketing domains) | 🟢 Should | 12   |
+| Sidebar redesign (grouped nav, tooltips, labels)                     | 🔵 Core   | 12.1 |
+| Empty state redesign (welcome, guidance, ghost cards)                | 🔵 Core   | 12.1 |
+| Stat card upgrades (deltas, warmth summary)                          | 🔵 Core   | 12.1 |
+| Tier gating consistency (lock overlays, tooltips)                    | 🔵 Core   | 12.1 |
+| Founder updates compose UI                                           | 🟢 Should | 12.1 |
+| Mobile responsiveness fix                                            | 🔵 Core   | 12.1 |
+| Settings & bug fixes                                                 | 🟢 Could  | 12.1 |
+| Design token compliance                                              | 🟢 Could  | 12.1 |
+| Broadcast & duplicate API fixes                                      | 🟢 Could  | 12.1 |
+| Data & performance (caching, query optimization)                     | 🟢 Could  | 12.1 |
+| Schema migration (consent, archive, bounce columns)                  | 🔵 Core   | 12.2 |
+| Archive waitlist                                                     | 🟢 Should | 12.2 |
+| Edit after onboarding                                                | 🟢 Should | 12.2 |
+| Privacy policy page                                                  | 🔵 Core   | 12.2 |
+| Terms of service page                                                | 🔵 Core   | 12.2 |
+| Consent tracking (GDPR checkbox)                                     | 🔵 Core   | 12.2 |
+| Unsubscribe mechanism (CAN-SPAM)                                     | 🔵 Core   | 12.2 |
+| Bounce suppression                                                   | 🔵 Core   | 12.2 |
+| Physical address in emails (CAN-SPAM)                                | 🔵 Core   | 12.2 |
 
 > **Scope note:** "Multiple waitlists (Pro)" is Sprint 4 scope per the product vision (line 415). It is NOT part of Sprint 3.
 
@@ -43,13 +69,15 @@ A founder on the free tier who hits the 500-signup cap sees the upgrade modal. A
 
 ## Epic Index
 
-| ID  | Title                    | Stories | Depends on | Status |
-| --- | ------------------------ | ------- | ---------- | ------ |
-| 11  | Warmth Tracking Engine   | 8       | —          | ready  |
-| 12  | Email System             | 7       | 11.0, 11.1 | ready  |
-| 13  | Billing & Feature Gating | 7       | 12.0       | ready  |
+| ID   | Title                        | Stories | Depends on       | Status |
+| ---- | ---------------------------- | ------- | ---------------- | ------ |
+| 11   | Warmth Tracking Engine       | 8       | —                | ready  |
+| 12   | Email System                 | 7       | 11.0, 11.1       | ready  |
+| 12.1 | Dashboard Overhaul           | 11      | 12.0             | ready  |
+| 12.2 | Gap Fixes (MVP Completeness) | 8       | —                | ready  |
+| 13   | Billing & Feature Gating     | 7       | 12.0, 12.1, 12.2 | ready  |
 
-**Execution order:** Epic 11 → Epic 12 → Epic 13. Epic 12 depends on warmth webhooks (11.0, 11.1) for confirmation email and moved-up trigger. Epic 13 depends on email system (12.0) for upgrade modal email delivery.
+**Execution order:** Epic 11 → Epic 12 → Epic 12.1 → Epic 12.2 → Epic 13. Epic 12 depends on warmth webhooks (11.0, 11.1) for confirmation email and moved-up trigger. Epic 12.1 depends on email system (12.0) for tier gating consistency. Epic 12.2 has no dependencies on Epic 11/12 (legal/compliance items). Epic 13 depends on email system (12.0) for upgrade modal email delivery, dashboard overhaul (12.1) for settings wiring, and gap fixes (12.2) for consent tracking and unsubscribe mechanism.
 
 ---
 

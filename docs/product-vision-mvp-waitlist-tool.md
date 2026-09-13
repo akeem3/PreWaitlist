@@ -178,6 +178,8 @@ _The founder's control room. Qualification breakdown, warmth distribution, and r
 
 **[UPDATED — 2026-09-05]** Referral Quality Score: transparent metric displayed in subscriber table and top referrers panel. Formula: `(subscribers this subscriber referred / total referrals across all subscribers) × 100`. Zero-referral subscribers show null (not 0%). Null when total referrals = 0 (divide-by-zero guard). Purpose: enables founders to identify high-impact referrers for customer discovery outreach. No platform in market provides this metric — competitive differentiator.
 
+**[UPDATED — 2026-09-13]** Dashboard overhaul required. Full audit found 22 issues across 7 categories (information architecture, empty states, stat cards, subscriber table, data/performance, design tokens, broadcast). Key gaps: sidebar confusing (8 flat items, disabled items with no explanation, duplicate links), empty state is misplaced onboarding content, stat cards show numbers without comparison context, mobile table overflow, tier gating inconsistent (Warmth locked in sidebar but visible in panel), dead buttons in settings, no founder updates compose UI. Competitor research (KickoffLabs, Viral Loops, Prefinery, Waitlister, Linear, Stripe, Vercel) confirms: stat cards need comparison deltas, empty states need designed guidance, sidebar needs grouping, locked features need tooltips. See `docs/dashboard-overhaul-plan.md` for full analysis and 7-phase overhaul plan. See `docs/sprint-gap-analysis.md` for MoSCoW prioritization of all product gaps.
+
 ---
 
 ## Module 6 — Account, Tiers & Billing
@@ -372,6 +374,14 @@ The build is structured in four sprints. Each sprint has a clear scope, a define
 **Duration:** 11 days
 **Goal:** Warmth tracking is live and visible. Founders can send warmth-segmented broadcasts. Paddle billing gates the Pro features. Domain authentication is walkable.
 
+**[UPDATED — 2026-09-13]** Sprint 3 is now split into three execution phases:
+
+1. **Sprint 3 (Epic 11 + 12 + 13):** Warmth engine, email system, billing — already planned
+2. **Sprint 3.1 (Epic 12.1 — Dashboard Overhaul):** Dashboard redesign, empty states, stat cards, tier gating, mobile, founder updates compose UI
+3. **Sprint 3.2 (Epic 12.2 — Gap Fixes):** Legal compliance (Privacy Policy, ToS, consent), archive waitlist, edit after onboarding, unsubscribe mechanism, bounce suppression
+
+Execution order: Epic 11 → Epic 12 → Epic 12.1 → Epic 12.2 → Epic 13. Dashboard overhaul (12.1) and gap fixes (12.2) ship before billing (13) so the dashboard is complete before monetization.
+
 **Screens to wireframe and design before building:**
 
 | Screen                                                      | Node     | Priority  |
@@ -411,6 +421,8 @@ The build is structured in four sprints. Each sprint has a clear scope, a define
 
 **Duration:** 7 days
 **Goal:** The product is stable, tested across all paths, and ready for a public launch.
+
+**[UPDATED — 2026-09-13]** Items moved to Sprint 3.2: archive waitlist, edit after onboarding, legal pages (Privacy Policy, Terms of Service), consent tracking, unsubscribe mechanism, bounce suppression. These were originally Sprint 4 scope but are now required before billing (Epic 13) ships.
 
 **What gets built:**
 

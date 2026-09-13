@@ -758,6 +758,30 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 **NOT YET IMPLEMENTED:** No code files exist. `src/lib/email.ts`, `src/lib/positions.ts`, broadcast routes/page all need to be built.
 
+## Dashboard Overhaul Decisions (2026-09-13)
+
+### Epic structure: 12.1 + 12.2 before Epic 13
+
+- **Decision:** Create Epic 12.1 (Dashboard Overhaul) and Epic 12.2 (Gap Fixes) between Epic 12 (Email System) and Epic 13 (Billing).
+- **Reason:** Dashboard must be complete and legal compliance must be in place before monetization (Paddle billing) ships. Dashboard overhaul fixes 22 identified issues. Gap fixes cover Privacy Policy, ToS, consent, unsubscribe, bounce suppression — all required before sending marketing emails or processing payments.
+- **Execution order:** Epic 11 → Epic 12 → Epic 12.1 → Epic 12.2 → Epic 13
+- **Date:** 2026-09-13
+
+### Dashboard: 22 issues found across 7 categories
+
+- **Decision:** Full dashboard overhaul with 11 stories covering sidebar redesign, empty state, stat cards, tier gating, mobile, updates compose, settings wiring, design tokens, bug fixes, data/performance, and tests.
+- **Source:** `docs/dashboard-overhaul-plan.md` (full audit), `docs/sprint-gap-analysis.md` (MoSCoW rankings)
+- **Key findings:** Sidebar confusing (8 flat items, disabled items with no explanation), empty state is misplaced onboarding content, stat cards show numbers without comparison context, mobile table overflow, tier gating inconsistent, dead buttons in settings, no founder updates compose UI, hardcoded colors not using design tokens.
+- **Competitor research:** KickoffLabs ("addition by subtraction"), Waitlister (comparison indicators), SaaSUI ("comparison is the insight"), Linear (anti-patterns forbidden), Flowjam (onboarding checklists).
+- **Date:** 2026-09-13
+
+### Gap analysis: 13 must-have items for MVP
+
+- **Decision:** 8 legal compliance items + 5 product gaps are must-have before MVP can ship.
+- **Legal must-haves:** Privacy Policy, Terms of Service, consent checkbox, consent records, unsubscribe mechanism, physical address in emails, bounce suppression, DPAs with sub-processors.
+- **Product must-haves:** Founder updates compose UI, archive waitlist, edit page after onboarding, Paddle dunning flow, settings danger zone.
+- **Date:** 2026-09-13
+
 ## Next Steps
 
 1. ~~Implement Story 1.2 (Toggle, Select, Textarea)~~ ✅ Done
@@ -822,7 +846,9 @@ Design specs use hex values that don't always match the token system exactly. Ma
 60. Execute Story 12.4 — Warmth-Segmented Broadcast (Pro)
 61. Execute Story 12.5 — Email Customisation (Pro)
 62. Execute Story 12.6 — Email Infrastructure Separation
-63. Epic 13 — Billing & Feature Gating (Sprint 3)
+63. **Epic 12.1 — Dashboard Overhaul** (11 stories: sidebar, empty state, stat cards, tier gating, mobile, updates compose, settings, tokens, fixes, data, tests)
+64. **Epic 12.2 — Gap Fixes** (8 stories: archive waitlist, edit page, Privacy Policy, ToS, consent tracking, unsubscribe, bounce suppression, tests)
+65. Epic 13 — Billing & Feature Gating (Sprint 3)
 
 ## Decision + bug fix: "Powered by PreWaitlist" footer (2026-07)
 

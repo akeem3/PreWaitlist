@@ -1,7 +1,7 @@
 # Product Requirements Document
 
 **Product:** Pre-Launch Waitlist Tool ("PreWaitlist")
-**Sprints:** 3 total — Sprint 1 (Foundation) ✅ Complete, Sprint 2 (Public Page & Dashboard) ✅ Complete, Sprint 3 (Email, Warmth & Billing)
+**Sprints:** 5 total — Sprint 1 (Foundation) ✅ Complete, Sprint 2 (Public Page & Dashboard) ✅ Complete, Sprint 3 (Email, Warmth & Billing), Sprint 3.1 (Dashboard Overhaul), Sprint 3.2 (Gap Fixes)
 **Prepared by:** Abdul-Hakeem Hassan, with Claude
 **Date:** July 2026 (v3 — multi-sprint scalable structure)
 **Status:** Sprint 1 complete, Sprint 2 active
@@ -90,6 +90,109 @@ A pre-launch waitlist tool for bootstrapped indie hackers, solo founders, and ea
 - Real SPF/DKIM verification (Sprint 3)
 - Pro-tier subscriber limits enforcement (Sprint 3)
 - Domain verification backend (Sprint 3)
+
+---
+
+## 2b. Sprint 3.1 — Dashboard Overhaul
+
+**Goal:** The dashboard is redesigned from a bare functional shell into a complete command center. Empty states guide founders to action. Stat cards show insights, not just numbers. Tier gating is consistent. The sidebar navigation is clear and purposeful. Mobile works.
+
+**Exit condition:** A new founder sees a welcoming empty state with clear next steps. An active founder sees stat cards with comparison deltas, a subscriber table that works on mobile, consistent locked/unlocked states across all features, and the founder updates compose UI.
+
+**Status:** 🔲 Ready — not yet started
+
+**Screens in Scope:**
+
+| #   | Screen                                  | Route                 | Description                                            |
+| --- | --------------------------------------- | --------------------- | ------------------------------------------------------ |
+| 1   | Dashboard — redesigned empty state      | `/dashboard`          | Progress indicator, clear next steps, ghost stat cards |
+| 2   | Dashboard — active state (redesigned)   | `/dashboard`          | Stat cards with deltas, activity feed, improved table  |
+| 3   | Dashboard — updates compose             | `/dashboard/updates`  | New page: compose and publish founder updates          |
+| 4   | Settings — billing section (functional) | `/dashboard/settings` | Paddle checkout wiring, billing management             |
+
+**What Gets Built:**
+
+- Sidebar redesign: grouped navigation (Command Center, Insights, Engagement, Config), "Coming soon" labels, tooltips for locked items
+- Empty state redesign: progress indicator, copy guidance, welcome message
+- Stat card upgrades: comparison deltas ("↑ 20% vs last week"), sparklines, connected warmth data
+- Tier gating consistency: Warmth panel locked for Free, locked state on stat cards, tooltips everywhere
+- Founder updates compose UI: new `/dashboard/updates` page, textarea + publish, calls existing `POST /api/updates`
+- Mobile fix: subscriber table horizontal scroll, responsive stat cards
+- Settings wiring: "Upgrade to Pro" → Paddle checkout, "Manage billing" → Paddle portal, error handling on save
+- Design token compliance: replace hardcoded colors (sidebar bg, warning banner, chart axes, badges)
+- Broadcast defaults: segment defaults to "all", confirmation dialog before send
+- Duplicate API fix: share warmth data between WarningBanner and WarmthPanel
+- Loading skeleton fix: sidebar width mismatch
+- Bug fixes: `wshrink-0` typo, dead links, dropdown arrow removal
+
+**Key Design Decisions (from competitor research):**
+
+- KickoffLabs: "addition by subtraction" — dashboard redesign removed more than it added
+- SaaSUI: "Comparison is the insight — the number alone is just a fact" — every stat card needs a delta
+- Waitlister: 3 performance overview cards with comparison indicators (↑12% vs last week)
+- Linear: anti-patterns forbidden (no gradients, no shadows, no rounded corners >8px)
+- Flowjam: 4-6 step onboarding checklist, persistent, benefit-led language
+
+**Explicitly not in Sprint 3.1:**
+
+- Paddle billing integration (Sprint 3 — Epic 13)
+- Advanced features (A/B testing, webhooks, Zapier)
+- Subscriber table pagination/virtualization
+- Real-time dashboard updates
+- Public API documentation
+
+---
+
+## 2c. Sprint 3.2 — Gap Fixes (MVP Completeness)
+
+**Goal:** Close the gaps between what's built and what a complete MVP product requires. Founders can archive waitlists, edit settings post-onboarding, and the product meets legal compliance requirements.
+
+**Exit condition:** A founder can create, manage, edit, and archive their waitlist. Privacy Policy and Terms of Service pages exist. Consent is properly tracked. Every marketing email has an unsubscribe mechanism. Bounce handling works.
+
+**Status:** 🔲 Ready — not yet started
+
+**Screens in Scope:**
+
+| #   | Screen                     | Route                 | Description                                 |
+| --- | -------------------------- | --------------------- | ------------------------------------------- |
+| 1   | Archive waitlist           | `/dashboard/settings` | Danger zone: archive (closes signups)       |
+| 2   | Edit page after onboarding | `/dashboard/settings` | Change headline, template, brand color, CTA |
+| 3   | Privacy Policy             | `/privacy`            | Legal page                                  |
+| 4   | Terms of Service           | `/terms`              | Legal page                                  |
+
+**What Gets Built:**
+
+- Archive waitlist: API endpoint + dashboard button, marks waitlist as archived, closes signups
+- Edit page after onboarding: settings section for headline, template, brand color, CTA text
+- Privacy Policy page: data collected, processing, retention, user rights, sub-processor list
+- Terms of Service page: auto-renewal disclosure, acceptable use, liability cap
+- Consent records table: `consent_records` in Supabase with type, granted_at, withdrawn_at, ip, consent_text
+- Consent checkbox on signup: separate from signup, logged with timestamp + IP
+- Unsubscribe mechanism: List-Unsubscribe header (RFC 8058) + visible link in every broadcast
+- Physical address in every email footer: CAN-SPAM requirement
+- Bounce suppression list: `email_suppressions` table, hard bounces suppressed immediately
+- DPAs with sub-processors: Data Processing Agreements with Resend, Supabase, Vercel, Paddle
+
+**Legal Compliance Requirements:**
+
+| Requirement           | Risk if missing                                 | Implementation                                |
+| --------------------- | ----------------------------------------------- | --------------------------------------------- |
+| Privacy Policy        | CCPA: $2,500-$7,500/violation, GDPR: €20M or 4% | `/privacy` page listing all sub-processors    |
+| Terms of Service      | State AG enforcement, ROSCA penalties           | `/terms` with auto-renewal disclosure         |
+| Consent checkbox      | GDPR: signing up ≠ marketing consent            | Separate checkbox, logged with timestamp + IP |
+| Unsubscribe mechanism | CAN-SPAM: $46,517/email, Gmail blocking         | List-Unsubscribe header + visible link        |
+| Physical address      | CAN-SPAM requirement                            | Footer in all emails                          |
+| Bounce suppression    | Domain reputation destruction                   | `email_suppressions` table                    |
+| DPAs                  | GDPR Article 28                                 | Agreements with all sub-processors            |
+
+**Explicitly not in Sprint 3.2:**
+
+- Paddle billing integration (Sprint 3 — Epic 13)
+- Double opt-in (recommended but not legally required)
+- Preference center (improves retention but not blocking)
+- Advanced fraud detection
+- CSV import
+- Email nurture sequences
 
 ---
 
