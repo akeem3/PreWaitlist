@@ -1,237 +1,162 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "../../../lib/supabase/client";
 
-interface SettingsClientProps {
-  waitlistId: string;
-  senderName: string | null;
-  coldThreshold: number;
-  sendingDomain: string | null;
-  tier: string;
+interface SettingsHubClientProps {
+  waitlistCount: number;
 }
 
-export default function SettingsClient({
-  waitlistId,
-  senderName,
-  coldThreshold,
-  tier,
-}: SettingsClientProps) {
-  const [senderNameValue, setSenderNameValue] = useState(senderName ?? "");
-  const [senderNameSaved, setSenderNameSaved] = useState(false);
-  const [senderNameSaving, setSenderNameSaving] = useState(false);
-  const [senderNameError, setSenderNameError] = useState<string | null>(null);
+const CATEGORIES = [
+  {
+    title: "Waitlist Settings",
+    description: "Configure your waitlist content, email, and advanced options",
+    href: "/dashboard/settings/waitlists",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <rect
+          x="2"
+          y="3"
+          width="16"
+          height="14"
+          rx="2"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <path d="M2 7H18" stroke="currentColor" strokeWidth="1.5" />
+        <path
+          d="M6 11H10"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <path
+          d="M6 14H8"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </svg>
+    ),
+  },
+  {
+    title: "Profile",
+    description: "Manage your name, email, and password",
+    href: "/dashboard/settings/profile",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="7" r="3" stroke="currentColor" strokeWidth="1.5" />
+        <path
+          d="M3.5 17.5C3.5 14.5 6.2 12 10 12C13.8 12 16.5 14.5 16.5 17.5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </svg>
+    ),
+  },
+];
 
-  const [thresholdValue, setThresholdValue] = useState(coldThreshold);
-  const [thresholdSaved, setThresholdSaved] = useState(false);
-  const [thresholdSaving, setThresholdSaving] = useState(false);
-  const [thresholdError, setThresholdError] = useState<string | null>(null);
+export default function SettingsHubClient({
+  waitlistCount,
+}: SettingsHubClientProps) {
+  const [signingOut, setSigningOut] = useState(false);
+  const router = useRouter();
 
-  async function handleSaveSenderName() {
-    setSenderNameSaving(true);
-    setSenderNameError(null);
-    try {
-      const res = await fetch("/api/waitlist", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: waitlistId,
-          sender_name: senderNameValue || null,
-        }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        setSenderNameError(data.error || "Failed to save");
-        return;
-      }
-      setSenderNameSaved(true);
-      setTimeout(() => setSenderNameSaved(false), 2000);
-    } catch {
-      setSenderNameError("Network error \u2014 please try again");
-    } finally {
-      setSenderNameSaving(false);
-    }
-  }
-
-  async function handleSaveThreshold() {
-    setThresholdSaving(true);
-    setThresholdError(null);
-    try {
-      const res = await fetch("/api/waitlist", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: waitlistId,
-          cold_threshold: thresholdValue,
-        }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        setThresholdError(data.error || "Failed to save");
-        return;
-      }
-      setThresholdSaved(true);
-      setTimeout(() => setThresholdSaved(false), 2000);
-    } catch {
-      setThresholdError("Network error \u2014 please try again");
-    } finally {
-      setThresholdSaving(false);
-    }
+  async function handleSignOut() {
+    setSigningOut(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/signin");
+    router.refresh();
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
-      <h1 className="mb-8 text-h2 text-foreground">Settings</h1>
+    <div className="max-w-2xl px-8 py-12">
+      <div className="mb-10">
+        <h1 className="text-h3 font-semibold text-foreground">Settings</h1>
+        <p className="mt-1 text-body text-muted-foreground">
+          Manage your account and waitlist configuration.
+        </p>
+      </div>
 
-      <div className="flex flex-col gap-6">
-        {/* Email Section */}
-        <div className="rounded-[var(--card-radius)] border border-border bg-card p-6">
-          <h3 className="mb-4 text-lg font-semibold text-foreground">Email</h3>
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
-                Sender name
-              </label>
-              <input
-                type="text"
-                value={senderNameValue}
-                onChange={(e) => setSenderNameValue(e.target.value)}
-                placeholder="PreWaitlist"
-                className="h-10 rounded-[var(--input-radius)] border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
-              />
-              <p className="text-xs text-muted-foreground">
-                The name recipients see in their inbox.
+      <div className="space-y-3">
+        {CATEGORIES.map((cat) => (
+          <Link
+            key={cat.href}
+            href={cat.href}
+            className="group flex items-center gap-4 rounded-xl border border-border bg-card px-6 py-5 transition-colors hover:border-accent/30 hover:bg-accent/5"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
+              {cat.icon}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-body-lg font-medium text-foreground">
+                {cat.title}
+              </h2>
+              <p className="mt-0.5 text-body-sm text-muted-foreground">
+                {cat.description}
               </p>
+              {cat.title === "Waitlist Settings" && (
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  {waitlistCount === 0
+                    ? "No waitlists yet"
+                    : `${waitlistCount} waitlist${waitlistCount !== 1 ? "s" : ""}`}
+                </p>
+              )}
             </div>
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={handleSaveSenderName}
-                disabled={senderNameSaving}
-                className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {senderNameSaving
-                  ? "Saving..."
-                  : senderNameSaved
-                    ? "Saved!"
-                    : "Save changes"}
-              </button>
-            </div>
-            {senderNameError && (
-              <p className="text-xs text-destructive">{senderNameError}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Warmth Threshold Section */}
-        <div className="rounded-[var(--card-radius)] border border-border bg-card p-6">
-          <h3 className="mb-4 text-lg font-semibold text-foreground">
-            Warmth Alert
-          </h3>
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
-                Cold threshold (%)
-              </label>
-              <input
-                type="number"
-                min={20}
-                max={80}
-                value={thresholdValue}
-                onChange={(e) => {
-                  const v = parseInt(e.target.value, 10);
-                  if (!isNaN(v))
-                    setThresholdValue(Math.min(80, Math.max(20, v)));
-                }}
-                className="h-10 w-32 rounded-[var(--input-radius)] border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              className="shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-accent"
+            >
+              <path
+                d="M6 4L10 8L6 12"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
-              <p className="text-xs text-muted-foreground">
-                Show a warning when cold subscribers exceed this percentage.
-                Range: 20–80%.
-              </p>
-            </div>
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={handleSaveThreshold}
-                disabled={thresholdSaving}
-                className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {thresholdSaving
-                  ? "Saving..."
-                  : thresholdSaved
-                    ? "Saved!"
-                    : "Save changes"}
-              </button>
-            </div>
-            {thresholdError && (
-              <p className="text-xs text-destructive">{thresholdError}</p>
-            )}
-          </div>
-        </div>
+            </svg>
+          </Link>
+        ))}
+      </div>
 
-        {/* Billing Section */}
-        <div className="rounded-[var(--card-radius)] border border-border bg-card p-6">
-          <h3 className="mb-4 text-lg font-semibold text-foreground">
-            Billing
-          </h3>
-          <div className="flex flex-col gap-4">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Current plan</span>
-              <span
-                className={`font-medium ${tier === "pro" ? "text-accent" : "text-foreground"}`}
-              >
-                {tier === "pro" ? "Pro" : "Free"}
-              </span>
-            </div>
-            {tier === "free" ? (
-              <button
-                type="button"
-                disabled
-                title="Paddle billing coming soon"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground opacity-60 cursor-not-allowed"
-              >
-                Upgrade to Pro
-              </button>
-            ) : (
-              <button
-                type="button"
-                disabled
-                title="Paddle billing coming soon"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground opacity-60 cursor-not-allowed"
-              >
-                Manage billing
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Sender Domain Section */}
-        <div className="rounded-[var(--card-radius)] border border-border bg-card p-6">
-          <h3 className="mb-4 text-lg font-semibold text-foreground">
-            Sender Domain
-          </h3>
-          <div className="flex flex-col gap-4">
-            <p className="text-sm text-muted-foreground">
-              Verify your own domain to send emails from your@domain.com instead
-              of prewaitlist.com.
-            </p>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
-                Domain
-              </label>
-              <input
-                type="text"
-                placeholder="mail.yourdomain.com"
-                disabled
-                className="h-10 rounded-[var(--input-radius)] border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Coming soon — domain authentication will be available in a future
-              update.
-            </p>
-          </div>
-        </div>
+      <div className="mt-12 border-t border-border pt-6">
+        <button
+          type="button"
+          onClick={handleSignOut}
+          disabled={signingOut}
+          className="flex items-center gap-2 text-body-sm text-muted-foreground transition-colors hover:text-destructive"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path
+              d="M6 2H4C3.4 2 3 2.4 3 3V13C3 13.6 3.4 14 4 14H6"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+            <path
+              d="M11 8L14 8M14 8L12 6M14 8L12 10"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M6.5 8H10C10.6 8 11 7.6 11 7V3.5"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          {signingOut ? "Signing out…" : "Sign out"}
+        </button>
       </div>
     </div>
   );

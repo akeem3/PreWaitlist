@@ -58,6 +58,7 @@ interface Subscriber {
   warmth_score: string | null;
   quality_score: number | null;
   qual_answers: Record<string, string> | null;
+  is_bounced?: boolean;
 }
 
 interface DashboardClientProps {
@@ -544,6 +545,11 @@ export default function DashboardClient({
                       </span>
                       <span className="truncate text-body-sm text-foreground">
                         {sub.email}
+                        {sub.is_bounced && (
+                          <span className="ml-2 inline-block rounded-full bg-destructive/10 px-1.5 py-0.5 text-xs font-medium text-destructive">
+                            Bounced
+                          </span>
+                        )}
                       </span>
                       <span className="text-body-sm text-muted-foreground">
                         {sub.created_at.split("T")[0]}

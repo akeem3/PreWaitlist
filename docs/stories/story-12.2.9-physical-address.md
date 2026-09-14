@@ -1,4 +1,4 @@
-# Story 12.2.8 — Physical Address in Emails
+# Story 12.2.9 — Physical Address in Emails
 
 **Epic:** 12.2 — Gap Fixes
 **Status:** ready

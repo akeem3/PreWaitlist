@@ -1,4 +1,4 @@
-# Story 12.2.6 — Unsubscribe Mechanism
+# Story 12.2.7 — Unsubscribe Mechanism
 
 **Epic:** 12.2 — Gap Fixes
 **Status:** ready
@@ -237,7 +237,7 @@ Extract `verifyToken` to `src/lib/unsubscribe.ts` for reuse.
 ### T5: CAN-SPAM compliance + lint + build
 
 - Every email includes unsubscribe link ✓
-- Every email includes physical address (Story 12.2.8) ✓
+- Every email includes physical address (Story 12.2.9) ✓
 - Unsubscribe processed immediately (< 10 business days) ✓
 - Run `pnpm lint` and `pnpm build`
 

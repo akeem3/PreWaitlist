@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Sidebar } from "../../../components/dashboard/sidebar";
-import { createClient } from "../../lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 interface DashboardShellProps {
   children: React.ReactNode;
   waitlistName: string | null;
   logoUrl: string | null;
   tier: string;
+  isArchived?: boolean;
+  waitlistId?: string;
 }
 
 export default function DashboardShell({
@@ -17,15 +18,28 @@ export default function DashboardShell({
   waitlistName,
   logoUrl,
   tier,
+  isArchived,
+  waitlistId,
 }: DashboardShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const router = useRouter();
 
-  async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/signin");
-    router.refresh();
+  async function handleUnarchive() {
+    if (!waitlistId) return;
+    try {
+      await fetch("/api/waitlist", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: waitlistId,
+          is_archived: false,
+          archived_at: null,
+        }),
+      });
+      router.refresh();
+    } catch {
+      // silent
+    }
   }
 
   return (
@@ -35,8 +49,9 @@ export default function DashboardShell({
         logoUrl={logoUrl}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
-        onSignOut={handleSignOut}
         tier={tier}
+        isArchived={isArchived}
+        onUnarchive={handleUnarchive}
       />
 
       <button

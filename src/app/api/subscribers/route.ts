@@ -1,8 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { checkAndFulfillMilestones } from "@/lib/milestones";
 import { recalculatePositions, getPositionUpdate } from "@/lib/positions";
-import { sendEmail } from "@/lib/email";
+import { sendEmail, buildEmailFooter, isUnsubscribed } from "@/lib/email";
+import { isEmailBounced } from "@/lib/bounces";
 
 function generateReferralCode(): string {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 8);
@@ -17,6 +19,7 @@ export async function POST(request: NextRequest) {
     email,
     referral_code: incomingRefCode,
     qual_answers,
+    consent,
   } = body;
 
   if (!waitlist_id || !email) {
@@ -25,6 +28,18 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   }
+
+  if (!consent) {
+    return NextResponse.json(
+      { error: "Consent is required to join the waitlist" },
+      { status: 400 }
+    );
+  }
+
+  const ipAddress =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
 
   const trimmedEmail = email.trim().toLowerCase();
 
@@ -82,6 +97,8 @@ export async function POST(request: NextRequest) {
         qual_answers && Object.keys(qual_answers).length > 0
           ? qual_answers
           : null,
+      consent_given_at: new Date().toISOString(),
+      consent_ip_address: ipAddress,
     })
     .select("id, email, referral_code, position")
     .single();
@@ -136,13 +153,21 @@ export async function POST(request: NextRequest) {
   // AC1: Send immediately after subscriber creation
   // AC6: Error handling — email failure must not block signup
   (async () => {
-    const { data: waitlist } = await supabase
+    const adminSupabase = createAdminClient();
+
+    const { data: waitlist } = await adminSupabase
       .from("waitlists")
-      .select("product_name, headline, subdomain, sender_name, sending_domain")
+      .select(
+        "product_name, headline, subdomain, sender_name, sending_domain, business_address"
+      )
       .eq("id", waitlist_id)
       .single();
 
     if (!waitlist) return;
+
+    // Skip if subscriber has unsubscribed or email bounced
+    if (await isUnsubscribed(adminSupabase, data.id)) return;
+    if (await isEmailBounced(adminSupabase, waitlist_id, data.email)) return;
 
     const productName =
       waitlist.product_name || waitlist.headline || "PreWaitlist";
@@ -150,6 +175,8 @@ export async function POST(request: NextRequest) {
     const referralLink = `https://${waitlist.subdomain}.prewaitlist.com?ref=${data.referral_code}`;
 
     const subject = `You're #${correctedPosition} in line for ${productName}`;
+
+    const footer = buildEmailFooter(data.id, waitlist.business_address);
 
     const html = `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 16px;">
@@ -162,10 +189,7 @@ export async function POST(request: NextRequest) {
         <p style="font-size: 14px; color: #6b6459; margin: 0 0 24px;">
           <a href="${referralLink}" style="color: #0f7a5e; text-decoration: underline;">${referralLink}</a>
         </p>
-        <hr style="border: none; border-top: 1px solid #ccc9c3; margin: 24px 0;" />
-        <p style="font-size: 12px; color: #6b6459; margin: 0;">
-          ${productName} — powered by PreWaitlist
-        </p>
+        ${footer}
       </div>
     `;
 
@@ -205,7 +229,9 @@ export async function POST(request: NextRequest) {
     resolvedReferrerId
   ) {
     (async () => {
-      const { data: referrer } = await supabase
+      const adminSupabase = createAdminClient();
+
+      const { data: referrer } = await adminSupabase
         .from("subscribers")
         .select("email, referral_code")
         .eq("id", resolvedReferrerId)
@@ -213,15 +239,20 @@ export async function POST(request: NextRequest) {
 
       if (!referrer) return;
 
-      const { data: waitlist } = await supabase
+      const { data: waitlist } = await adminSupabase
         .from("waitlists")
         .select(
-          "product_name, headline, subdomain, sender_name, sending_domain"
+          "product_name, headline, subdomain, sender_name, sending_domain, business_address"
         )
         .eq("id", waitlist_id)
         .single();
 
       if (!waitlist) return;
+
+      // Skip if referrer has unsubscribed or email bounced
+      if (await isUnsubscribed(adminSupabase, resolvedReferrerId)) return;
+      if (await isEmailBounced(adminSupabase, waitlist_id, referrer.email))
+        return;
 
       const productName =
         waitlist.product_name || waitlist.headline || "PreWaitlist";
@@ -229,6 +260,11 @@ export async function POST(request: NextRequest) {
       const referralLink = `https://${waitlist.subdomain}.prewaitlist.com?ref=${referrer.referral_code}`;
 
       const subject = `You moved up to #${subscriberUpdate.new_position} for ${productName}!`;
+
+      const footer = buildEmailFooter(
+        resolvedReferrerId,
+        waitlist.business_address
+      );
 
       const html = `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 16px;">
@@ -241,10 +277,7 @@ export async function POST(request: NextRequest) {
           <p style="font-size: 14px; color: #6b6459; margin: 0 0 24px;">
             <a href="${referralLink}" style="color: #0f7a5e; text-decoration: underline;">${referralLink}</a>
           </p>
-          <hr style="border: none; border-top: 1px solid #ccc9c3; margin: 24px 0;" />
-          <p style="font-size: 12px; color: #6b6459; margin: 0;">
-            ${productName} — powered by PreWaitlist
-          </p>
+          ${footer}
         </div>
       `;
 

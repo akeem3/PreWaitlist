@@ -65,11 +65,24 @@ export default async function DashboardPage() {
       referral_count: referralCounts.get(s.id) || 0,
     })) || [];
 
-  const totalReferrals = subscribersWithCounts.reduce(
+  // Fetch bounced emails for this waitlist
+  const { data: bouncedRows } = await supabase
+    .from("bounced_emails")
+    .select("email")
+    .eq("waitlist_id", waitlist.id);
+
+  const bouncedEmails = new Set(bouncedRows?.map((r) => r.email) || []);
+
+  const subscribersWithCountsAndBounce = subscribersWithCounts.map((s) => ({
+    ...s,
+    is_bounced: bouncedEmails.has(s.email),
+  }));
+
+  const totalReferrals = subscribersWithCountsAndBounce.reduce(
     (sum, s) => sum + s.referral_count,
     0
   );
-  const subscribersWithQuality = subscribersWithCounts.map((s) => ({
+  const subscribersWithQuality = subscribersWithCountsAndBounce.map((s) => ({
     ...s,
     quality_score:
       totalReferrals > 0

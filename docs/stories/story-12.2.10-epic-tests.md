@@ -1,8 +1,8 @@
-# Story 12.2.9 — Epic 12.2 Tests
+# Story 12.2.10 — Epic 12.2 Tests
 
 **Epic:** 12.2 — Gap Fixes
 **Status:** ready
-**Depends on:** 12.2.0–12.2.8
+**Depends on:** 12.2.0–12.2.9
 **Design Refs:** — (no UI)
 
 ## Story

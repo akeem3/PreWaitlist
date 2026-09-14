@@ -28,7 +28,7 @@ T1 (AC1-AC5) Subscribers and waitlists columns · T2 (AC6-AC7) Bounced emails ta
 
 ## Out of Scope
 
-Consent checkbox UI (Story 12.2.5), unsubscribe UI (Story 12.2.6), bounce handling logic (Story 12.2.7).
+Consent checkbox UI (Story 12.2.6), unsubscribe UI (Story 12.2.7), bounce handling logic (Story 12.2.8).
 
 ## Implementation Details
 

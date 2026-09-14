@@ -224,18 +224,18 @@ function Footer() {
           &copy; {new Date().getFullYear()} PreWaitlist
         </p>
         <nav className="flex gap-4">
-          <a
-            href="#"
+          <Link
+            href="/legal/privacy"
             className="transition-colors duration-normal hover:text-foreground"
           >
             Privacy
-          </a>
-          <a
-            href="#"
+          </Link>
+          <Link
+            href="/legal/terms"
             className="transition-colors duration-normal hover:text-foreground"
           >
             Terms
-          </a>
+          </Link>
           <a
             href="https://twitter.com/prewaitlist"
             target="_blank"

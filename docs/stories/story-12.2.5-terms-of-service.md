@@ -1,8 +1,8 @@
-# Story 12.2.4 — Terms of Service
+# Story 12.2.5 — Terms of Service
 
 **Epic:** 12.2 — Gap Fixes
-**Status:** ready
-**Depends on:** 12.2.3
+**Status:** done
+**Depends on:** 12.2.4
 **Design Refs:** —
 
 ## Story

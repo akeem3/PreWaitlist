@@ -42,6 +42,20 @@ export function PoweredByFooter({
             className="inline-block"
           />
         </Link>
+        <span className={`mx-1 ${textClass}`}>·</span>
+        <Link
+          href="/legal/privacy"
+          className={`no-underline ${textClass} hover:underline`}
+        >
+          Privacy
+        </Link>
+        <span className={`mx-1 ${textClass}`}>·</span>
+        <Link
+          href="/legal/terms"
+          className={`no-underline ${textClass} hover:underline`}
+        >
+          Terms
+        </Link>
       </span>
     </div>
   );

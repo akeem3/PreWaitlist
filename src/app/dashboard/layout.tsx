@@ -17,11 +17,12 @@ export default async function DashboardLayout({
     redirect("/signin");
   }
 
-  const { data: waitlist } = await supabase
+  const { data: waitlists } = await supabase
     .from("waitlists")
-    .select("id, subdomain, product_name, logo_url")
-    .eq("founder_id", user.id)
-    .single();
+    .select("id, subdomain, product_name, logo_url, is_archived")
+    .eq("founder_id", user.id);
+
+  const waitlist = waitlists?.[0] ?? null;
 
   if (!waitlist) {
     redirect("/onboarding/1");
@@ -38,6 +39,8 @@ export default async function DashboardLayout({
       waitlistName={waitlist.product_name}
       logoUrl={waitlist.logo_url}
       tier={profile?.tier ?? "free"}
+      isArchived={waitlist.is_archived ?? false}
+      waitlistId={waitlist.id}
     >
       {children}
     </DashboardShell>

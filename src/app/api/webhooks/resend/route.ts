@@ -101,7 +101,32 @@ export async function POST(req: NextRequest) {
       event_data: { ...data, svix_id: svixId },
       created_at: createdAt,
     });
+
+    // Bounce/complain handling: insert into bounced_emails
+    if (mappedType === "bounced" || mappedType === "complained") {
+      const emailData = data as Record<string, unknown>;
+      const bounceType = determineBounceType(emailData);
+
+      await supabase.from("bounced_emails").insert({
+        waitlist_id: subscriber.waitlist_id,
+        email,
+        email_type: "transactional",
+        bounce_type: bounceType,
+      });
+    }
   });
 
   return NextResponse.json({ received: true });
+}
+
+function determineBounceType(data: Record<string, unknown>): "hard" | "soft" {
+  // Complaints are always treated as hard bounces
+  if ("complaint" in data || data.type === "complained") return "hard";
+
+  // Resend's bounce payload: data.bounce.type = "Permanent" | "Transient" | "Undetermined"
+  const bounce = data.bounce as { type?: string; subType?: string } | undefined;
+
+  if (bounce?.type === "Permanent") return "hard";
+
+  return "soft";
 }

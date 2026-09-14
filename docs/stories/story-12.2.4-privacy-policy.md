@@ -1,7 +1,7 @@
-# Story 12.2.3 — Privacy Policy
+# Story 12.2.4 — Privacy Policy
 
 **Epic:** 12.2 — Gap Fixes
-**Status:** ready
+**Status:** done
 **Depends on:** —
 **Design Refs:** —
 

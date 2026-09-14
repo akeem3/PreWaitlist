@@ -1,15 +1,15 @@
 # Epic 12.2 — Gap Fixes
 
-**Status:** ready (0/13 stories implemented)
+**Status:** in-progress (10/14 stories implemented)
 **Source:** [Sprint Gap Analysis](../sprint-gap-analysis.md), [PRD §2c Sprint 3.2](../PRD.md#2c-sprint-32--gap-fixes)
 
 ## Goal
 
-Close 7 legal compliance and 6 product gaps that must be in place before MVP can ship. Legal gaps (privacy policy, terms of service, consent, unsubscribe, bounce suppression, physical address) are non-negotiable for GDPR/CCPA/CAN-SPAM compliance. Product gaps (archive waitlist, edit page, settings danger zone, PoweredByFooter Pro removal, dashboard auto-refresh, subscriber display name) are founder-expected functionality or UX polish.
+Close 7 legal compliance and 7 product gaps that must be in place before MVP can ship. Legal gaps (privacy policy, terms of service, consent, unsubscribe, bounce suppression, physical address) are non-negotiable for GDPR/CCPA/CAN-SPAM compliance. Product gaps (archive waitlist, edit page, settings page overhaul, PoweredByFooter Pro removal, dashboard auto-refresh, subscriber display name) are founder-expected functionality or UX polish.
 
 ## Definition of Done
 
-All 13 gaps closed. Privacy policy and terms of service pages exist and are linked from the marketing footer. Consent is tracked on subscriber signup. Every email includes unsubscribe link and physical address. Bounces are suppressed from re-send. Founders can archive their waitlist and edit their page after onboarding. PoweredByFooter never appears on Pro-tier pages. Dashboard auto-refreshes when new subscribers join. Thank-you page has an optional "What should we call you?" field with auto-save. All changes are tested.
+All 14 gaps closed. Settings page is organized into clear tabs. Privacy policy and terms of service pages exist and are linked from the marketing footer. Consent is tracked on subscriber signup. Every email includes unsubscribe link and physical address. Bounces are suppressed from re-send. Founders can archive their waitlist and edit their page after onboarding. PoweredByFooter never appears on Pro-tier pages. Dashboard auto-refreshes when new subscribers join. Thank-you page has an optional "What should we call you?" field with auto-save. All changes are tested.
 
 ## Story Index
 
@@ -18,16 +18,17 @@ All 13 gaps closed. Privacy policy and terms of service pages exist and are link
 | 12.2.0  | Schema Migration            | —             | ready  |
 | 12.2.1  | Archive Waitlist            | 12.2.0        | ready  |
 | 12.2.2  | Edit After Onboarding       | —             | ready  |
-| 12.2.3  | Privacy Policy              | —             | ready  |
-| 12.2.4  | Terms of Service            | 12.2.3        | ready  |
-| 12.2.5  | Consent Tracking            | 12.2.0        | ready  |
-| 12.2.6  | Unsubscribe Mechanism       | —             | ready  |
-| 12.2.7  | Bounce Suppression          | —             | ready  |
-| 12.2.8  | Physical Address in Emails  | —             | ready  |
-| 12.2.9  | Epic 12.2 Tests             | 12.2.0–12.2.8 | ready  |
-| 12.2.10 | PoweredByFooter Pro Removal | —             | ready  |
-| 12.2.11 | Dashboard Auto-Refresh      | —             | ready  |
-| 12.2.12 | Subscriber Display Name     | 12.2.0        | ready  |
+| 12.2.3  | Settings Page Overhaul      | 12.2.0–12.2.2 | done   |
+| 12.2.4  | Privacy Policy              | —             | done   |
+| 12.2.5  | Terms of Service            | 12.2.4        | done   |
+| 12.2.6  | Consent Tracking            | 12.2.0        | done   |
+| 12.2.7  | Unsubscribe Mechanism       | —             | ready  |
+| 12.2.8  | Bounce Suppression          | —             | ready  |
+| 12.2.9  | Physical Address in Emails  | —             | ready  |
+| 12.2.10 | Epic 12.2 Tests             | 12.2.0–12.2.9 | ready  |
+| 12.2.11 | PoweredByFooter Pro Removal | —             | ready  |
+| 12.2.12 | Dashboard Auto-Refresh      | —             | ready  |
+| 12.2.13 | Subscriber Display Name     | 12.2.0        | ready  |
 
 ---
 
@@ -52,14 +53,14 @@ All 13 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Tasks:** T1 (AC1-AC5) Subscribers and waitlists columns · T2 (AC6-AC7) Bounced emails table + RLS · T3 (AC8-AC9) Idempotency + defaults · T4 (AC10) Lint + build
 
-**Out of scope:** Consent checkbox UI (Story 12.2.5), unsubscribe UI (Story 12.2.6), bounce handling logic (Story 12.2.7).
+**Out of scope:** Consent checkbox UI (Story 12.2.6), unsubscribe UI (Story 12.2.7), bounce handling logic (Story 12.2.8).
 
 **Dev Notes:**
 
-- T1: SQL: `ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS consent_given_at timestamptz; ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS consent_ip_address text; ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS unsubscribed_at timestamptz; ALTER TABLE waitlists ADD COLUMN IF NOT EXISTS is_archived boolean default false; ALTER TABLE waitlists ADD COLUMN IF NOT EXISTS archived_at timestamptz;` **Status: written in SQL file but NOT executed in database — no code references these columns.**
-- T2: Create `bounced_emails` table with RLS. See SQL writeup for full DDL. **Status: SQL written at `docs/stories/sql-writeups/epic12.2-story0-bounced-emails.sql`, NOT executed.**
+- T1: SQL: `ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS consent_given_at timestamptz; ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS consent_ip_address text; ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS unsubscribed_at timestamptz; ALTER TABLE waitlists ADD COLUMN IF NOT EXISTS is_archived boolean default false; ALTER TABLE waitlists ADD COLUMN IF NOT EXISTS archived_at timestamptz;` **Status: executed in Supabase SQL Editor (2026-09-14).**
+- T2: Create `bounced_emails` table with RLS. See SQL writeup for full DDL. **Status: executed in Supabase SQL Editor (2026-09-14).**
 - T3: All `ADD COLUMN IF NOT EXISTS` ensures idempotency. Existing rows get NULL for nullable columns, `false`/`NULL` for archived columns.
-- T4: Run migration in Supabase Dashboard SQL Editor. **Status: NOT yet run. Must execute before dependent stories (12.2.1, 12.2.5, 12.2.7) can proceed.**
+- T4: Run migration in Supabase Dashboard SQL Editor. **Status: executed (2026-09-14).**
 
 ---
 
@@ -86,10 +87,10 @@ All 13 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Dev Notes:**
 
-- T1: In `settings/client.tsx`, add a danger zone section at the bottom with `border-destructive/20`, archive button using `Button variant="destructive"`. **Status: NOT implemented — settings client has no archive button or danger zone.**
-- T2: `window.confirm()` for simplicity. On confirm: `fetch("/api/waitlist", { method: "PATCH", body: JSON.stringify({ is_archived: true }) })`. **Status: NOT implemented — API route has no `is_archived` handling.**
-- T3: In the public page, check `waitlist.is_archived` and render 410 status. **Status: NOT implemented — `src/app/(public)/[subdomain]/page.tsx` has no archived check.**
-- T4: In `sidebar.tsx`, check `isArchived` prop. When true, render amber banner with "Unarchive" button. **Status: NOT implemented — sidebar has no `isArchived` prop or banner.**
+- T1: In `settings/client.tsx`, add a danger zone section at the bottom with `border-destructive/20`, archive button using `Button variant="destructive"`. **Status: implemented — archive button in Advanced tab, ghost style (not destructive red), with confirm dialog.**
+- T2: `window.confirm()` for simplicity. On confirm: `fetch("/api/waitlist", { method: "PATCH", body: JSON.stringify({ is_archived: true }) })`. **Status: implemented — confirm dialog + PATCH API call in settings client.**
+- T3: In the public page, check `waitlist.is_archived` and render 410 status. **Status: implemented — public page checks `is_archived` and returns 410 Gone.**
+- T4: In `sidebar.tsx`, check `isArchived` prop. When true, render amber banner with "Unarchive" button. **Status: implemented — sidebar shows amber "This waitlist is archived" banner with unarchive button.**
 - **Depends on:** Story 12.2.0 (schema migration must run first for `is_archived`/`archived_at` columns to exist).
 
 ---
@@ -116,13 +117,50 @@ All 13 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Dev Notes:**
 
-- T1: In `settings/client.tsx`, replace static display with `<Input>` components pre-filled with current values. Each field gets its own save button. **Status: PARTIALLY implemented — `senderName` field exists with save button (line 19-29). `coldThreshold` field also exists. Missing: headline, subheadline, CTA text, brand color, logo URL fields. Also: `settings/page.tsx` only selects `id, sender_name, cold_threshold, sending_domain` — does not fetch headline/subheadline/brand_color/logo_url/cta_text.**
-- T2: Add `success` state per field with `setTimeout` to clear after 3s. **Status: PARTIALLY implemented — senderName uses 2s timeout (line 46-47). Pattern can be reused.**
-- T3: Import `LivePreview` and pass edited values. Reuse color picker from onboarding Step 3. **Status: NOT implemented — no live preview or color picker in settings.**
+- T1: In `settings/client.tsx`, replace static display with `<Input>` components pre-filled with current values. Each field gets its own save button. **Status: implemented — 6 editable fields (headline, subheadline, CTA text, logo URL, brand color, sender name) with `useFieldSave` hook and individual save per field.**
+- T2: Add `success` state per field with `setTimeout` to clear after 3s. **Status: implemented — `useFieldSave` hook handles save/saved states with 2s timeout.**
+- T3: Import `LivePreview` and pass edited values. Reuse color picker from onboarding Step 3. **Status: implemented — LivePreview in Content tab, color picker with 8 presets + hex input.**
 
 ---
 
-### Story 12.2.3 — Privacy Policy
+### Story 12.2.3 — Settings Page Overhaul
+
+**Status:** ready
+
+**Story:** As a founder, I want the settings page organized into clear tabs so that I can find and edit the right setting without scrolling through a flat dump of unrelated controls.
+
+**Acceptance Criteria (EARS):**
+
+- AC1: The settings page shall render 5 horizontal tabs below the page title: Content, Email, Warmth, Billing, Advanced.
+- AC2: The Content tab shall contain: Headline, Sub-headline, Button text, Logo URL, Brand Color (with color picker), and Live Preview — all in a single card.
+- AC3: The Email tab shall contain: Sender name field with save button and helper text.
+- AC4: The Warmth tab shall contain: Cold threshold percentage input (20–80 range) with save button. For free-tier founders, the Warmth tab shall show a locked overlay with "Upgrade to Pro" CTA instead of the threshold controls.
+- AC5: The Billing tab shall contain: Current plan badge (Free/Pro) and upgrade/manage billing button (disabled placeholder for now).
+- AC6: The Advanced tab shall contain: Archive waitlist functionality — ghost-style button (not destructive red). When archived, show status text and an Unarchive ghost button.
+- AC7: The active tab shall be visually indicated with an underline or background highlight matching the accent color.
+- AC8: On mobile viewports, the tab bar shall scroll horizontally without overflowing off-screen.
+- AC9: All existing save logic (useFieldSave, handleSaveThreshold, handleSaveBrandColor, handleArchive/Unarchive) shall be preserved — no functional regressions.
+- AC10: Lint and build shall pass with zero errors.
+
+**Tasks:** T1 (AC1, AC7, AC8) Tab bar component + active state + mobile scroll · T2 (AC2) Content tab with all fields + LivePreview · T3 (AC3) Email tab · T4 (AC4) Warmth tab with tier gate · T5 (AC5) Billing tab · T6 (AC6) Advanced tab with ghost archive button · T7 (AC9-AC10) Regression check + lint + build
+
+**Out of scope:** Multi-waitlist switcher (separate story), template switching, qualification question editing, sender domain configuration.
+
+**Dev Notes:**
+
+- **Tab bar component:** Create `components/dashboard/settings/tabs.tsx` — reusable horizontal tab bar. Props: `tabs: { id: string; label: string; locked?: boolean }[]`, `activeTab: string`, `onTabChange: (id: string) => void`. Uses `overflow-x-auto` with `scrollbar-hide` for mobile. Active state: `border-b-2 border-accent text-foreground` vs `text-muted-foreground`.
+- **Settings client rewrite:** `src/app/dashboard/settings/client.tsx` — add `activeTab` state (default: "content"), wrap each section in a conditional render based on active tab. No new API calls, no new state management — just reorganizing existing sections into tabs.
+- **Archive button style change:** Replace `bg-destructive text-white` with `border border-border bg-transparent text-foreground hover:bg-muted/50` — same style as the existing Unarchive button. Remove `border-destructive/20` from the Advanced card border.
+- **Warmth tier gate:** Check `tier === "free"` and render a locked overlay (similar to WarmthPanel pattern in `components/dashboard/warmth-panel.tsx`) with "Upgrade to Pro" CTA.
+- **LivePreview:** Keep the dynamic import pattern (`next/dynamic` with `ssr: false`). Move into Content tab.
+- **Color picker:** Keep existing 8-preset + hex input pattern — no changes needed.
+- **Files to change:** `src/app/dashboard/settings/client.tsx` (full rewrite)
+- **Files to create:** `components/dashboard/settings/tabs.tsx`
+- **No changes to:** `src/app/dashboard/settings/page.tsx` (already fetches all needed fields), API routes, layout.
+
+---
+
+### Story 12.2.4 — Privacy Policy
 
 **Status:** ready
 
@@ -144,12 +182,12 @@ All 13 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Dev Notes:**
 
-- T1: Create `src/app/legal/privacy/page.tsx` as a server component with `max-w-2xl mx-auto py-12 px-6` layout. **Status: NOT implemented — file does not exist, `src/app/legal/` directory does not exist.**
-- T2: Add Privacy link to marketing footer and PoweredByFooter. **Status: PARTIALLY implemented — marketing footer has `<Link href="#">Privacy</Link>` (dead placeholder at line 228). PoweredByFooter has NO Privacy link.**
+- T1: Create `src/app/legal/privacy/page.tsx` as a server component with `max-w-2xl mx-auto py-12 px-6` layout. **Status: implemented — 183-line privacy policy page with all required sections.**
+- T2: Add Privacy link to marketing footer and PoweredByFooter. **Status: implemented — footer has real link to `/legal/privacy`, PoweredByFooter also links.**
 
 ---
 
-### Story 12.2.4 — Terms of Service
+### Story 12.2.5 — Terms of Service
 
 **Status:** ready
 
@@ -170,12 +208,12 @@ All 13 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Dev Notes:**
 
-- T1: Create `src/app/legal/terms/page.tsx`. Same layout as privacy policy. **Status: NOT implemented — file does not exist.**
-- T2: Same footer updates as Story 12.2.3. **Status: PARTIALLY implemented — marketing footer has `<Link href="#">Terms</Link>` (dead placeholder at line 234). PoweredByFooter has NO Terms link.**
+- T1: Create `src/app/legal/terms/page.tsx`. Same layout as privacy policy. **Status: implemented — 161-line ToS page with all required sections.**
+- T2: Same footer updates as Story 12.2.4. **Status: implemented — footer has real link to `/legal/terms`, PoweredByFooter also links.**
 
 ---
 
-### Story 12.2.5 — Consent Tracking
+### Story 12.2.6 — Consent Tracking
 
 **Status:** ready
 
@@ -198,14 +236,14 @@ All 13 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Dev Notes:**
 
-- T1: Add checkbox below email input in the capture form with `required` attribute. **Status: NOT implemented — `components/public/email-capture-form.tsx` has no consent checkbox. Only has "No spam. Unsubscribe anytime." text.**
-- T2: In `POST /api/subscribers`, add consent fields. Extract IP from headers. **Status: NOT implemented — `src/app/api/subscribers/route.ts` insert (lines 73-86) has no `consent_given_at` or `consent_ip_address` fields. No IP header reading.**
-- T3: Client-side validation prevents submission without checkbox. **Status: NOT implemented.**
+- T1: Add checkbox below email input in the capture form with `required` attribute. **Status: implemented — checkbox in both form variants (with-questions and inline), unchecked by default, required, inline error.**
+- T2: In `POST /api/subscribers`, add consent fields. Extract IP from headers. **Status: implemented — API validates `consent_given_at` (400 if missing), captures IP from `x-forwarded-for`/`x-real-ip`, inserts both fields.**
+- T3: Client-side validation prevents submission without checkbox. **Status: implemented — checkbox `required` attribute + inline error message.**
 - **Depends on:** Story 12.2.0 (schema migration must run first for `consent_given_at`/`consent_ip_address` columns).
 
 ---
 
-### Story 12.2.6 — Unsubscribe Mechanism
+### Story 12.2.7 — Unsubscribe Mechanism
 
 **Status:** ready
 
@@ -228,13 +266,13 @@ All 13 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Dev Notes:**
 
-- T1: In `src/lib/email.ts`, add HMAC-based unsubscribe URL generation. Append to email footer. **Status: NOT implemented — `sendEmail()` has no footer template, no merge tags, no HMAC. Emails are bare HTML passed by callers.**
-- T2: Create `src/app/unsubscribe/page.tsx`. Verify HMAC, update subscriber, show confirmation. **Status: NOT implemented — file does not exist.**
-- T3: Check `unsubscribed_at IS NULL` before every send. **Status: NOT implemented — no pre-send check in `sendEmail()` or subscriber routes.**
+- T1: In `src/lib/email.ts`, add HMAC-based unsubscribe URL generation. Append to email footer. **Status: implemented — `generateUnsubscribeUrl()` in `src/lib/unsubscribe.ts`, `buildEmailFooter()` in `src/lib/email.ts` includes unsubscribe link + physical address.**
+- T2: Create `src/app/unsubscribe/page.tsx`. Verify HMAC, update subscriber, show confirmation. **Status: implemented — `/unsubscribe` page with verification, update, and resubscribe link. Also `/unsubscribe/resubscribe` page.**
+- T3: Check `unsubscribed_at IS NULL` before every send. **Status: implemented — `isUnsubscribed()` in `src/lib/email.ts`, checked before confirmation + moved-up emails in subscribers route.**
 
 ---
 
-### Story 12.2.7 — Bounce Suppression
+### Story 12.2.8 — Bounce Suppression
 
 **Status:** ready
 
@@ -255,14 +293,14 @@ All 13 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Dev Notes:**
 
-- T1: Extend existing webhook handler with `bounce` and `complain` events. **Status: PARTIALLY implemented — `src/app/api/webhooks/resend/route.ts` maps `email.bounced` → `"bounced"` and stores in `email_events` (line 97-103). Does NOT insert into `bounced_emails` table (table doesn't exist in DB yet). No hard/soft classification from webhook payload.**
-- T2: Create `isEmailBounced(supabase, waitlistId, email)` helper. **Status: NOT implemented.**
-- T3: Join or batch-query `bounced_emails` for subscriber table. **Status: NOT implemented — `bounced_emails` table not in DB.**
+- T1: Extend existing webhook handler with `bounce` and `complain` events. **Status: implemented — webhook inserts into `bounced_emails` table with hard/soft classification via `determineBounceType()`.**
+- T2: Create `isEmailBounced(supabase, waitlistId, email)` helper. **Status: implemented — `src/lib/bounces.ts` with hard (permanent) and soft (24h retry) logic.**
+- T3: Join or batch-query `bounced_emails` for subscriber table. **Status: implemented — dashboard `page.tsx` batch-queries bounced emails and marks subscribers with `is_bounced` flag. `client.tsx` shows "Bounced" badge.**
 - **Depends on:** Story 12.2.0 (schema migration must run first for `bounced_emails` table).
 
 ---
 
-### Story 12.2.8 — Physical Address in Emails
+### Story 12.2.9 — Physical Address in Emails
 
 **Status:** ready
 
@@ -282,13 +320,13 @@ All 13 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Dev Notes:**
 
-- T1: Add "Business Address" input to settings. Save via `PATCH /api/waitlist`. **Status: NOT implemented — `settings/client.tsx` has no business address field.**
-- T2: `ALTER TABLE waitlists ADD COLUMN IF NOT EXISTS business_address text nullable;`. **Status: SQL defined in `epic12.2-story0-bounced-emails.sql` (line 72) but NOT executed in DB. API route has no `business_address` handling.**
-- T3: In email template footer, render address with fallback. **Status: NOT implemented — `src/lib/email.ts` has no footer template or address rendering.**
+- T1: Add "Business Address" input to settings. Save via `PATCH /api/waitlist`. **Status: implemented — `business_address` field in waitlist settings Email tab, with `saveField` persistence.**
+- T2: `ALTER TABLE waitlists ADD COLUMN IF NOT EXISTS business_address text nullable;`. **Status: executed in Supabase (2026-09-14). Column exists.**
+- T3: In email template footer, render address with fallback. **Status: implemented — `buildEmailFooter()` in `src/lib/email.ts` uses `businessAddress` param with fallback to default PreWaitlist address.**
 
 ---
 
-### Story 12.2.9 — Epic 12.2 Tests
+### Story 12.2.10 — Epic 12.2 Tests
 
 **Status:** ready
 
@@ -326,7 +364,7 @@ All 13 gaps closed. Privacy policy and terms of service pages exist and are link
 
 ---
 
-### Story 12.2.10 — PoweredByFooter Pro Removal
+### Story 12.2.11 — PoweredByFooter Pro Removal
 
 **Status:** ready
 
@@ -342,7 +380,7 @@ All 13 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Tasks:** T1 (AC1-AC4) Fix leaderboard PoweredByFooter rendering · T2 (AC5) Lint + build
 
-**Out of scope:** Footer design changes, adding Privacy/Terms links to footer (covered by 12.2.3/12.2.4).
+**Out of scope:** Footer design changes, adding Privacy/Terms links to footer (covered by 12.2.4/12.2.5).
 
 **Dev Notes:**
 
@@ -354,7 +392,7 @@ All 13 gaps closed. Privacy policy and terms of service pages exist and are link
 
 ---
 
-### Story 12.2.11 — Dashboard Auto-Refresh
+### Story 12.2.12 — Dashboard Auto-Refresh
 
 **Status:** ready
 
@@ -387,7 +425,7 @@ All 13 gaps closed. Privacy policy and terms of service pages exist and are link
 
 ---
 
-### Story 12.2.12 — Subscriber Display Name
+### Story 12.2.13 — Subscriber Display Name
 
 **Status:** ready
 

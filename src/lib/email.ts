@@ -1,4 +1,6 @@
 import { resend } from "@/lib/resend";
+import { SupabaseClient } from "@supabase/supabase-js";
+import { generateUnsubscribeUrl } from "@/lib/unsubscribe";
 
 type Stream = "transactional" | "broadcast";
 
@@ -12,9 +14,13 @@ interface SendEmailParams {
   headline?: string | null;
   sendingDomain?: string | null;
   idempotencyKey?: string;
+  subscriberId?: string;
+  businessAddress?: string | null;
 }
 
 const DEFAULT_SENDER_NAME = "PreWaitlist";
+const DEFAULT_ADDRESS =
+  "PreWaitlist Inc., 548 Market St, Suite 35000, San Francisco, CA 94104";
 
 /**
  * AC1-AC4: Resolve the from-address based on stream, sender name, and verified domain.
@@ -46,6 +52,42 @@ export function resolveFromAddress(
       : "updates@prewaitlist.com";
 
   return `${name} <${email}>`;
+}
+
+/**
+ * Check if a subscriber has unsubscribed.
+ */
+export async function isUnsubscribed(
+  supabase: SupabaseClient,
+  subscriberId: string
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("subscribers")
+    .select("unsubscribed_at")
+    .eq("id", subscriberId)
+    .single();
+  return !!data?.unsubscribed_at;
+}
+
+/**
+ * Build the email footer with unsubscribe link and physical address.
+ */
+export function buildEmailFooter(
+  subscriberId: string,
+  businessAddress?: string | null
+): string {
+  const address = businessAddress?.trim() || DEFAULT_ADDRESS;
+  const unsubscribeUrl = generateUnsubscribeUrl(subscriberId);
+
+  return `
+    <hr style="border: none; border-top: 1px solid #ccc9c3; margin: 32px 0;" />
+    <p style="font-size: 12px; color: #6b6459; margin: 0 0 8px;">
+      ${address}
+    </p>
+    <p style="font-size: 12px; color: #6b6459; margin: 0;">
+      <a href="${unsubscribeUrl}" style="color: #6b6459;">Unsubscribe</a>
+    </p>
+  `;
 }
 
 /**

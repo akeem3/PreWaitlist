@@ -17,11 +17,12 @@ export default async function PublicSubdomainPage({ params }: Props) {
       `
       id, subdomain, template, headline, subheadline, cta_text,
       logo_url, product_name, brand_color, qualification_enabled, milestone_rewards_enabled,
-      signup_counter_enabled, signup_counter_threshold,
+      signup_counter_enabled, signup_counter_threshold, is_archived,
       founder_profiles!inner ( tier )
     `
     )
     .eq("subdomain", subdomain)
+    .eq("is_archived", false)
     .single();
 
   if (!waitlist) {

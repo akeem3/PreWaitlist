@@ -18,11 +18,21 @@ export default async function LeaderboardPage({ params }: Props) {
 
   const { data: waitlist } = await supabase
     .from("waitlists")
-    .select("id, headline, milestone_rewards_enabled")
+    .select(
+      `
+      id, headline, template, milestone_rewards_enabled,
+      founder_profiles!inner ( tier )
+    `
+    )
     .eq("subdomain", subdomain)
     .single();
 
   if (!waitlist) notFound();
+
+  const founderProfile = Array.isArray(waitlist.founder_profiles)
+    ? waitlist.founder_profiles[0]
+    : waitlist.founder_profiles;
+  const tier = founderProfile?.tier || "free";
 
   const { data: subscribers } = await supabase
     .from("subscribers")
@@ -109,7 +119,14 @@ export default async function LeaderboardPage({ params }: Props) {
 
       {/* Footer — sticks to bottom when content is short */}
       <div>
-        <PoweredByFooter template="minimal" />
+        {tier === "free" && (
+          <PoweredByFooter
+            template={
+              (waitlist.template as "minimal" | "bold" | "dark") ?? "minimal"
+            }
+            standalone
+          />
+        )}
       </div>
     </main>
   );

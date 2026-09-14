@@ -31,16 +31,12 @@ BEGIN
       FOR ALL
       USING (
         waitlist_id IN (
-          SELECT w.id FROM waitlists w
-          JOIN founder_profiles fp ON w.founder_id = fp.id
-          WHERE fp.user_id = auth.uid()
+          SELECT id FROM waitlists WHERE founder_id = auth.uid()
         )
       )
       WITH CHECK (
         waitlist_id IN (
-          SELECT w.id FROM waitlists w
-          JOIN founder_profiles fp ON w.founder_id = fp.id
-          WHERE fp.user_id = auth.uid()
+          SELECT id FROM waitlists WHERE founder_id = auth.uid()
         )
       );
   END IF;
