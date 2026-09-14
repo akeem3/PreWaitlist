@@ -789,8 +789,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 - **Decision:** Create Epic 12.1 (Dashboard Overhaul) and Epic 12.2 (Gap Fixes) between Epic 12 (Email System) and Epic 13 (Billing).
 - **Reason:** Dashboard must be complete and legal compliance must be in place before monetization (Paddle billing) ships. Dashboard overhaul fixes 22 identified issues. Gap fixes cover Privacy Policy, ToS, consent, unsubscribe, bounce suppression — all required before sending marketing emails or processing payments.
-- **Execution order:** Epic 11 → Epic 12 → Epic 12.1 → Epic 12.2 → Epic 13
-- **Date:** 2026-09-13
+- **Execution order:** Epic 11 → Epic 12 → Epic 12.1 → Epic 12.2 → Epic 12.3 → Epic 13
 
 ### Dashboard: 22 issues found across 7 categories
 
