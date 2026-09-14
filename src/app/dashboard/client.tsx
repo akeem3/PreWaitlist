@@ -59,6 +59,7 @@ interface Subscriber {
   quality_score: number | null;
   qual_answers: Record<string, string> | null;
   is_bounced?: boolean;
+  display_name?: string | null;
 }
 
 interface DashboardClientProps {
@@ -124,7 +125,8 @@ export default function DashboardClient({
   } | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
+  // Fetch stats + warmth data (reused by mount, visibility, and interval)
+  const refreshData = () => {
     fetch("/api/dashboard/stats")
       .then((r) => r.json())
       .then(setStatsData)
@@ -135,7 +137,36 @@ export default function DashboardClient({
         if (json.total !== undefined) setWarmthData(json);
       })
       .catch(() => {});
+  };
+
+  // Initial load
+  useEffect(() => {
+    refreshData();
   }, []);
+
+  // Auto-refresh: re-fetch data when tab regains focus
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        router.refresh();
+        refreshData();
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [router]);
+
+  // Auto-refresh: re-fetch data every 60 seconds while tab is visible
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        router.refresh();
+        refreshData();
+      }
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [router]);
 
   const sortedSubscribers = useMemo(() => {
     return [...subscribers].sort((a, b) => {
@@ -544,6 +575,11 @@ export default function DashboardClient({
                         {sub.position}
                       </span>
                       <span className="truncate text-body-sm text-foreground">
+                        {sub.display_name && (
+                          <span className="block text-xs font-medium text-foreground/80">
+                            {sub.display_name}
+                          </span>
+                        )}
                         {sub.email}
                         {sub.is_bounced && (
                           <span className="ml-2 inline-block rounded-full bg-destructive/10 px-1.5 py-0.5 text-xs font-medium text-destructive">

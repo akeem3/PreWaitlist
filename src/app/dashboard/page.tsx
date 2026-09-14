@@ -35,7 +35,7 @@ export default async function DashboardPage() {
   const { data: subscribers } = await supabase
     .from("subscribers")
     .select(
-      "id, email, position, referral_code, warmth_score, qual_answers, created_at"
+      "id, email, position, referral_code, warmth_score, qual_answers, created_at, display_name"
     )
     .eq("waitlist_id", waitlist.id)
     .order("position", { ascending: true });

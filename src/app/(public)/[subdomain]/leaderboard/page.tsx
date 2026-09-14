@@ -36,7 +36,9 @@ export default async function LeaderboardPage({ params }: Props) {
 
   const { data: subscribers } = await supabase
     .from("subscribers")
-    .select("id, email, referral_code, referrer_id, qual_answers, created_at")
+    .select(
+      "id, email, referral_code, referrer_id, qual_answers, created_at, display_name"
+    )
     .eq("waitlist_id", waitlist.id)
     .order("created_at", { ascending: true });
 
@@ -70,7 +72,7 @@ export default async function LeaderboardPage({ params }: Props) {
   const ranked = rows
     .map((s) => ({
       id: s.id,
-      name: maskName(s.email),
+      name: s.display_name?.trim() || maskName(s.email),
       referral_count: referralCounts.get(s.id) || 0,
       qualified_count: qualifiedCounts.get(s.id) || 0,
       created_at: s.created_at,

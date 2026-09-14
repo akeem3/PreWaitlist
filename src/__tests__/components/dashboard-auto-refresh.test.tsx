@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, cleanup } from "@testing-library/react";
 
+const mockRefresh = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: vi.fn(),
-    refresh: vi.fn(),
+    refresh: mockRefresh,
   }),
 }));
 
@@ -30,62 +32,104 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-// Test the refresh mechanism pattern directly
+vi.mock("next/dynamic", () => ({
+  default: () => {
+    // Return a component that renders nothing to avoid loading states
+    const Empty = () => null;
+    Empty.displayName = "DynamicComponent";
+    return Empty;
+  },
+}));
+
+// Mock fetch for stats and warmth endpoints
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
+
+import DashboardClient from "@/app/dashboard/client";
+
+const defaultProps = {
+  liveUrl: "test.prewaitlist.com",
+  tier: "free" as const,
+  subdomain: "test",
+  subscribers: [],
+  stats: { totalSignups: 0, referralPercentage: 0, todaySignups: 0 },
+  coldThreshold: 40,
+};
+
 describe("Dashboard Auto-Refresh", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ total: 0 }),
+    });
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    cleanup();
   });
 
-  it("sets up visibility change listener", () => {
-    const addEventListenerSpy = vi.spyOn(document, "addEventListener");
-    // Simulate the hook pattern from dashboard client
-    const setupRefresh = () => {
-      document.addEventListener("visibilitychange", () => {});
-    };
-    setupRefresh();
-    expect(addEventListenerSpy).toHaveBeenCalledWith(
-      "visibilitychange",
-      expect.any(Function)
-    );
-    addEventListenerSpy.mockRestore();
+  it("calls router.refresh() when tab regains visibility", () => {
+    render(<DashboardClient {...defaultProps} />);
+
+    // Simulate tab becoming visible
+    const event = new Event("visibilitychange");
+    Object.defineProperty(document, "visibilityState", {
+      value: "visible",
+      configurable: true,
+    });
+    document.dispatchEvent(event);
+
+    expect(mockRefresh).toHaveBeenCalled();
   });
 
-  it("sets up 60-second interval", () => {
-    const setIntervalSpy = vi.spyOn(global, "setInterval");
-    const setupRefresh = () => {
-      setInterval(() => {}, 60_000);
-    };
-    setupRefresh();
-    expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 60_000);
-    setIntervalSpy.mockRestore();
+  it("calls router.refresh() on 60-second interval", () => {
+    render(<DashboardClient {...defaultProps} />);
+
+    // Advance timer by 60 seconds
+    vi.advanceTimersByTime(60_000);
+
+    expect(mockRefresh).toHaveBeenCalled();
+  });
+
+  it("does not refresh when tab is hidden", () => {
+    render(<DashboardClient {...defaultProps} />);
+
+    // Simulate tab becoming hidden
+    Object.defineProperty(document, "visibilityState", {
+      value: "hidden",
+      configurable: true,
+    });
+
+    // Advance timer by 60 seconds
+    vi.advanceTimersByTime(60_000);
+
+    // refresh should not be called for interval when hidden
+    // (visibility change to hidden doesn't trigger refresh, only visible does)
+    expect(mockRefresh).not.toHaveBeenCalled();
   });
 
   it("cleans up interval on unmount", () => {
     const clearIntervalSpy = vi.spyOn(global, "clearInterval");
-    const intervalId = 123;
-    const cleanup = () => {
-      clearInterval(intervalId);
-    };
-    cleanup();
-    expect(clearIntervalSpy).toHaveBeenCalledWith(intervalId);
+    const { unmount } = render(<DashboardClient {...defaultProps} />);
+
+    unmount();
+
+    expect(clearIntervalSpy).toHaveBeenCalled();
     clearIntervalSpy.mockRestore();
   });
 
-  it("removes visibility change listener on cleanup", () => {
+  it("removes visibilitychange listener on unmount", () => {
     const removeEventListenerSpy = vi.spyOn(document, "removeEventListener");
-    const handler = () => {};
-    const cleanup = () => {
-      document.removeEventListener("visibilitychange", handler);
-    };
-    cleanup();
+    const { unmount } = render(<DashboardClient {...defaultProps} />);
+
+    unmount();
+
     expect(removeEventListenerSpy).toHaveBeenCalledWith(
       "visibilitychange",
-      handler
+      expect.any(Function)
     );
     removeEventListenerSpy.mockRestore();
   });

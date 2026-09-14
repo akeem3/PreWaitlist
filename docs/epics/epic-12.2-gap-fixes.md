@@ -1,34 +1,39 @@
 # Epic 12.2 — Gap Fixes
 
-**Status:** in-progress (10/14 stories implemented)
+**Status:** in-progress (12/19 stories implemented)
 **Source:** [Sprint Gap Analysis](../sprint-gap-analysis.md), [PRD §2c Sprint 3.2](../PRD.md#2c-sprint-32--gap-fixes)
 
 ## Goal
 
-Close 7 legal compliance and 7 product gaps that must be in place before MVP can ship. Legal gaps (privacy policy, terms of service, consent, unsubscribe, bounce suppression, physical address) are non-negotiable for GDPR/CCPA/CAN-SPAM compliance. Product gaps (archive waitlist, edit page, settings page overhaul, PoweredByFooter Pro removal, dashboard auto-refresh, subscriber display name) are founder-expected functionality or UX polish.
+Close 7 legal compliance, 7 product gaps, and multi-waitlist support that must be in place before MVP can ship. Legal gaps (privacy policy, terms of service, consent, unsubscribe, bounce suppression, physical address) are non-negotiable for GDPR/CCPA/CAN-SPAM compliance. Product gaps (archive waitlist, edit page, settings page overhaul, PoweredByFooter Pro removal, dashboard auto-refresh, subscriber display name) are founder-expected functionality or UX polish. Multi-waitlist support allows Pro-tier founders to manage multiple waitlists from a single account.
 
 ## Definition of Done
 
-All 14 gaps closed. Settings page is organized into clear tabs. Privacy policy and terms of service pages exist and are linked from the marketing footer. Consent is tracked on subscriber signup. Every email includes unsubscribe link and physical address. Bounces are suppressed from re-send. Founders can archive their waitlist and edit their page after onboarding. PoweredByFooter never appears on Pro-tier pages. Dashboard auto-refreshes when new subscribers join. Thank-you page has an optional "What should we call you?" field with auto-save. All changes are tested.
+All 19 gaps closed. Settings page is organized into clear tabs. Privacy policy and terms of service pages exist and are linked from the marketing footer. Consent is tracked on subscriber signup. Every email includes unsubscribe link and physical address. Bounces are suppressed from re-send. Founders can archive their waitlist and edit their page after onboarding. PoweredByFooter never appears on Pro-tier pages. Dashboard auto-refreshes when new subscribers join. Thank-you page has an optional "What should we call you?" field with auto-save. Pro-tier founders can create multiple waitlists with a sidebar dropdown switcher. Dashboard data scopes to the active waitlist. Free-tier founders are limited to 1 waitlist. All changes are tested.
 
 ## Story Index
 
-| ID      | Title                       | Depends on    | Status |
-| ------- | --------------------------- | ------------- | ------ |
-| 12.2.0  | Schema Migration            | —             | ready  |
-| 12.2.1  | Archive Waitlist            | 12.2.0        | ready  |
-| 12.2.2  | Edit After Onboarding       | —             | ready  |
-| 12.2.3  | Settings Page Overhaul      | 12.2.0–12.2.2 | done   |
-| 12.2.4  | Privacy Policy              | —             | done   |
-| 12.2.5  | Terms of Service            | 12.2.4        | done   |
-| 12.2.6  | Consent Tracking            | 12.2.0        | done   |
-| 12.2.7  | Unsubscribe Mechanism       | —             | ready  |
-| 12.2.8  | Bounce Suppression          | —             | ready  |
-| 12.2.9  | Physical Address in Emails  | —             | ready  |
-| 12.2.10 | Epic 12.2 Tests             | 12.2.0–12.2.9 | ready  |
-| 12.2.11 | PoweredByFooter Pro Removal | —             | ready  |
-| 12.2.12 | Dashboard Auto-Refresh      | —             | ready  |
-| 12.2.13 | Subscriber Display Name     | 12.2.0        | ready  |
+| ID      | Title                               | Depends on      | Status |
+| ------- | ----------------------------------- | --------------- | ------ |
+| 12.2.0  | Schema Migration                    | —               | done   |
+| 12.2.1  | Archive Waitlist                    | 12.2.0          | done   |
+| 12.2.2  | Edit After Onboarding               | —               | done   |
+| 12.2.3  | Settings Page Overhaul              | 12.2.0–12.2.2   | done   |
+| 12.2.4  | Privacy Policy                      | —               | done   |
+| 12.2.5  | Terms of Service                    | 12.2.4          | done   |
+| 12.2.6  | Consent Tracking                    | 12.2.0          | done   |
+| 12.2.7  | Unsubscribe Mechanism               | —               | done   |
+| 12.2.8  | Bounce Suppression                  | —               | done   |
+| 12.2.9  | Physical Address in Emails          | —               | done   |
+| 12.2.10 | Epic 12.2 Tests                     | 12.2.0–12.2.9   | done   |
+| 12.2.11 | PoweredByFooter Pro Removal         | —               | done   |
+| 12.2.12 | Dashboard Auto-Refresh              | —               | done   |
+| 12.2.13 | Subscriber Display Name             | 12.2.0          | done   |
+| 12.2.14 | Multi-Waitlist Schema Migration     | —               | ready  |
+| 12.2.15 | Multi-Waitlist API Routes           | 12.2.14         | ready  |
+| 12.2.16 | Sidebar Waitlist Switcher           | 12.2.15         | ready  |
+| 12.2.17 | Dashboard Scoped to Active Waitlist | 12.2.16         | ready  |
+| 12.2.18 | Multi-Waitlist Tests                | 12.2.14–12.2.17 | ready  |
 
 ---
 
@@ -394,7 +399,7 @@ All 14 gaps closed. Settings page is organized into clear tabs. Privacy policy a
 
 ### Story 12.2.12 — Dashboard Auto-Refresh
 
-**Status:** ready
+**Status:** done
 
 **Story:** As the founder, I want my dashboard to automatically reflect new subscribers without manual refresh so that I always see current data.
 
@@ -427,7 +432,7 @@ All 14 gaps closed. Settings page is organized into clear tabs. Privacy policy a
 
 ### Story 12.2.13 — Subscriber Display Name
 
-**Status:** ready
+**Status:** done
 
 **Story:** As a subscriber, I want to provide my name on the thank-you page after signing up so that I'm recognized on the leaderboard instead of showing as an anonymized email.
 
@@ -456,3 +461,160 @@ All 14 gaps closed. Settings page is organized into clear tabs. Privacy policy a
 - **Referred variant:** Referrer name currently derived from email local part. If referrer has `display_name`, use that instead.
 - **Auto-save pattern:** Simple `useEffect` + `setTimeout`/`clearTimeout` debounce. No library needed for a single field. Show "Saved ✓" briefly, fade with CSS transition.
 - **PRD references:** Product Vision line 354 (thank-you page), User Flow Diagram lines 710-714 (optional name field spec).
+
+---
+
+### Story 12.2.14 — Multi-Waitlist Schema Migration
+
+**Status:** ready
+
+**Story:** As the system, I need the database schema updated to support multiple waitlists per founder so that Pro-tier founders can manage more than one waitlist from a single account.
+
+**Acceptance Criteria (EARS):**
+
+- AC1: The unique index `waitlists_founder_id_idx` on `waitlists(founder_id)` shall be dropped and replaced with a non-unique B-tree index on `founder_id`.
+- AC2: The unique constraint on `waitlists(subdomain)` shall remain unchanged — subdomains must still be globally unique.
+- AC3: All existing RLS policies on `waitlists` shall continue to function correctly — they use `founder_id = auth.uid()` row-level filters, not the index.
+- AC4: The migration SQL shall be idempotent (safe to run multiple times without error).
+- AC5: All existing rows shall be unaffected — no data loss, no column changes.
+- AC6: Lint and build shall pass with zero errors.
+
+**Tasks:** T1 (AC1-AC5) SQL migration — drop unique index, create regular index · T2 (AC6) Lint + build
+
+**Out of Scope:** API route changes (Story 12.2.15), UI changes (Story 12.2.16), tier enforcement (Story 12.2.15).
+
+**Dev Notes:**
+
+- T1: SQL: `DROP INDEX IF EXISTS public.waitlists_founder_id_idx; CREATE INDEX IF NOT EXISTS waitlists_founder_id_idx ON public.waitlists(founder_id);` — the unique constraint on `subdomain` is untouched. RLS policies (`founder_id = auth.uid()`) are row-level filters, not index-dependent.
+- T2: Run `pnpm lint` and `pnpm build`.
+- **SQL writeup:** `docs/stories/sql-writeups/epic12.2-story14-multi-waitlist-schema.sql`
+
+---
+
+### Story 12.2.15 — Multi-Waitlist API Routes
+
+**Status:** ready
+
+**Story:** As a founder, I want the API to support multiple waitlists so that I can create and manage more than one waitlist from a single account, with tier-based limits enforced.
+
+**Acceptance Criteria (EARS):**
+
+- AC1: `POST /api/waitlist` shall create a new waitlist row instead of updating an existing one when the founder already has one or more waitlists.
+- AC2: `POST /api/waitlist` shall check the founder's tier before creation: free tier = max 1 waitlist, Pro tier = unlimited. If the limit is reached, return HTTP 402 with `{ error: "Upgrade to Pro to create more waitlists" }`.
+- AC3: `GET /api/waitlist` shall return all waitlists for the authenticated founder (array of waitlist objects, not a single object).
+- AC4: `PATCH /api/waitlist` shall require a `waitlist_id` field in the request body to identify which waitlist to update. If `waitlist_id` is missing, return HTTP 400 with `{ error: "waitlist_id is required" }`.
+- AC5: `PATCH /api/waitlist` shall validate that the authenticated founder owns the specified `waitlist_id`. If not found or unauthorized, return HTTP 404 with `{ error: "Waitlist not found" }`.
+- AC6: The `POST /api/waitlist/check-slug` endpoint shall continue to check global subdomain uniqueness (not per-founder). No changes needed.
+- AC7: Lint and build shall pass with zero errors.
+
+**Tasks:** T1 (AC1-AC2) POST route — remove single-waitlist upsert, add tier enforcement · T2 (AC3) GET route — return all waitlists with subscriber counts · T3 (AC4-AC5) PATCH route — require waitlist_id, ownership check · T4 (AC6) Verify check-slug unchanged · T5 (AC7) Lint + build
+
+**Out of Scope:** Dashboard UI changes (Stories 12.2.16–12.2.17), onboarding flow changes (existing flow works as-is for new waitlists).
+
+**Dev Notes:**
+
+- **POST route** (`src/app/api/waitlist/route.ts`): Remove lines 42-118 (the existing-waitlist check + update branch). Add tier enforcement: query `waitlists` count + `founder_profiles.tier`, check limit. Always insert new row.
+- **GET route**: Remove `.single()` — return array of all waitlists. Batch-fetch subscriber counts via `.in("waitlist_id", ids)` + memory count.
+- **PATCH route**: Require `body.waitlist_id`. Validate ownership via `.eq("founder_id", user.id)`. Return 400 if missing, 404 if not found.
+- **Caller updates required:** Every `PATCH /api/waitlist` caller must pass `waitlist_id`: FlushGate (`flush-gate.tsx`), context flush (`context.tsx`), settings client, edit after onboarding.
+- **Tier enforcement pattern:** `const { count } = await supabase.from("waitlists").select("id", { count: "exact", head: true }).eq("founder_id", user.id); if (tier === "free" && (count ?? 0) >= 1) return 402;`
+
+---
+
+### Story 12.2.16 — Sidebar Waitlist Switcher
+
+**Status:** ready
+
+**Story:** As a founder with multiple waitlists, I want a dropdown switcher in the sidebar header so that I can quickly switch between waitlists without leaving the dashboard.
+
+**Acceptance Criteria (EARS):**
+
+- AC1: The sidebar header shall display the current waitlist name and logo (as it does now), with a small dropdown chevron indicator.
+- AC2: Clicking the waitlist name/logo area shall open a dropdown menu listing all waitlists for the founder.
+- AC3: Each dropdown item shall show: waitlist name (or "Untitled" if null), subdomain, subscriber count, and an "Archived" badge if `is_archived === true`.
+- AC4: The active waitlist in the dropdown shall have a green accent background (`bg-accent/10`) and checkmark icon.
+- AC5: Clicking a waitlist in the dropdown shall navigate to `/dashboard` and set that waitlist as active.
+- AC6: The dropdown shall include a "Create new waitlist" button at the bottom, linking to `/onboarding/1`.
+- AC7: The active waitlist shall be persisted in `localStorage` (key: `active_waitlist_id`) so it survives page reloads.
+- AC8: On first load, if no `active_waitlist_id` is set in localStorage, default to the most recently created waitlist (last in array).
+- AC9: If the founder has only one waitlist, the dropdown shall still function but show only that waitlist + "Create new waitlist".
+- AC10: The dropdown shall close when clicking outside (click-outside handler) or pressing Escape (keyboard handler).
+- AC11: The dropdown shall be scrollable if the list exceeds viewport height (max-height with overflow-y-auto).
+- AC12: Lint and build shall pass with zero errors.
+
+**Tasks:** T1 (AC1-AC4) WaitlistSwitcher component — dropdown with waitlist list · T2 (AC5-AC6) Navigation + create new button · T3 (AC7-AC8) localStorage persistence + default selection · T4 (AC9-AC11) Edge cases — single waitlist, click-outside, scroll · T5 (AC12) Lint + build
+
+**Out of Scope:** Dashboard data scoping (Story 12.2.17), onboarding flow changes.
+
+**Dev Notes:**
+
+- **New component:** `components/dashboard/waitlist-switcher.tsx` — client component. Props: `waitlists`, `activeWaitlistId`. Uses `useState` for open/close, `useRef` for click-outside, keyboard handlers for Escape.
+- **Sidebar changes** (`components/dashboard/sidebar.tsx`): Replace static waitlist name/logo card with `<WaitlistSwitcher>`. Remove `waitlistName`/`logoUrl` props from Sidebar interface.
+- **Dashboard layout** (`src/app/dashboard/layout.tsx`): Query returns ALL waitlists (not just `waitlists?.[0]`). Pass full array to `DashboardShell` → `Sidebar` → `WaitlistSwitcher`.
+- **Dashboard shell** (`src/app/dashboard/shell.tsx`): Accept `waitlists` array prop. Pass to sidebar.
+- **localStorage:** `handleSelect` saves `active_waitlist_id`. Client-side effect in shell reads it and overrides server default.
+- **Active waitlist context:** Consider adding `ActiveWaitlistContext` to avoid prop drilling across dashboard pages.
+
+---
+
+### Story 12.2.17 — Dashboard Scoped to Active Waitlist
+
+**Status:** ready
+
+**Story:** As a founder with multiple waitlists, I want the dashboard to show data only for the currently selected waitlist so that I can manage each waitlist independently without confusion.
+
+**Acceptance Criteria (EARS):**
+
+- AC1: All dashboard API routes (`/api/dashboard/chart`, `/api/dashboard/stats`, `/api/dashboard/qualification`, `/api/dashboard/warmth`, `/api/dashboard/broadcast`, `/api/dashboard/email-events`) shall accept a `waitlist_id` query parameter and scope results to that waitlist.
+- AC2: If `waitlist_id` is missing from a dashboard API request, return HTTP 400 with `{ error: "waitlist_id is required" }`.
+- AC3: The dashboard page (`/dashboard`) shall read the active `waitlist_id` from the URL search params (`?wid=xxx`) and pass it to all child components.
+- AC4: The subscriber table shall show only subscribers for the active waitlist.
+- AC5: The stat cards (Total Signups, Referral %, Today, Warmth) shall reflect the active waitlist's data.
+- AC6: Switching waitlists via the sidebar dropdown shall refresh all dashboard data without a full page reload (uses `router.refresh()` after navigation).
+- AC7: The sidebar nav links shall include the active `waitlist_id` as a `wid` search param (e.g., `/dashboard/leaderboard?wid=xxx`).
+- AC8: The live URL bar shall show the active waitlist's subdomain.
+- AC9: Lint and build shall pass with zero errors.
+
+**Tasks:** T1 (AC1-AC2) Update all dashboard API routes to accept + validate waitlist_id · T2 (AC3-AC5) Dashboard page + components scoped to active waitlist · T3 (AC6) Refresh on switch · T4 (AC7) Nav links with wid param · T5 (AC8) Live URL bar · T6 (AC9) Lint + build
+
+**Out of Scope:** Sidebar switcher UI (Story 12.2.16), API route creation (Story 12.2.15).
+
+**Dev Notes:**
+
+- **API routes to update:** `chart/route.ts`, `stats/route.ts`, `qualification/route.ts`, `warmth/route.ts`, `broadcast/route.ts`, `email-events/route.ts` — all need `waitlist_id` from `searchParams`, return 400 if missing, filter queries.
+- **Dashboard page** (`src/app/dashboard/page.tsx`): Read `wid` from search params, pass to child components.
+- **Dashboard client** (`src/app/dashboard/client.tsx`): Add `waitlist_id` to all `fetch()` calls for dashboard APIs.
+- **Nav links** (`components/dashboard/sidebar.tsx`): Update all hrefs to include `?wid={activeWaitlistId}`.
+- **Live URL bar:** Show active waitlist's subdomain from the waitlists array.
+- **Pattern:** `useSearchParams()` in client components reads `wid`, passes to `fetch()` calls. Server components read `searchParams.wid` directly.
+
+---
+
+### Story 12.2.18 — Multi-Waitlist Tests
+
+**Status:** ready
+
+**Story:** As the founder, I want comprehensive tests covering multi-waitlist functionality so that the feature is regression-proof and production-ready.
+
+**Acceptance Criteria (EARS):**
+
+- AC1: API tests for `POST /api/waitlist` shall cover: creates new waitlist when founder has none, creates second waitlist when founder has one + Pro tier, returns 402 when founder has one + free tier, returns 401 when unauthenticated.
+- AC2: API tests for `GET /api/waitlist` shall cover: returns all waitlists for founder, returns empty array when founder has none, includes subscriber counts.
+- AC3: API tests for `PATCH /api/waitlist` shall cover: requires waitlist_id (returns 400 if missing), returns 404 for wrong owner, updates correct waitlist, handles milestone_rewards upsert.
+- AC4: Component tests for `WaitlistSwitcher` shall cover: renders dropdown trigger with active waitlist, opens dropdown on click, lists all waitlists, shows archived badge, highlights active waitlist, "Create new waitlist" button links to /onboarding/1, closes on click-outside, closes on Escape.
+- AC5: Component tests for dashboard scoping shall cover: passes waitlist_id to API calls, refreshes data on waitlist switch.
+- AC6: All tests shall pass with `pnpm test`.
+- AC7: Lint and build shall pass with zero errors.
+- AC8: Total test count across the project shall be ≥300.
+
+**Tasks:** T1 (AC1) POST /api/waitlist tests · T2 (AC2) GET /api/waitlist tests · T3 (AC3) PATCH /api/waitlist tests · T4 (AC4) WaitlistSwitcher component tests · T5 (AC5) Dashboard scoping tests · T6 (AC6-AC8) Full verification
+
+**Out of Scope:** Existing tests for single-waitlist flows (those should still pass, but not re-tested here).
+
+**Dev Notes:**
+
+- **Test files:** `src/__tests__/api/waitlist-multi.test.ts` (API tests), `src/__tests__/waitlist-switcher.test.tsx` (component tests), `src/__tests__/dashboard-scoping.test.tsx` (scoping tests).
+- **Mock pattern:** Mock `@/lib/supabase/server` with chainable query builder. Mock `next/navigation` with `useRouter`.
+- **WaitlistSwitcher tests:** Render component, simulate click to open, verify items visible, simulate Escape/click-outside to close, verify localStorage set on select.
+- **Dashboard scoping tests:** Import route handlers, call with missing `waitlist_id`, verify 400 response.
+- **Verification:** Run `pnpm test`, `pnpm lint`, `pnpm build`. Total ≥300 tests.

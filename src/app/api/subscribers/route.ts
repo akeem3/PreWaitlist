@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
     referral_code: incomingRefCode,
     qual_answers,
     consent,
+    display_name,
   } = body;
 
   if (!waitlist_id || !email) {
@@ -99,6 +100,7 @@ export async function POST(request: NextRequest) {
           : null,
       consent_given_at: new Date().toISOString(),
       consent_ip_address: ipAddress,
+      display_name: display_name?.trim() || null,
     })
     .select("id, email, referral_code, position")
     .single();

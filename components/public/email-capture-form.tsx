@@ -41,6 +41,7 @@ export function EmailCaptureForm({
   const searchParams = useSearchParams();
   const referralCode = searchParams.get("ref");
 
+  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -87,6 +88,10 @@ export function EmailCaptureForm({
         email: email.trim().toLowerCase(),
         consent: true,
       };
+
+      if (displayName.trim()) {
+        body.display_name = displayName.trim();
+      }
 
       if (referralCode) {
         body.referral_code = referralCode;
@@ -154,6 +159,19 @@ export function EmailCaptureForm({
     <form onSubmit={handleSubmit} className="w-full max-w-md mt-2">
       {hasQuestions ? (
         <>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="First name (optional)"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              disabled={loading}
+              autoComplete="given-name"
+              aria-label="First name"
+              className={`${inputHeight} w-full rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50`}
+            />
+          </div>
+
           <input
             type="email"
             placeholder="Email address"
@@ -248,6 +266,17 @@ export function EmailCaptureForm({
         </>
       ) : (
         <>
+          <input
+            type="text"
+            placeholder="First name (optional)"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            disabled={loading}
+            autoComplete="given-name"
+            aria-label="First name"
+            className={`${inputHeight} w-full rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50`}
+          />
+
           <div className="flex gap-2">
             <input
               type="email"

@@ -1,7 +1,7 @@
 # Story 12.2.2 — Edit After Onboarding
 
 **Epic:** 12.2 — Gap Fixes
-**Status:** ready
+**Status:** done
 **Depends on:** —
 **Design Refs:** —
 

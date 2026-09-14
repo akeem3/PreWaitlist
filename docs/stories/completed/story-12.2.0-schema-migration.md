@@ -1,7 +1,7 @@
 # Story 12.2.0 — Schema Migration
 
 **Epic:** 12.2 — Gap Fixes
-**Status:** ready
+**Status:** done
 **Depends on:** —
 **Design Refs:** —
 

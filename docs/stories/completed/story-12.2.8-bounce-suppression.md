@@ -1,7 +1,7 @@
 # Story 12.2.8 — Bounce Suppression
 
 **Epic:** 12.2 — Gap Fixes
-**Status:** ready
+**Status:** done
 **Depends on:** 12.2.0
 **Design Refs:** —
 

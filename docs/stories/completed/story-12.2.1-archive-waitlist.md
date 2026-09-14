@@ -1,7 +1,7 @@
 # Story 12.2.1 — Archive Waitlist
 
 **Epic:** 12.2 — Gap Fixes
-**Status:** ready
+**Status:** done
 **Depends on:** 12.2.0
 **Design Refs:** —
 
