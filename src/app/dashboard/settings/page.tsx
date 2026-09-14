@@ -15,9 +15,7 @@ export default async function SettingsPage() {
 
   const { data: waitlist } = await supabase
     .from("waitlists")
-    .select(
-      "id, subdomain, sender_name, cold_threshold, sending_domain, product_name, logo_url"
-    )
+    .select("id, sender_name, cold_threshold, sending_domain")
     .eq("founder_id", user.id)
     .single();
 
@@ -27,20 +25,17 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from("founder_profiles")
-    .select("tier, paddle_subscription_id")
+    .select("tier")
     .eq("id", user.id)
     .single();
 
   return (
     <SettingsClient
       waitlistId={waitlist.id}
-      waitlistName={waitlist.product_name}
-      logoUrl={waitlist.logo_url}
       senderName={waitlist.sender_name}
       coldThreshold={waitlist.cold_threshold ?? 40}
       sendingDomain={waitlist.sending_domain}
       tier={profile?.tier ?? "free"}
-      paddleSubscriptionId={profile?.paddle_subscription_id}
     />
   );
 }

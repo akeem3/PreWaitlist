@@ -12,17 +12,10 @@ export default async function LeaderboardPage() {
 
   const { data: waitlist } = await supabase
     .from("waitlists")
-    .select("id, subdomain, product_name, logo_url")
+    .select("id")
     .eq("founder_id", user.id)
     .single();
   if (!waitlist) redirect("/onboarding/1");
-
-  const { data: profile } = await supabase
-    .from("founder_profiles")
-    .select("tier")
-    .eq("id", user.id)
-    .single();
-  const tier = profile?.tier ?? "free";
 
   const { data: subscribers } = await supabase
     .from("subscribers")
@@ -81,13 +74,5 @@ export default async function LeaderboardPage() {
     })
     .map((s, i) => ({ ...s, rank: i + 1 }));
 
-  return (
-    <LeaderboardClient
-      rows={ranked}
-      totalCount={ranked.length}
-      waitlistName={waitlist.product_name}
-      logoUrl={waitlist.logo_url}
-      tier={tier}
-    />
-  );
+  return <LeaderboardClient rows={ranked} totalCount={ranked.length} />;
 }

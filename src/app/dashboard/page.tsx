@@ -15,9 +15,7 @@ export default async function DashboardPage() {
 
   const { data: waitlist } = await supabase
     .from("waitlists")
-    .select(
-      "id, headline, subdomain, template, logo_url, product_name, cold_threshold"
-    )
+    .select("id, headline, subdomain, template, product_name, cold_threshold")
     .eq("founder_id", user.id)
     .single();
 
@@ -32,7 +30,6 @@ export default async function DashboardPage() {
     .single();
 
   const tier = profile?.tier ?? "free";
-
   const liveUrl = `${waitlist.subdomain}.prewaitlist.com`;
 
   const { data: subscribers } = await supabase
@@ -99,8 +96,6 @@ export default async function DashboardPage() {
   return (
     <DashboardClient
       liveUrl={liveUrl}
-      waitlistName={waitlist.product_name}
-      logoUrl={waitlist.logo_url}
       tier={tier}
       subdomain={waitlist.subdomain}
       subscribers={subscribersWithQuality}

@@ -2,39 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-vi.mock("next/navigation", () => ({
-  usePathname: vi.fn(() => "/dashboard/leaderboard"),
-}));
-
-vi.mock("next/image", () => ({
-  default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img alt={props.alt} src={props.src} />
-  ),
-}));
-
-vi.mock("next/link", () => ({
-  default: ({
-    children,
-    href,
-    className,
-  }: {
-    children: React.ReactNode;
-    href: string;
-    className?: string;
-  }) => (
-    <a href={href} className={className}>
-      {children}
-    </a>
-  ),
-}));
-
-vi.mock("../../../src/lib/supabase/client", () => ({
-  createClient: () => ({
-    auth: { signOut: vi.fn() },
-  }),
-}));
-
 import LeaderboardClient from "../../app/dashboard/leaderboard/client";
 
 const makeRows = (count: number) =>
@@ -51,9 +18,6 @@ describe("Dashboard Leaderboard Page", () => {
   const defaultProps = {
     rows: makeRows(15),
     totalCount: 15,
-    waitlistName: "Test",
-    logoUrl: null,
-    tier: "pro",
   };
 
   beforeEach(() => {
@@ -115,7 +79,7 @@ describe("Dashboard Leaderboard Page", () => {
 
   it("shows em-dash for null quality scores", () => {
     render(<LeaderboardClient {...defaultProps} />);
-    const emDashes = screen.getAllByText("—");
+    const emDashes = screen.getAllByText("\u2014");
     expect(emDashes.length).toBeGreaterThan(0);
   });
 

@@ -2,39 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-vi.mock("next/navigation", () => ({
-  usePathname: vi.fn(() => "/dashboard/warmth"),
-}));
-
-vi.mock("next/image", () => ({
-  default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img alt={props.alt} src={props.src} />
-  ),
-}));
-
-vi.mock("next/link", () => ({
-  default: ({
-    children,
-    href,
-    className,
-  }: {
-    children: React.ReactNode;
-    href: string;
-    className?: string;
-  }) => (
-    <a href={href} className={className}>
-      {children}
-    </a>
-  ),
-}));
-
-vi.mock("../../../src/lib/supabase/client", () => ({
-  createClient: () => ({
-    auth: { signOut: vi.fn() },
-  }),
-}));
-
 import WarmthClient from "../../app/dashboard/warmth/client";
 
 const makeSubscribers = (count: number) =>
@@ -54,8 +21,6 @@ describe("Dashboard Warmth Page", () => {
   const defaultProps = {
     subscribers: makeSubscribers(12),
     summary: { hot: 3, warm: 3, cold: 3, unscored: 3, total: 12 },
-    waitlistName: "Test",
-    logoUrl: null,
     tier: "pro",
   };
 
@@ -138,7 +103,7 @@ describe("Dashboard Warmth Page", () => {
 
   it("paginates at 10 rows", () => {
     render(<WarmthClient {...defaultProps} />);
-    expect(screen.getByText("Showing 1–10 of 12")).toBeDefined();
+    expect(screen.getByText("Showing 1\u201310 of 12")).toBeDefined();
   });
 
   it("shows locked overlay for free tier", () => {

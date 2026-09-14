@@ -15,7 +15,7 @@ export default async function UpdatesPage() {
 
   const { data: waitlist } = await supabase
     .from("waitlists")
-    .select("id, subdomain, product_name, logo_url")
+    .select("id")
     .eq("founder_id", user.id)
     .single();
 
@@ -30,11 +30,5 @@ export default async function UpdatesPage() {
     .order("created_at", { ascending: false })
     .limit(10);
 
-  return (
-    <UpdatesClient
-      updates={updates ?? []}
-      waitlistName={waitlist.product_name}
-      logoUrl={waitlist.logo_url}
-    />
-  );
+  return <UpdatesClient updates={updates ?? []} />;
 }

@@ -11,7 +11,7 @@ export default async function WarmthPage() {
 
   const { data: waitlist } = await supabase
     .from("waitlists")
-    .select("id, product_name, logo_url")
+    .select("id")
     .eq("founder_id", user.id)
     .single();
   if (!waitlist) redirect("/onboarding/1");
@@ -28,8 +28,6 @@ export default async function WarmthPage() {
       <WarmthClient
         subscribers={[]}
         summary={{ hot: 0, warm: 0, cold: 0, unscored: 0, total: 0 }}
-        waitlistName={waitlist.product_name}
-        logoUrl={waitlist.logo_url}
         tier={tier}
       />
     );
@@ -98,13 +96,5 @@ export default async function WarmthPage() {
     created_at: s.created_at,
   }));
 
-  return (
-    <WarmthClient
-      subscribers={enriched}
-      summary={summary}
-      waitlistName={waitlist.product_name}
-      logoUrl={waitlist.logo_url}
-      tier={tier}
-    />
-  );
+  return <WarmthClient subscribers={enriched} summary={summary} tier={tier} />;
 }
