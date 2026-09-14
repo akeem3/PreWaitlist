@@ -250,13 +250,13 @@ picking up a paying customer.
 
 **Pre-requisite:** Epic 10 (Public Waitlist Page & Onboarding Redesign) ships before Sprint 3 begins.
 
-**5 Epics, 39 Stories:**
+**5 Epics, 40 Stories:**
 
 - **Epic 11 — Warmth Tracking Engine** (8 stories): Resend webhooks, score calculation (daily batch), Hot/Warm/Cold badges, distribution panel, warning state, decay rules, schema migration
 - **Epic 12 — Email System** (7 stories): Confirmation emails, position recalculation, "you moved up" trigger, broadcast, segmented broadcast, sender customisation, email infrastructure separation
 - **Epic 12.1 — Dashboard Overhaul** (11 stories): Sidebar redesign, empty state, stat cards, tier gating, founder updates compose, mobile, settings/bug fixes, design tokens, broadcast/duplicate fixes, data/performance, tests
 - **Epic 12.2 — Gap Fixes** (10 stories): Schema migration, archive waitlist, edit after onboarding, Privacy Policy, ToS, consent tracking, unsubscribe mechanism, bounce suppression, physical address in emails, tests
-- **Epic 12.3 — Dashboard Section Pages** (5 stories): Unlock sidebar nav, dashboard leaderboard, dashboard qualification, dashboard warmth, tests
+- **Epic 12.3 — Dashboard Section Pages** (6 stories): Unlock sidebar nav, dashboard leaderboard, dashboard qualification, dashboard warmth, tests, shared layout & navigation fix
 - **Epic 13 — Billing & Feature Gating** (7 stories): Paddle checkout ($15/mo), upgrade modal (7 triggers), tier enforcement, 500 signup cap, billing management, domain auth walkthrough
 
 **Execution order:** Epic 11 → Epic 12 → Epic 12.1 → Epic 12.2 → Epic 12.3 → Epic 13
@@ -833,39 +833,57 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 ## Epic 12.2 Progress (Gap Fixes)
 
-| Story  | Status   | Summary                                                                  |
-| ------ | -------- | ------------------------------------------------------------------------ |
-| 12.2.0 | 🔲 ready | Schema Migration — consent/unsub/archive columns, bounced_emails table   |
-| 12.2.1 | 🔲 ready | Archive Waitlist — danger zone, 410 on public page, sidebar banner       |
-| 12.2.2 | 🔲 ready | Edit After Onboarding — editable fields, save per field, live preview    |
-| 12.2.3 | 🔲 ready | Privacy Policy — `/legal/privacy` page, footer links                     |
-| 12.2.4 | 🔲 ready | Terms of Service — `/legal/terms` page, footer links                     |
-| 12.2.5 | 🔲 ready | Consent Tracking — GDPR checkbox, IP capture, validation                 |
-| 12.2.6 | 🔲 ready | Unsubscribe Mechanism — HMAC tokens, `/unsubscribe` page, resubscribe    |
-| 12.2.7 | 🔲 ready | Bounce Suppression — webhook handler, suppression logic, dashboard badge |
-| 12.2.8 | 🔲 ready | Physical Address in Emails — settings field, email footer, CAN-SPAM      |
-| 12.2.9 | 🔲 ready | Epic 12.2 Tests — 8 test files, ≥280 total tests                         |
+| Story  | Status   | Summary                                                                                         |
+| ------ | -------- | ----------------------------------------------------------------------------------------------- |
+| 12.2.0 | 🔲 ready | Schema Migration — SQL written at `epic12.2-story0-bounced-emails.sql`, NOT executed in DB      |
+| 12.2.1 | 🔲 ready | Archive Waitlist — NOT started (depends on 12.2.0 schema)                                       |
+| 12.2.2 | 🔲 ready | Edit After Onboarding — PARTIAL ~20% (sender name + threshold only, missing 4 fields + preview) |
+| 12.2.3 | 🔲 ready | Privacy Policy — NOT started (footer has dead `#` placeholder link)                             |
+| 12.2.4 | 🔲 ready | Terms of Service — NOT started (footer has dead `#` placeholder link)                           |
+| 12.2.5 | 🔲 ready | Consent Tracking — NOT started (depends on 12.2.0 schema)                                       |
+| 12.2.6 | 🔲 ready | Unsubscribe Mechanism — NOT started                                                             |
+| 12.2.7 | 🔲 ready | Bounce Suppression — NOT started (webhook captures to email_events only, not bounced_emails)    |
+| 12.2.8 | 🔲 ready | Physical Address in Emails — NOT started                                                        |
+| 12.2.9 | 🔲 ready | Epic 12.2 Tests — NOT started (only pre-existing settings tests)                                |
 
 **Planning artifacts:**
 
-- `docs/epics/epic-12.2-gap-fixes.md` — full epic document with 10 stories
+- `docs/epics/epic-12.2-gap-fixes.md` — full epic document with 10 stories, Dev Notes annotated with implementation status
 - `docs/stories/story-12.2.0-schema-migration.md` through `story-12.2.9-epic-tests.md` — 10 detailed story files
-- `docs/stories/sql-writeups/epic12.2-story0-bounced-emails.sql` — idempotent migration SQL
+- `docs/stories/sql-writeups/epic12.2-story0-bounced-emails.sql` — idempotent migration SQL (NOT yet executed)
+
+**Alignment scan findings (2026-09-14):**
+
+- **0 of 10 stories fully implemented.** Story 12.2.0 has SQL ready but unexecuted. Story 12.2.2 has partial field editing (sender name only).
+- **Blocking dependency:** Story 12.2.0 must be executed in Supabase SQL Editor before 12.2.1, 12.2.5, 12.2.7 can proceed.
+- **Footer placeholders:** Marketing footer has `href="#"` dead links for Privacy and Terms — need real pages + real hrefs.
+- **Webhook partial:** Resend webhook already captures bounce events to `email_events` — needs to also insert into `bounced_emails` (once table exists).
 
 ## Epic 12.3 Progress (Dashboard Section Pages)
 
-| Story  | Status   | Summary                                                                              |
-| ------ | -------- | ------------------------------------------------------------------------------------ |
-| 12.3.0 | 🔲 ready | Unlock Sidebar Nav Items — remove "Coming soon", set hrefs, create placeholder pages |
-| 12.3.1 | 🔲 ready | Dashboard Leaderboard Page — ranked subscribers, referral count, pagination          |
-| 12.3.2 | 🔲 ready | Dashboard Qualification Page — question-by-question answer breakdown, bar charts     |
-| 12.3.3 | 🔲 ready | Dashboard Warmth Page — distribution summary, per-subscriber warmth, Pro tier gate   |
-| 12.3.4 | 🔲 ready | Epic 12.3 Tests — leaderboard, qualification, warmth, sidebar unlock tests           |
+| Story  | Status  | Summary                                                                                           |
+| ------ | ------- | ------------------------------------------------------------------------------------------------- |
+| 12.3.0 | ✅ done | Unlock Sidebar Nav Items — remove "Coming soon", set hrefs, create placeholder pages              |
+| 12.3.1 | ✅ done | Dashboard Leaderboard Page — ranked subscribers, referral count, pagination                       |
+| 12.3.2 | ✅ done | Dashboard Qualification Page — question-by-question answer breakdown, bar charts                  |
+| 12.3.3 | ✅ done | Dashboard Warmth Page — distribution summary, per-subscriber warmth, Pro tier gate                |
+| 12.3.4 | ✅ done | Epic 12.3 Tests — leaderboard, qualification, warmth, sidebar unlock tests                        |
+| 12.3.5 | ✅ done | Dashboard Shared Layout & Navigation Fix — layout.tsx + shell.tsx, strip sidebar from all clients |
 
 **Planning artifacts:**
 
-- `docs/epics/epic-12.3-dashboard-section-pages.md` — full epic document with 5 stories
+- `docs/epics/epic-12.3-dashboard-section-pages.md` — full epic document with 6 stories
 - `docs/stories/story-12.3.0-unlock-sidebar-nav.md` through `story-12.3.4-epic-tests.md` — 5 detailed story files
+
+**Key architecture decisions (Story 12.3.5):**
+
+- `src/app/dashboard/layout.tsx` — server layout, fetches auth + waitlist + tier, renders `DashboardShell`
+- `src/app/dashboard/shell.tsx` — client component, renders Sidebar + hamburger + `<main>` wrapper
+- Next.js App Router layout persists across `/dashboard/*` routes — Sidebar stays mounted, only children swap
+- Sidebar, hamburger, isSidebarOpen, handleSignOut removed from all 7 section client components
+- `waitlistName`/`logoUrl` removed from all section page props (layout handles these)
+- `loading.tsx` fixed — no more embedded sidebar skeleton (was causing double-sidebar during loading)
+- Each page still does its own auth + data fetch (redundant with layout, harmless, not optimized)
 
 ## Next Steps
 
@@ -930,7 +948,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 59. ~~Execute Story 12.1.0 — Sidebar Redesign~~ ✅ Done
 60. ~~Execute Epic 12.1 (remaining: 12.1.1–12.1.10)~~ ✅ Done — all 11 stories, 281 passing tests
 61. Execute Epic 12.2 (12.2.0–12.2.9) ← NEXT
-62. Execute Epic 12.3 (12.3.0–12.3.4)
+62. ~~Execute Epic 12.3 (12.3.0–12.3.5)~~ ✅ Done — all 6 stories, shared layout, 317+ passing tests
 63. Epic 13 — Billing & Feature Gating (Sprint 3)
 
 ## Decision + bug fix: "Powered by PreWaitlist" footer (2026-07)

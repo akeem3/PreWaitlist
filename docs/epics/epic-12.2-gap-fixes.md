@@ -1,6 +1,6 @@
 # Epic 12.2 — Gap Fixes
 
-**Status:** ready
+**Status:** ready (0/10 stories implemented)
 **Source:** [Sprint Gap Analysis](../sprint-gap-analysis.md), [PRD §2c Sprint 3.2](../PRD.md#2c-sprint-32--gap-fixes)
 
 ## Goal
@@ -53,10 +53,10 @@ All 10 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Dev Notes:**
 
-- T1: SQL: `ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS consent_given_at timestamptz; ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS consent_ip_address text; ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS unsubscribed_at timestamptz; ALTER TABLE waitlists ADD COLUMN IF NOT EXISTS is_archived boolean default false; ALTER TABLE waitlists ADD COLUMN IF NOT EXISTS archived_at timestamptz;`
-- T2: Create `bounced_emails` table with RLS. See SQL writeup for full DDL.
+- T1: SQL: `ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS consent_given_at timestamptz; ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS consent_ip_address text; ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS unsubscribed_at timestamptz; ALTER TABLE waitlists ADD COLUMN IF NOT EXISTS is_archived boolean default false; ALTER TABLE waitlists ADD COLUMN IF NOT EXISTS archived_at timestamptz;` **Status: written in SQL file but NOT executed in database — no code references these columns.**
+- T2: Create `bounced_emails` table with RLS. See SQL writeup for full DDL. **Status: SQL written at `docs/stories/sql-writeups/epic12.2-story0-bounced-emails.sql`, NOT executed.**
 - T3: All `ADD COLUMN IF NOT EXISTS` ensures idempotency. Existing rows get NULL for nullable columns, `false`/`NULL` for archived columns.
-- T4: Run migration in Supabase Dashboard SQL Editor.
+- T4: Run migration in Supabase Dashboard SQL Editor. **Status: NOT yet run. Must execute before dependent stories (12.2.1, 12.2.5, 12.2.7) can proceed.**
 
 ---
 
@@ -83,10 +83,11 @@ All 10 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Dev Notes:**
 
-- T1: In `settings/client.tsx`, add a danger zone section at the bottom with `border-destructive/20`, archive button using `Button variant="destructive"`.
-- T2: `window.confirm()` for simplicity. On confirm: `fetch("/api/waitlist", { method: "PATCH", body: JSON.stringify({ is_archived: true }) })`.
-- T3: In the public page, check `waitlist.is_archived` and render 410 status.
-- T4: In `sidebar.tsx`, check `isArchived` prop. When true, render amber banner with "Unarchive" button.
+- T1: In `settings/client.tsx`, add a danger zone section at the bottom with `border-destructive/20`, archive button using `Button variant="destructive"`. **Status: NOT implemented — settings client has no archive button or danger zone.**
+- T2: `window.confirm()` for simplicity. On confirm: `fetch("/api/waitlist", { method: "PATCH", body: JSON.stringify({ is_archived: true }) })`. **Status: NOT implemented — API route has no `is_archived` handling.**
+- T3: In the public page, check `waitlist.is_archived` and render 410 status. **Status: NOT implemented — `src/app/(public)/[subdomain]/page.tsx` has no archived check.**
+- T4: In `sidebar.tsx`, check `isArchived` prop. When true, render amber banner with "Unarchive" button. **Status: NOT implemented — sidebar has no `isArchived` prop or banner.**
+- **Depends on:** Story 12.2.0 (schema migration must run first for `is_archived`/`archived_at` columns to exist).
 
 ---
 
@@ -112,9 +113,9 @@ All 10 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Dev Notes:**
 
-- T1: In `settings/client.tsx`, replace static display with `<Input>` components pre-filled with current values. Each field gets its own save button.
-- T2: Add `success` state per field with `setTimeout` to clear after 3s.
-- T3: Import `LivePreview` and pass edited values. Reuse color picker from onboarding Step 3.
+- T1: In `settings/client.tsx`, replace static display with `<Input>` components pre-filled with current values. Each field gets its own save button. **Status: PARTIALLY implemented — `senderName` field exists with save button (line 19-29). `coldThreshold` field also exists. Missing: headline, subheadline, CTA text, brand color, logo URL fields. Also: `settings/page.tsx` only selects `id, sender_name, cold_threshold, sending_domain` — does not fetch headline/subheadline/brand_color/logo_url/cta_text.**
+- T2: Add `success` state per field with `setTimeout` to clear after 3s. **Status: PARTIALLY implemented — senderName uses 2s timeout (line 46-47). Pattern can be reused.**
+- T3: Import `LivePreview` and pass edited values. Reuse color picker from onboarding Step 3. **Status: NOT implemented — no live preview or color picker in settings.**
 
 ---
 
@@ -140,8 +141,8 @@ All 10 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Dev Notes:**
 
-- T1: Create `src/app/legal/privacy/page.tsx` as a server component with `max-w-2xl mx-auto py-12 px-6` layout.
-- T2: Add Privacy link to marketing footer and PoweredByFooter.
+- T1: Create `src/app/legal/privacy/page.tsx` as a server component with `max-w-2xl mx-auto py-12 px-6` layout. **Status: NOT implemented — file does not exist, `src/app/legal/` directory does not exist.**
+- T2: Add Privacy link to marketing footer and PoweredByFooter. **Status: PARTIALLY implemented — marketing footer has `<Link href="#">Privacy</Link>` (dead placeholder at line 228). PoweredByFooter has NO Privacy link.**
 
 ---
 
@@ -166,8 +167,8 @@ All 10 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Dev Notes:**
 
-- T1: Create `src/app/legal/terms/page.tsx`. Same layout as privacy policy.
-- T2: Same footer updates as Story 12.2.3.
+- T1: Create `src/app/legal/terms/page.tsx`. Same layout as privacy policy. **Status: NOT implemented — file does not exist.**
+- T2: Same footer updates as Story 12.2.3. **Status: PARTIALLY implemented — marketing footer has `<Link href="#">Terms</Link>` (dead placeholder at line 234). PoweredByFooter has NO Terms link.**
 
 ---
 
@@ -194,9 +195,10 @@ All 10 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Dev Notes:**
 
-- T1: Add checkbox below email input in the capture form with `required` attribute.
-- T2: In `POST /api/subscribers`, add consent fields. Extract IP from headers.
-- T3: Client-side validation prevents submission without checkbox.
+- T1: Add checkbox below email input in the capture form with `required` attribute. **Status: NOT implemented — `components/public/email-capture-form.tsx` has no consent checkbox. Only has "No spam. Unsubscribe anytime." text.**
+- T2: In `POST /api/subscribers`, add consent fields. Extract IP from headers. **Status: NOT implemented — `src/app/api/subscribers/route.ts` insert (lines 73-86) has no `consent_given_at` or `consent_ip_address` fields. No IP header reading.**
+- T3: Client-side validation prevents submission without checkbox. **Status: NOT implemented.**
+- **Depends on:** Story 12.2.0 (schema migration must run first for `consent_given_at`/`consent_ip_address` columns).
 
 ---
 
@@ -223,9 +225,9 @@ All 10 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Dev Notes:**
 
-- T1: In `src/lib/email.ts`, add HMAC-based unsubscribe URL generation. Append to email footer.
-- T2: Create `src/app/unsubscribe/page.tsx`. Verify HMAC, update subscriber, show confirmation.
-- T3: Check `unsubscribed_at IS NULL` before every send.
+- T1: In `src/lib/email.ts`, add HMAC-based unsubscribe URL generation. Append to email footer. **Status: NOT implemented — `sendEmail()` has no footer template, no merge tags, no HMAC. Emails are bare HTML passed by callers.**
+- T2: Create `src/app/unsubscribe/page.tsx`. Verify HMAC, update subscriber, show confirmation. **Status: NOT implemented — file does not exist.**
+- T3: Check `unsubscribed_at IS NULL` before every send. **Status: NOT implemented — no pre-send check in `sendEmail()` or subscriber routes.**
 
 ---
 
@@ -250,9 +252,10 @@ All 10 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Dev Notes:**
 
-- T1: Extend existing webhook handler with `bounce` and `complain` events.
-- T2: Create `isEmailBounced(supabase, waitlistId, email)` helper.
-- T3: Join or batch-query `bounced_emails` for subscriber table.
+- T1: Extend existing webhook handler with `bounce` and `complain` events. **Status: PARTIALLY implemented — `src/app/api/webhooks/resend/route.ts` maps `email.bounced` → `"bounced"` and stores in `email_events` (line 97-103). Does NOT insert into `bounced_emails` table (table doesn't exist in DB yet). No hard/soft classification from webhook payload.**
+- T2: Create `isEmailBounced(supabase, waitlistId, email)` helper. **Status: NOT implemented.**
+- T3: Join or batch-query `bounced_emails` for subscriber table. **Status: NOT implemented — `bounced_emails` table not in DB.**
+- **Depends on:** Story 12.2.0 (schema migration must run first for `bounced_emails` table).
 
 ---
 
@@ -276,9 +279,9 @@ All 10 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Dev Notes:**
 
-- T1: Add "Business Address" input to settings. Save via `PATCH /api/waitlist`.
-- T2: `ALTER TABLE waitlists ADD COLUMN IF NOT EXISTS business_address text nullable;`
-- T3: In email template footer, render address with fallback.
+- T1: Add "Business Address" input to settings. Save via `PATCH /api/waitlist`. **Status: NOT implemented — `settings/client.tsx` has no business address field.**
+- T2: `ALTER TABLE waitlists ADD COLUMN IF NOT EXISTS business_address text nullable;`. **Status: SQL defined in `epic12.2-story0-bounced-emails.sql` (line 72) but NOT executed in DB. API route has no `business_address` handling.**
+- T3: In email template footer, render address with fallback. **Status: NOT implemented — `src/lib/email.ts` has no footer template or address rendering.**
 
 ---
 
@@ -309,5 +312,5 @@ All 10 gaps closed. Privacy policy and terms of service pages exist and are link
 
 **Dev Notes:**
 
-- T1–T6: Create test files in `src/__tests__/components/` and `src/__tests__/api/`. Mock Supabase and fetch.
+- T1–T6: Create test files in `src/__tests__/components/` and `src/__tests__/api/`. Mock Supabase and fetch. **Status: NOT implemented — only pre-existing `dashboard-settings.test.tsx` exists (tests current settings, not 12.2 features). No archive, consent, unsubscribe, bounce, or edit test files exist.**
 - T7: Run `pnpm test`, `pnpm lint`, `pnpm build`. Verify ≥280 tests pass.
