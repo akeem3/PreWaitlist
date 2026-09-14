@@ -103,8 +103,8 @@ function ChartBody({ subdomain, range }: { subdomain: string; range: string }) {
           >
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 12, fill: "#6b6b6b" }}
-              axisLine={{ stroke: "#e0ddd8" }}
+              tick={{ fontSize: 12, fill: "#6B6459" }} // token: --color-muted-foreground
+              axisLine={{ stroke: "#CCC9C3" }} // token: --color-border
               tickLine={false}
               tickFormatter={(value: string) => {
                 const d = new Date(value);
@@ -112,7 +112,7 @@ function ChartBody({ subdomain, range }: { subdomain: string; range: string }) {
               }}
             />
             <YAxis
-              tick={{ fontSize: 12, fill: "#6b6b6b" }}
+              tick={{ fontSize: 12, fill: "#6B6459" }} // token: --color-muted-foreground
               axisLine={false}
               tickLine={false}
               allowDecimals={false}

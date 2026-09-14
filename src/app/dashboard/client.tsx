@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Sidebar } from "../../../components/dashboard/sidebar";
+import { createClient } from "../../../src/lib/supabase/client";
 
 const SignupChart = dynamic(
   () => import("../../../components/dashboard/signup-chart"),
@@ -88,6 +89,15 @@ function formatStat(value: number): string {
   return value > 0 ? String(value) : "\u2014";
 }
 
+function computeDelta(current: number, previous: number): string {
+  if (previous === 0 && current === 0) return "\u2014";
+  if (previous === 0) return "\u2191 new";
+  const pct = Math.round(((current - previous) / previous) * 100);
+  if (pct > 0) return `\u2191 ${pct}% vs last week`;
+  if (pct < 0) return `\u2193 ${Math.abs(pct)}% vs last week`;
+  return "\u2014 no change";
+}
+
 export default function DashboardClient({
   liveUrl,
   waitlistName,
@@ -107,7 +117,31 @@ export default function DashboardClient({
   const [warmthFilter, setWarmthFilter] = useState<string>("all");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [statsData, setStatsData] = useState<{
+    current: { total: number; referrals: number; today: number };
+    previous: { total: number; referrals: number };
+  } | null>(null);
+  const [warmthData, setWarmthData] = useState<{
+    hot: number;
+    warm: number;
+    cold: number;
+    unscored: number;
+    total: number;
+  } | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    fetch("/api/dashboard/stats")
+      .then((r) => r.json())
+      .then(setStatsData)
+      .catch(() => {});
+    fetch("/api/dashboard/warmth")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.total !== undefined) setWarmthData(json);
+      })
+      .catch(() => {});
+  }, []);
 
   const sortedSubscribers = useMemo(() => {
     return [...subscribers].sort((a, b) => {
@@ -183,7 +217,8 @@ export default function DashboardClient({
   }
 
   async function handleSignOut() {
-    await fetch("/api/auth/signout", { method: "POST" });
+    const supabase = createClient();
+    await supabase.auth.signOut();
     router.push("/signin");
     router.refresh();
   }
@@ -248,7 +283,7 @@ export default function DashboardClient({
 
       <main className="min-h-screen lg:ml-67">
         <div className="border-b border-border bg-background px-6 py-4">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="text-body-sm font-medium text-accent">
               {liveUrl}
             </span>
@@ -340,14 +375,13 @@ export default function DashboardClient({
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-medium text-accent-foreground">
                       1
                     </span>
-                    Share your page in 1\u20132 relevant communities
+                    Share your page in 1–2 relevant communities
                   </li>
                   <li className="flex items-start gap-3 text-body-sm text-foreground">
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-medium text-accent-foreground">
                       2
                     </span>
-                    Tell 5 people personally \u2014 personal asks convert 3x
-                    better
+                    Tell 5 people personally — personal asks convert 3x better
                   </li>
                   <li className="flex items-start gap-3 text-body-sm text-foreground">
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-medium text-accent-foreground">
@@ -368,6 +402,14 @@ export default function DashboardClient({
               <div className="text-caption text-muted-foreground">
                 Total signups
               </div>
+              {statsData && (
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {computeDelta(
+                    statsData.current.total,
+                    statsData.previous.total
+                  )}
+                </div>
+              )}
             </div>
             <div className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
               <div className="mb-1 text-h3 text-foreground">
@@ -378,6 +420,14 @@ export default function DashboardClient({
               <div className="text-caption text-muted-foreground">
                 Referral %
               </div>
+              {statsData && (
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {computeDelta(
+                    statsData.current.referrals,
+                    statsData.previous.referrals
+                  )}
+                </div>
+              )}
             </div>
             <div className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
               <div className="mb-1 text-h3 text-foreground">
@@ -386,7 +436,40 @@ export default function DashboardClient({
               <div className="text-caption text-muted-foreground">Today</div>
             </div>
             <div className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
-              <div className="mb-1 text-h3 text-foreground">{"\u2014"}</div>
+              <div className="mb-1 flex items-center justify-center gap-1.5 text-h3 text-foreground">
+                {tier === "free" && (
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    className="text-muted-foreground"
+                  >
+                    <rect
+                      x="2.5"
+                      y="5"
+                      width="7"
+                      height="5.5"
+                      rx="1"
+                      stroke="currentColor"
+                      strokeWidth="1.2"
+                    />
+                    <path
+                      d="M4 5V3.5C4 2.4 4.9 1.5 6 1.5C7.1 1.5 8 2.4 8 3.5V5"
+                      stroke="currentColor"
+                      strokeWidth="1.2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                )}
+                {warmthData && tier === "pro" ? (
+                  <span className="text-body-sm font-medium">
+                    {warmthData.hot} Hot, {warmthData.warm} Warm
+                  </span>
+                ) : (
+                  "\u2014"
+                )}
+              </div>
               <div className="text-caption text-muted-foreground">Warmth</div>
             </div>
           </div>
@@ -394,7 +477,10 @@ export default function DashboardClient({
           {!isEmpty && (
             <>
               <div className="mb-6">
-                <WarningBanner coldThreshold={coldThreshold} />
+                <WarningBanner
+                  coldThreshold={coldThreshold}
+                  warmthData={warmthData}
+                />
               </div>
 
               <div className="mb-6">
@@ -407,7 +493,7 @@ export default function DashboardClient({
 
               <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <QualificationPanel subdomain={subdomain} />
-                <WarmthPanel />
+                <WarmthPanel tier={tier} warmthData={warmthData} />
               </div>
             </>
           )}
@@ -601,7 +687,7 @@ export default function DashboardClient({
                             }}
                             className="mt-3 text-xs font-medium text-accent hover:underline"
                           >
-                            View full profile \u2192
+                            View full profile →
                           </button>
                         </div>
                       )}

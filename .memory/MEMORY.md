@@ -809,19 +809,19 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 ## Epic 12.1 Progress (Dashboard Overhaul)
 
-| Story   | Status   | Summary                                                                                        |
-| ------- | -------- | ---------------------------------------------------------------------------------------------- |
-| 12.1.0  | 🔲 ready | Sidebar Redesign — grouped nav sections, "Coming soon" labels, tooltips, remove upgrade button |
-| 12.1.1  | 🔲 ready | Empty State Redesign — welcome heading, guidance steps, ghost stat cards, remove checklist     |
-| 12.1.2  | 🔲 ready | Stat Card Upgrades — comparison deltas, warmth summary, new `/api/dashboard/stats` endpoint    |
-| 12.1.3  | 🔲 ready | Tier Gating Consistency — WarmthPanel locked overlay, lock icon on stat card                   |
-| 12.1.4  | 🔲 ready | Founder Updates Compose UI — `/dashboard/updates` page, textarea, publish API                  |
-| 12.1.5  | 🔲 ready | Mobile Responsiveness Fix — table overflow, responsive grids, header wrap                      |
-| 12.1.6  | 🔲 ready | Settings & Bug Fixes — button tooltips, error handling, typos                                  |
-| 12.1.7  | 🔲 ready | Design Token Compliance — sidebar bg, warning tokens, chart colors                             |
-| 12.1.8  | 🔲 ready | Broadcast & Duplicate API Fixes — default "all", confirmation, shared warmth fetch             |
-| 12.1.9  | 🔲 ready | Data & Performance — cache headers, query optimization                                         |
-| 12.1.10 | 🔲 ready | Epic 12.1 Tests — 10 test files, ≥270 total tests                                              |
+| Story   | Status  | Summary                                                                                        |
+| ------- | ------- | ---------------------------------------------------------------------------------------------- |
+| 12.1.0  | ✅ done | Sidebar Redesign — grouped nav sections, "Coming soon" labels, tooltips, remove upgrade button |
+| 12.1.1  | ✅ done | Empty State Redesign — welcome heading, guidance steps, ghost stat cards, remove checklist     |
+| 12.1.2  | ✅ done | Stat Card Upgrades — comparison deltas, warmth summary, new `/api/dashboard/stats` endpoint    |
+| 12.1.3  | ✅ done | Tier Gating Consistency — WarmthPanel locked overlay, lock icon on stat card                   |
+| 12.1.4  | ✅ done | Founder Updates Compose UI — `/dashboard/updates` page, textarea, publish API                  |
+| 12.1.5  | ✅ done | Mobile Responsiveness Fix — table overflow, responsive grids, header wrap                      |
+| 12.1.6  | ✅ done | Settings & Bug Fixes — button tooltips, error handling, typos                                  |
+| 12.1.7  | ✅ done | Design Token Compliance — sidebar bg, warning tokens, chart colors                             |
+| 12.1.8  | ✅ done | Broadcast & Duplicate API Fixes — default "all", confirmation, shared warmth fetch             |
+| 12.1.9  | ✅ done | Data & Performance — cache headers, query optimization                                         |
+| 12.1.10 | ✅ done | Epic 12.1 Tests — 10 test files, 281 passing tests (≥270 target)                               |
 
 **Planning artifacts:**
 
@@ -848,6 +848,21 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - `docs/epics/epic-12.2-gap-fixes.md` — full epic document with 10 stories
 - `docs/stories/story-12.2.0-schema-migration.md` through `story-12.2.9-epic-tests.md` — 10 detailed story files
 - `docs/stories/sql-writeups/epic12.2-story0-bounced-emails.sql` — idempotent migration SQL
+
+## Epic 12.3 Progress (Dashboard Section Pages)
+
+| Story  | Status   | Summary                                                                              |
+| ------ | -------- | ------------------------------------------------------------------------------------ |
+| 12.3.0 | 🔲 ready | Unlock Sidebar Nav Items — remove "Coming soon", set hrefs, create placeholder pages |
+| 12.3.1 | 🔲 ready | Dashboard Leaderboard Page — ranked subscribers, referral count, pagination          |
+| 12.3.2 | 🔲 ready | Dashboard Qualification Page — question-by-question answer breakdown, bar charts     |
+| 12.3.3 | 🔲 ready | Dashboard Warmth Page — distribution summary, per-subscriber warmth, Pro tier gate   |
+| 12.3.4 | 🔲 ready | Epic 12.3 Tests — leaderboard, qualification, warmth, sidebar unlock tests           |
+
+**Planning artifacts:**
+
+- `docs/epics/epic-12.3-dashboard-section-pages.md` — full epic document with 5 stories
+- `docs/stories/story-12.3.0-unlock-sidebar-nav.md` through `story-12.3.4-epic-tests.md` — 5 detailed story files
 
 ## Next Steps
 
@@ -908,10 +923,11 @@ Design specs use hex values that don't always match the token system exactly. Ma
 55. ~~Epic 12 — Email System~~ ✅ Done (all 7 stories, merged to dev)
 56. ~~Epic 12.1 planning — epic doc + 11 story files created~~ ✅ Done
 57. ~~Epic 12.2 planning — epic doc + 10 story files created + SQL migration~~ ✅ Done
-58. **Execute Story 12.1.0 — Sidebar Redesign** ← NEXT
-59. Execute Epic 12.1 (remaining: 12.1.1–12.1.10)
-60. Execute Epic 12.2 (12.2.0–12.2.9)
-61. Epic 13 — Billing & Feature Gating (Sprint 3)
+58. ~~Execute Story 12.1.0 — Sidebar Redesign~~ ✅ Done
+59. ~~Execute Epic 12.1 (remaining: 12.1.1–12.1.10)~~ ✅ Done — all 11 stories, 281 passing tests
+60. Execute Epic 12.2 (12.2.0–12.2.9) ← NEXT
+61. Execute Epic 12.2 (12.2.0–12.2.9)
+62. Epic 13 — Billing & Feature Gating (Sprint 3)
 
 ## Decision + bug fix: "Powered by PreWaitlist" footer (2026-07)
 

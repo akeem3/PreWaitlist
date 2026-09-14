@@ -24,6 +24,8 @@
   --color-success-foreground: #ffffff;
   --color-warning: #d97706;
   --color-warning-foreground: #ffffff;
+  --color-warning-background: #fefce8;
+  --color-warning-border: #fde68a;
   --color-error: #dc2626;
   --color-error-foreground: #ffffff;
   --color-info: #2563eb;

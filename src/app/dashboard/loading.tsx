@@ -1,7 +1,7 @@
 export default function DashboardLoading() {
   return (
     <div className="flex min-h-screen bg-background">
-      <div className="hidden w-60 border-r border-border bg-card p-4 lg:block">
+      <div className="hidden w-67 border-r border-border bg-card p-4 lg:block">
         <div className="mb-6 h-8 w-32 animate-pulse rounded bg-muted" />
         <div className="space-y-3">
           {Array.from({ length: 6 }).map((_, i) => (

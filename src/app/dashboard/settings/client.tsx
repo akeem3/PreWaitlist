@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "../../../../components/dashboard/sidebar";
+import { createClient } from "../../../../src/lib/supabase/client";
 
 interface SettingsClientProps {
   waitlistId: string;
@@ -29,21 +30,25 @@ export default function SettingsClient({
   const [senderNameValue, setSenderNameValue] = useState(senderName ?? "");
   const [senderNameSaved, setSenderNameSaved] = useState(false);
   const [senderNameSaving, setSenderNameSaving] = useState(false);
+  const [senderNameError, setSenderNameError] = useState<string | null>(null);
 
   const [thresholdValue, setThresholdValue] = useState(coldThreshold);
   const [thresholdSaved, setThresholdSaved] = useState(false);
   const [thresholdSaving, setThresholdSaving] = useState(false);
+  const [thresholdError, setThresholdError] = useState<string | null>(null);
 
   async function handleSignOut() {
-    await fetch("/api/auth/signout", { method: "POST" });
+    const supabase = createClient();
+    await supabase.auth.signOut();
     router.push("/signin");
     router.refresh();
   }
 
   async function handleSaveSenderName() {
     setSenderNameSaving(true);
+    setSenderNameError(null);
     try {
-      await fetch("/api/waitlist", {
+      const res = await fetch("/api/waitlist", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -51,8 +56,15 @@ export default function SettingsClient({
           sender_name: senderNameValue || null,
         }),
       });
+      if (!res.ok) {
+        const data = await res.json();
+        setSenderNameError(data.error || "Failed to save");
+        return;
+      }
       setSenderNameSaved(true);
       setTimeout(() => setSenderNameSaved(false), 2000);
+    } catch {
+      setSenderNameError("Network error \u2014 please try again");
     } finally {
       setSenderNameSaving(false);
     }
@@ -60,8 +72,9 @@ export default function SettingsClient({
 
   async function handleSaveThreshold() {
     setThresholdSaving(true);
+    setThresholdError(null);
     try {
-      await fetch("/api/waitlist", {
+      const res = await fetch("/api/waitlist", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -69,8 +82,15 @@ export default function SettingsClient({
           cold_threshold: thresholdValue,
         }),
       });
+      if (!res.ok) {
+        const data = await res.json();
+        setThresholdError(data.error || "Failed to save");
+        return;
+      }
       setThresholdSaved(true);
       setTimeout(() => setThresholdSaved(false), 2000);
+    } catch {
+      setThresholdError("Network error \u2014 please try again");
     } finally {
       setThresholdSaving(false);
     }
@@ -142,6 +162,9 @@ export default function SettingsClient({
                         : "Save changes"}
                   </button>
                 </div>
+                {senderNameError && (
+                  <p className="text-xs text-destructive">{senderNameError}</p>
+                )}
               </div>
             </div>
 
@@ -186,6 +209,9 @@ export default function SettingsClient({
                         : "Save changes"}
                   </button>
                 </div>
+                {thresholdError && (
+                  <p className="text-xs text-destructive">{thresholdError}</p>
+                )}
               </div>
             </div>
 
@@ -206,14 +232,18 @@ export default function SettingsClient({
                 {tier === "free" ? (
                   <button
                     type="button"
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
+                    disabled
+                    title="Paddle billing coming soon"
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground opacity-60 cursor-not-allowed"
                   >
-                    Upgrade to Pro — $15/mo
+                    Upgrade to Pro
                   </button>
                 ) : (
                   <button
                     type="button"
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+                    disabled
+                    title="Paddle billing coming soon"
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground opacity-60 cursor-not-allowed"
                   >
                     Manage billing
                   </button>

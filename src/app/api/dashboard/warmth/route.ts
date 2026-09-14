@@ -34,11 +34,16 @@ export async function GET() {
   const cold = scores.filter((s) => s.warmth_score === "cold").length;
   const unscored = scores.filter((s) => !s.warmth_score).length;
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     hot,
     warm,
     cold,
     unscored,
     total: scores.length,
   });
+  response.headers.set(
+    "Cache-Control",
+    "s-maxage=30, stale-while-revalidate=60"
+  );
+  return response;
 }

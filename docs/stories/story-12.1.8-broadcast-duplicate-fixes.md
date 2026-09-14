@@ -1,7 +1,7 @@
 # Story 12.1.8 — Broadcast & Duplicate API Fixes
 
 **Epic:** 12.1 — Dashboard Overhaul
-**Status:** ready
+**Status:** done
 **Depends on:** —
 **Design Refs:** —
 

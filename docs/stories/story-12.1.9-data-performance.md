@@ -1,7 +1,7 @@
 # Story 12.1.9 — Data & Performance
 
 **Epic:** 12.1 — Dashboard Overhaul
-**Status:** ready
+**Status:** done
 **Depends on:** 12.1.2
 **Design Refs:** —
 

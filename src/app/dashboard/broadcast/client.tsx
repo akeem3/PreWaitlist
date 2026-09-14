@@ -34,10 +34,13 @@ export default function BroadcastClient({
   const [sentSegment, setSentSegment] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-  const [segment, setSegment] = useState<"all" | "hot_warm" | "cold">("cold");
+  const [segment, setSegment] = useState<"all" | "hot_warm" | "cold">("all");
   const [counts, setCounts] = useState({ all: 0, hot_warm: 0, cold: 0 });
 
   const displayName = senderName || productName || "PreWaitlist";
+  const senderDisplay = senderName
+    ? `${senderName.toLowerCase().replace(/\s+/g, ".")}@prewaitlist.com`
+    : "updates@prewaitlist.com";
 
   useEffect(() => {
     async function fetchCounts() {
@@ -59,6 +62,11 @@ export default function BroadcastClient({
 
   const handleSend = async () => {
     if (!subject.trim() || !body.trim()) return;
+
+    const confirmed = window.confirm(
+      `Send this email to ${activeCount} subscriber${activeCount !== 1 ? "s" : ""}? This cannot be undone.`
+    );
+    if (!confirmed) return;
 
     setSending(true);
     setError(null);
@@ -223,7 +231,7 @@ export default function BroadcastClient({
               </p>
               <div className="border-b border-border pb-2 mb-2">
                 <p className="text-body-sm font-semibold text-foreground">
-                  From: {displayName} &lt;updates@prewaitlist.com&gt;
+                  From: {displayName} &lt;{senderDisplay}&gt;
                 </p>
                 <p className="text-body-sm font-semibold text-foreground">
                   Subject: {subject}

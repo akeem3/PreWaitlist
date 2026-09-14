@@ -1,6 +1,6 @@
 # Epic 12.1 — Dashboard Overhaul
 
-**Status:** ready
+**Status:** done
 **Source:** [PRD §2b Sprint 3.1](../PRD.md#2b-sprint-31--dashboard-overhaul), [Dashboard Overhaul Plan](../dashboard-overhaul-plan.md), [Sprint Gap Analysis](../sprint-gap-analysis.md)
 
 ## Design References
@@ -22,17 +22,17 @@ A new founder sees a welcoming empty state with clear next steps and a progress 
 
 | ID      | Title                           | Depends on    | Status |
 | ------- | ------------------------------- | ------------- | ------ |
-| 12.1.0  | Sidebar Redesign                | —             | ready  |
-| 12.1.1  | Empty State Redesign            | 12.1.0        | ready  |
-| 12.1.2  | Stat Card Upgrades              | 12.1.0        | ready  |
-| 12.1.3  | Tier Gating Consistency         | 12.1.0        | ready  |
-| 12.1.4  | Founder Updates Compose UI      | 12.1.0        | ready  |
-| 12.1.5  | Mobile Responsiveness Fix       | —             | ready  |
-| 12.1.6  | Settings & Bug Fixes            | —             | ready  |
-| 12.1.7  | Design Token Compliance         | —             | ready  |
-| 12.1.8  | Broadcast & Duplicate API Fixes | —             | ready  |
-| 12.1.9  | Data & Performance              | 12.1.2        | ready  |
-| 12.1.10 | Epic 12.1 Tests                 | 12.1.0–12.1.9 | ready  |
+| 12.1.0  | Sidebar Redesign                | —             | done   |
+| 12.1.1  | Empty State Redesign            | 12.1.0        | done   |
+| 12.1.2  | Stat Card Upgrades              | 12.1.0        | done   |
+| 12.1.3  | Tier Gating Consistency         | 12.1.0        | done   |
+| 12.1.4  | Founder Updates Compose UI      | 12.1.0        | done   |
+| 12.1.5  | Mobile Responsiveness Fix       | —             | done   |
+| 12.1.6  | Settings & Bug Fixes            | —             | done   |
+| 12.1.7  | Design Token Compliance         | —             | done   |
+| 12.1.8  | Broadcast & Duplicate API Fixes | —             | done   |
+| 12.1.9  | Data & Performance              | 12.1.2        | done   |
+| 12.1.10 | Epic 12.1 Tests                 | 12.1.0–12.1.9 | done   |
 
 Work through these in dependency order, one at a time. Story 12.1.0 is the foundation — sidebar redesign affects layout for all subsequent stories. Stories 12.1.1–12.1.4 depend on 12.1.0 (new sidebar structure). Stories 12.1.5–12.1.8 are independent fixes. Story 12.1.9 depends on 12.1.2 (stat cards need to exist for data optimization). Story 12.1.10 is the final test pass covering everything.
 

@@ -1,7 +1,7 @@
 # Story 12.1.10 — Epic 12.1 Tests
 
 **Epic:** 12.1 — Dashboard Overhaul
-**Status:** ready
+**Status:** done
 **Depends on:** 12.1.0–12.1.9
 **Design Refs:** — (no UI)
 

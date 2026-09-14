@@ -1,7 +1,7 @@
 # Story 12.1.7 — Design Token Compliance
 
 **Epic:** 12.1 — Dashboard Overhaul
-**Status:** ready
+**Status:** done
 **Depends on:** —
 **Design Refs:** —
 

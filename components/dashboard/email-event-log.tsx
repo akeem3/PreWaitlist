@@ -12,14 +12,14 @@ type EmailEvent = {
 export const eventCache = new Map<string, EmailEvent[]>();
 
 const SEVERITY_STYLES: Record<string, string> = {
-  delivered: "bg-green-100 text-green-800",
-  opened: "bg-blue-100 text-blue-800",
+  delivered: "bg-accent/10 text-accent",
+  opened: "bg-info/10 text-info",
   clicked: "bg-accent/10 text-accent",
-  bounced: "bg-red-100 text-red-700",
-  complained: "bg-red-100 text-red-700",
-  failed: "bg-red-100 text-red-700",
+  bounced: "bg-destructive/10 text-destructive",
+  complained: "bg-destructive/10 text-destructive",
+  failed: "bg-destructive/10 text-destructive",
   sent: "bg-muted text-muted-foreground",
-  delivery_delayed: "bg-yellow-100 text-yellow-800",
+  delivery_delayed: "bg-warning/10 text-warning",
 };
 
 function EventBadge({ eventType }: { eventType: string }) {

@@ -36,7 +36,8 @@ export async function GET() {
   const { data: subscribers } = await supabase
     .from("subscribers")
     .select("qual_answers")
-    .eq("waitlist_id", waitlist.id);
+    .eq("waitlist_id", waitlist.id)
+    .not("qual_answers", "is", null);
 
   const result = questions.map((q) => {
     const answerCounts = new Map<string, number>();
@@ -53,5 +54,10 @@ export async function GET() {
     return { question: q.question_text, answers };
   });
 
-  return NextResponse.json({ questions: result });
+  const response = NextResponse.json({ questions: result });
+  response.headers.set(
+    "Cache-Control",
+    "s-maxage=30, stale-while-revalidate=60"
+  );
+  return response;
 }

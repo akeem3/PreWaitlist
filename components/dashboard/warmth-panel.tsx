@@ -10,6 +10,11 @@ interface WarmthData {
   total: number;
 }
 
+interface WarmthPanelProps {
+  tier?: string;
+  warmthData?: WarmthData | null;
+}
+
 function WarmthBar({
   label,
   count,
@@ -40,29 +45,67 @@ function WarmthBar({
   );
 }
 
-export default function WarmthPanel() {
-  const [data, setData] = useState<WarmthData | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function WarmthPanel({
+  tier = "free",
+  warmthData: externalData,
+}: WarmthPanelProps) {
+  const [internalData, setInternalData] = useState<WarmthData | null>(null);
+  const [internalLoading, setInternalLoading] = useState(true);
+
+  const data = externalData ?? internalData;
+  const loading = externalData ? false : internalLoading;
 
   useEffect(() => {
+    if (externalData) return;
     let cancelled = false;
     fetch("/api/dashboard/warmth")
       .then((res) => res.json())
       .then((json) => {
         if (!cancelled && json.total !== undefined) {
-          setData(json);
+          setInternalData(json);
         }
       })
       .catch(() => {
-        if (!cancelled) setData(null);
+        if (!cancelled) setInternalData(null);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setInternalLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [externalData]);
+
+  if (tier === "free") {
+    return (
+      <div className="relative rounded-[var(--card-radius)] border border-border bg-card p-5">
+        <h3 className="mb-4 text-lg font-semibold text-foreground">
+          Warmth Distribution
+        </h3>
+        <div className="space-y-3 opacity-50">
+          {["Hot", "Warm", "Cold", "Unscored"].map((label) => (
+            <div key={label} className="flex items-center gap-3">
+              <span className="w-16 shrink-0 text-xs font-medium text-foreground">
+                {label}
+              </span>
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted" />
+              <span className="min-w-20 shrink-0 text-right text-xs text-muted-foreground">
+                {"\u2014"}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center rounded-[var(--card-radius)] bg-card/80">
+          <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">
+            Pro
+          </span>
+          <p className="text-body-sm text-muted-foreground">
+            Upgrade to Pro to see warmth scores
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

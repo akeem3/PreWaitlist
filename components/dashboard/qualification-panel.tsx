@@ -85,7 +85,7 @@ function PanelBody({ subdomain }: { subdomain: string }) {
                         }}
                       />
                     </div>
-                    <span className="wshrink-0 text-xs text-muted-foreground">
+                    <span className="shrink-0 text-xs text-muted-foreground">
                       {a.value} ({a.count})
                     </span>
                   </div>

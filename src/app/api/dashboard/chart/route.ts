@@ -53,5 +53,10 @@ export async function GET(request: NextRequest) {
     .map(([date, count]) => ({ date, count }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  return NextResponse.json({ days });
+  const response = NextResponse.json({ days });
+  response.headers.set(
+    "Cache-Control",
+    "s-maxage=30, stale-while-revalidate=60"
+  );
+  return response;
 }
