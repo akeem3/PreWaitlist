@@ -76,21 +76,22 @@ describe("Sidebar", () => {
     expect(subscribers).not.toHaveClass("bg-accent");
   });
 
-  it("renders disabled items with opacity and no href", () => {
+  it("renders previously-disabled items as clickable links", () => {
     render(<Sidebar {...defaultProps} />);
-    const qualification = screen.getByText("Qualification").closest("span");
-    const leaderboard = screen.getByText("Leaderboard").closest("span");
-    const updates = screen.getByText("Updates").closest("span");
+    const qualification = screen.getByText("Qualification").closest("a");
+    const leaderboard = screen.getByText("Leaderboard").closest("a");
+    const updates = screen.getByText("Updates").closest("a");
 
-    expect(qualification?.className).toContain("opacity-50");
-    expect(qualification?.className).toContain("cursor-not-allowed");
-    expect(qualification).not.toHaveAttribute("href");
+    expect(qualification).toBeDefined();
+    expect(qualification?.getAttribute("href")).toBe(
+      "/dashboard/qualification"
+    );
 
-    expect(leaderboard?.className).toContain("opacity-50");
-    expect(leaderboard).not.toHaveAttribute("href");
+    expect(leaderboard).toBeDefined();
+    expect(leaderboard?.getAttribute("href")).toBe("/dashboard/leaderboard");
 
-    expect(updates?.className).toContain("opacity-50");
-    expect(updates).not.toHaveAttribute("href");
+    expect(updates).toBeDefined();
+    expect(updates?.getAttribute("href")).toBe("/dashboard/updates");
   });
 
   it("renders locked items with lock icon and no href", () => {
@@ -175,6 +176,6 @@ describe("Sidebar", () => {
 
   it("renders upgrade to pro link", () => {
     render(<Sidebar {...defaultProps} />);
-    expect(screen.getByText("Upgrade to pro")).toBeDefined();
+    expect(screen.getByText("Upgrade to Pro")).toBeDefined();
   });
 });

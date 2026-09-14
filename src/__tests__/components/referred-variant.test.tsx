@@ -67,7 +67,8 @@ describe("Referred Variant Display", () => {
 
     mockSupabase.from
       .mockReturnValueOnce(buildChain(mockSubscriber))
-      .mockReturnValueOnce(buildChain(mockReferrer));
+      .mockReturnValueOnce(buildChain(mockReferrer))
+      .mockReturnValueOnce(buildChain(null));
 
     const mod = await import("../../app/(public)/[subdomain]/thank-you/page");
     const ThankYouPage = mod.default;
@@ -104,7 +105,8 @@ describe("Referred Variant Display", () => {
 
     mockSupabase.from
       .mockReturnValueOnce(buildChain(mockSubscriber))
-      .mockReturnValueOnce(buildChain(mockReferrer));
+      .mockReturnValueOnce(buildChain(mockReferrer))
+      .mockReturnValueOnce(buildChain(null));
 
     const mod = await import("../../app/(public)/[subdomain]/thank-you/page");
     const ThankYouPage = mod.default;

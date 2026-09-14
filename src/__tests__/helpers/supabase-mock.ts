@@ -78,8 +78,11 @@ export function createMockSupabaseClient(responses: MockResponse[] = []) {
 
   const from = vi.fn(() => createChain());
 
+  const rpc = vi.fn(() => Promise.resolve({ data: [], error: null }));
+
   const supabase = {
     from,
+    rpc,
     auth: {
       getUser: vi.fn().mockResolvedValue({
         data: { user: { id: "user-1", email: "test@test.com" } },

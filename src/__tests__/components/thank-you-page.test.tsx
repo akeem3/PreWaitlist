@@ -160,7 +160,7 @@ describe("Thank-you Page", () => {
     expect(input).toHaveValue("http://test.lvh.me:3000?ref=abc12345");
   });
 
-  it("renders name input", async () => {
+  it("renders referral count when milestone_rewards_enabled is false", async () => {
     const mockSubscriber = {
       id: "sub-1",
       email: "test@example.com",
@@ -178,6 +178,7 @@ describe("Thank-you Page", () => {
 
     mockSupabase.from
       .mockReturnValueOnce(buildChain(mockSubscriber))
+      .mockReturnValueOnce(buildChain(null))
       .mockReturnValueOnce(buildChain(null));
 
     const mod = await import("../../app/(public)/[subdomain]/thank-you/page");
@@ -193,9 +194,7 @@ describe("Thank-you Page", () => {
 
     render(element);
 
-    expect(
-      screen.getByPlaceholderText("What should we call you? (optional)")
-    ).toBeDefined();
+    expect(screen.getByText("#5")).toBeDefined();
   });
 
   it("renders share and copy link buttons", async () => {
@@ -293,7 +292,8 @@ describe("Thank-you Page", () => {
 
     mockSupabase.from
       .mockReturnValueOnce(buildChain(mockSubscriber))
-      .mockReturnValueOnce(buildChain(mockReferrer));
+      .mockReturnValueOnce(buildChain(mockReferrer))
+      .mockReturnValueOnce(buildChain(null));
 
     const mod = await import("../../app/(public)/[subdomain]/thank-you/page");
     const ThankYouPage = mod.default;
@@ -407,7 +407,8 @@ describe("Thank-you Page", () => {
 
     mockSupabase.from
       .mockReturnValueOnce(buildChain(mockSubscriber))
-      .mockReturnValueOnce(buildChain(mockMilestones));
+      .mockReturnValueOnce(buildChain(mockMilestones))
+      .mockReturnValueOnce(buildChain(null));
 
     const mod = await import("../../app/(public)/[subdomain]/thank-you/page");
     const ThankYouPage = mod.default;

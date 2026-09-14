@@ -116,8 +116,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       {
         label: "Qualification",
-        href: "#",
-        disabled: true,
+        href: "/dashboard/qualification",
         icon: (
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <rect
@@ -141,8 +140,7 @@ const NAV_SECTIONS: NavSection[] = [
       },
       {
         label: "Leaderboard",
-        href: "#",
-        disabled: true,
+        href: "/dashboard/leaderboard",
         icon: (
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path
@@ -174,8 +172,7 @@ const NAV_SECTIONS: NavSection[] = [
       },
       {
         label: "Warmth",
-        href: "#",
-        locked: true,
+        href: "/dashboard/warmth",
         icon: (
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path
@@ -342,7 +339,8 @@ export function Sidebar({
                     ALL_NAV_ITEMS.indexOf(item);
                 const isLocked =
                   ("locked" in item && item.locked) ||
-                  (item.label === "Broadcast" && tier === "free");
+                  (item.label === "Broadcast" && tier === "free") ||
+                  (item.label === "Warmth" && tier === "free");
                 const isDisabled = "disabled" in item && item.disabled;
 
                 if (isLocked) {

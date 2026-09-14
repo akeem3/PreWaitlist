@@ -26,15 +26,13 @@ describe("POST /api/subscribers", () => {
   });
 
   it("creates subscriber with valid data", async () => {
-    // Mock: max position query returns position 2, then insert returns subscriber
     mockSupabase.__queue.push(
-      { data: { position: 2 }, error: null }, // max position
       {
         data: {
           id: "sub-1",
           email: "test@test.com",
           referral_code: "abc12345",
-          position: 3,
+          position: 1,
         },
         error: null,
       } // insert

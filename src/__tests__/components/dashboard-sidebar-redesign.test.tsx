@@ -56,10 +56,10 @@ describe("Sidebar Redesign (12.1.0)", () => {
     expect(screen.getByText("CONFIG")).toBeDefined();
   });
 
-  it("shows 'Coming soon' on disabled items", () => {
+  it("shows no 'Coming soon' labels after nav unlock", () => {
     render(<Sidebar {...defaultProps} />);
-    const comingSoonLabels = screen.getAllByText("Coming soon");
-    expect(comingSoonLabels.length).toBeGreaterThanOrEqual(2);
+    const comingSoonLabels = screen.queryAllByText("Coming soon");
+    expect(comingSoonLabels.length).toBe(0);
   });
 
   it("shows lock icon with tooltip on locked items", () => {
@@ -112,5 +112,42 @@ describe("Sidebar Redesign (12.1.0)", () => {
     const broadcast = screen.getByText("Broadcast").closest("a");
     expect(broadcast).toBeDefined();
     expect(broadcast?.getAttribute("href")).toBe("/dashboard/broadcast");
+  });
+
+  it("updates has correct href", () => {
+    render(<Sidebar {...defaultProps} />);
+    const updates = screen.getByText("Updates").closest("a");
+    expect(updates).toBeDefined();
+    expect(updates?.getAttribute("href")).toBe("/dashboard/updates");
+  });
+
+  it("qualification has correct href", () => {
+    render(<Sidebar {...defaultProps} />);
+    const qualification = screen.getByText("Qualification").closest("a");
+    expect(qualification).toBeDefined();
+    expect(qualification?.getAttribute("href")).toBe(
+      "/dashboard/qualification"
+    );
+  });
+
+  it("leaderboard has correct href", () => {
+    render(<Sidebar {...defaultProps} />);
+    const leaderboard = screen.getByText("Leaderboard").closest("a");
+    expect(leaderboard).toBeDefined();
+    expect(leaderboard?.getAttribute("href")).toBe("/dashboard/leaderboard");
+  });
+
+  it("warmth is locked for free tier", () => {
+    render(<Sidebar {...defaultProps} tier="free" />);
+    const warmth = screen.getByText("Warmth").closest("span");
+    expect(warmth?.className).toContain("cursor-not-allowed");
+    expect(warmth?.getAttribute("href")).toBeNull();
+  });
+
+  it("warmth is unlocked for pro tier", () => {
+    render(<Sidebar {...defaultProps} tier="pro" />);
+    const warmth = screen.getByText("Warmth").closest("a");
+    expect(warmth).toBeDefined();
+    expect(warmth?.getAttribute("href")).toBe("/dashboard/warmth");
   });
 });
