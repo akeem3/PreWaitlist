@@ -45,7 +45,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     .from("founder_profiles")
     .select("tier")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   const tier = profile?.tier ?? "free";
   const liveUrl = `${waitlist.subdomain}.prewaitlist.com`;

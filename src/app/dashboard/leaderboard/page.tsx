@@ -21,7 +21,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   } else {
     wlQuery = wlQuery.eq("founder_id", user.id);
   }
-  const { data: waitlist } = await wlQuery.single();
+  const { data: waitlist } = await wlQuery.maybeSingle();
   if (!waitlist) redirect("/onboarding/1");
 
   // Try with display_name; fall back without it if column doesn't exist yet

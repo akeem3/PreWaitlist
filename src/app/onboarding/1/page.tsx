@@ -123,7 +123,8 @@ export default function OnboardingStep1() {
         if (!res.ok) return;
         const data = await res.json();
 
-        if (data.waitlistId) {
+        // GET /api/waitlist returns an array of waitlists
+        if (Array.isArray(data) && data.length > 0) {
           router.replace("/dashboard");
         }
       } catch {

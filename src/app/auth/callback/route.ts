@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
           .from("waitlists")
           .select("id, subdomain, headline, template, brand_color")
           .eq("founder_id", user.id)
-          .single();
+          .maybeSingle();
 
         if (!waitlist) {
           redirectPath = "/onboarding/1";

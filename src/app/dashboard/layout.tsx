@@ -43,7 +43,7 @@ export default async function DashboardLayout({
     .from("founder_profiles")
     .select("tier")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   return (
     <DashboardShell

@@ -25,7 +25,7 @@ export default async function UpdatesPage({ searchParams }: PageProps) {
   } else {
     wlQuery = wlQuery.eq("founder_id", user.id);
   }
-  const { data: waitlist } = await wlQuery.single();
+  const { data: waitlist } = await wlQuery.maybeSingle();
 
   if (!waitlist) {
     redirect("/onboarding/1");

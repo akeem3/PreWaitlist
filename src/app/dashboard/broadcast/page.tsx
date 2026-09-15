@@ -21,7 +21,7 @@ export default async function BroadcastPage({ searchParams }: PageProps) {
     .from("founder_profiles")
     .select("tier")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   const tier = profile?.tier ?? "free";
 
@@ -39,7 +39,7 @@ export default async function BroadcastPage({ searchParams }: PageProps) {
   } else {
     wlQuery = wlQuery.eq("founder_id", user.id);
   }
-  const { data: waitlist } = await wlQuery.single();
+  const { data: waitlist } = await wlQuery.maybeSingle();
 
   if (!waitlist) {
     redirect("/onboarding/1");
