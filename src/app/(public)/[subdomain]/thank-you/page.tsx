@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { PoweredByFooter } from "../../../../../components/share/powered-by-footer";
 import { ReferralLink } from "../../../../../components/share/referral-link";
 import { ShareButtons } from "../../../../../components/share/share-buttons";
+import { ThankYouNameInput } from "../../../../../components/public/thank-you-name-input";
 
 type Props = {
   params: Promise<{ subdomain: string }>;
@@ -113,6 +114,12 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
         </div>
 
         <h1 className="text-h2 text-foreground">You&apos;re in.</h1>
+
+        <ThankYouNameInput
+          subscriberId={subscriber.id}
+          referralCode={referral_code}
+        />
+
         <p className="text-body text-muted-foreground mt-2">
           You&apos;re{" "}
           <span className="font-semibold text-accent">
@@ -154,7 +161,7 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
         <ShareButtons url={referralLink} className="mt-4 w-full" />
 
         <a
-          href={`/${subdomain}/leaderboard`}
+          href={`/${subdomain}/leaderboard?subscriber_id=${subscriber.id}`}
           className="text-body-lg font-semibold text-accent mt-8 hover:underline"
         >
           See where you rank →

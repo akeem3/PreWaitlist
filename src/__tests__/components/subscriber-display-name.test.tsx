@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { ThankYouNameInput } from "../../../components/public/thank-you-name-input";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -78,48 +79,40 @@ describe("Subscriber Display Name", () => {
     });
   });
 
-  describe("Email capture form name input", () => {
-    it("renders optional first name input", async () => {
-      const user = userEvent.setup();
-
-      // Import the email capture form dynamically to test it renders
-      // We test the concept here — the form renders a name input
-      const {} = render(
-        <form>
-          <input
-            type="text"
-            placeholder="First name (optional)"
-            aria-label="First name"
-          />
-          <input type="email" placeholder="Email address" aria-label="Email" />
-          <button type="submit">Join</button>
-        </form>
+  describe("ThankYouNameInput component", () => {
+    it("renders optional first name input on thank-you page", () => {
+      render(
+        <ThankYouNameInput subscriberId="test-id" referralCode="test-code" />
       );
 
       const nameInput = screen.getByRole("textbox", { name: /first name/i });
       expect(nameInput).toBeDefined();
-      expect(nameInput.getAttribute("placeholder")).toBe(
-        "First name (optional)"
-      );
-
-      // Type into the name field
-      await user.type(nameInput, "Sarah");
-      expect(nameInput).toHaveValue("Sarah");
+      expect(nameInput).toHaveAttribute("placeholder", "First name (optional)");
     });
 
-    it("name input is optional — form renders without requiring it", () => {
+    it("name input is optional — has no required attribute", () => {
       render(
-        <form>
-          <input type="text" placeholder="First name (optional)" />
-          <input type="email" placeholder="Email address" required />
-          <button type="submit">Join</button>
-        </form>
+        <ThankYouNameInput subscriberId="test-id" referralCode="test-code" />
       );
 
-      // Name input exists and has no required attribute
-      const nameInput = screen.getByPlaceholderText("First name (optional)");
-      expect(nameInput).toBeDefined();
+      const nameInput = screen.getByRole("textbox", { name: /first name/i });
       expect(nameInput).not.toBeRequired();
+    });
+
+    it("shows thank-you message after successful save", async () => {
+      const user = userEvent.setup();
+      global.fetch = vi.fn().mockResolvedValue({ ok: true });
+
+      render(
+        <ThankYouNameInput subscriberId="test-id" referralCode="test-code" />
+      );
+
+      const nameInput = screen.getByRole("textbox", { name: /first name/i });
+      await user.type(nameInput, "Sarah");
+      // Trigger save via Enter key
+      await user.keyboard("{Enter}");
+
+      expect(await screen.findByText("Thanks, Sarah!")).toBeDefined();
     });
   });
 });

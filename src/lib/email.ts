@@ -8,6 +8,7 @@ interface SendEmailParams {
   to: string;
   subject: string;
   html: string;
+  text?: string;
   stream: Stream;
   senderName?: string | null;
   productName?: string | null;
@@ -70,9 +71,23 @@ export async function isUnsubscribed(
 }
 
 /**
- * Build the email footer with unsubscribe link and physical address.
+ * Build the email footer with physical address only (no unsubscribe link for transactional emails).
  */
-export function buildEmailFooter(
+export function buildEmailFooter(businessAddress?: string | null): string {
+  const address = businessAddress?.trim() || DEFAULT_ADDRESS;
+
+  return `
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
+    <p style="font-size: 12px; color: #9ca3af; margin: 0; text-align: center;">
+      ${address}
+    </p>
+  `;
+}
+
+/**
+ * Build the email footer with unsubscribe link (for broadcast emails).
+ */
+export function buildBroadcastEmailFooter(
   subscriberId: string,
   businessAddress?: string | null
 ): string {
@@ -80,12 +95,12 @@ export function buildEmailFooter(
   const unsubscribeUrl = generateUnsubscribeUrl(subscriberId);
 
   return `
-    <hr style="border: none; border-top: 1px solid #ccc9c3; margin: 32px 0;" />
-    <p style="font-size: 12px; color: #6b6459; margin: 0 0 8px;">
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
+    <p style="font-size: 12px; color: #9ca3af; margin: 0 0 8px; text-align: center;">
       ${address}
     </p>
-    <p style="font-size: 12px; color: #6b6459; margin: 0;">
-      <a href="${unsubscribeUrl}" style="color: #6b6459;">Unsubscribe</a>
+    <p style="font-size: 12px; color: #9ca3af; margin: 0; text-align: center;">
+      <a href="${unsubscribeUrl}" style="color: #9ca3af; text-decoration: underline;">Unsubscribe</a>
     </p>
   `;
 }
@@ -108,13 +123,25 @@ export async function sendEmail(params: SendEmailParams): Promise<{
   );
 
   try {
+    const sendParams: {
+      from: string;
+      to: string[];
+      subject: string;
+      html: string;
+      text?: string;
+    } = {
+      from,
+      to: [params.to],
+      subject: params.subject,
+      html: params.html,
+    };
+
+    if (params.text) {
+      sendParams.text = params.text;
+    }
+
     const result = await resend.emails.send(
-      {
-        from,
-        to: [params.to],
-        subject: params.subject,
-        html: params.html,
-      },
+      sendParams,
       params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : {}
     );
 

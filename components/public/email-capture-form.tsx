@@ -41,14 +41,12 @@ export function EmailCaptureForm({
   const searchParams = useSearchParams();
   const referralCode = searchParams.get("ref");
 
-  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [consent, setConsent] = useState(false);
-  const [consentError, setConsentError] = useState(false);
   const isDark = template === "dark";
   const isBold = template === "bold";
 
@@ -63,7 +61,6 @@ export function EmailCaptureForm({
 
     setEmailError(null);
     setApiError(null);
-    setConsentError(false);
 
     if (!email.trim()) {
       setEmailError("Email is required");
@@ -75,18 +72,12 @@ export function EmailCaptureForm({
       return;
     }
 
-    if (!consent) {
-      setConsentError(true);
-      return;
-    }
-
     setLoading(true);
 
     try {
       const body: Record<string, unknown> = {
         waitlist_id: waitlistId,
         email: email.trim().toLowerCase(),
-        consent: true,
       };
 
       if (displayName.trim()) {
@@ -151,27 +142,20 @@ export function EmailCaptureForm({
   const btnPadding = isBold ? "px-7" : "px-4";
   const btnText = isBold ? "text-base font-semibold" : "text-sm font-medium";
 
-  const consentLabel = isDark
-    ? "text-dark-template-secondary"
-    : "text-muted-foreground";
-
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-md mt-2">
       {hasQuestions ? (
         <>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="First name (optional)"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              disabled={loading}
-              autoComplete="given-name"
-              aria-label="First name"
-              className={`${inputHeight} w-full rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50`}
-            />
-          </div>
-
+          <input
+            type="text"
+            placeholder="First name (optional)"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            disabled={loading}
+            autoComplete="given-name"
+            aria-label="First name"
+            className={`${inputHeight} w-full rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50`}
+          />
           <input
             type="email"
             placeholder="Email address"
@@ -221,30 +205,6 @@ export function EmailCaptureForm({
             ))}
           </div>
 
-          <div className="mt-3">
-            <label className="flex items-start gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={consent}
-                onChange={(e) => {
-                  setConsent(e.target.checked);
-                  setConsentError(false);
-                }}
-                disabled={loading}
-                className="mt-1 h-4 w-4 rounded border-border accent-accent"
-              />
-              <span className={`text-xs ${consentLabel}`}>
-                I agree to receive email updates about this product. You can
-                unsubscribe at any time.
-              </span>
-            </label>
-            {consentError && (
-              <p className="mt-1 text-xs text-destructive" role="alert">
-                You must agree to receive emails to join the waitlist.
-              </p>
-            )}
-          </div>
-
           <button
             type="submit"
             disabled={loading}
@@ -274,9 +234,8 @@ export function EmailCaptureForm({
             disabled={loading}
             autoComplete="given-name"
             aria-label="First name"
-            className={`${inputHeight} w-full rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50`}
+            className={`${inputHeight} w-full rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50 mb-2`}
           />
-
           <div className="flex gap-2">
             <input
               type="email"
@@ -308,30 +267,6 @@ export function EmailCaptureForm({
                 ctaText || "Join Waitlist"
               )}
             </button>
-          </div>
-
-          <div className="mt-3">
-            <label className="flex items-start gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={consent}
-                onChange={(e) => {
-                  setConsent(e.target.checked);
-                  setConsentError(false);
-                }}
-                disabled={loading}
-                className="mt-1 h-4 w-4 rounded border-border accent-accent"
-              />
-              <span className={`text-xs ${consentLabel}`}>
-                I agree to receive email updates about this product. You can
-                unsubscribe at any time.
-              </span>
-            </label>
-            {consentError && (
-              <p className="mt-1 text-xs text-destructive" role="alert">
-                You must agree to receive emails to join the waitlist.
-              </p>
-            )}
           </div>
 
           <p className="mt-2 text-center text-xs text-muted-foreground">

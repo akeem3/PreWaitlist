@@ -7,12 +7,32 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: () => Promise.resolve(mockSupabase),
 }));
 
+const mockAdminSupabase = createMockSupabaseClient();
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: () => mockAdminSupabase,
+}));
+
 vi.mock("@/lib/resend", () => ({
   resend: { emails: { send: vi.fn() } },
 }));
 
 vi.mock("@/lib/milestones", () => ({
   checkAndFulfillMilestones: vi.fn(),
+}));
+
+vi.mock("@/lib/positions", () => ({
+  recalculatePositions: vi.fn().mockResolvedValue([]),
+  getPositionUpdate: vi.fn().mockReturnValue(null),
+}));
+
+vi.mock("@/lib/email", () => ({
+  sendEmail: vi.fn().mockResolvedValue({ ok: true }),
+  buildEmailFooter: vi.fn().mockReturnValue(""),
+  isUnsubscribed: vi.fn().mockResolvedValue(false),
+}));
+
+vi.mock("@/lib/bounces", () => ({
+  isEmailBounced: vi.fn().mockResolvedValue(false),
 }));
 
 import { POST } from "../../app/api/subscribers/route";
@@ -25,7 +45,6 @@ describe("POST /api/subscribers — referral tracking", () => {
   it("stores referrer_id on valid referral", async () => {
     mockSupabase.__queue.push(
       { data: { id: "referrer-1", waitlist_id: "wl-1" }, error: null },
-      { data: { position: 2 }, error: null },
       {
         data: {
           id: "sub-new",
@@ -91,7 +110,6 @@ describe("POST /api/subscribers — referral tracking", () => {
   it("handles self-referral by nullifying referrer_id", async () => {
     mockSupabase.__queue.push(
       { data: { id: "sub-1", waitlist_id: "wl-1" }, error: null },
-      { data: { position: 0 }, error: null },
       {
         data: {
           id: "sub-1",
@@ -100,9 +118,7 @@ describe("POST /api/subscribers — referral tracking", () => {
           position: 1,
         },
         error: null,
-      },
-      { data: null, error: null },
-      { count: 0, error: null }
+      }
     );
 
     const request = new NextRequest("http://localhost/api/subscribers", {

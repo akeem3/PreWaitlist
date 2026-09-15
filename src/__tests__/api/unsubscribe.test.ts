@@ -1,8 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import {
   verifyUnsubscribeToken,
   generateUnsubscribeToken,
 } from "@/lib/unsubscribe";
+
+beforeAll(() => {
+  process.env.UNSUBSCRIBE_SECRET = "test-secret-key-for-unit-tests";
+});
 
 describe("Unsubscribe Token Verification", () => {
   it("returns subscriber ID for valid token", () => {

@@ -114,6 +114,16 @@ export async function POST(req: NextRequest) {
         bounce_type: bounceType,
       });
     }
+
+    // Complaint handling: also mark subscriber as unsubscribed
+    // (spam complaints = permanent suppression)
+    if (mappedType === "complained") {
+      await supabase
+        .from("subscribers")
+        .update({ unsubscribed_at: createdAt })
+        .eq("id", subscriber.id)
+        .is("unsubscribed_at", null);
+    }
   });
 
   return NextResponse.json({ received: true });

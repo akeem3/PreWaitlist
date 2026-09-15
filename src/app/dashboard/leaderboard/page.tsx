@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../../lib/supabase/server";
-import { anonymizeEmail } from "../../../lib/format";
 import LeaderboardClient from "./client";
 
 export default async function LeaderboardPage() {
@@ -17,15 +16,38 @@ export default async function LeaderboardPage() {
     .single();
   if (!waitlist) redirect("/onboarding/1");
 
-  const { data: subscribers } = await supabase
+  // Try with display_name; fall back without it if column doesn't exist yet
+  type SubRow = {
+    id: string;
+    email: string;
+    referral_code: string;
+    created_at: string;
+    milestones_earned: unknown;
+    display_name?: string;
+  };
+
+  let selectResult = await supabase
     .from("subscribers")
-    .select("id, email, referral_code, created_at")
+    .select(
+      "id, email, referral_code, created_at, milestones_earned, display_name"
+    )
     .eq("waitlist_id", waitlist.id)
     .order("created_at", { ascending: true });
 
-  const rows = subscribers || [];
+  if (
+    selectResult.error?.code === "PGRST204" &&
+    selectResult.error?.message?.includes("display_name")
+  ) {
+    selectResult = (await supabase
+      .from("subscribers")
+      .select("id, email, referral_code, created_at, milestones_earned")
+      .eq("waitlist_id", waitlist.id)
+      .order("created_at", { ascending: true })) as typeof selectResult;
+  }
 
-  // Batch referral count query (same pattern as dashboard/page.tsx)
+  const rows = (selectResult.data || []) as SubRow[];
+
+  // Batch referral count query
   const subscriberIds = rows.map((s) => s.id);
   const referralCounts = new Map<string, number>();
   if (subscriberIds.length > 0) {
@@ -44,6 +66,13 @@ export default async function LeaderboardPage() {
     });
   }
 
+  // Fetch milestone rewards for progress display
+  const { data: milestoneRewards } = await supabase
+    .from("milestone_rewards")
+    .select("tier_referrals, reward_label")
+    .eq("waitlist_id", waitlist.id)
+    .order("tier_referrals", { ascending: true });
+
   // Compute quality scores
   const totalReferrals = rows.reduce(
     (sum, s) => sum + (referralCounts.get(s.id) || 0),
@@ -54,15 +83,30 @@ export default async function LeaderboardPage() {
   const ranked = rows
     .map((s) => {
       const referral_count = referralCounts.get(s.id) || 0;
+      const earned =
+        (s.milestones_earned as { threshold: number; label: string }[]) || [];
+      const nextTier =
+        milestoneRewards?.find(
+          (t) =>
+            !earned.some((e) => e.threshold === t.tier_referrals) &&
+            t.tier_referrals > referral_count
+        ) || null;
+
       return {
         id: s.id,
-        email: anonymizeEmail(s.email),
+        email: s.email,
+        display_name: s.display_name || null,
         referral_count,
         quality_score:
           totalReferrals > 0
             ? Math.round((referral_count / totalReferrals) * 100)
             : null,
         created_at: s.created_at,
+        milestone_earned_count: earned.length,
+        milestone_total: milestoneRewards?.length || 0,
+        milestone_next: nextTier
+          ? { threshold: nextTier.tier_referrals, label: nextTier.reward_label }
+          : null,
       };
     })
     .sort((a, b) => {

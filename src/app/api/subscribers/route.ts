@@ -6,8 +6,361 @@ import { recalculatePositions, getPositionUpdate } from "@/lib/positions";
 import { sendEmail, buildEmailFooter, isUnsubscribed } from "@/lib/email";
 import { isEmailBounced } from "@/lib/bounces";
 
+const BRAND_GREEN = "#0F7A5E";
+const TEXT_PRIMARY = "#1a1a1a";
+const TEXT_SECONDARY = "#4b5563";
+const TEXT_MUTED = "#9ca3af";
+const BG_LIGHT = "#f9fafb";
+const BORDER_LIGHT = "#e5e7eb";
+
 function generateReferralCode(): string {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 8);
+}
+
+function buildConfirmationEmail(opts: {
+  subscriberName: string | null;
+  productName: string;
+  position: number;
+  subscriberCount: number;
+  referralLink: string;
+  referralCode: string;
+  rewardTiers: { threshold: number; label: string }[];
+  footer: string;
+}): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const greeting = opts.subscriberName
+    ? `Hi ${opts.subscriberName},`
+    : "Welcome,";
+
+  const rewardTiersHtml =
+    opts.rewardTiers.length > 0
+      ? `
+        <tr>
+          <td style="padding: 0 40px 32px 40px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top: 1px solid ${BORDER_LIGHT};">
+              <tr>
+                <td style="padding-top: 24px;">
+                  <p style="margin: 0 0 12px 0; font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 20px; color: ${TEXT_SECONDARY}; font-weight: 600;">
+                    How to move up:
+                  </p>
+                  ${opts.rewardTiers
+                    .map(
+                      (t) => `
+                    <p style="margin: 0 0 8px 0; font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 20px; color: ${TEXT_SECONDARY};">
+                      ${t.threshold} referral${t.threshold !== 1 ? "s" : ""}: ${t.label}
+                    </p>
+                  `
+                    )
+                    .join("")}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>`
+      : "";
+
+  const rewardTiersText =
+    opts.rewardTiers.length > 0
+      ? `\nHow to move up:\n${opts.rewardTiers.map((t) => `  ${t.threshold} referral${t.threshold !== 1 ? "s" : ""}: ${t.label}`).join("\n")}`
+      : "";
+
+  const subject = `You're #${opts.position} in line for ${opts.productName}`;
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <title>Welcome to ${opts.productName}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: ${BG_LIGHT}; font-family: Arial, Helvetica, sans-serif;">
+  <div style="display: none; max-height: 0; overflow: hidden;">
+    You're #${opts.position}. Share your link to move up the waitlist.
+  </div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: ${BG_LIGHT};">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <div style="max-width: 600px; margin: 0 auto;">
+          <!-- Logo -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td align="center" style="padding: 0 0 24px 0;">
+                <img src="https://prewaitlist.com/PreWaitlist-logo.svg" alt="PreWaitlist" width="140" height="28" style="display: block; border: 0;" />
+              </td>
+            </tr>
+          </table>
+
+          <!-- Content card -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; border: 1px solid ${BORDER_LIGHT};">
+            <!-- Greeting -->
+            <tr>
+              <td style="padding: 40px 40px 16px 40px;">
+                <h1 style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 24px; line-height: 30px; font-weight: bold; color: ${TEXT_PRIMARY};">
+                  ${greeting}
+                </h1>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style="padding: 0 40px 24px 40px;">
+                <p style="margin: 0 0 16px 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: ${TEXT_SECONDARY};">
+                  Welcome to <strong>${opts.productName}</strong>. You're on the list!
+                </p>
+              </td>
+            </tr>
+
+            <!-- Position block -->
+            <tr>
+              <td align="center" style="padding: 0 40px 24px 40px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background-color: ${BG_LIGHT}; border-radius: 8px; width: 100%;">
+                  <tr>
+                    <td align="center" style="padding: 24px;">
+                      <p style="margin: 0 0 4px 0; font-family: Arial, sans-serif; font-size: 12px; line-height: 16px; font-weight: 700; color: ${TEXT_MUTED}; letter-spacing: 1px; text-transform: uppercase;">
+                        YOUR POSITION
+                      </p>
+                      <p style="margin: 0; font-family: Arial, sans-serif; font-size: 36px; line-height: 42px; font-weight: bold; color: ${BRAND_GREEN};">
+                        #${opts.position}
+                      </p>
+                      <p style="margin: 8px 0 0 0; font-family: Arial, sans-serif; font-size: 14px; line-height: 20px; color: ${TEXT_MUTED};">
+                        of ${opts.subscriberCount.toLocaleString()} subscriber${opts.subscriberCount !== 1 ? "s" : ""}
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- CTA button -->
+            <tr>
+              <td align="center" style="padding: 0 40px 32px 40px;">
+                <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="border-radius: 8px; background-color: ${BRAND_GREEN};">
+                      <a href="${opts.referralLink}" target="_blank" style="background-color: ${BRAND_GREEN}; border: 1px solid ${BRAND_GREEN}; border-radius: 8px; font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: bold; line-height: 16px; text-decoration: none; padding: 14px 28px; color: #ffffff; display: block;">
+                        Share your link
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            ${rewardTiersHtml}
+          </table>
+
+          <!-- Spacer -->
+          <div style="line-height: 32px; height: 32px;">&nbsp;</div>
+
+          <!-- Footer -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="padding: 0 40px;" align="center">
+                <p style="margin: 0 0 8px 0; font-family: Arial, sans-serif; font-size: 13px; line-height: 20px; color: ${TEXT_MUTED};">
+                  You signed up at ${opts.referralLink.split("?")[0].replace("https://", "")}
+                </p>
+              </td>
+            </tr>
+          </table>
+          ${opts.footer}
+        </div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  const text = `${greeting}
+
+Welcome to ${opts.productName}. You're on the list!
+
+YOUR POSITION: #${opts.position} of ${opts.subscriberCount.toLocaleString()} subscribers
+
+Share your unique link to move up:
+${opts.referralLink}
+${rewardTiersText}
+
+You signed up at ${opts.referralLink.split("?")[0].replace("https://", "")}
+`;
+
+  return { subject, html, text };
+}
+
+function buildMovedUpEmail(opts: {
+  subscriberName: string | null;
+  productName: string;
+  newPosition: number;
+  spotsMoved: number;
+  referralLink: string;
+  rewardTiers: { threshold: number; label: string }[];
+  footer: string;
+}): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const greeting = opts.subscriberName
+    ? `Hi ${opts.subscriberName},`
+    : "Welcome,";
+
+  const rewardTiersHtml =
+    opts.rewardTiers.length > 0
+      ? `
+        <tr>
+          <td style="padding: 0 40px 32px 40px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top: 1px solid ${BORDER_LIGHT};">
+              <tr>
+                <td style="padding-top: 24px;">
+                  <p style="margin: 0 0 12px 0; font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 20px; color: ${TEXT_SECONDARY}; font-weight: 600;">
+                    How to move up:
+                  </p>
+                  ${opts.rewardTiers
+                    .map(
+                      (t) => `
+                    <p style="margin: 0 0 8px 0; font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 20px; color: ${TEXT_SECONDARY};">
+                      ${t.threshold} referral${t.threshold !== 1 ? "s" : ""}: ${t.label}
+                    </p>
+                  `
+                    )
+                    .join("")}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>`
+      : "";
+
+  const rewardTiersText =
+    opts.rewardTiers.length > 0
+      ? `\nHow to move up:\n${opts.rewardTiers.map((t) => `  ${t.threshold} referral${t.threshold !== 1 ? "s" : ""}: ${t.label}`).join("\n")}`
+      : "";
+
+  const subject = `You moved up to #${opts.newPosition} for ${opts.productName}!`;
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <title>You moved up!</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: ${BG_LIGHT}; font-family: Arial, Helvetica, sans-serif;">
+  <div style="display: none; max-height: 0; overflow: hidden;">
+    Nice! You moved up ${opts.spotsMoved} spot${opts.spotsMoved !== 1 ? "s" : ""} to #${opts.newPosition}.
+  </div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: ${BG_LIGHT};">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <div style="max-width: 600px; margin: 0 auto;">
+          <!-- Logo -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td align="center" style="padding: 0 0 24px 0;">
+                <img src="https://prewaitlist.com/PreWaitlist-logo.svg" alt="PreWaitlist" width="140" height="28" style="display: block; border: 0;" />
+              </td>
+            </tr>
+          </table>
+
+          <!-- Content card -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; border: 1px solid ${BORDER_LIGHT};">
+            <!-- Greeting -->
+            <tr>
+              <td style="padding: 40px 40px 16px 40px;">
+                <h1 style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 24px; line-height: 30px; font-weight: bold; color: ${TEXT_PRIMARY};">
+                  ${greeting}
+                </h1>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style="padding: 0 40px 24px 40px;">
+                <p style="margin: 0 0 16px 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: ${TEXT_SECONDARY};">
+                  Nice! You moved up <strong>${opts.spotsMoved} ${opts.spotsMoved === 1 ? "spot" : "spots"}</strong> to <strong>#${opts.newPosition}</strong> in line for <strong>${opts.productName}</strong>.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Position block -->
+            <tr>
+              <td align="center" style="padding: 0 40px 24px 40px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background-color: ${BG_LIGHT}; border-radius: 8px; width: 100%;">
+                  <tr>
+                    <td align="center" style="padding: 24px;">
+                      <p style="margin: 0 0 4px 0; font-family: Arial, sans-serif; font-size: 12px; line-height: 16px; font-weight: 700; color: ${TEXT_MUTED}; letter-spacing: 1px; text-transform: uppercase;">
+                        NEW POSITION
+                      </p>
+                      <p style="margin: 0; font-family: Arial, sans-serif; font-size: 36px; line-height: 42px; font-weight: bold; color: ${BRAND_GREEN};">
+                        #${opts.newPosition}
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- CTA button -->
+            <tr>
+              <td align="center" style="padding: 0 40px 32px 40px;">
+                <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="border-radius: 8px; background-color: ${BRAND_GREEN};">
+                      <a href="${opts.referralLink}" target="_blank" style="background-color: ${BRAND_GREEN}; border: 1px solid ${BRAND_GREEN}; border-radius: 8px; font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: bold; line-height: 16px; text-decoration: none; padding: 14px 28px; color: #ffffff; display: block;">
+                        Share your link
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            ${rewardTiersHtml}
+          </table>
+
+          <!-- Spacer -->
+          <div style="line-height: 32px; height: 32px;">&nbsp;</div>
+
+          <!-- Footer -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="padding: 0 40px;" align="center">
+                <p style="margin: 0 0 8px 0; font-family: Arial, sans-serif; font-size: 13px; line-height: 20px; color: ${TEXT_MUTED};">
+                  Keep sharing to keep climbing!
+                </p>
+              </td>
+            </tr>
+          </table>
+          ${opts.footer}
+        </div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  const text = `${greeting}
+
+Nice! You moved up ${opts.spotsMoved} ${opts.spotsMoved === 1 ? "spot" : "spots"} to #${opts.newPosition} in line for ${opts.productName}.
+
+NEW POSITION: #${opts.newPosition}
+
+Share your referral link to keep climbing:
+${opts.referralLink}
+${rewardTiersText}
+
+Keep sharing to keep climbing!
+`;
+
+  return { subject, html, text };
 }
 
 export async function POST(request: NextRequest) {
@@ -19,20 +372,12 @@ export async function POST(request: NextRequest) {
     email,
     referral_code: incomingRefCode,
     qual_answers,
-    consent,
     display_name,
   } = body;
 
   if (!waitlist_id || !email) {
     return NextResponse.json(
       { error: "Missing required fields" },
-      { status: 400 }
-    );
-  }
-
-  if (!consent) {
-    return NextResponse.json(
-      { error: "Consent is required to join the waitlist" },
       { status: 400 }
     );
   }
@@ -86,24 +431,39 @@ export async function POST(request: NextRequest) {
   const position = 1;
   const referral_code = generateReferralCode();
 
-  const { data, error } = await supabase
+  const baseInsert = {
+    waitlist_id,
+    email: trimmedEmail,
+    referral_code,
+    position,
+    referrer_id: resolvedReferrerId,
+    qual_answers:
+      qual_answers && Object.keys(qual_answers).length > 0
+        ? qual_answers
+        : null,
+    consent_given_at: new Date().toISOString(),
+    consent_ip_address: ipAddress,
+  };
+
+  // Try with display_name; fall back without it if column doesn't exist yet
+  let insertResult = await supabase
     .from("subscribers")
-    .insert({
-      waitlist_id,
-      email: trimmedEmail,
-      referral_code,
-      position,
-      referrer_id: resolvedReferrerId,
-      qual_answers:
-        qual_answers && Object.keys(qual_answers).length > 0
-          ? qual_answers
-          : null,
-      consent_given_at: new Date().toISOString(),
-      consent_ip_address: ipAddress,
-      display_name: display_name?.trim() || null,
-    })
+    .insert({ ...baseInsert, display_name: display_name?.trim() || null })
     .select("id, email, referral_code, position")
     .single();
+
+  if (
+    insertResult.error?.code === "PGRST204" &&
+    insertResult.error?.message?.includes("display_name")
+  ) {
+    insertResult = await supabase
+      .from("subscribers")
+      .insert(baseInsert)
+      .select("id, email, referral_code, position")
+      .single();
+  }
+
+  const { data, error } = insertResult;
 
   if (error) {
     if (
@@ -174,31 +534,51 @@ export async function POST(request: NextRequest) {
     const productName =
       waitlist.product_name || waitlist.headline || "PreWaitlist";
 
+    // Fetch subscriber display_name
+    const { data: subscriber } = await adminSupabase
+      .from("subscribers")
+      .select("display_name")
+      .eq("id", data.id)
+      .single();
+
+    const subscriberName = subscriber?.display_name?.trim() || null;
+
+    // Fetch subscriber count for social proof
+    const { count: subscriberCount } = await adminSupabase
+      .from("subscribers")
+      .select("id", { count: "exact", head: true })
+      .eq("waitlist_id", waitlist_id);
+
+    // Fetch milestone rewards
+    const { data: rewardTiers } = await adminSupabase
+      .from("milestone_rewards")
+      .select("tier_referrals, reward_label")
+      .eq("waitlist_id", waitlist_id)
+      .order("tier_referrals", { ascending: true });
+
     const referralLink = `https://${waitlist.subdomain}.prewaitlist.com?ref=${data.referral_code}`;
 
-    const subject = `You're #${correctedPosition} in line for ${productName}`;
+    const footer = buildEmailFooter(waitlist.business_address);
 
-    const footer = buildEmailFooter(data.id, waitlist.business_address);
-
-    const html = `
-      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 16px;">
-        <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 12px;">
-          You're <strong>#${correctedPosition}</strong> in line for <strong>${productName}</strong>.
-        </p>
-        <p style="font-size: 14px; color: #6b6459; margin: 0 0 24px;">
-          Share your referral link to move up:
-        </p>
-        <p style="font-size: 14px; color: #6b6459; margin: 0 0 24px;">
-          <a href="${referralLink}" style="color: #0f7a5e; text-decoration: underline;">${referralLink}</a>
-        </p>
-        ${footer}
-      </div>
-    `;
+    const email = buildConfirmationEmail({
+      subscriberName,
+      productName,
+      position: correctedPosition,
+      subscriberCount: subscriberCount || 1,
+      referralLink,
+      referralCode: data.referral_code,
+      rewardTiers: (rewardTiers || []).map((t) => ({
+        threshold: t.tier_referrals,
+        label: t.reward_label,
+      })),
+      footer,
+    });
 
     const emailResult = await sendEmail({
       to: data.email,
-      subject,
-      html,
+      subject: email.subject,
+      html: email.html,
+      text: email.text,
       stream: "transactional",
       senderName: waitlist.sender_name,
       productName: waitlist.product_name,
@@ -220,7 +600,7 @@ export async function POST(request: NextRequest) {
   })();
 
   // --- Moved-up email (fire-and-forget) ---
-  // AC1: Send when referrer moves up ≥1 position
+  // AC1: Send when referrer moves up >=1 position
   // AC2: Subject includes new position + product name
   // AC3: Body includes new position, spots moved, referral link
   // AC4: Skip if self-referral
@@ -235,7 +615,7 @@ export async function POST(request: NextRequest) {
 
       const { data: referrer } = await adminSupabase
         .from("subscribers")
-        .select("email, referral_code")
+        .select("email, referral_code, display_name")
         .eq("id", resolvedReferrerId)
         .single();
 
@@ -261,32 +641,35 @@ export async function POST(request: NextRequest) {
 
       const referralLink = `https://${waitlist.subdomain}.prewaitlist.com?ref=${referrer.referral_code}`;
 
-      const subject = `You moved up to #${subscriberUpdate.new_position} for ${productName}!`;
+      // Fetch milestone rewards
+      const { data: rewardTiers } = await adminSupabase
+        .from("milestone_rewards")
+        .select("tier_referrals, reward_label")
+        .eq("waitlist_id", waitlist_id)
+        .order("tier_referrals", { ascending: true });
 
-      const footer = buildEmailFooter(
-        resolvedReferrerId,
-        waitlist.business_address
-      );
+      const subscriberName = referrer.display_name?.trim() || null;
 
-      const html = `
-        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 16px;">
-          <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 12px;">
-            Nice! You moved up <strong>${subscriberUpdate.spots_moved} ${subscriberUpdate.spots_moved === 1 ? "spot" : "spots"}</strong> to <strong>#${subscriberUpdate.new_position}</strong> in line for <strong>${productName}</strong>.
-          </p>
-          <p style="font-size: 14px; color: #6b6459; margin: 0 0 24px;">
-            Share your referral link to keep climbing:
-          </p>
-          <p style="font-size: 14px; color: #6b6459; margin: 0 0 24px;">
-            <a href="${referralLink}" style="color: #0f7a5e; text-decoration: underline;">${referralLink}</a>
-          </p>
-          ${footer}
-        </div>
-      `;
+      const footer = buildEmailFooter(waitlist.business_address);
+
+      const email = buildMovedUpEmail({
+        subscriberName,
+        productName,
+        newPosition: subscriberUpdate.new_position,
+        spotsMoved: subscriberUpdate.spots_moved,
+        referralLink,
+        rewardTiers: (rewardTiers || []).map((t) => ({
+          threshold: t.tier_referrals,
+          label: t.reward_label,
+        })),
+        footer,
+      });
 
       const emailResult = await sendEmail({
         to: referrer.email,
-        subject,
-        html,
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
         stream: "transactional",
         senderName: waitlist.sender_name,
         productName: waitlist.product_name,

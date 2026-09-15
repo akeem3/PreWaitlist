@@ -8,6 +8,12 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: () => Promise.resolve(mockSupabase),
 }));
 
+// Mock Supabase admin client (used in fire-and-forget IIFE)
+const mockAdminSupabase = createMockSupabaseClient();
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: () => mockAdminSupabase,
+}));
+
 // Mock Resend (needs RESEND_API_KEY in env)
 vi.mock("@/lib/resend", () => ({
   resend: { emails: { send: vi.fn() } },
@@ -16,6 +22,24 @@ vi.mock("@/lib/resend", () => ({
 // Mock milestones (depends on Resend)
 vi.mock("@/lib/milestones", () => ({
   checkAndFulfillMilestones: vi.fn(),
+}));
+
+// Mock positions (RPC-based position recalculation)
+vi.mock("@/lib/positions", () => ({
+  recalculatePositions: vi.fn().mockResolvedValue([]),
+  getPositionUpdate: vi.fn().mockReturnValue(null),
+}));
+
+// Mock email utilities
+vi.mock("@/lib/email", () => ({
+  sendEmail: vi.fn().mockResolvedValue({ ok: true }),
+  buildEmailFooter: vi.fn().mockReturnValue(""),
+  isUnsubscribed: vi.fn().mockResolvedValue(false),
+}));
+
+// Mock bounces
+vi.mock("@/lib/bounces", () => ({
+  isEmailBounced: vi.fn().mockResolvedValue(false),
 }));
 
 import { POST } from "../../app/api/subscribers/route";
@@ -53,7 +77,6 @@ describe("POST /api/subscribers", () => {
     expect(data.id).toBe("sub-1");
     expect(data.email).toBe("test@test.com");
     expect(data.referral_code).toBeDefined();
-    expect(data.position).toBe(3);
   });
 
   it("returns 400 for missing fields", async () => {
@@ -80,20 +103,17 @@ describe("POST /api/subscribers", () => {
   });
 
   it("returns 409 on duplicate email", async () => {
-    // Mock: max position query, then insert fails with 23505
-    mockSupabase.__queue.push(
-      { data: { position: 1 }, error: null },
-      {
-        data: null,
-        error: {
-          message:
-            'duplicate key value violates unique constraint "subscribers_waitlist_email_idx"',
-          code: "23505",
-          details: "",
-          hint: "",
-        },
-      }
-    );
+    // Insert fails with 23505 unique constraint violation
+    mockSupabase.__queue.push({
+      data: null,
+      error: {
+        message:
+          'duplicate key value violates unique constraint "subscribers_waitlist_email_idx"',
+        code: "23505",
+        details: "",
+        hint: "",
+      },
+    });
 
     const request = new NextRequest("http://localhost/api/subscribers", {
       method: "POST",
@@ -108,18 +128,15 @@ describe("POST /api/subscribers", () => {
   });
 
   it("stores qual_answers when provided", async () => {
-    mockSupabase.__queue.push(
-      { data: { position: 0 }, error: null },
-      {
-        data: {
-          id: "sub-1",
-          email: "test@test.com",
-          referral_code: "abc",
-          position: 1,
-        },
-        error: null,
-      }
-    );
+    mockSupabase.__queue.push({
+      data: {
+        id: "sub-1",
+        email: "test@test.com",
+        referral_code: "abc",
+        position: 1,
+      },
+      error: null,
+    });
 
     const request = new NextRequest("http://localhost/api/subscribers", {
       method: "POST",
@@ -135,18 +152,15 @@ describe("POST /api/subscribers", () => {
   });
 
   it("generates 8-char referral code", async () => {
-    mockSupabase.__queue.push(
-      { data: { position: 0 }, error: null },
-      {
-        data: {
-          id: "sub-1",
-          email: "test@test.com",
-          referral_code: "abcdefgh",
-          position: 1,
-        },
-        error: null,
-      }
-    );
+    mockSupabase.__queue.push({
+      data: {
+        id: "sub-1",
+        email: "test@test.com",
+        referral_code: "abcdefgh",
+        position: 1,
+      },
+      error: null,
+    });
 
     const request = new NextRequest("http://localhost/api/subscribers", {
       method: "POST",

@@ -269,7 +269,9 @@ describe("Thank-you Page", () => {
 
     const link = screen.getByText("See where you rank →");
     expect(link).toBeDefined();
-    expect(link.getAttribute("href")).toBe("/test/leaderboard");
+    expect(link.getAttribute("href")).toBe(
+      "/test/leaderboard?subscriber_id=sub-1"
+    );
   });
 
   it("renders Referred by a friend when referrer_id present", async () => {
