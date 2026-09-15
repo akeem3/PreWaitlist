@@ -68,7 +68,7 @@ export default function WaitlistSettingsClient({
         await fetch("/api/waitlist", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: waitlist.id, [field]: value }),
+          body: JSON.stringify({ waitlist_id: waitlist.id, [field]: value }),
         });
         setSaved(true);
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -95,7 +95,7 @@ export default function WaitlistSettingsClient({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: waitlist.id,
+          waitlist_id: waitlist.id,
           is_archived: true,
           archived_at: new Date().toISOString(),
         }),
@@ -115,7 +115,7 @@ export default function WaitlistSettingsClient({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: waitlist.id,
+          waitlist_id: waitlist.id,
           is_archived: false,
           archived_at: null,
         }),

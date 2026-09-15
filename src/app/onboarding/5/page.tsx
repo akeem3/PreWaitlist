@@ -47,12 +47,11 @@ export default function OnboardingStep5() {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            id: waitlistId,
+            waitlist_id: waitlistId,
             subdomain: slug,
             email_sender_name: form.emailSenderName,
             email_subject: form.emailSubject,
             email_body: form.emailBody,
-            status: "live",
           }),
         });
 

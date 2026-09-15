@@ -87,16 +87,7 @@ export default function SigninPage() {
       return;
     }
 
-    const hasSlug = Boolean(waitlist.subdomain);
-    const hasHeadline = Boolean(waitlist.headline);
-    const hasTemplate = Boolean(waitlist.template);
-    const hasBrandColor = Boolean(waitlist.brand_color);
-
-    if (!hasSlug || !hasHeadline || !hasTemplate || !hasBrandColor) {
-      router.push("/onboarding/1");
-    } else {
-      router.push("/dashboard");
-    }
+    router.push("/dashboard");
   }
 
   async function handleGoogleOAuth() {

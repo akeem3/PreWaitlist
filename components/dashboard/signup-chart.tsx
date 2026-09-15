@@ -17,6 +17,7 @@ interface ChartData {
 
 interface SignupChartProps {
   subdomain: string;
+  waitlistId?: string;
 }
 
 function CustomTooltip({
@@ -40,12 +41,21 @@ function CustomTooltip({
   );
 }
 
-function ChartBody({ subdomain, range }: { subdomain: string; range: string }) {
+function ChartBody({
+  subdomain,
+  range,
+  waitlistId,
+}: {
+  subdomain: string;
+  range: string;
+  waitlistId?: string;
+}) {
   const [data, setData] = useState<ChartData[] | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/dashboard/chart?range=${range}`)
+    const widParam = waitlistId ? `&waitlist_id=${waitlistId}` : "";
+    fetch(`/api/dashboard/chart?range=${range}${widParam}`)
       .then((res) => res.json())
       .then((json) => {
         if (!cancelled) setData(json.days || []);
@@ -56,7 +66,7 @@ function ChartBody({ subdomain, range }: { subdomain: string; range: string }) {
     return () => {
       cancelled = true;
     };
-  }, [range, subdomain]);
+  }, [range, subdomain, waitlistId]);
 
   if (data === null) {
     const heights = [40, 65, 30, 80, 55, 45, 70, 35, 60, 50, 75, 42, 58, 68];
@@ -131,7 +141,10 @@ function ChartBody({ subdomain, range }: { subdomain: string; range: string }) {
   );
 }
 
-export default function SignupChart({ subdomain }: SignupChartProps) {
+export default function SignupChart({
+  subdomain,
+  waitlistId,
+}: SignupChartProps) {
   const [range, setRange] = useState<"30d" | "all">("30d");
 
   return (
@@ -166,7 +179,12 @@ export default function SignupChart({ subdomain }: SignupChartProps) {
         </div>
       </div>
 
-      <ChartBody key={range} subdomain={subdomain} range={range} />
+      <ChartBody
+        key={range}
+        subdomain={subdomain}
+        range={range}
+        waitlistId={waitlistId}
+      />
     </div>
   );
 }

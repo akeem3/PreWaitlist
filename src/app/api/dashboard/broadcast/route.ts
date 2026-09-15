@@ -33,7 +33,14 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { subject, body: emailBody, segment } = body;
+  const { subject, body: emailBody, segment, waitlist_id } = body;
+
+  if (!waitlist_id) {
+    return NextResponse.json(
+      { error: "waitlist_id is required" },
+      { status: 400 }
+    );
+  }
 
   if (!subject?.trim() || !emailBody?.trim()) {
     return NextResponse.json(
@@ -47,6 +54,7 @@ export async function POST(req: NextRequest) {
     .select(
       "id, product_name, headline, subdomain, sender_name, sending_domain, business_address"
     )
+    .eq("id", waitlist_id)
     .eq("founder_id", user.id)
     .single();
 

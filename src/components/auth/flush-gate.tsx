@@ -139,6 +139,11 @@ export function FlushGate({ children }: { children: React.ReactNode }) {
 
         const record = await getRes.json();
 
+        // GET now returns an array — take the most recently created waitlist
+        const waitlistRecord = Array.isArray(record)
+          ? record[record.length - 1]
+          : record;
+
         // Step 3: Only clear localStorage after both POST+GET succeeded
         if (hasLocalData && !cancelled) {
           try {
@@ -148,8 +153,8 @@ export function FlushGate({ children }: { children: React.ReactNode }) {
           }
         }
 
-        if (!cancelled) {
-          setServerState(mapServerToState(record));
+        if (!cancelled && waitlistRecord) {
+          setServerState(mapServerToState(waitlistRecord));
         }
       } catch {
         if (!cancelled) {

@@ -2,7 +2,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "../../../lib/supabase/server";
 import BroadcastClient from "./client";
 
-export default async function BroadcastPage() {
+interface PageProps {
+  searchParams: Promise<{ wid?: string }>;
+}
+
+export default async function BroadcastPage({ searchParams }: PageProps) {
   const supabase = await createClient();
 
   const {
@@ -25,11 +29,17 @@ export default async function BroadcastPage() {
     redirect("/dashboard");
   }
 
-  const { data: waitlist } = await supabase
+  const { wid } = await searchParams;
+
+  let wlQuery = supabase
     .from("waitlists")
-    .select("id, product_name, headline, subdomain, sender_name")
-    .eq("founder_id", user.id)
-    .single();
+    .select("id, product_name, headline, subdomain, sender_name");
+  if (wid) {
+    wlQuery = wlQuery.eq("id", wid).eq("founder_id", user.id);
+  } else {
+    wlQuery = wlQuery.eq("founder_id", user.id);
+  }
+  const { data: waitlist } = await wlQuery.single();
 
   if (!waitlist) {
     redirect("/onboarding/1");

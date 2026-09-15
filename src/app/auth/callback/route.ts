@@ -70,16 +70,7 @@ export async function GET(request: NextRequest) {
         if (!waitlist) {
           redirectPath = "/onboarding/1";
         } else {
-          const hasSlug = Boolean(waitlist.subdomain);
-          const hasHeadline = Boolean(waitlist.headline);
-          const hasTemplate = Boolean(waitlist.template);
-          const hasBrandColor = Boolean(waitlist.brand_color);
-
-          if (!hasSlug || !hasHeadline || !hasTemplate || !hasBrandColor) {
-            redirectPath = "/onboarding/1";
-          } else {
-            redirectPath = "/dashboard";
-          }
+          redirectPath = "/dashboard";
         }
       }
 

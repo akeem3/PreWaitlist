@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 
 const mockPathname = vi.hoisted(() => vi.fn(() => "/dashboard"));
 
@@ -35,13 +34,24 @@ vi.mock("next/link", () => ({
 
 import { Sidebar } from "../../../components/dashboard/sidebar";
 
+const mockWaitlists = [
+  {
+    id: "wl-1",
+    subdomain: "acme",
+    product_name: "Acme Waitlist",
+    logo_url: null,
+    is_archived: false,
+    subscriberCount: 10,
+  },
+];
+
 describe("Sidebar", () => {
   const defaultProps = {
-    waitlistName: "My Waitlist",
-    logoUrl: null as string | null,
+    waitlists: mockWaitlists,
+    activeWaitlistId: "wl-1",
+    onSelectWaitlist: vi.fn(),
     isOpen: false,
     onClose: vi.fn(),
-    onSignOut: vi.fn(),
   };
 
   beforeEach(() => {
@@ -52,7 +62,6 @@ describe("Sidebar", () => {
   it("renders all navigation items", () => {
     render(<Sidebar {...defaultProps} />);
     expect(screen.getByText("Overview")).toBeDefined();
-    expect(screen.getByText("Subscribers")).toBeDefined();
     expect(screen.getByText("Qualification")).toBeDefined();
     expect(screen.getByText("Leaderboard")).toBeDefined();
     expect(screen.getByText("Warmth")).toBeDefined();
@@ -71,50 +80,17 @@ describe("Sidebar", () => {
 
   it("does not highlight inactive navigation items", () => {
     render(<Sidebar {...defaultProps} />);
-    const subscribers = screen.getByText("Subscribers").closest("a");
-    expect(subscribers).toBeDefined();
-    expect(subscribers).not.toHaveClass("bg-accent");
-  });
-
-  it("renders previously-disabled items as clickable links", () => {
-    render(<Sidebar {...defaultProps} />);
     const qualification = screen.getByText("Qualification").closest("a");
-    const leaderboard = screen.getByText("Leaderboard").closest("a");
-    const updates = screen.getByText("Updates").closest("a");
-
     expect(qualification).toBeDefined();
-    expect(qualification?.getAttribute("href")).toBe(
-      "/dashboard/qualification"
-    );
-
-    expect(leaderboard).toBeDefined();
-    expect(leaderboard?.getAttribute("href")).toBe("/dashboard/leaderboard");
-
-    expect(updates).toBeDefined();
-    expect(updates?.getAttribute("href")).toBe("/dashboard/updates");
-  });
-
-  it("renders locked items with lock icon and no href", () => {
-    render(<Sidebar {...defaultProps} />);
-    const warmth = screen.getByText("Warmth").closest("span");
-    const broadcast = screen.getByText("Broadcast").closest("span");
-
-    expect(warmth?.className).toContain("opacity-50");
-    expect(warmth?.className).toContain("cursor-not-allowed");
-    expect(warmth).not.toHaveAttribute("href");
-
-    expect(broadcast?.className).toContain("opacity-50");
-    expect(broadcast).not.toHaveAttribute("href");
+    expect(qualification).not.toHaveClass("bg-accent");
   });
 
   it("renders clickable nav items as links with href", () => {
     render(<Sidebar {...defaultProps} />);
     const overview = screen.getByText("Overview").closest("a");
-    const subscribers = screen.getByText("Subscribers").closest("a");
     const settings = screen.getByText("Settings").closest("a");
 
-    expect(overview).toHaveAttribute("href", "/dashboard");
-    expect(subscribers).toHaveAttribute("href", "/dashboard");
+    expect(overview).toHaveAttribute("href", "/dashboard?wid=wl-1");
     expect(settings).toHaveAttribute("href", "/dashboard/settings");
   });
 
@@ -140,42 +116,23 @@ describe("Sidebar", () => {
   });
 
   it("calls onClose when backdrop is clicked", async () => {
-    const user = userEvent.setup();
+    const { default: userEvent } = await import("@testing-library/user-event");
     const onClose = vi.fn();
 
     render(<Sidebar {...defaultProps} isOpen={true} onClose={onClose} />);
     const backdrop = screen.getByRole("complementary")
       .previousElementSibling as HTMLElement;
-    await user.click(backdrop);
+    await userEvent.click(backdrop);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("displays waitlist name in sidebar header", () => {
-    render(<Sidebar {...defaultProps} waitlistName="Acme Waitlist" />);
+  it("displays waitlist name in sidebar header via switcher", () => {
+    render(<Sidebar {...defaultProps} />);
     expect(screen.getByText("Acme Waitlist")).toBeDefined();
   });
 
-  it("falls back to PreWaitlist when no waitlist name", () => {
-    render(<Sidebar {...defaultProps} waitlistName={null} />);
-    expect(screen.getByText("PreWaitlist")).toBeDefined();
-  });
-
-  it("renders sign out button", () => {
-    render(<Sidebar {...defaultProps} />);
-    expect(screen.getByText("Sign out")).toBeDefined();
-  });
-
-  it("calls onSignOut when sign out is clicked", async () => {
-    const user = userEvent.setup();
-    const onSignOut = vi.fn();
-
-    render(<Sidebar {...defaultProps} onSignOut={onSignOut} />);
-    await user.click(screen.getByText("Sign out"));
-    expect(onSignOut).toHaveBeenCalledTimes(1);
-  });
-
   it("renders upgrade to pro link", () => {
-    render(<Sidebar {...defaultProps} />);
+    render(<Sidebar {...defaultProps} tier="free" />);
     expect(screen.getByText("Upgrade to Pro")).toBeDefined();
   });
 });

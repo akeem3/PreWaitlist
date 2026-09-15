@@ -1,37 +1,71 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Sidebar } from "../../../components/dashboard/sidebar";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { STORAGE_KEY } from "../../../components/dashboard/waitlist-switcher";
+
+interface WaitlistRow {
+  id: string;
+  subdomain: string;
+  product_name: string | null;
+  logo_url: string | null;
+  is_archived: boolean;
+}
 
 interface DashboardShellProps {
   children: React.ReactNode;
-  waitlistName: string | null;
-  logoUrl: string | null;
+  waitlists: WaitlistRow[];
   tier: string;
-  isArchived?: boolean;
-  waitlistId?: string;
+}
+
+function getInitialActiveId(
+  waitlists: WaitlistRow[],
+  wid: string | null
+): string {
+  if (wid && waitlists.some((w) => w.id === wid)) return wid;
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored && waitlists.some((w) => w.id === stored)) return stored;
+  } catch {}
+  return waitlists[waitlists.length - 1].id;
 }
 
 export default function DashboardShell({
   children,
-  waitlistName,
-  logoUrl,
+  waitlists,
   tier,
-  isArchived,
-  waitlistId,
 }: DashboardShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [activeWaitlistId, setActiveWaitlistId] = useState(() =>
+    getInitialActiveId(waitlists, searchParams.get("wid"))
+  );
+
+  const effectiveId = activeWaitlistId;
+
+  const activeWaitlist = waitlists.find((w) => w.id === effectiveId);
+
+  const handleSelectWaitlist = useCallback(
+    (waitlistId: string) => {
+      setActiveWaitlistId(waitlistId);
+      try {
+        localStorage.setItem(STORAGE_KEY, waitlistId);
+      } catch {}
+      router.push(`/dashboard?wid=${waitlistId}`);
+    },
+    [router]
+  );
 
   async function handleUnarchive() {
-    if (!waitlistId) return;
+    if (!effectiveId) return;
     try {
       await fetch("/api/waitlist", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: waitlistId,
+          waitlist_id: effectiveId,
           is_archived: false,
           archived_at: null,
         }),
@@ -45,12 +79,13 @@ export default function DashboardShell({
   return (
     <div className="min-h-screen bg-background">
       <Sidebar
-        waitlistName={waitlistName}
-        logoUrl={logoUrl}
+        waitlists={waitlists}
+        activeWaitlistId={effectiveId}
+        onSelectWaitlist={handleSelectWaitlist}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         tier={tier}
-        isArchived={isArchived}
+        isArchived={activeWaitlist?.is_archived ?? false}
         onUnarchive={handleUnarchive}
       />
 

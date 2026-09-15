@@ -2,6 +2,14 @@ import { redirect } from "next/navigation";
 import { createClient } from "../../lib/supabase/server";
 import DashboardShell from "./shell";
 
+interface WaitlistRow {
+  id: string;
+  subdomain: string;
+  product_name: string | null;
+  logo_url: string | null;
+  is_archived: boolean;
+}
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -17,14 +25,17 @@ export default async function DashboardLayout({
     redirect("/signin");
   }
 
-  const { data: waitlists } = await supabase
+  const { data: waitlists, error: waitlistError } = await supabase
     .from("waitlists")
     .select("id, subdomain, product_name, logo_url, is_archived")
-    .eq("founder_id", user.id);
+    .eq("founder_id", user.id)
+    .order("created_at", { ascending: true });
 
-  const waitlist = waitlists?.[0] ?? null;
+  if (waitlistError) {
+    redirect("/onboarding/1");
+  }
 
-  if (!waitlist) {
+  if (!waitlists || waitlists.length === 0) {
     redirect("/onboarding/1");
   }
 
@@ -36,11 +47,8 @@ export default async function DashboardLayout({
 
   return (
     <DashboardShell
-      waitlistName={waitlist.product_name}
-      logoUrl={waitlist.logo_url}
+      waitlists={waitlists as WaitlistRow[]}
       tier={profile?.tier ?? "free"}
-      isArchived={waitlist.is_archived ?? false}
-      waitlistId={waitlist.id}
     >
       {children}
     </DashboardShell>

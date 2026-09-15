@@ -79,9 +79,6 @@ function captureAcquisition(request: NextRequest): NextResponse | null {
 export async function middleware(request: NextRequest) {
   const host = request.headers.get("host") ?? "";
   const subdomain = getSubdomain(host);
-  console.log(
-    `[middleware] host=${host} subdomain=${subdomain} pathname=${request.nextUrl.pathname}`
-  );
 
   const acquisitionResponse = captureAcquisition(request);
 
@@ -110,6 +107,5 @@ export async function middleware(request: NextRequest) {
   url.pathname = path.startsWith(`/${subdomain}`)
     ? path
     : `/${subdomain}${path}`;
-  console.log(`[middleware] rewriting to ${url.pathname}`);
   return NextResponse.rewrite(url);
 }

@@ -2,7 +2,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "../../lib/supabase/server";
 import DashboardClient from "./client";
 
-export default async function DashboardPage() {
+interface PageProps {
+  searchParams: Promise<{ wid?: string }>;
+}
+
+export default async function DashboardPage({ searchParams }: PageProps) {
   const supabase = await createClient();
 
   const {
@@ -13,15 +17,29 @@ export default async function DashboardPage() {
     redirect("/signin");
   }
 
-  const { data: waitlist } = await supabase
+  const { wid } = await searchParams;
+
+  let waitlistQuery = supabase
     .from("waitlists")
     .select("id, headline, subdomain, template, product_name, cold_threshold")
     .eq("founder_id", user.id)
-    .single();
+    .order("created_at", { ascending: true });
 
-  if (!waitlist) {
+  if (wid) {
+    waitlistQuery = waitlistQuery.eq("id", wid);
+  }
+
+  const { data: waitlists, error: waitlistError } = await waitlistQuery;
+
+  if (waitlistError) {
     redirect("/onboarding/1");
   }
+
+  if (!waitlists || waitlists.length === 0) {
+    redirect("/onboarding/1");
+  }
+
+  const waitlist = waitlists![0];
 
   const { data: profile } = await supabase
     .from("founder_profiles")
@@ -65,7 +83,6 @@ export default async function DashboardPage() {
       referral_count: referralCounts.get(s.id) || 0,
     })) || [];
 
-  // Fetch bounced emails for this waitlist
   const { data: bouncedRows } = await supabase
     .from("bounced_emails")
     .select("email")
@@ -114,6 +131,7 @@ export default async function DashboardPage() {
       subscribers={subscribersWithQuality}
       stats={stats}
       coldThreshold={waitlist.cold_threshold ?? 40}
+      waitlistId={waitlist.id}
     />
   );
 }

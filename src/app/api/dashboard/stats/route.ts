@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = await createClient();
 
   const {
@@ -12,9 +12,19 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const waitlistId = searchParams.get("waitlist_id");
+  if (!waitlistId) {
+    return NextResponse.json(
+      { error: "waitlist_id is required" },
+      { status: 400 }
+    );
+  }
+
   const { data: waitlist } = await supabase
     .from("waitlists")
     .select("id")
+    .eq("id", waitlistId)
     .eq("founder_id", user.id)
     .single();
 

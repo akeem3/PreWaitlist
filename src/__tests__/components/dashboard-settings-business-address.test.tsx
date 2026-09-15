@@ -97,7 +97,7 @@ describe("Settings — Business Address", () => {
         expect.objectContaining({
           method: "PATCH",
           body: JSON.stringify({
-            id: "wl-1",
+            waitlist_id: "wl-1",
             business_address: "Acme Inc, 456 Oak Ave, NYC",
           }),
         })

@@ -84,7 +84,10 @@ describe("Edit After Onboarding", () => {
         "/api/waitlist",
         expect.objectContaining({
           method: "PATCH",
-          body: JSON.stringify({ id: "wl-1", headline: "New headline" }),
+          body: JSON.stringify({
+            waitlist_id: "wl-1",
+            headline: "New headline",
+          }),
         })
       );
     });

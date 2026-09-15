@@ -14,14 +14,22 @@ interface QuestionData {
 
 interface QualificationPanelProps {
   subdomain: string;
+  waitlistId?: string;
 }
 
-function PanelBody({ subdomain }: { subdomain: string }) {
+function PanelBody({
+  subdomain,
+  waitlistId,
+}: {
+  subdomain: string;
+  waitlistId?: string;
+}) {
   const [data, setData] = useState<QuestionData[] | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/dashboard/qualification")
+    const widParam = waitlistId ? `?waitlist_id=${waitlistId}` : "";
+    fetch(`/api/dashboard/qualification${widParam}`)
       .then((res) => res.json())
       .then((json) => {
         if (!cancelled) setData(json.questions || []);
@@ -32,7 +40,7 @@ function PanelBody({ subdomain }: { subdomain: string }) {
     return () => {
       cancelled = true;
     };
-  }, [subdomain]);
+  }, [subdomain, waitlistId]);
 
   if (data === null) {
     return (
@@ -101,13 +109,18 @@ function PanelBody({ subdomain }: { subdomain: string }) {
 
 export default function QualificationPanel({
   subdomain,
+  waitlistId,
 }: QualificationPanelProps) {
   return (
     <div className="rounded-[var(--card-radius)] border border-border bg-card p-5">
       <h3 className="mb-4 text-lg font-semibold text-foreground">
         Qualification Breakdown
       </h3>
-      <PanelBody key={subdomain} subdomain={subdomain} />
+      <PanelBody
+        key={subdomain}
+        subdomain={subdomain}
+        waitlistId={waitlistId}
+      />
     </div>
   );
 }

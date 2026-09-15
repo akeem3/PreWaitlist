@@ -91,7 +91,7 @@ export default function OnboardingStep4() {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            id: waitlistId,
+            waitlist_id: waitlistId,
             qualification_enabled: selected === "yes",
           }),
         });

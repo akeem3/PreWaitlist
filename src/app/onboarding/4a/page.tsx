@@ -99,7 +99,7 @@ export default function OnboardingStep4a() {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            id: waitlistId,
+            waitlist_id: waitlistId,
             questions: validQuestions,
           }),
         });

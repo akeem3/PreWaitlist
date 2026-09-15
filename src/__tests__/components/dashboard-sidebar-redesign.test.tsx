@@ -34,13 +34,24 @@ vi.mock("next/link", () => ({
 
 import { Sidebar } from "../../../components/dashboard/sidebar";
 
+const mockWaitlists = [
+  {
+    id: "wl-1",
+    subdomain: "acme",
+    product_name: "My Waitlist",
+    logo_url: null,
+    is_archived: false,
+    subscriberCount: 10,
+  },
+];
+
 describe("Sidebar Redesign (12.1.0)", () => {
   const defaultProps = {
-    waitlistName: "My Waitlist",
-    logoUrl: null as string | null,
+    waitlists: mockWaitlists,
+    activeWaitlistId: "wl-1",
+    onSelectWaitlist: vi.fn(),
     isOpen: false,
     onClose: vi.fn(),
-    onSignOut: vi.fn(),
   };
 
   beforeEach(() => {
@@ -85,15 +96,6 @@ describe("Sidebar Redesign (12.1.0)", () => {
     expect(screen.queryByText("Upgrade to Pro")).toBeNull();
   });
 
-  it("does not render dropdown chevron on product name", () => {
-    const { container } = render(<Sidebar {...defaultProps} />);
-    const svgIcons = container.querySelectorAll("svg");
-    const chevron = Array.from(svgIcons).find((svg) =>
-      svg.innerHTML.includes("M6 9L12 3")
-    );
-    expect(chevron).toBeUndefined();
-  });
-
   it("highlights active nav item with green pill", () => {
     render(<Sidebar {...defaultProps} />);
     const overview = screen.getByText("Overview").closest("a");
@@ -111,14 +113,16 @@ describe("Sidebar Redesign (12.1.0)", () => {
     render(<Sidebar {...defaultProps} tier="pro" />);
     const broadcast = screen.getByText("Broadcast").closest("a");
     expect(broadcast).toBeDefined();
-    expect(broadcast?.getAttribute("href")).toBe("/dashboard/broadcast");
+    expect(broadcast?.getAttribute("href")).toBe(
+      "/dashboard/broadcast?wid=wl-1"
+    );
   });
 
   it("updates has correct href", () => {
     render(<Sidebar {...defaultProps} />);
     const updates = screen.getByText("Updates").closest("a");
     expect(updates).toBeDefined();
-    expect(updates?.getAttribute("href")).toBe("/dashboard/updates");
+    expect(updates?.getAttribute("href")).toBe("/dashboard/updates?wid=wl-1");
   });
 
   it("qualification has correct href", () => {
@@ -126,7 +130,7 @@ describe("Sidebar Redesign (12.1.0)", () => {
     const qualification = screen.getByText("Qualification").closest("a");
     expect(qualification).toBeDefined();
     expect(qualification?.getAttribute("href")).toBe(
-      "/dashboard/qualification"
+      "/dashboard/qualification?wid=wl-1"
     );
   });
 
@@ -134,7 +138,9 @@ describe("Sidebar Redesign (12.1.0)", () => {
     render(<Sidebar {...defaultProps} />);
     const leaderboard = screen.getByText("Leaderboard").closest("a");
     expect(leaderboard).toBeDefined();
-    expect(leaderboard?.getAttribute("href")).toBe("/dashboard/leaderboard");
+    expect(leaderboard?.getAttribute("href")).toBe(
+      "/dashboard/leaderboard?wid=wl-1"
+    );
   });
 
   it("warmth is locked for free tier", () => {
@@ -148,6 +154,6 @@ describe("Sidebar Redesign (12.1.0)", () => {
     render(<Sidebar {...defaultProps} tier="pro" />);
     const warmth = screen.getByText("Warmth").closest("a");
     expect(warmth).toBeDefined();
-    expect(warmth?.getAttribute("href")).toBe("/dashboard/warmth");
+    expect(warmth?.getAttribute("href")).toBe("/dashboard/warmth?wid=wl-1");
   });
 });

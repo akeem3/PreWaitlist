@@ -135,6 +135,9 @@ function readStoredData(): Partial<OnboardingFormState> | null {
     void _;
     void __;
     void ___;
+    if (!data.headline && data.productName) {
+      data.headline = data.productName;
+    }
     return data;
   } catch {
     return null;
@@ -408,7 +411,7 @@ export function AuthedOnboardingProvider({
 
   const flush = useCallback(async () => {
     if (Object.keys(pendingRef.current).length === 0) return;
-    const payload = { ...pendingRef.current, id: state.waitlistId };
+    const payload = { ...pendingRef.current, waitlist_id: state.waitlistId };
     pendingRef.current = {};
     try {
       await fetch("/api/waitlist", {
@@ -457,7 +460,7 @@ export function AuthedOnboardingProvider({
         await fetch("/api/waitlist", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...data, id: state.waitlistId }),
+          body: JSON.stringify({ ...data, waitlist_id: state.waitlistId }),
         });
       } catch {
         // Silent fail

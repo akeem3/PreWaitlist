@@ -2,7 +2,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "../../../lib/supabase/server";
 import UpdatesClient from "./client";
 
-export default async function UpdatesPage() {
+interface PageProps {
+  searchParams: Promise<{ wid?: string }>;
+}
+
+export default async function UpdatesPage({ searchParams }: PageProps) {
   const supabase = await createClient();
 
   const {
@@ -13,11 +17,15 @@ export default async function UpdatesPage() {
     redirect("/signin");
   }
 
-  const { data: waitlist } = await supabase
-    .from("waitlists")
-    .select("id")
-    .eq("founder_id", user.id)
-    .single();
+  const { wid } = await searchParams;
+
+  let wlQuery = supabase.from("waitlists").select("id");
+  if (wid) {
+    wlQuery = wlQuery.eq("id", wid).eq("founder_id", user.id);
+  } else {
+    wlQuery = wlQuery.eq("founder_id", user.id);
+  }
+  const { data: waitlist } = await wlQuery.single();
 
   if (!waitlist) {
     redirect("/onboarding/1");

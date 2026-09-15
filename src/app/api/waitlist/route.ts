@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   // Ensure founder_profiles exists (required FK for waitlists table)
   const { data: profile, error: profileError } = await supabase
     .from("founder_profiles")
-    .select("id")
+    .select("id, tier")
     .eq("id", user.id)
     .single();
 
@@ -39,85 +39,22 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Check if founder already has a waitlist
-  const { data: existing } = await supabase
+  const tier = profile?.tier || "free";
+
+  // Tier enforcement: free = max 1 waitlist, Pro = unlimited
+  const { count } = await supabase
     .from("waitlists")
-    .select("id")
-    .eq("founder_id", user.id)
-    .maybeSingle();
+    .select("id", { count: "exact", head: true })
+    .eq("founder_id", user.id);
 
-  if (existing) {
-    // Update existing waitlist with new values
-    const updatePayload: Record<string, unknown> = {
-      subdomain: body.subdomain,
-      headline: body.headline ?? null,
-      subheadline: body.subheadline ?? null,
-      product_name: body.product_name ?? null,
-    };
-    if (body.template !== undefined) updatePayload.template = body.template;
-    if (body.brand_color !== undefined)
-      updatePayload.brand_color = body.brand_color;
-    if (body.logo_url !== undefined) updatePayload.logo_url = body.logo_url;
-    if (body.cta_text !== undefined) updatePayload.cta_text = body.cta_text;
-    if (body.signup_counter_enabled !== undefined)
-      updatePayload.signup_counter_enabled = body.signup_counter_enabled;
-    if (body.signup_counter_threshold !== undefined)
-      updatePayload.signup_counter_threshold = body.signup_counter_threshold;
-    if (Array.isArray(body.milestone_rewards)) {
-      updatePayload.milestone_rewards_enabled =
-        body.milestone_rewards.length > 0;
-    }
-
-    const { error: updateError } = await supabase
-      .from("waitlists")
-      .update(updatePayload)
-      .eq("id", existing.id);
-
-    if (updateError) {
-      console.error("Failed to update waitlist:", updateError);
-      return NextResponse.json({ error: updateError.message }, { status: 400 });
-    }
-
-    // Upsert milestone_rewards if provided
-    if (Array.isArray(body.milestone_rewards)) {
-      await supabase
-        .from("milestone_rewards")
-        .delete()
-        .eq("waitlist_id", existing.id);
-      if (body.milestone_rewards.length > 0) {
-        const rewardRows = body.milestone_rewards.map(
-          (r: { threshold: number; label: string }) => ({
-            waitlist_id: existing.id,
-            tier_referrals: r.threshold,
-            reward_label: r.label,
-          })
-        );
-        await supabase.from("milestone_rewards").insert(rewardRows);
-      }
-    }
-
-    // Upsert qualification_questions if provided
-    if (Array.isArray(body.questions)) {
-      await supabase
-        .from("qualification_questions")
-        .delete()
-        .eq("waitlist_id", existing.id);
-      if (body.questions.length > 0) {
-        const questionRows = body.questions.map(
-          (q: { text: string; required: boolean }, index: number) => ({
-            waitlist_id: existing.id,
-            question_text: q.text,
-            question_type: "free_text" as const,
-            sort_order: index,
-          })
-        );
-        await supabase.from("qualification_questions").insert(questionRows);
-      }
-    }
-
-    return NextResponse.json({ id: existing.id }, { status: 200 });
+  if (tier === "free" && (count ?? 0) >= 1) {
+    return NextResponse.json(
+      { error: "Upgrade to Pro to create more waitlists" },
+      { status: 402 }
+    );
   }
 
+  // Always insert a new waitlist row (no upsert)
   const insertPayload: Record<string, unknown> = {
     founder_id: user.id,
     subdomain: body.subdomain,
@@ -154,7 +91,7 @@ export async function POST(request: NextRequest) {
 
   const waitlistId = data.id;
 
-  // Upsert milestone_rewards if provided
+  // Insert milestone_rewards if provided
   if (
     Array.isArray(body.milestone_rewards) &&
     body.milestone_rewards.length > 0
@@ -177,7 +114,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Upsert qualification_questions if provided
+  // Insert qualification_questions if provided
   if (Array.isArray(body.questions) && body.questions.length > 0) {
     const questionRows = body.questions.map(
       (q: { text: string; required: boolean }, index: number) => ({
@@ -206,10 +143,25 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { id, milestone_rewards, questions, ...updates } = body;
+  const { waitlist_id, milestone_rewards, questions, ...updates } = body;
 
-  if (!id) {
-    return NextResponse.json({ error: "Missing waitlist id" }, { status: 400 });
+  if (!waitlist_id) {
+    return NextResponse.json(
+      { error: "waitlist_id is required" },
+      { status: 400 }
+    );
+  }
+
+  // Validate ownership
+  const { data: existing } = await supabase
+    .from("waitlists")
+    .select("id")
+    .eq("id", waitlist_id)
+    .eq("founder_id", user.id)
+    .single();
+
+  if (!existing) {
+    return NextResponse.json({ error: "Waitlist not found" }, { status: 404 });
   }
 
   // milestone_rewards lives in a separate table, not the waitlists table.
@@ -225,7 +177,7 @@ export async function PATCH(request: NextRequest) {
   const { error } = await supabase
     .from("waitlists")
     .update(updates)
-    .eq("id", id)
+    .eq("id", waitlist_id)
     .eq("founder_id", user.id);
 
   if (error) {
@@ -238,13 +190,13 @@ export async function PATCH(request: NextRequest) {
     await supabase
       .from("qualification_questions")
       .delete()
-      .eq("waitlist_id", id);
+      .eq("waitlist_id", waitlist_id);
 
     // Insert new questions (all questions are free_text on public page)
     if (questions.length > 0) {
       const questionRows = questions.map(
         (q: { text: string; required: boolean }, index: number) => ({
-          waitlist_id: id,
+          waitlist_id: waitlist_id,
           question_text: q.text,
           question_type: "free_text" as const,
           sort_order: index,
@@ -271,7 +223,7 @@ export async function PATCH(request: NextRequest) {
     const { error: deleteError } = await supabase
       .from("milestone_rewards")
       .delete()
-      .eq("waitlist_id", id);
+      .eq("waitlist_id", waitlist_id);
     if (deleteError) {
       console.error(
         "[API PATCH] Failed to delete milestone_rewards:",
@@ -283,7 +235,7 @@ export async function PATCH(request: NextRequest) {
     if (milestone_rewards.length > 0) {
       const rewardRows = milestone_rewards.map(
         (r: { threshold: number; label: string }) => ({
-          waitlist_id: id,
+          waitlist_id: waitlist_id,
           tier_referrals: Number(r.threshold),
           reward_label: String(r.label),
         })
@@ -321,32 +273,85 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Get the founder's waitlist
-  const { data: waitlist, error: waitlistError } = await supabase
+  // Get all waitlists for the founder
+  const { data: waitlists, error: waitlistError } = await supabase
     .from("waitlists")
     .select("*")
     .eq("founder_id", user.id)
-    .single();
+    .order("created_at", { ascending: true });
 
-  if (waitlistError || !waitlist) {
-    return NextResponse.json({ error: "No waitlist found" }, { status: 404 });
+  if (waitlistError) {
+    return NextResponse.json({ error: waitlistError.message }, { status: 400 });
   }
 
-  // Get milestone rewards
-  const { data: rewards } = await supabase
-    .from("milestone_rewards")
-    .select("tier_referrals, reward_label")
-    .eq("waitlist_id", waitlist.id)
-    .order("tier_referrals", { ascending: true });
+  if (!waitlists || waitlists.length === 0) {
+    return NextResponse.json([], { status: 200 });
+  }
 
-  // Get qualification questions
-  const { data: questions } = await supabase
-    .from("qualification_questions")
-    .select("question_text, question_type, sort_order")
-    .eq("waitlist_id", waitlist.id)
-    .order("sort_order", { ascending: true });
+  // Batch-fetch subscriber counts for all waitlists
+  const waitlistIds = waitlists.map((w) => w.id);
+  const { data: subscriberCounts } = await supabase
+    .from("subscribers")
+    .select("waitlist_id", { count: "exact", head: true })
+    .in("waitlist_id", waitlistIds);
 
-  return NextResponse.json({
+  // Build a map of waitlist_id → count
+  const countMap = new Map<string, number>();
+  for (const id of waitlistIds) {
+    countMap.set(id, 0);
+  }
+  if (subscriberCounts) {
+    // PostgREST with head:true returns rows — count is per-query, not per-row
+    // We need individual counts per waitlist
+  }
+
+  // Get individual counts per waitlist (batch)
+  const countPromises = waitlistIds.map((id) =>
+    supabase
+      .from("subscribers")
+      .select("id", { count: "exact", head: true })
+      .eq("waitlist_id", id)
+  );
+  const countResults = await Promise.all(countPromises);
+  for (let i = 0; i < waitlistIds.length; i++) {
+    countMap.set(waitlistIds[i], countResults[i].count ?? 0);
+  }
+
+  // Get milestone rewards and questions for each waitlist
+  const [rewardsResults, questionsResults] = await Promise.all([
+    supabase
+      .from("milestone_rewards")
+      .select("waitlist_id, tier_referrals, reward_label")
+      .in("waitlist_id", waitlistIds)
+      .order("tier_referrals", { ascending: true }),
+    supabase
+      .from("qualification_questions")
+      .select("waitlist_id, question_text, question_type, sort_order")
+      .in("waitlist_id", waitlistIds)
+      .order("sort_order", { ascending: true }),
+  ]);
+
+  // Group rewards and questions by waitlist_id
+  const rewardsMap = new Map<string, { threshold: number; label: string }[]>();
+  for (const r of rewardsResults.data || []) {
+    if (!rewardsMap.has(r.waitlist_id)) rewardsMap.set(r.waitlist_id, []);
+    rewardsMap.get(r.waitlist_id)!.push({
+      threshold: r.tier_referrals,
+      label: r.reward_label,
+    });
+  }
+
+  const questionsMap = new Map<string, { text: string; required: boolean }[]>();
+  for (const q of questionsResults.data || []) {
+    if (!questionsMap.has(q.waitlist_id)) questionsMap.set(q.waitlist_id, []);
+    questionsMap.get(q.waitlist_id)!.push({
+      text: q.question_text,
+      required: q.question_type === "free_text",
+    });
+  }
+
+  // Map to response shape
+  const result = waitlists.map((waitlist) => ({
     waitlistId: waitlist.id,
     slug: waitlist.subdomain || "",
     productName: waitlist.product_name || waitlist.headline || "",
@@ -356,23 +361,17 @@ export async function GET() {
     brandColor: waitlist.brand_color || "#0F7A5E",
     logoUrl: waitlist.logo_url || null,
     ctaText: waitlist.cta_text || "Join Waitlist",
-    milestoneRewards: rewards
-      ? rewards.map((r) => ({
-          threshold: r.tier_referrals,
-          label: r.reward_label,
-        }))
-      : [],
+    subscriberCount: countMap.get(waitlist.id) || 0,
+    isArchived: waitlist.is_archived || false,
+    milestoneRewards: rewardsMap.get(waitlist.id) || [],
     qualificationEnabled: waitlist.qualification_enabled || false,
-    questions: questions
-      ? questions.map((q) => ({
-          text: q.question_text,
-          required: q.question_type === "free_text",
-        }))
-      : [],
+    questions: questionsMap.get(waitlist.id) || [],
     signupCounterEnabled: waitlist.signup_counter_enabled || false,
     signupCounterThreshold: waitlist.signup_counter_threshold || 10,
     emailSubject: waitlist.email_subject || "",
     emailSenderName: waitlist.email_sender_name || "",
     emailBody: waitlist.email_body || "",
-  });
+  }));
+
+  return NextResponse.json(result);
 }

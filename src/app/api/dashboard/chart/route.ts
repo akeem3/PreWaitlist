@@ -13,9 +13,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const waitlistId = searchParams.get("waitlist_id");
+  if (!waitlistId) {
+    return NextResponse.json(
+      { error: "waitlist_id is required" },
+      { status: 400 }
+    );
+  }
+
   const { data: waitlist } = await supabase
     .from("waitlists")
     .select("id")
+    .eq("id", waitlistId)
     .eq("founder_id", user.id)
     .single();
 
@@ -23,7 +33,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Waitlist not found" }, { status: 404 });
   }
 
-  const { searchParams } = new URL(request.url);
   const range = searchParams.get("range") || "30d";
 
   let query = supabase

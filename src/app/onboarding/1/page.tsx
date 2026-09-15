@@ -123,12 +123,7 @@ export default function OnboardingStep1() {
         if (!res.ok) return;
         const data = await res.json();
 
-        const hasSlug = Boolean(data.slug);
-        const hasHeadline = Boolean(data.headline);
-        const hasTemplate = Boolean(data.template);
-        const hasBrandColor = Boolean(data.brandColor);
-
-        if (hasSlug && hasHeadline && hasTemplate && hasBrandColor) {
+        if (data.waitlistId) {
           router.replace("/dashboard");
         }
       } catch {
@@ -249,6 +244,9 @@ export default function OnboardingStep1() {
         // Store in context/localStorage only — no API call yet
         form.updateField("slug", slug);
         form.updateField("subheadline", subheadline);
+        if (!form.headline) {
+          form.updateField("headline", form.productName || slug);
+        }
         router.push("/onboarding/2");
       } catch {
         setSubmitError("Something went wrong. Please try again.");

@@ -73,6 +73,7 @@ interface DashboardClientProps {
     todaySignups: number;
   };
   coldThreshold: number;
+  waitlistId?: string;
 }
 
 const TABLE_COLUMNS = ["#", "Email", "Date", "Warmth", "Referrals", "Quality"];
@@ -103,6 +104,7 @@ export default function DashboardClient({
   subscribers = [],
   stats,
   coldThreshold,
+  waitlistId,
 }: DashboardClientProps) {
   const [copied, setCopied] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -126,12 +128,15 @@ export default function DashboardClient({
   const router = useRouter();
 
   // Fetch stats + warmth data (reused by mount, visibility, and interval)
+  const widParam = waitlistId ? `?waitlist_id=${waitlistId}` : "";
   const refreshData = () => {
-    fetch("/api/dashboard/stats")
-      .then((r) => r.json())
-      .then(setStatsData)
+    fetch(`/api/dashboard/stats${widParam}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.current) setStatsData(data);
+      })
       .catch(() => {});
-    fetch("/api/dashboard/warmth")
+    fetch(`/api/dashboard/warmth${widParam}`)
       .then((r) => r.json())
       .then((json) => {
         if (json.total !== undefined) setWarmthData(json);
@@ -395,7 +400,7 @@ export default function DashboardClient({
             <div className="text-caption text-muted-foreground">
               Total signups
             </div>
-            {statsData && (
+            {statsData?.current && (
               <div className="mt-1 text-xs text-muted-foreground">
                 {computeDelta(
                   statsData.current.total,
@@ -411,7 +416,7 @@ export default function DashboardClient({
                 : "\u2014"}
             </div>
             <div className="text-caption text-muted-foreground">Referral %</div>
-            {statsData && (
+            {statsData?.current && (
               <div className="mt-1 text-xs text-muted-foreground">
                 {computeDelta(
                   statsData.current.referrals,
@@ -475,7 +480,7 @@ export default function DashboardClient({
             </div>
 
             <div className="mb-6">
-              <SignupChart subdomain={subdomain} />
+              <SignupChart subdomain={subdomain} waitlistId={waitlistId} />
             </div>
 
             <div className="mb-6">
@@ -483,7 +488,10 @@ export default function DashboardClient({
             </div>
 
             <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-              <QualificationPanel subdomain={subdomain} />
+              <QualificationPanel
+                subdomain={subdomain}
+                waitlistId={waitlistId}
+              />
               <WarmthPanel tier={tier} warmthData={warmthData} />
             </div>
           </>

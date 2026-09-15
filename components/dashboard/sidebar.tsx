@@ -1,13 +1,23 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { cn } from "../lib/cn";
+import { WaitlistSwitcher } from "./waitlist-switcher";
+
+interface WaitlistItem {
+  id: string;
+  subdomain: string;
+  product_name: string | null;
+  logo_url: string | null;
+  is_archived: boolean;
+  subscriberCount?: number;
+}
 
 interface SidebarProps {
-  waitlistName: string | null;
-  logoUrl: string | null;
+  waitlists: WaitlistItem[];
+  activeWaitlistId: string;
+  onSelectWaitlist: (waitlistId: string) => void;
   isOpen: boolean;
   onClose: () => void;
   tier?: string;
@@ -28,14 +38,15 @@ interface NavSection {
   items: NavItem[];
 }
 
-function buildNavSections(): NavSection[] {
+function buildNavSections(wid?: string): NavSection[] {
+  const q = wid ? `?wid=${wid}` : "";
   return [
     {
       title: "COMMAND CENTER",
       items: [
         {
           label: "Overview",
-          href: "/dashboard",
+          href: `/dashboard${q}`,
           icon: (
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <rect
@@ -84,7 +95,7 @@ function buildNavSections(): NavSection[] {
       items: [
         {
           label: "Qualification",
-          href: `/dashboard/qualification`,
+          href: `/dashboard/qualification${q}`,
           icon: (
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <rect
@@ -108,7 +119,7 @@ function buildNavSections(): NavSection[] {
         },
         {
           label: "Leaderboard",
-          href: `/dashboard/leaderboard`,
+          href: `/dashboard/leaderboard${q}`,
           icon: (
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path
@@ -140,7 +151,7 @@ function buildNavSections(): NavSection[] {
         },
         {
           label: "Warmth",
-          href: `/dashboard/warmth`,
+          href: `/dashboard/warmth${q}`,
           icon: (
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path
@@ -159,7 +170,7 @@ function buildNavSections(): NavSection[] {
       items: [
         {
           label: "Updates",
-          href: `/dashboard/updates`,
+          href: `/dashboard/updates${q}`,
           icon: (
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path
@@ -179,7 +190,7 @@ function buildNavSections(): NavSection[] {
         },
         {
           label: "Broadcast",
-          href: `/dashboard/broadcast`,
+          href: `/dashboard/broadcast${q}`,
           icon: (
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path
@@ -229,8 +240,9 @@ function buildNavSections(): NavSection[] {
 }
 
 export function Sidebar({
-  waitlistName,
-  logoUrl,
+  waitlists,
+  activeWaitlistId,
+  onSelectWaitlist,
   isOpen,
   onClose,
   tier = "free",
@@ -238,7 +250,7 @@ export function Sidebar({
   onUnarchive,
 }: SidebarProps) {
   const pathname = usePathname();
-  const NAV_SECTIONS = buildNavSections();
+  const NAV_SECTIONS = buildNavSections(activeWaitlistId);
 
   return (
     <>
@@ -257,38 +269,11 @@ export function Sidebar({
         )}
       >
         <div className="border-b border-border px-3 py-4">
-          <div className="flex items-center gap-3 rounded-lg border border-accent px-3 py-2">
-            {logoUrl ? (
-              <Image
-                src={logoUrl}
-                alt={waitlistName || "Logo"}
-                width={32}
-                height={32}
-                className="rounded"
-                unoptimized
-              />
-            ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded bg-accent/10">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  className="text-accent"
-                >
-                  <path
-                    d="M2 4L8 2L14 4V12L8 14L2 12V4Z"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            )}
-            <span className="flex-1 truncate text-left text-body-sm font-semibold text-foreground">
-              {waitlistName || "PreWaitlist"}
-            </span>
-          </div>
+          <WaitlistSwitcher
+            waitlists={waitlists}
+            activeWaitlistId={activeWaitlistId}
+            onSelect={onSelectWaitlist}
+          />
         </div>
 
         {isArchived && (
@@ -318,7 +303,7 @@ export function Sidebar({
                   (item.label === "Broadcast" && tier === "free") ||
                   (item.label === "Warmth" && tier === "free");
                 const isDisabled = "disabled" in item && item.disabled;
-                const isActive = pathname === item.href;
+                const isActive = item.href.split("?")[0] === pathname;
 
                 if (isLocked) {
                   return (
@@ -401,8 +386,8 @@ export function Sidebar({
               {section.items.map((item) => {
                 const isSettingsLink = item.label === "Settings";
                 const isActive = isSettingsLink
-                  ? pathname.startsWith(item.href)
-                  : pathname === item.href;
+                  ? pathname.startsWith(item.href.split("?")[0])
+                  : pathname === item.href.split("?")[0];
                 return (
                   <Link
                     key={item.label}
