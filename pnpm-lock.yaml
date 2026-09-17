@@ -14,6 +14,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.116.0
         version: 2.116.0
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -29,6 +32,9 @@ importers:
       react-dom:
         specifier: 19.2.4
         version: 19.2.4(react@19.2.4)
+      react-mentions-ts:
+        specifier: ^6.0.0
+        version: 6.0.0(class-variance-authority@0.7.1)(clsx@2.1.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tailwind-merge@3.6.0)
       recharts:
         specifier: ^3.10.1
         version: 3.10.1(@types/react@19.2.17)(react-dom@19.2.4(react@19.2.4))(react-is@17.0.2)(react@19.2.4)(redux@5.0.1)
@@ -1213,6 +1219,9 @@ packages:
     resolution: {integrity: sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==}
     engines: {node: '>=10'}
 
+  class-variance-authority@0.7.1:
+    resolution: {integrity: sha512-Ka+9Trutv7G8M6WT6SeiRWz792K5qEqIGEGzXKhAE6xOWAY6pPH8U+9IY3oCMv6kqTmLsv7Xh/2w2RigkePMsg==}
+
   client-only@0.0.1:
     resolution: {integrity: sha512-IV3Ou0jSMzZrd3pZ48nLkT9DA7Ag1pnPzaiQhpW7c3RbcqqzvzzVu+L8gfqMp/8IM2MQtSiqaCxrrcfu8I8rMA==}
 
@@ -2244,6 +2253,16 @@ packages:
 
   react-is@17.0.2:
     resolution: {integrity: sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==}
+
+  react-mentions-ts@6.0.0:
+    resolution: {integrity: sha512-uOg1BzedDZXfNJQJ6cuv75euu9SngGbaetrv3SKJFrTIT5000yN7PMNyqlS4gRCNfgT+lpELAuHGvF3qOBJCWQ==}
+    engines: {node: '>=22.12.0'}
+    peerDependencies:
+      class-variance-authority: '>=0.6.0'
+      clsx: '>=2.0.0'
+      react: '>=19.0.3 <19.1.0 || >=19.1.4 <19.2.0 || >=19.2.3'
+      react-dom: '>=19.0.0'
+      tailwind-merge: '>=3.0.0'
 
   react-redux@9.3.0:
     resolution: {integrity: sha512-KQopgqFo/p/fgmAs5qz6p5RWaNAzq40WAu7fJIXnQpYxFPbJYtsJPWvGeF2rOBaY/kEuV77AVsX8TsQzKm+A/g==}
@@ -3797,6 +3816,10 @@ snapshots:
       ansi-styles: 4.3.0
       supports-color: 7.2.0
 
+  class-variance-authority@0.7.1:
+    dependencies:
+      clsx: 2.1.1
+
   client-only@0.0.1: {}
 
   clsx@2.1.1: {}
@@ -4924,6 +4947,14 @@ snapshots:
   react-is@16.13.1: {}
 
   react-is@17.0.2: {}
+
+  react-mentions-ts@6.0.0(class-variance-authority@0.7.1)(clsx@2.1.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tailwind-merge@3.6.0):
+    dependencies:
+      class-variance-authority: 0.7.1
+      clsx: 2.1.1
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      tailwind-merge: 3.6.0
 
   react-redux@9.3.0(@types/react@19.2.17)(react@19.2.4)(redux@5.0.1):
     dependencies:

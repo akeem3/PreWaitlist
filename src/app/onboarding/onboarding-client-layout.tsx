@@ -45,7 +45,13 @@ const TWO_PANE_ROUTES = [
 ];
 
 // Phase B routes — authenticated, API is authoritative
-const AUTHED_ROUTES = ["/onboarding/4", "/onboarding/4a", "/onboarding/5"];
+// Success is included so FlushGate resolves server state (waitlistId) for the dashboard link
+const AUTHED_ROUTES = [
+  "/onboarding/4",
+  "/onboarding/4a",
+  "/onboarding/5",
+  "/onboarding/success",
+];
 
 function getCurrentStep(pathname: string): number {
   return STEP_ROUTES[pathname] ?? 1;

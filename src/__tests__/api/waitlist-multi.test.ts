@@ -105,7 +105,7 @@ describe("GET /api/waitlist (multi-waitlist)", () => {
   });
 
   it("returns all waitlists for authenticated founder", async () => {
-    // Auth (default user), waitlist fetch (2 waitlists),
+    // Auth (default user), waitlist fetch (2 waitlists), tier fetch,
     // subscriberCounts query (dequeues but unused), 2 individual subscriber counts
     mockSupabase.__queue.push({
       data: [
@@ -124,6 +124,7 @@ describe("GET /api/waitlist (multi-waitlist)", () => {
       ],
       error: null,
     });
+    mockSupabase.__queue.push({ data: { tier: "free" }, error: null });
     mockSupabase.__queue.push({ count: 0, data: null, error: null });
     mockSupabase.__queue.push({ count: 42, data: null, error: null });
     mockSupabase.__queue.push({ count: 7, data: null, error: null });
@@ -134,6 +135,7 @@ describe("GET /api/waitlist (multi-waitlist)", () => {
     expect(body).toHaveLength(2);
     expect(body[0].slug).toBe("acme");
     expect(body[0].subscriberCount).toBe(42);
+    expect(body[0].tier).toBe("free");
     expect(body[1].slug).toBe("globex");
     expect(body[1].subscriberCount).toBe(7);
   });

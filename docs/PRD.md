@@ -333,8 +333,8 @@ _(Unchanged in substance from PRD v1 — repeated here at the level needed for b
 **Route:** `/onboarding/5`
 
 - REQ-6.11.1: While the founder's tier is Free, the system shall render the confirmation-email fields as locked/greyed with a Pro badge, and shall render "Upgrade to Pro to customise" as the only actionable email-related control.
-- REQ-6.11.2: While the founder's tier is Pro, the system shall render editable Sender name / Subject / Message body fields and the collapsed-by-default "Send from your own domain" panel.
-- REQ-6.11.3: **Scope boundary:** the Pro-tier UI (including the SPF/DKIM panel) is Sprint 1 scope. The backend logic that actually verifies a domain's SPF/DKIM records against Resend is Sprint 3 scope. In Sprint 1, "Verify my domain setup" shall be wired to a stubbed response and shall never block "Launch my waitlist."
+- REQ-6.11.2: While the founder's tier is Pro, the system shall render editable Sender name / Subject / Message body fields.
+- REQ-6.11.3: **Scope boundary:** Custom domain authentication (SPF/DKIM) is deferred to v1.1 (see product vision line 95). The Pro-tier email customization UI covers sender name, subject, and message body only.
 - REQ-6.11.4: When "Launch my waitlist" is clicked and no subdomain was ever finalized, the system shall auto-assign the REQ-6.6.4 fallback slug rather than blocking the action.
 
 ### 6.12 Success Screen (F-C6)

@@ -95,7 +95,7 @@ function ChartBody({
 
   if (data.length === 0) {
     return (
-      <div className="flex h-200px items-center justify-center">
+      <div className="flex h-50 items-center justify-center">
         <span className="text-body-sm text-muted-foreground">
           No signups in this period
         </span>
@@ -103,41 +103,36 @@ function ChartBody({
     );
   }
 
+  const maxBar = data.length <= 7 ? 64 : data.length <= 14 ? 40 : 24;
+
   return (
-    <div className="overflow-x-auto">
-      <div className="min-w-100">
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart
-            data={data}
-            margin={{ top: 5, right: 5, left: -20, bottom: 5 }}
-          >
-            <XAxis
-              dataKey="date"
-              tick={{ fontSize: 12, fill: "#6B6459" }} // token: --color-muted-foreground
-              axisLine={{ stroke: "#CCC9C3" }} // token: --color-border
-              tickLine={false}
-              tickFormatter={(value: string) => {
-                const d = new Date(value);
-                return `${d.toLocaleString("default", { month: "short" })} ${d.getDate()}`;
-              }}
-            />
-            <YAxis
-              tick={{ fontSize: 12, fill: "#6B6459" }} // token: --color-muted-foreground
-              axisLine={false}
-              tickLine={false}
-              allowDecimals={false}
-            />
-            <Tooltip content={<CustomTooltip />} cursor={false} />
-            <Bar
-              dataKey="count"
-              fill="var(--color-accent)"
-              radius={[4, 4, 0, 0]}
-              maxBarSize={40}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
+    <ResponsiveContainer width="100%" height={200}>
+      <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+        <XAxis
+          dataKey="date"
+          tick={{ fontSize: 12, fill: "#6B6459" }} // token: --color-muted-foreground
+          axisLine={{ stroke: "#CCC9C3" }} // token: --color-border
+          tickLine={false}
+          tickFormatter={(value: string) => {
+            const d = new Date(value);
+            return `${d.toLocaleString("default", { month: "short" })} ${d.getDate()}`;
+          }}
+        />
+        <YAxis
+          tick={{ fontSize: 12, fill: "#6B6459" }} // token: --color-muted-foreground
+          axisLine={false}
+          tickLine={false}
+          allowDecimals={false}
+        />
+        <Tooltip content={<CustomTooltip />} cursor={false} />
+        <Bar
+          dataKey="count"
+          fill="var(--color-accent)"
+          radius={[4, 4, 0, 0]}
+          maxBarSize={maxBar}
+        />
+      </BarChart>
+    </ResponsiveContainer>
   );
 }
 

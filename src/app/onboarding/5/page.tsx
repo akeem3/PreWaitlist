@@ -1,22 +1,46 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useOnboardingForm } from "../context";
 import { Input } from "../../../../components/ui/input";
-import { Textarea } from "../../../../components/ui/textarea";
+import {
+  EmailTokenEditor,
+  type EmailTokenEditorHandle,
+} from "../../../../components/onboarding/email-token-editor";
+import { VariablePicker } from "../../../../components/onboarding/variable-picker";
 
 export default function OnboardingStep5() {
   const router = useRouter();
   const form = useOnboardingForm();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [domainPanelOpen, setDomainPanelOpen] = useState(false);
+  const subjectEditorRef = useRef<EmailTokenEditorHandle>(null);
+  const bodyEditorRef = useRef<EmailTokenEditorHandle>(null);
 
   const isPro = form.tier === "pro";
 
   useEffect(() => {
     form.setLoading(false);
+
+    // Scaffold empty email fields with sensible defaults so founders
+    // don't start from a blank page. If fields are already filled
+    // (e.g. they navigated back), leave them alone.
+    if (!form.emailSenderName && form.headline) {
+      form.updateField("emailSenderName", form.headline);
+    }
+    if (!form.emailSubject) {
+      form.updateField(
+        "emailSubject",
+        "You're {{position}} in line for {{product_name}}"
+      );
+    }
+    if (!form.emailBody) {
+      form.updateField(
+        "emailBody",
+        "Hi {{first_name}},\n\nWelcome to {{product_name}}. You're on the list!\n\nYour position is #{{position}}. Share your referral link to move up:\n\n{{referral_link}}\n\nThe earlier you sign up, the higher your position."
+      );
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -107,16 +131,17 @@ export default function OnboardingStep5() {
               <div className="mb-2">
                 <p className="text-xs text-muted-foreground">
                   <span className="font-medium text-foreground">Subject:</span>{" "}
-                  You&apos;re in! Position #1 on the{" "}
-                  {form.headline || "your product"} waitlist
+                  You&apos;re #1 in line for {form.headline || "your product"}
                 </p>
               </div>
               <div className="space-y-1 border-t border-border pt-2">
-                <p className="text-xs text-muted-foreground">Hey there,</p>
+                <p className="text-xs text-muted-foreground">Hi there,</p>
                 <p className="text-xs text-muted-foreground">
-                  You&apos;re signed up for the{" "}
-                  {form.headline || "your product"} waitlist — position #1.
-                  Share your referral link to move up:
+                  Welcome to <strong>{form.headline || "your product"}</strong>.
+                  You&apos;re on the list!
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Your position is #1. Share your referral link to move up:
                 </p>
                 <div className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-1.5">
                   <span className="flex-1 truncate font-mono text-2xs text-muted-foreground">
@@ -251,22 +276,6 @@ export default function OnboardingStep5() {
                     </svg>
                     Custom subject + body
                   </li>
-                  <li className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                    <svg
-                      className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground/50"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                    >
-                      <path
-                        d="M3 8l3.5 3.5L13 5"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    Send from your domain
-                  </li>
                 </ul>
               </div>
             </div>
@@ -276,155 +285,109 @@ export default function OnboardingStep5() {
 
       {/* Pro tier — editable email fields */}
       {isPro && (
-        <div className="mb-4 flex flex-col gap-3">
-          {/* Sender Name */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-foreground">
-              Sender name
-            </label>
-            <Input
-              placeholder="Your Company"
-              value={form.emailSenderName}
-              onChange={(e) =>
-                form.updateField("emailSenderName", e.target.value)
-              }
-              disabled={isSubmitting}
-            />
-          </div>
-
-          {/* Subject */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-foreground">
-              Email subject
-            </label>
-            <Input
-              placeholder="Welcome to the waitlist!"
-              value={form.emailSubject}
-              onChange={(e) => form.updateField("emailSubject", e.target.value)}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          {/* Message Body */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-foreground">
-              Message body
-            </label>
-            <Textarea
-              placeholder="Thanks for signing up! We'll let you know when we launch."
-              value={form.emailBody}
-              onChange={(e) => form.updateField("emailBody", e.target.value)}
-              disabled={isSubmitting}
-              rows={4}
-            />
-          </div>
-
-          {/* Send from your own domain */}
-          <div className="rounded-xl border border-border bg-card">
-            <button
-              type="button"
-              onClick={() => setDomainPanelOpen(!domainPanelOpen)}
-              className="flex w-full items-center justify-between p-5 text-sm"
-            >
-              <div>
-                <span className="font-medium text-foreground">
-                  Send from your own domain
-                </span>{" "}
-                <span className="text-muted-foreground">(recommended)</span>
-              </div>
+        <div className="mb-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
               <svg
                 width="16"
                 height="16"
                 viewBox="0 0 16 16"
                 fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className={`transition-transform duration-200 ${domainPanelOpen ? "rotate-180" : ""}`}
+                className="text-accent"
               >
                 <path
-                  d="M4 6L8 10L12 6"
+                  d="M2 4L8 8.5L14 4"
                   stroke="currentColor"
                   strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
+                <rect
+                  x="1"
+                  y="3"
+                  width="14"
+                  height="10"
+                  rx="2"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                />
               </svg>
-            </button>
-            <p className="px-5 pb-4 text-xs text-muted-foreground">
-              Improves deliverability. Takes 2 minutes.
-            </p>
-            {domainPanelOpen && (
-              <div className="border-t border-border px-5 pb-5 pt-4">
-                {/* SPF record */}
-                <div className="mb-3 flex items-center justify-between rounded-lg bg-muted px-4 py-3">
-                  <div>
-                    <p className="text-xs font-medium text-foreground">
-                      SPF record
-                    </p>
-                    <p className="mt-0.5 break-all font-mono text-xs text-muted-foreground">
-                      v=spf1 include:_spf.google.com ~all
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className="ml-3 shrink-0 rounded-md border border-border bg-background px-3 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-                  >
-                    Copy
-                  </button>
-                </div>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">
+                Customise your confirmation email
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Personalise what your subscribers receive after signing up
+              </p>
+            </div>
+          </div>
 
-                {/* DKIM CNAME */}
-                <div className="mb-4 flex items-center justify-between rounded-lg bg-muted px-4 py-3">
-                  <div>
-                    <p className="text-xs font-medium text-foreground">
-                      DKIM CNAME
-                    </p>
-                    <p className="mt-0.5 break-all font-mono text-xs text-muted-foreground">
-                      k=rsa; p=MIIBIjANBg...
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className="ml-3 shrink-0 rounded-md border border-border bg-background px-3 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-                  >
-                    Copy
-                  </button>
-                </div>
+          <div className="flex flex-col gap-5">
+            {/* Sender Name */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Sender name
+              </label>
+              <Input
+                placeholder="Your Company"
+                value={form.emailSenderName}
+                onChange={(e) =>
+                  form.updateField("emailSenderName", e.target.value)
+                }
+                disabled={isSubmitting}
+                className="h-11 rounded-xl border-border/60 bg-background px-4 text-sm focus:border-accent focus:ring-2 focus:ring-accent/10"
+              />
+            </div>
 
-                {/* Verify button */}
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      await fetch("/api/waitlist/verify-domain");
-                    } catch {
-                      // Stubbed — always returns unverified
-                    }
+            {/* Subject */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Email subject
+                </label>
+                <VariablePicker
+                  onSelect={(id) => {
+                    const tag = `{{${id}}}`;
+                    subjectEditorRef.current?.insertText(tag);
                   }}
-                  className="mb-3 inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                >
-                  Verify my domain setup
-                </button>
-
-                {/* Skip link */}
-                <p className="mb-3 text-xs text-muted-foreground">
-                  Skip for now — send from{" "}
-                  <span className="font-medium text-accent">
-                    PreWaitlist&apos;s
-                  </span>{" "}
-                  domain
-                </p>
-
-                {/* Info box */}
-                <div className="rounded-lg border border-border bg-muted/50 px-4 py-3">
-                  <p className="text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">
-                      Why this matters:
-                    </span>{" "}
-                    emails from your own domain are less likely to land in spam.
-                  </p>
-                </div>
+                  disabled={isSubmitting}
+                />
               </div>
-            )}
+              <EmailTokenEditor
+                ref={subjectEditorRef}
+                value={form.emailSubject}
+                onChange={(val) => form.updateField("emailSubject", val)}
+                placeholder="Welcome to the waitlist!"
+                singleLine
+                disabled={isSubmitting}
+                className="h-11"
+              />
+            </div>
+
+            {/* Message Body */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Message body
+                </label>
+                <VariablePicker
+                  onSelect={(id) => {
+                    const tag = `{{${id}}}`;
+                    bodyEditorRef.current?.insertText(tag);
+                  }}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <EmailTokenEditor
+                ref={bodyEditorRef}
+                value={form.emailBody}
+                onChange={(val) => form.updateField("emailBody", val)}
+                placeholder="Thanks for signing up! We'll let you know when we launch."
+                disabled={isSubmitting}
+                rows={6}
+              />
+            </div>
           </div>
         </div>
       )}

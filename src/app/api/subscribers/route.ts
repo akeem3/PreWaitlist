@@ -3,7 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkAndFulfillMilestones } from "@/lib/milestones";
 import { recalculatePositions, getPositionUpdate } from "@/lib/positions";
-import { sendEmail, buildEmailFooter, isUnsubscribed } from "@/lib/email";
+import {
+  sendEmail,
+  buildEmailFooter,
+  isUnsubscribed,
+  interpolateEmail,
+} from "@/lib/email";
 import { isEmailBounced } from "@/lib/bounces";
 
 const BRAND_GREEN = "#0F7A5E";
@@ -26,14 +31,26 @@ function buildConfirmationEmail(opts: {
   referralCode: string;
   rewardTiers: { threshold: number; label: string }[];
   footer: string;
+  customSubject?: string;
+  customBody?: string;
 }): {
   subject: string;
   html: string;
   text: string;
 } {
+  const firstName = opts.subscriberName?.split(" ")[0] || "there";
   const greeting = opts.subscriberName
     ? `Hi ${opts.subscriberName},`
     : "Welcome,";
+
+  const interpolateVars: Record<string, string | number> = {
+    first_name: firstName,
+    position: opts.position,
+    product_name: opts.productName,
+    referral_link: opts.referralLink,
+    referral_count: 0,
+    total_signups: opts.subscriberCount,
+  };
 
   const rewardTiersHtml =
     opts.rewardTiers.length > 0
@@ -67,7 +84,10 @@ function buildConfirmationEmail(opts: {
       ? `\nHow to move up:\n${opts.rewardTiers.map((t) => `  ${t.threshold} referral${t.threshold !== 1 ? "s" : ""}: ${t.label}`).join("\n")}`
       : "";
 
-  const subject = `You're #${opts.position} in line for ${opts.productName}`;
+  const defaultSubject = `You're #${opts.position} in line for ${opts.productName}`;
+  const subject = opts.customSubject?.trim()
+    ? interpolateEmail(opts.customSubject, interpolateVars)
+    : defaultSubject;
 
   const html = `
 <!DOCTYPE html>
@@ -98,21 +118,25 @@ function buildConfirmationEmail(opts: {
 
           <!-- Content card -->
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; border: 1px solid ${BORDER_LIGHT};">
-            <!-- Greeting -->
+            <!-- Greeting + Body -->
             <tr>
-              <td style="padding: 40px 40px 16px 40px;">
-                <h1 style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 24px; line-height: 30px; font-weight: bold; color: ${TEXT_PRIMARY};">
-                  ${greeting}
-                </h1>
-              </td>
-            </tr>
-
-            <!-- Body -->
-            <tr>
-              <td style="padding: 0 40px 24px 40px;">
-                <p style="margin: 0 0 16px 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: ${TEXT_SECONDARY};">
-                  Welcome to <strong>${opts.productName}</strong>. You're on the list!
-                </p>
+              <td style="padding: 40px 40px 24px 40px;">
+                ${
+                  opts.customBody?.trim()
+                    ? interpolateEmail(opts.customBody, interpolateVars)
+                        .split("\n")
+                        .map(
+                          (line, i) =>
+                            `<p style="margin: 0 0 ${i === 0 ? "16px" : "0"} 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: ${TEXT_SECONDARY};">${line}</p>`
+                        )
+                        .join("")
+                    : `<h1 style="margin: 0 0 16px 0; font-family: Arial, Helvetica, sans-serif; font-size: 24px; line-height: 30px; font-weight: bold; color: ${TEXT_PRIMARY};">
+                      ${greeting}
+                    </h1>
+                    <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: ${TEXT_SECONDARY};">
+                      Welcome to <strong>${opts.productName}</strong>. You're on the list!
+                    </p>`
+                }
               </td>
             </tr>
 
@@ -176,9 +200,11 @@ function buildConfirmationEmail(opts: {
 </body>
 </html>`;
 
-  const text = `${greeting}
+  const bodyText = opts.customBody?.trim()
+    ? interpolateEmail(opts.customBody, interpolateVars)
+    : `${greeting}\n\nWelcome to ${opts.productName}. You're on the list!`;
 
-Welcome to ${opts.productName}. You're on the list!
+  const text = `${bodyText}
 
 YOUR POSITION: #${opts.position} of ${opts.subscriberCount.toLocaleString()} subscribers
 
@@ -200,14 +226,25 @@ function buildMovedUpEmail(opts: {
   referralLink: string;
   rewardTiers: { threshold: number; label: string }[];
   footer: string;
+  customSubject?: string;
+  customBody?: string;
 }): {
   subject: string;
   html: string;
   text: string;
 } {
+  const firstName = opts.subscriberName?.split(" ")[0] || "there";
   const greeting = opts.subscriberName
     ? `Hi ${opts.subscriberName},`
     : "Welcome,";
+
+  const interpolateVars: Record<string, string | number> = {
+    first_name: firstName,
+    position: opts.newPosition,
+    product_name: opts.productName,
+    referral_link: opts.referralLink,
+    spots_moved: opts.spotsMoved,
+  };
 
   const rewardTiersHtml =
     opts.rewardTiers.length > 0
@@ -241,7 +278,10 @@ function buildMovedUpEmail(opts: {
       ? `\nHow to move up:\n${opts.rewardTiers.map((t) => `  ${t.threshold} referral${t.threshold !== 1 ? "s" : ""}: ${t.label}`).join("\n")}`
       : "";
 
-  const subject = `You moved up to #${opts.newPosition} for ${opts.productName}!`;
+  const defaultSubject = `You moved up to #${opts.newPosition} for ${opts.productName}!`;
+  const subject = opts.customSubject?.trim()
+    ? interpolateEmail(opts.customSubject, interpolateVars)
+    : defaultSubject;
 
   const html = `
 <!DOCTYPE html>
@@ -272,21 +312,25 @@ function buildMovedUpEmail(opts: {
 
           <!-- Content card -->
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; border: 1px solid ${BORDER_LIGHT};">
-            <!-- Greeting -->
+            <!-- Greeting + Body -->
             <tr>
-              <td style="padding: 40px 40px 16px 40px;">
-                <h1 style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 24px; line-height: 30px; font-weight: bold; color: ${TEXT_PRIMARY};">
-                  ${greeting}
-                </h1>
-              </td>
-            </tr>
-
-            <!-- Body -->
-            <tr>
-              <td style="padding: 0 40px 24px 40px;">
-                <p style="margin: 0 0 16px 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: ${TEXT_SECONDARY};">
-                  Nice! You moved up <strong>${opts.spotsMoved} ${opts.spotsMoved === 1 ? "spot" : "spots"}</strong> to <strong>#${opts.newPosition}</strong> in line for <strong>${opts.productName}</strong>.
-                </p>
+              <td style="padding: 40px 40px 24px 40px;">
+                ${
+                  opts.customBody?.trim()
+                    ? interpolateEmail(opts.customBody, interpolateVars)
+                        .split("\n")
+                        .map(
+                          (line, i) =>
+                            `<p style="margin: 0 0 ${i === 0 ? "16px" : "0"} 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: ${TEXT_SECONDARY};">${line}</p>`
+                        )
+                        .join("")
+                    : `<h1 style="margin: 0 0 16px 0; font-family: Arial, Helvetica, sans-serif; font-size: 24px; line-height: 30px; font-weight: bold; color: ${TEXT_PRIMARY};">
+                      ${greeting}
+                    </h1>
+                    <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: ${TEXT_SECONDARY};">
+                      Nice! You moved up <strong>${opts.spotsMoved} ${opts.spotsMoved === 1 ? "spot" : "spots"}</strong> to <strong>#${opts.newPosition}</strong> in line for <strong>${opts.productName}</strong>.
+                    </p>`
+                }
               </td>
             </tr>
 
@@ -347,9 +391,11 @@ function buildMovedUpEmail(opts: {
 </body>
 </html>`;
 
-  const text = `${greeting}
+  const bodyText = opts.customBody?.trim()
+    ? interpolateEmail(opts.customBody, interpolateVars)
+    : `${greeting}\n\nNice! You moved up ${opts.spotsMoved} ${opts.spotsMoved === 1 ? "spot" : "spots"} to #${opts.newPosition} in line for ${opts.productName}.`;
 
-Nice! You moved up ${opts.spotsMoved} ${opts.spotsMoved === 1 ? "spot" : "spots"} to #${opts.newPosition} in line for ${opts.productName}.
+  const text = `${bodyText}
 
 NEW POSITION: #${opts.newPosition}
 
@@ -520,7 +566,7 @@ export async function POST(request: NextRequest) {
     const { data: waitlist } = await adminSupabase
       .from("waitlists")
       .select(
-        "product_name, headline, subdomain, sender_name, sending_domain, business_address"
+        "product_name, headline, subdomain, sender_name, sending_domain, business_address, email_subject, email_body"
       )
       .eq("id", waitlist_id)
       .single();
@@ -572,6 +618,8 @@ export async function POST(request: NextRequest) {
         label: t.reward_label,
       })),
       footer,
+      customSubject: waitlist.email_subject || undefined,
+      customBody: waitlist.email_body || undefined,
     });
 
     const emailResult = await sendEmail({
@@ -624,7 +672,7 @@ export async function POST(request: NextRequest) {
       const { data: waitlist } = await adminSupabase
         .from("waitlists")
         .select(
-          "product_name, headline, subdomain, sender_name, sending_domain, business_address"
+          "product_name, headline, subdomain, sender_name, sending_domain, business_address, email_subject, email_body"
         )
         .eq("id", waitlist_id)
         .single();
@@ -663,6 +711,8 @@ export async function POST(request: NextRequest) {
           label: t.reward_label,
         })),
         footer,
+        customSubject: waitlist.email_subject || undefined,
+        customBody: waitlist.email_body || undefined,
       });
 
       const emailResult = await sendEmail({

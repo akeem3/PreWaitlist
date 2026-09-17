@@ -164,6 +164,47 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Waitlist not found" }, { status: 404 });
   }
 
+  // Validate email customization fields
+  if (
+    typeof updates.email_subject === "string" &&
+    updates.email_subject.length > 200
+  ) {
+    return NextResponse.json(
+      { error: "Email subject must be 200 characters or fewer" },
+      { status: 400 }
+    );
+  }
+  if (
+    typeof updates.email_body === "string" &&
+    updates.email_body.length > 5000
+  ) {
+    return NextResponse.json(
+      { error: "Email body must be 5000 characters or fewer" },
+      { status: 400 }
+    );
+  }
+  if (
+    typeof updates.email_sender_name === "string" &&
+    updates.email_sender_name.length > 100
+  ) {
+    return NextResponse.json(
+      { error: "Sender name must be 100 characters or fewer" },
+      { status: 400 }
+    );
+  }
+
+  // Strip <script> tags from email content
+  if (typeof updates.email_subject === "string") {
+    updates.email_subject = updates.email_subject
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+      .trim();
+  }
+  if (typeof updates.email_body === "string") {
+    updates.email_body = updates.email_body
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+      .trim();
+  }
+
   // milestone_rewards lives in a separate table, not the waitlists table.
   // Map the array presence to the boolean column.
   if (Array.isArray(milestone_rewards)) {
@@ -288,6 +329,15 @@ export async function GET() {
     return NextResponse.json([], { status: 200 });
   }
 
+  // Fetch founder tier
+  const { data: profile } = await supabase
+    .from("founder_profiles")
+    .select("tier")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const tier = profile?.tier ?? "free";
+
   // Batch-fetch subscriber counts for all waitlists
   const waitlistIds = waitlists.map((w) => w.id);
   const { data: subscriberCounts } = await supabase
@@ -371,6 +421,7 @@ export async function GET() {
     emailSubject: waitlist.email_subject || "",
     emailSenderName: waitlist.email_sender_name || "",
     emailBody: waitlist.email_body || "",
+    tier,
   }));
 
   return NextResponse.json(result);

@@ -69,6 +69,7 @@ interface DashboardClientProps {
   subdomain: string;
   subscribers?: Subscriber[];
   founderEmail?: string;
+  displayName?: string;
   stats?: {
     totalSignups: number;
     referralPercentage: number | null;
@@ -106,6 +107,7 @@ export default function DashboardClient({
   subdomain,
   subscribers = [],
   founderEmail,
+  displayName,
   stats,
   coldThreshold,
   waitlistId,
@@ -195,33 +197,72 @@ export default function DashboardClient({
   return (
     <>
       <div className="border-b border-border bg-background px-6 py-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-body-sm font-medium text-accent">
-            {liveUrl}
-          </span>
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <rect
-                x="3.5"
-                y="3.5"
-                width="6"
-                height="6"
-                rx="1"
-                stroke="currentColor"
-                strokeWidth="1.2"
-              />
-              <path
-                d="M8.5 3.5V2.5C8.5 2 8 1.5 7.5 1.5H2.5C2 1.5 1.5 2 1.5 2.5V7.5C1.5 8 2 8.5 2.5 8.5H3.5"
-                stroke="currentColor"
-                strokeWidth="1.2"
-              />
-            </svg>
-            {copied ? "Copied!" : "Copy"}
-          </button>
+        <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-body-sm font-medium text-accent">
+              {liveUrl}
+            </span>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <rect
+                  x="3.5"
+                  y="3.5"
+                  width="6"
+                  height="6"
+                  rx="1"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                />
+                <path
+                  d="M8.5 3.5V2.5C8.5 2 8 1.5 7.5 1.5H2.5C2 1.5 1.5 2 1.5 2.5V7.5C1.5 8 2 8.5 2.5 8.5H3.5"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                />
+              </svg>
+              {copied ? "Copied!" : "Copy"}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {tier === "pro" ? (
+              <Link
+                href="/onboarding/1"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground transition-colors hover:bg-accent/90"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path
+                    d="M6 2V10M2 6H10"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                New waitlist
+              </Link>
+            ) : (
+              <Link
+                href="/dashboard/settings"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/20"
+              >
+                Upgrade for unlimited
+              </Link>
+            )}
+            <Link
+              href="/dashboard/settings/profile"
+              className="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <span className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold text-foreground">
+                {(displayName || founderEmail || "U").charAt(0).toUpperCase()}
+              </span>
+              <span className="hidden sm:inline">
+                {displayName || founderEmail?.split("@")[0] || "Profile"}
+              </span>
+            </Link>
+          </div>
         </div>
       </div>
 

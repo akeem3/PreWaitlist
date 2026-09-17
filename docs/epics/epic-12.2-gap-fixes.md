@@ -1,6 +1,6 @@
 # Epic 12.2 — Gap Fixes
 
-**Status:** in-progress (12/19 stories implemented)
+**Status:** in-progress (15/19 stories implemented)
 **Source:** [Sprint Gap Analysis](../sprint-gap-analysis.md), [PRD §2c Sprint 3.2](../PRD.md#2c-sprint-32--gap-fixes)
 
 ## Goal
@@ -34,6 +34,7 @@ All 19 gaps closed. Settings page is organized into clear tabs. Privacy policy a
 | 12.2.16 | Sidebar Waitlist Switcher           | 12.2.15         | ready  |
 | 12.2.17 | Dashboard Scoped to Active Waitlist | 12.2.16         | ready  |
 | 12.2.18 | Multi-Waitlist Tests                | 12.2.14–12.2.17 | ready  |
+| 12.2.19 | Remove SPF/DKIM Panel               | —               | done   |
 
 ---
 
@@ -618,3 +619,127 @@ All 19 gaps closed. Settings page is organized into clear tabs. Privacy policy a
 - **WaitlistSwitcher tests:** Render component, simulate click to open, verify items visible, simulate Escape/click-outside to close, verify localStorage set on select.
 - **Dashboard scoping tests:** Import route handlers, call with missing `waitlist_id`, verify 400 response.
 - **Verification:** Run `pnpm test`, `pnpm lint`, `pnpm build`. Total ≥300 tests.
+
+---
+
+### Story 12.2.19 — Remove SPF/DKIM Panel from Onboarding Step 5
+
+**Status:** done
+**Story:** As the system, I need the SPF/DKIM domain authentication panel removed from onboarding Step 5 so that email customization stays simple and founders don't face unnecessary technical complexity.
+
+**Acceptance Criteria (EARS):**
+
+- AC1: The Pro-tier email customization UI on Step 5 shall render only: Sender name, Email subject, and Message body fields.
+- AC2: The "Send from your own domain" collapsible panel (SPF record, DKIM CNAME, Verify button, Skip link, info box) shall not render.
+- AC3: The Free-tier comparison card shall list: Confirmation email, Position tracking, Referral links, Custom sender name, Custom subject + body.
+- AC4: The Free-tier comparison card shall NOT list "Send from your domain".
+- AC5: The `domainPanelOpen` state variable shall be removed from the component.
+- AC6: PRD REQ-6.11.2 and REQ-6.11.3 shall be updated to remove SPF/DKIM references.
+- AC7: Lint and build shall pass with zero errors.
+
+**Tasks:** T1 (AC1-AC5) Remove domain panel from Step 5 · T2 (AC6) Update PRD · T3 (AC7) Lint + build
+
+**Dev Notes:**
+
+- **Custom domain is v1.1** per product vision line 95: "Custom domain (user's own domain) — ⚪ v1.1 — High-demand. Most technically complex (DNS, SSL). Ship after first paying users."
+- **File changed:** `src/app/onboarding/5/page.tsx` — removed `domainPanelOpen` state and entire collapsible panel (~110 lines deleted).
+- **PRD updated:** REQ-6.11.2 no longer references the domain panel. REQ-6.11.3 updated to state custom domain is deferred to v1.1.
+- **Verify domain endpoint:** `/api/waitlist/verify-domain` still exists (stubbed) but is no longer called from the UI. Can be cleaned up in a future sprint.
+
+---
+
+### Story 12.2.20 — Email Token Editor (react-mentions-ts)
+
+**Status:** done
+**Story:** As the system, I need a token editor component for email subject and body fields so that founders can insert personalization variables via `{{variable}}` syntax with visual token chips.
+
+**Acceptance Criteria (EARS):**
+
+- AC1: `components/onboarding/email-token-editor.tsx` shall render a `MentionsInput` with `{{` trigger and `{{__id__}}` markup.
+- AC2: Available variables: `first_name`, `position`, `product_name`, `referral_link`, `referral_count`, `total_signups`, `spots_moved`.
+- AC3: Variables shall render as styled token chips (accent background, rounded, non-editable).
+- AC4: A `VariablePicker` component (`components/onboarding/variable-picker.tsx`) shall provide a dropdown to insert variables at cursor.
+- AC5: Lint and build shall pass with zero errors.
+
+**Tasks:** T1 (AC1-AC3) EmailTokenEditor component A T2 (AC4) VariablePicker component A T3 (AC5) Lint + build
+
+**Dev Notes:**
+
+- **Library:** `react-mentions-ts@6.0.0` installed with `class-variance-authority@0.7.1` peer dep.
+- **Node version:** v22.11.0 (0.1 short of package requirement `>=22.12.0`) but pnpm install succeeded.
+- **Style casting:** `MentionsInput` `style` prop expects `CSSProperties` but uses custom keys (`control`, `input`, `highlighter`, etc.). Cast via `as unknown as CSSProperties`.
+- **Files:** `components/onboarding/email-token-editor.tsx`, `components/onboarding/variable-picker.tsx`.
+
+---
+
+### Story 12.2.21 — Step 5 Email Fields with Token Editor
+
+**Status:** done
+**Story:** As the founder, I need the email subject and body fields on Step 5 to support `{{variable}}` tokens so that I can personalize my confirmation emails.
+
+**Acceptance Criteria (EARS):**
+
+- AC1: The email subject field on Step 5 shall use `EmailTokenEditor` in single-line mode.
+- AC2: The message body field shall use `EmailTokenEditor` in multi-line mode.
+- AC3: A `VariablePicker` dropdown shall be available below the body field to insert variables.
+- AC4: The scaffolding defaults shall pre-fill subject with `"You're #{{position}} in line for {{product_name}}"` and body with a welcome template using variables.
+- AC5: Lint and build shall pass with zero errors.
+
+**Tasks:** T1 (AC1-AC3) Replace Input/Textarea with EmailTokenEditor A T2 (AC4) Verify scaffolding defaults A T3 (AC5) Lint + build
+
+**Dev Notes:**
+
+- **File changed:** `src/app/onboarding/5/page.tsx` — replaced `<Input>` (subject) and `<Textarea>` (body) with `<EmailTokenEditor>`.
+- **Variable picker:** renders below body, inserts `{{variable}}` at end of current text.
+- **Scaffolding defaults** were already added in a prior session — this story integrates them with the token editor UI.
+
+---
+
+### Story 12.2.22 — Profile Settings Page + API
+
+**Status:** done
+**Story:** As the founder, I need a profile settings page where I can view and edit my display name, avatar URL, and bio.
+
+**Acceptance Criteria (EARS):**
+
+- AC1: A `GET /api/profile` endpoint shall return `displayName`, `avatarUrl`, `bio`, `tier`, `email`, `createdAt`.
+- AC2: A `PATCH /api/profile` endpoint shall accept `display_name`, `avatar_url`, `bio` with length validation (100, 500, 500 chars).
+- AC3: The profile page at `/dashboard/settings/profile` shall show a form with: email (read-only), display name, avatar URL, bio.
+- AC4: A "Save changes" button shall PATCH the API and show confirmation.
+- AC5: The Security tab shall remain with Reset Password (disabled) and Sign Out.
+- AC6: SQL migration shall add `display_name`, `avatar_url`, `bio` columns to `founder_profiles`.
+- AC7: Lint and build shall pass with zero errors.
+
+**Tasks:** T1 (AC6) SQL migration A T2 (AC1-AC2) API route A T3 (AC3-AC5) Profile client component A T4 (AC7) Lint + build
+
+**Dev Notes:**
+
+- **SQL:** `docs/stories/sql-writeups/epic12.2-profile-settings.sql` — run in Supabase Dashboard.
+- **API:** `src/app/api/profile/route.ts` — GET + PATCH, auth required, RLS via founder_profiles.
+- **Client:** `src/app/dashboard/settings/profile/client.tsx` — tabs (Profile/Security), form fields, save with confirmation.
+- **Existing page:** was a placeholder ("Profile management coming soon."). Replaced with real form.
+
+---
+
+### Story 12.2.23 — Dashboard Header Profile + New Waitlist Button
+
+**Status:** done
+**Story:** As the founder, I need a profile link and new waitlist button in the dashboard header so that I can access my profile and create additional waitlists (Pro tier).
+
+**Acceptance Criteria (EARS):**
+
+- AC1: The dashboard header right side shall show a profile link with avatar initial + display name (or email fallback).
+- AC2: Clicking the profile link shall navigate to `/dashboard/settings/profile`.
+- AC3: Pro tier users shall see a "+ New waitlist" button linking to `/onboarding/1`.
+- AC4: Free tier users shall see an "Upgrade for unlimited" button linking to `/dashboard/settings`.
+- AC5: `page.tsx` shall fetch `display_name` from `founder_profiles` and pass it to `DashboardClient`.
+- AC6: Lint and build shall pass with zero errors.
+
+**Tasks:** T1 (AC5) Fetch displayName in page.tsx A T2 (AC1-AC4) Header profile + new waitlist button A T3 (AC6) Lint + build
+
+**Dev Notes:**
+
+- **Files changed:** `src/app/dashboard/page.tsx` (added `display_name` to query + prop), `src/app/dashboard/client.tsx` (header redesign with profile link + tier-based CTA).
+- **Avatar:** renders initial letter in a rounded `bg-muted` circle (no image upload yet — uses `avatar_url` if set, otherwise initial).
+- **Responsive:** profile name hidden on small screens (`hidden sm:inline`), avatar always visible.
+- **New waitlist button:** green accent bg for Pro, outlined accent for free (upgrade CTA).

@@ -43,7 +43,7 @@ function mapServerToState(
     emailSubject: (record.emailSubject as string) ?? "",
     emailSenderName: (record.emailSenderName as string) ?? "",
     emailBody: (record.emailBody as string) ?? "",
-    tier: "free",
+    tier: ((record.tier as string) ?? "free") as "free" | "pro",
     loading: false,
   };
 }

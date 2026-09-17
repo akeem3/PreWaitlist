@@ -19,6 +19,20 @@ interface SendEmailParams {
   businessAddress?: string | null;
 }
 
+/**
+ * Replace {{variable}} placeholders in an email template with actual values.
+ * Unmatched variables are left as-is (e.g. {{unknown}} stays unchanged).
+ */
+export function interpolateEmail(
+  template: string,
+  vars: Record<string, string | number>
+): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
+    const val = vars[key];
+    return val !== undefined && val !== "" ? String(val) : `{{${key}}}`;
+  });
+}
+
 const DEFAULT_SENDER_NAME = "PreWaitlist";
 const DEFAULT_ADDRESS =
   "PreWaitlist Inc., 548 Market St, Suite 35000, San Francisco, CA 94104";
