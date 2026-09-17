@@ -59,64 +59,33 @@ export default function SigninPage() {
     // Register auth listener BEFORE signInWithPassword so we catch SIGNED_IN
     // when it fires during the sign-in call. If we register after, the event
     // is already dispatched and missed — forcing a 2s timeout flash.
-    //
-    // Two timing scenarios for SIGNED_IN:
-    //   A) Fires DURING signInWithPassword (before await resolves)
-    //      → userId is null, listener sets pendingCheck, post-await calls checkWaitlist
-    //   B) Fires AFTER signInWithPassword resolves (via setTimeout)
-    //      → userId is set, listener calls checkWaitlist directly
     let handled = false;
-    let userId: string | null = null;
-    let pendingCheck = false;
-
-    const checkWaitlist = async () => {
-      if (!userId) return;
-      const { data: waitlist } = await supabase
-        .from("waitlists")
-        .select("id, subdomain, headline, template, brand_color")
-        .eq("founder_id", userId)
-        .maybeSingle();
-
-      if (!waitlist) {
-        router.push("/onboarding/1");
-      } else {
-        router.push("/dashboard");
-      }
-    };
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
       if (!handled && event === "SIGNED_IN") {
-        if (userId) {
-          // Scenario B: userId already set, call checkWaitlist directly
-          handled = true;
-          subscription.unsubscribe();
-          clearTimeout(fallbackTimer);
-          checkWaitlist();
-        } else {
-          // Scenario A: userId not set yet, post-await will handle it
-          pendingCheck = true;
-        }
+        handled = true;
+        subscription.unsubscribe();
+        clearTimeout(fallbackTimer);
+        // Always go to dashboard — the server layout decides the correct destination
+        router.push("/dashboard");
       }
     });
 
     // Fallback: if SIGNED_IN doesn't fire within 2s, proceed anyway.
-    // Dashboard layout will re-validate server-side as a safety net.
     const fallbackTimer = setTimeout(() => {
       if (!handled) {
         handled = true;
         subscription.unsubscribe();
-        checkWaitlist();
+        router.push("/dashboard");
       }
     }, 2000);
 
-    const { data, error: signInError } = await supabase.auth.signInWithPassword(
-      {
-        email,
-        password,
-      }
-    );
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
     submitAttempts.current++;
     lastSubmitTime.current = Date.now();
@@ -134,15 +103,13 @@ export default function SigninPage() {
       return;
     }
 
-    userId = data.user.id;
-
-    // Scenario A: SIGNED_IN already fired during signInWithPassword but userId
-    // was null — listener stored pendingCheck. Now userId is set, fire manually.
-    if (pendingCheck && !handled) {
+    // Scenario A: SIGNED_IN already fired during signInWithPassword but we
+    // haven't redirected yet (userId was being set). Fire now.
+    if (!handled) {
       handled = true;
       clearTimeout(fallbackTimer);
       subscription.unsubscribe();
-      checkWaitlist();
+      router.push("/dashboard");
     }
   }
 

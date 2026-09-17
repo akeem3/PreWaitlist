@@ -135,14 +135,24 @@ describe("WaitlistSwitcher", () => {
     expect(screen.queryByText("Globex Corp")).toBeNull();
   });
 
-  it("renders create new waitlist link", async () => {
+  it("renders create new waitlist link for pro tier", async () => {
     const user = userEvent.setup();
-    render(<WaitlistSwitcher {...defaultProps} />);
+    render(<WaitlistSwitcher {...defaultProps} tier="pro" />);
 
     await user.click(screen.getByRole("button"));
     const link = screen.getByText("Create new waitlist");
     expect(link).toBeDefined();
     expect(link.closest("a")?.getAttribute("href")).toBe("/onboarding/1");
+  });
+
+  it("shows upgrade link for free tier", async () => {
+    const user = userEvent.setup();
+    render(<WaitlistSwitcher {...defaultProps} tier="free" />);
+
+    await user.click(screen.getByRole("button"));
+    const upgradeBtn = screen.getByText("Upgrade to add");
+    expect(upgradeBtn).toBeDefined();
+    expect(upgradeBtn.closest("a")?.getAttribute("href")).toBe("/dashboard");
   });
 
   it("exports STORAGE_KEY constant", () => {

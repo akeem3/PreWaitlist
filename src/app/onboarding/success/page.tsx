@@ -127,7 +127,9 @@ export default function OnboardingSuccess() {
 
       {/* Dashboard link — prominent button */}
       <Link
-        href="/dashboard"
+        href={
+          form.waitlistId ? `/dashboard?wid=${form.waitlistId}` : "/dashboard"
+        }
         className="inline-flex h-12 w-full max-w-lg items-center justify-center gap-2 rounded-[var(--button-radius)] bg-accent text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
       >
         Go to my dashboard

@@ -33,18 +33,22 @@ export async function GET(request: NextRequest) {
   }
 
   const now = new Date();
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
   const startOfToday = new Date(
     now.getFullYear(),
     now.getMonth(),
     now.getDate()
-  ).toISOString();
+  );
+  const startOfYesterday = new Date(
+    startOfToday.getTime() - 24 * 60 * 60 * 1000
+  );
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
   const [
     { count: currentTotal },
     { count: currentReferrals },
     { count: currentToday },
+    { count: currentYesterday },
     { count: previousTotal },
     { count: previousReferrals },
   ] = await Promise.all([
@@ -63,7 +67,13 @@ export async function GET(request: NextRequest) {
       .from("subscribers")
       .select("id", { count: "exact", head: true })
       .eq("waitlist_id", waitlist.id)
-      .gte("created_at", startOfToday),
+      .gte("created_at", startOfToday.toISOString()),
+    supabase
+      .from("subscribers")
+      .select("id", { count: "exact", head: true })
+      .eq("waitlist_id", waitlist.id)
+      .gte("created_at", startOfYesterday.toISOString())
+      .lt("created_at", startOfToday.toISOString()),
     supabase
       .from("subscribers")
       .select("id", { count: "exact", head: true })
@@ -84,6 +94,7 @@ export async function GET(request: NextRequest) {
       total: currentTotal ?? 0,
       referrals: currentReferrals ?? 0,
       today: currentToday ?? 0,
+      yesterday: currentYesterday ?? 0,
     },
     previous: {
       total: previousTotal ?? 0,

@@ -31,11 +31,10 @@ export default async function DashboardLayout({
     .eq("founder_id", user.id)
     .order("created_at", { ascending: true });
 
-  if (waitlistError) {
-    redirect("/onboarding/1");
-  }
-
-  if (!waitlists || waitlists.length === 0) {
+  // Only redirect to onboarding when the query succeeds AND user has zero waitlists.
+  // On query errors, render the page — the shell will show an empty state and the
+  // user can retry. Redirecting on errors creates infinite loops with OnboardingGuard.
+  if (!waitlistError && (!waitlists || waitlists.length === 0)) {
     redirect("/onboarding/1");
   }
 
@@ -47,7 +46,7 @@ export default async function DashboardLayout({
 
   return (
     <DashboardShell
-      waitlists={waitlists as WaitlistRow[]}
+      waitlists={(waitlists ?? []) as WaitlistRow[]}
       tier={profile?.tier ?? "free"}
     >
       {children}

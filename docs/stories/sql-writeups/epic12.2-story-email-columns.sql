@@ -1,4 +1,4 @@
--- Story 12.2: Email customization columns on waitlists
+ -- Story 12.2: Email customization columns on waitlists
 -- The code references email_subject, email_sender_name, email_body
 -- but no migration was ever created for these columns.
 -- Idempotent: safe to run multiple times.

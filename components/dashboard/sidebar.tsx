@@ -273,6 +273,7 @@ export function Sidebar({
             waitlists={waitlists}
             activeWaitlistId={activeWaitlistId}
             onSelect={onSelectWaitlist}
+            tier={tier}
           />
         </div>
 

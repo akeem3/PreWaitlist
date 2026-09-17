@@ -375,3 +375,57 @@ export async function GET() {
 
   return NextResponse.json(result);
 }
+
+export async function DELETE(request: NextRequest) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { waitlist_ids } = await request.json();
+
+  if (!Array.isArray(waitlist_ids) || waitlist_ids.length === 0) {
+    return NextResponse.json(
+      { error: "waitlist_ids array required" },
+      { status: 400 }
+    );
+  }
+
+  // Verify ownership before deleting
+  const { data: owned, error: lookupError } = await supabase
+    .from("waitlists")
+    .select("id")
+    .eq("founder_id", user.id)
+    .in("id", waitlist_ids);
+
+  if (lookupError) {
+    return NextResponse.json({ error: lookupError.message }, { status: 400 });
+  }
+
+  const ownedIds = (owned || []).map((w) => w.id);
+
+  if (ownedIds.length === 0) {
+    return NextResponse.json(
+      { error: "No waitlists found to delete" },
+      { status: 404 }
+    );
+  }
+
+  // Delete — ON DELETE CASCADE handles all child tables
+  const { error: deleteError } = await supabase
+    .from("waitlists")
+    .delete()
+    .in("id", ownedIds);
+
+  if (deleteError) {
+    return NextResponse.json({ error: deleteError.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ deleted: ownedIds.length, ids: ownedIds });
+}

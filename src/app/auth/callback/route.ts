@@ -60,18 +60,11 @@ export async function GET(request: NextRequest) {
 
       let redirectPath = next;
 
-      if (user && !cookieRedirect) {
-        const { data: waitlist } = await supabase
-          .from("waitlists")
-          .select("id, subdomain, headline, template, brand_color")
-          .eq("founder_id", user.id)
-          .maybeSingle();
-
-        if (!waitlist) {
-          redirectPath = "/onboarding/1";
-        } else {
-          redirectPath = "/dashboard";
-        }
+      // If no specific redirect was requested (no cookie, no next param),
+      // default to dashboard. The dashboard layout is the single source of
+      // truth — it checks for waitlists and redirects to onboarding if needed.
+      if (!cookieRedirect && !searchParams.get("next")) {
+        redirectPath = "/dashboard";
       }
 
       const response = NextResponse.redirect(`${origin}${redirectPath}`, 302);

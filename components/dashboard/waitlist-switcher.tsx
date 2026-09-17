@@ -18,6 +18,7 @@ interface WaitlistSwitcherProps {
   waitlists: WaitlistItem[];
   activeWaitlistId: string;
   onSelect: (waitlistId: string) => void;
+  tier?: string;
 }
 
 const STORAGE_KEY = "active_waitlist_id";
@@ -26,6 +27,7 @@ export function WaitlistSwitcher({
   waitlists,
   activeWaitlistId,
   onSelect,
+  tier = "free",
 }: WaitlistSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -124,14 +126,14 @@ export function WaitlistSwitcher({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-border bg-background shadow-lg">
+        <div className="absolute top-full left-0 z-50 mt-1 w-full max-h-64 overflow-y-auto rounded-xl border border-border bg-background shadow-lg">
           {waitlists.map((w) => (
             <button
               key={w.id}
               type="button"
               onClick={() => handleSelect(w.id)}
               className={cn(
-                "flex w-full items-center gap-3 px-3 py-2 text-left text-body-sm transition-colors",
+                "flex w-full items-center gap-3 px-4 py-3 text-left text-body-sm transition-colors",
                 w.id === activeWaitlistId
                   ? "bg-accent/10 text-foreground"
                   : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -168,22 +170,40 @@ export function WaitlistSwitcher({
             </button>
           ))}
 
-          <div className="border-t border-border">
-            <Link
-              href="/onboarding/1"
-              onClick={close}
-              className="flex w-full items-center gap-3 px-3 py-2 text-left text-body-sm text-accent transition-colors hover:bg-accent/10"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path
-                  d="M7 3V11M3 7H11"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-              Create new waitlist
-            </Link>
+          <div className="border-t border-border px-3 py-2">
+            {tier === "free" ? (
+              <Link
+                href="/dashboard"
+                onClick={close}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-accent bg-transparent px-3 py-2 text-body-sm font-medium text-accent transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path
+                    d="M7 3V11M3 7H11"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                Upgrade to add
+              </Link>
+            ) : (
+              <Link
+                href="/onboarding/1"
+                onClick={close}
+                className="flex w-full items-center gap-3 px-4 py-2 text-left text-body-sm text-accent transition-colors hover:bg-accent/10"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path
+                    d="M7 3V11M3 7H11"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                Create new waitlist
+              </Link>
+            )}
           </div>
         </div>
       )}

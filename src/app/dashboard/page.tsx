@@ -129,6 +129,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       tier={tier}
       subdomain={waitlist.subdomain}
       subscribers={subscribersWithQuality}
+      founderEmail={user.email}
       stats={stats}
       coldThreshold={waitlist.cold_threshold ?? 40}
       waitlistId={waitlist.id}

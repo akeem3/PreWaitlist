@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOnboardingForm, hasStaleDraft } from "../context";
-import { createClient } from "../../../../src/lib/supabase/client";
 
 type SlugStatus = "idle" | "checking" | "available" | "unavailable" | "error";
 
@@ -71,7 +70,6 @@ function generateFallbackSlug(): string {
 export default function OnboardingStep1() {
   const router = useRouter();
   const form = useOnboardingForm();
-  const supabase = createClient();
 
   const [subheadline, setSubheadline] = useState(form.subheadline);
   const [slugInput, setSlugInput] = useState(form.slug);
@@ -109,31 +107,6 @@ export default function OnboardingStep1() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-
-  // Auth check: if logged in with completed onboarding, redirect to dashboard
-  useEffect(() => {
-    async function checkAuth() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      try {
-        const res = await fetch("/api/waitlist");
-        if (!res.ok) return;
-        const data = await res.json();
-
-        // GET /api/waitlist returns an array of waitlists
-        if (Array.isArray(data) && data.length > 0) {
-          router.replace("/dashboard");
-        }
-      } catch {
-        // API error — continue onboarding
-      }
-    }
-    checkAuth();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     return () => {

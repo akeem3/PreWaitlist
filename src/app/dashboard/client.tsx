@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
@@ -67,6 +68,7 @@ interface DashboardClientProps {
   tier: string;
   subdomain: string;
   subscribers?: Subscriber[];
+  founderEmail?: string;
   stats?: {
     totalSignups: number;
     referralPercentage: number | null;
@@ -75,14 +77,6 @@ interface DashboardClientProps {
   coldThreshold: number;
   waitlistId?: string;
 }
-
-const TABLE_COLUMNS = ["#", "Email", "Date", "Warmth", "Referrals", "Quality"];
-
-const WARMTH_ORDER: Record<string, number> = {
-  hot: 0,
-  warm: 1,
-  cold: 2,
-};
 
 function formatStat(value: number): string {
   return value > 0 ? String(value) : "\u2014";
@@ -97,25 +91,33 @@ function computeDelta(current: number, previous: number): string {
   return "\u2014 no change";
 }
 
+function computeTodayDelta(current: number, yesterday: number): string {
+  if (yesterday === 0 && current === 0) return "\u2014";
+  if (yesterday === 0 && current > 0) return "\u2191 new today";
+  const diff = current - yesterday;
+  if (diff > 0) return `\u2191 ${diff} vs yesterday`;
+  if (diff < 0) return `\u2193 ${Math.abs(diff)} vs yesterday`;
+  return "\u2014 same as yesterday";
+}
+
 export default function DashboardClient({
   liveUrl,
   tier,
   subdomain,
   subscribers = [],
+  founderEmail,
   stats,
   coldThreshold,
   waitlistId,
 }: DashboardClientProps) {
   const [copied, setCopied] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState<
-    "position" | "referral_count" | "quality_score" | "warmth_score"
-  >("position");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const [warmthFilter, setWarmthFilter] = useState<string>("all");
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [statsData, setStatsData] = useState<{
-    current: { total: number; referrals: number; today: number };
+    current: {
+      total: number;
+      referrals: number;
+      today: number;
+      yesterday: number;
+    };
     previous: { total: number; referrals: number };
   } | null>(null);
   const [warmthData, setWarmthData] = useState<{
@@ -149,10 +151,19 @@ export default function DashboardClient({
     refreshData();
   }, []);
 
+  // Track mounted state to prevent router.refresh() firing during navigation
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   // Auto-refresh: re-fetch data when tab regains focus
   useEffect(() => {
     function handleVisibilityChange() {
-      if (document.visibilityState === "visible") {
+      if (mountedRef.current && document.visibilityState === "visible") {
         router.refresh();
         refreshData();
       }
@@ -165,7 +176,7 @@ export default function DashboardClient({
   // Auto-refresh: re-fetch data every 60 seconds while tab is visible
   useEffect(() => {
     const interval = setInterval(() => {
-      if (document.visibilityState === "visible") {
+      if (mountedRef.current && document.visibilityState === "visible") {
         router.refresh();
         refreshData();
       }
@@ -173,110 +184,13 @@ export default function DashboardClient({
     return () => clearInterval(interval);
   }, [router]);
 
-  const sortedSubscribers = useMemo(() => {
-    return [...subscribers].sort((a, b) => {
-      if (sortField === "referral_count") {
-        return sortDir === "desc"
-          ? b.referral_count - a.referral_count
-          : a.referral_count - b.referral_count;
-      }
-      if (sortField === "quality_score") {
-        const aVal = a.quality_score ?? -1;
-        const bVal = b.quality_score ?? -1;
-        return sortDir === "desc" ? bVal - aVal : aVal - bVal;
-      }
-      if (sortField === "warmth_score") {
-        const aVal = a.warmth_score ? (WARMTH_ORDER[a.warmth_score] ?? 3) : 3;
-        const bVal = b.warmth_score ? (WARMTH_ORDER[b.warmth_score] ?? 3) : 3;
-        return sortDir === "desc" ? aVal - bVal : bVal - aVal;
-      }
-      return sortDir === "asc"
-        ? a.position - b.position
-        : b.position - a.position;
-    });
-  }, [subscribers, sortField, sortDir]);
-
-  const filteredSubscribers = useMemo(() => {
-    let result = sortedSubscribers;
-    if (warmthFilter === "unscored") {
-      result = result.filter((s) => !s.warmth_score);
-    } else if (warmthFilter !== "all") {
-      result = result.filter((s) => s.warmth_score === warmthFilter);
-    }
-    if (searchQuery) {
-      result = result.filter((s) =>
-        s.email.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    return result;
-  }, [sortedSubscribers, searchQuery, warmthFilter]);
-
-  function handleSort(
-    field: "position" | "referral_count" | "quality_score" | "warmth_score"
-  ) {
-    if (sortField === field) {
-      setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortField(field);
-      setSortDir(
-        field === "quality_score" ||
-          field === "warmth_score" ||
-          field === "referral_count"
-          ? "desc"
-          : "asc"
-      );
-    }
-  }
-
-  function toggleRow(id: string) {
-    if (expandedRows.has(id)) {
-      router.push(`/dashboard/subscribers/${id}`);
-      return;
-    }
-    setExpandedRows((prev) => {
-      const next = new Set(prev);
-      next.add(id);
-      return next;
-    });
-  }
+  const isEmpty = subscribers.length === 0;
 
   function handleCopy() {
     navigator.clipboard.writeText(`https://${liveUrl}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
-
-  function handleExportCsv() {
-    const headers = [
-      "Position",
-      "Email",
-      "Referral Code",
-      "Referrals",
-      "Quality Score",
-      "Warmth",
-      "Signup Date",
-    ];
-    const rows = filteredSubscribers.map((s) => [
-      s.position,
-      s.email,
-      s.referral_code,
-      s.referral_count,
-      s.quality_score ?? "",
-      s.warmth_score ?? "Unscored",
-      s.created_at,
-    ]);
-
-    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `subscribers-${subdomain}-${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  const isEmpty = subscribers.length === 0;
 
   return (
     <>
@@ -393,7 +307,10 @@ export default function DashboardClient({
         ) : null}
 
         <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <div className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
+          <Link
+            href={`/dashboard/leaderboard${waitlistId ? `?wid=${waitlistId}` : ""}`}
+            className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center transition-colors hover:bg-muted/30"
+          >
             <div className="mb-1 text-h3 text-foreground">
               {stats ? formatStat(stats.totalSignups) : "\u2014"}
             </div>
@@ -408,8 +325,11 @@ export default function DashboardClient({
                 )}
               </div>
             )}
-          </div>
-          <div className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
+          </Link>
+          <Link
+            href={`/dashboard/leaderboard${waitlistId ? `?wid=${waitlistId}` : ""}`}
+            className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center transition-colors hover:bg-muted/30"
+          >
             <div className="mb-1 text-h3 text-foreground">
               {stats && stats.referralPercentage !== null
                 ? `${stats.referralPercentage}%`
@@ -424,16 +344,62 @@ export default function DashboardClient({
                 )}
               </div>
             )}
-          </div>
-          <div className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
+          </Link>
+          <Link
+            href={`/dashboard/leaderboard${waitlistId ? `?wid=${waitlistId}` : ""}`}
+            className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center transition-colors hover:bg-muted/30"
+          >
             <div className="mb-1 text-h3 text-foreground">
               {stats ? formatStat(stats.todaySignups) : "\u2014"}
             </div>
             <div className="text-caption text-muted-foreground">Today</div>
-          </div>
-          <div className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
-            <div className="mb-1 flex items-center justify-center gap-1.5 text-h3 text-foreground">
-              {tier === "free" && (
+            {statsData?.current && (
+              <div className="mt-1 text-xs text-muted-foreground">
+                {computeTodayDelta(
+                  statsData.current.today,
+                  statsData.current.yesterday
+                )}
+              </div>
+            )}
+          </Link>
+          {tier === "pro" ? (
+            <Link
+              href={`/dashboard/warmth${waitlistId ? `?wid=${waitlistId}` : ""}`}
+              className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center transition-colors hover:bg-muted/30"
+            >
+              <div className="mb-1 text-h3 text-foreground">
+                {warmthData ? (
+                  <>
+                    <span className="text-status-hot">{warmthData.hot}</span>
+                    <span className="text-body-sm text-muted-foreground">
+                      {" "}
+                      /{" "}
+                    </span>
+                    <span className="text-status-warm">{warmthData.warm}</span>
+                    <span className="text-body-sm text-muted-foreground">
+                      {" "}
+                      /{" "}
+                    </span>
+                    <span className="text-status-cold">{warmthData.cold}</span>
+                  </>
+                ) : (
+                  "\u2014"
+                )}
+              </div>
+              <div className="text-caption text-muted-foreground">
+                Hot / Warm / Cold
+              </div>
+              {warmthData && (
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {warmthData.unscored > 0
+                    ? `${warmthData.unscored} unscored`
+                    : `${warmthData.total} total`}
+                </div>
+              )}
+            </Link>
+          ) : (
+            <div className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
+              <div className="mb-1 flex items-center justify-center gap-1.5 text-h3 text-foreground">
                 <svg
                   width="14"
                   height="14"
@@ -457,17 +423,11 @@ export default function DashboardClient({
                     strokeLinecap="round"
                   />
                 </svg>
-              )}
-              {warmthData && tier === "pro" ? (
-                <span className="text-body-sm font-medium">
-                  {warmthData.hot} Hot, {warmthData.warm} Warm
-                </span>
-              ) : (
-                "\u2014"
-              )}
+                {"\u2014"}
+              </div>
+              <div className="text-caption text-muted-foreground">Warmth</div>
             </div>
-            <div className="text-caption text-muted-foreground">Warmth</div>
-          </div>
+          )}
         </div>
 
         {!isEmpty && (
@@ -483,10 +443,6 @@ export default function DashboardClient({
               <SignupChart subdomain={subdomain} waitlistId={waitlistId} />
             </div>
 
-            <div className="mb-6">
-              <TopReferrers subscribers={subscribers} />
-            </div>
-
             <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
               <QualificationPanel
                 subdomain={subdomain}
@@ -494,226 +450,16 @@ export default function DashboardClient({
               />
               <WarmthPanel tier={tier} warmthData={warmthData} />
             </div>
+
+            <div className="mb-6">
+              <TopReferrers
+                subscribers={subscribers}
+                founderEmail={founderEmail}
+                waitlistId={waitlistId}
+              />
+            </div>
           </>
         )}
-
-        <div className="rounded-(--card-radius) border border-border bg-card">
-          <div className="px-5 pt-5">
-            <input
-              type="text"
-              placeholder="Search by email"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="mb-4 w-full rounded-xl border border-border bg-background px-4 py-2 text-body-sm text-foreground placeholder:text-muted-foreground"
-            />
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-body-sm text-muted-foreground">
-                {filteredSubscribers.length} subscriber
-                {filteredSubscribers.length !== 1 ? "s" : ""}
-                {warmthFilter !== "all" ? ` (${warmthFilter})` : ""}
-              </p>
-              <div className="flex items-center gap-3">
-                <select
-                  value={warmthFilter}
-                  onChange={(e) => setWarmthFilter(e.target.value)}
-                  className="rounded-lg border border-border bg-card px-3 py-1.5 text-body-sm text-foreground"
-                >
-                  <option value="all">All warmth</option>
-                  <option value="hot">Hot</option>
-                  <option value="warm">Warm</option>
-                  <option value="cold">Cold</option>
-                  <option value="unscored">Unscored</option>
-                </select>
-                {tier === "pro" && (
-                  <button
-                    type="button"
-                    onClick={handleExportCsv}
-                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-body-sm text-foreground transition-colors hover:bg-muted/50"
-                  >
-                    Export CSV
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <div className="grid min-w-[600px] grid-cols-6 gap-4 border-b border-border px-5 py-3">
-              {TABLE_COLUMNS.map((col) => {
-                const field =
-                  col === "Referrals"
-                    ? "referral_count"
-                    : col === "#"
-                      ? "position"
-                      : col === "Quality"
-                        ? "quality_score"
-                        : col === "Warmth"
-                          ? "warmth_score"
-                          : null;
-                const isActive = field === sortField;
-                return (
-                  <button
-                    key={col}
-                    type="button"
-                    onClick={() => field && handleSort(field)}
-                    className={`text-left text-body-sm font-medium transition-colors ${
-                      field
-                        ? "cursor-pointer hover:text-foreground"
-                        : "cursor-default"
-                    } ${isActive ? "text-foreground" : "text-muted-foreground"}`}
-                  >
-                    {col}
-                    {isActive && (
-                      <span className="ml-1">
-                        {sortDir === "asc" ? "\u2191" : "\u2193"}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            {filteredSubscribers.length > 0 ? (
-              <div>
-                {filteredSubscribers.map((sub) => (
-                  <div key={sub.id}>
-                    <div
-                      onClick={() => toggleRow(sub.id)}
-                      className="grid min-w-[600px] grid-cols-6 gap-4 border-b border-border px-5 py-3 cursor-pointer transition-colors hover:bg-muted/30"
-                    >
-                      <span className="text-body-sm text-muted-foreground">
-                        {sub.position}
-                      </span>
-                      <span className="truncate text-body-sm text-foreground">
-                        {sub.display_name && (
-                          <span className="block text-xs font-medium text-foreground/80">
-                            {sub.display_name}
-                          </span>
-                        )}
-                        {sub.email}
-                        {sub.is_bounced && (
-                          <span className="ml-2 inline-block rounded-full bg-destructive/10 px-1.5 py-0.5 text-xs font-medium text-destructive">
-                            Bounced
-                          </span>
-                        )}
-                      </span>
-                      <span className="text-body-sm text-muted-foreground">
-                        {sub.created_at.split("T")[0]}
-                      </span>
-                      <span className="text-body-sm">
-                        {sub.warmth_score ? (
-                          <span
-                            className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                              sub.warmth_score === "hot"
-                                ? "bg-accent/10 text-accent"
-                                : sub.warmth_score === "warm"
-                                  ? "bg-status-warm text-white"
-                                  : "bg-status-cold text-white"
-                            }`}
-                          >
-                            {sub.warmth_score}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            Unscored
-                          </span>
-                        )}
-                      </span>
-                      <span
-                        className={`text-right text-body-sm ${
-                          sub.referral_count === 0
-                            ? "text-muted-foreground"
-                            : "font-medium text-foreground"
-                        }`}
-                      >
-                        {sub.referral_count}
-                      </span>
-                      <span
-                        className={`text-right text-body-sm ${
-                          sub.quality_score === null
-                            ? "text-muted-foreground"
-                            : "font-medium text-foreground"
-                        }`}
-                      >
-                        {sub.quality_score !== null
-                          ? `${sub.quality_score}%`
-                          : "\u2014"}
-                      </span>
-                    </div>
-                    {expandedRows.has(sub.id) && (
-                      <div className="border-b border-border bg-muted/20 px-5 py-3">
-                        <div className="grid grid-cols-3 gap-4 text-body-sm">
-                          <div>
-                            <span className="text-muted-foreground">
-                              Position:{" "}
-                            </span>
-                            <span className="font-medium text-foreground">
-                              #{sub.position}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">
-                              Referrals:{" "}
-                            </span>
-                            <span className="font-medium text-foreground">
-                              {sub.referral_count}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">
-                              Signed up:{" "}
-                            </span>
-                            <span className="font-medium text-foreground">
-                              {sub.created_at.split("T")[0]}
-                            </span>
-                          </div>
-                        </div>
-                        {sub.qual_answers &&
-                          Object.keys(sub.qual_answers).length > 0 && (
-                            <div className="mt-3 border-t border-border pt-3">
-                              <p className="mb-1 text-xs font-medium text-muted-foreground">
-                                Qualification Answers
-                              </p>
-                              <div className="grid grid-cols-2 gap-2 text-xs">
-                                {Object.entries(sub.qual_answers).map(
-                                  ([q, a]) => (
-                                    <div key={q}>
-                                      <span className="text-muted-foreground">
-                                        {q}:{" "}
-                                      </span>
-                                      <span className="text-foreground">
-                                        {String(a)}
-                                      </span>
-                                    </div>
-                                  )
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/dashboard/subscribers/${sub.id}`);
-                          }}
-                          className="mt-3 text-xs font-medium text-accent hover:underline"
-                        >
-                          View full profile →
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex min-h-20 items-center justify-center">
-                <span className="text-body-sm text-muted-foreground">
-                  {searchQuery
-                    ? "No subscribers match your search."
-                    : "No subscribers yet. Share your link to get started."}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </>
   );

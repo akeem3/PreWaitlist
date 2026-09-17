@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Sidebar } from "../../../components/dashboard/sidebar";
 import { useRouter, useSearchParams } from "next/navigation";
 import { STORAGE_KEY } from "../../../components/dashboard/waitlist-switcher";
@@ -19,16 +19,16 @@ interface DashboardShellProps {
   tier: string;
 }
 
-function getInitialActiveId(
-  waitlists: WaitlistRow[],
-  wid: string | null
-): string {
-  if (wid && waitlists.some((w) => w.id === wid)) return wid;
+function getServerDefaultId(waitlists: WaitlistRow[]): string {
+  return waitlists[waitlists.length - 1].id;
+}
+
+function getStoredId(waitlists: WaitlistRow[]): string | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored && waitlists.some((w) => w.id === stored)) return stored;
   } catch {}
-  return waitlists[waitlists.length - 1].id;
+  return null;
 }
 
 export default function DashboardShell({
@@ -40,8 +40,25 @@ export default function DashboardShell({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeWaitlistId, setActiveWaitlistId] = useState(() =>
-    getInitialActiveId(waitlists, searchParams.get("wid"))
+    getServerDefaultId(waitlists)
   );
+
+  // Sync from URL param or localStorage after hydration (client-only).
+  // Server renders with the last waitlist; client hydrates the same, then
+  // corrects to the stored preference.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const wid = searchParams.get("wid");
+    if (wid && waitlists.some((w) => w.id === wid)) {
+      setActiveWaitlistId(wid);
+      return;
+    }
+    const stored = getStoredId(waitlists);
+    if (stored) {
+      setActiveWaitlistId(stored);
+    }
+  }, [searchParams, waitlists]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const effectiveId = activeWaitlistId;
 
