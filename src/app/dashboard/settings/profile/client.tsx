@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input } from "../../../../../components/ui/input";
 import { Textarea } from "../../../../../components/ui/textarea";
 import { SettingsTabs } from "../../../../../components/dashboard/settings/tabs";
 import { createClient } from "../../../../lib/supabase/client";
+import { SubscriptionCard } from "../../../../../components/billing/subscription-card";
+import { PlanComparison } from "../../../../../components/billing/plan-comparison";
+import { InvoiceHistory } from "../../../../../components/billing/invoice-history";
+import { BillingDetails } from "../../../../../components/billing/billing-details";
+import { CancellationFlow } from "../../../../../components/billing/cancellation-flow";
 
 interface ProfileData {
   displayName: string;
@@ -15,10 +20,12 @@ interface ProfileData {
   tier: string;
   email: string;
   createdAt: string;
+  businessAddress: string;
 }
 
 const TABS = [
   { id: "profile", label: "Profile" },
+  { id: "billing", label: "Billing" },
   { id: "security", label: "Security" },
 ];
 
@@ -96,6 +103,19 @@ export default function ProfileClient() {
     router.push("/signin");
     router.refresh();
   }
+
+  const handleAddressSave = useCallback(async (address: string) => {
+    const res = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ business_address: address }),
+    });
+    if (res.ok) {
+      setProfile((prev) =>
+        prev ? { ...prev, businessAddress: address } : prev
+      );
+    }
+  }, []);
 
   return (
     <div>
@@ -218,6 +238,22 @@ export default function ProfileClient() {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === "billing" && (
+          <div className="space-y-6">
+            <SubscriptionCard
+              tier={profile?.tier || "free"}
+              waitlistCount={1}
+            />
+            <PlanComparison currentTier={profile?.tier || "free"} />
+            <BillingDetails
+              businessAddress={profile?.businessAddress || ""}
+              onAddressSave={handleAddressSave}
+            />
+            <InvoiceHistory isPro={profile?.tier === "pro"} />
+            <CancellationFlow isPro={profile?.tier === "pro"} />
           </div>
         )}
 

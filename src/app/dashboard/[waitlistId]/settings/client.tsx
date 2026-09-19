@@ -30,7 +30,6 @@ const TABS = [
   { id: "content", label: "Content" },
   { id: "email", label: "Email" },
   { id: "warmth", label: "Warmth" },
-  { id: "billing", label: "Billing" },
   { id: "advanced", label: "Advanced" },
 ];
 
@@ -311,31 +310,6 @@ export default function WaitlistSettingsClient({
             {saved && !saving && (
               <p className="mt-3 text-xs text-accent">Saved</p>
             )}
-          </div>
-        )}
-
-        {activeTab === "billing" && (
-          <div className="rounded-xl border border-border bg-card p-6">
-            <h2 className="mb-4 text-h4 font-medium text-foreground">
-              Billing
-            </h2>
-            <div className="flex items-center gap-4">
-              <div>
-                <p className="text-body-sm text-muted-foreground">
-                  Current plan
-                </p>
-                <p className="mt-1 text-h4 font-semibold text-foreground capitalize">
-                  {waitlist.tier}
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled
-                className="rounded-lg border border-border bg-card px-4 py-2 text-body-sm font-medium text-muted-foreground opacity-50 cursor-not-allowed"
-              >
-                {isFreeTier ? "Upgrade to Pro" : "Manage billing"}
-              </button>
-            </div>
           </div>
         )}
 

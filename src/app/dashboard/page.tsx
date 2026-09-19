@@ -43,11 +43,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const { data: profile } = await supabase
     .from("founder_profiles")
-    .select("tier, display_name")
+    .select("display_name")
     .eq("id", user.id)
     .maybeSingle();
 
-  const tier = profile?.tier ?? "free";
   const displayName = profile?.display_name ?? "";
   const liveUrl = `${waitlist.subdomain}.prewaitlist.com`;
 
@@ -127,7 +126,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   return (
     <DashboardClient
       liveUrl={liveUrl}
-      tier={tier}
       subdomain={waitlist.subdomain}
       subscribers={subscribersWithQuality}
       founderEmail={user.email}

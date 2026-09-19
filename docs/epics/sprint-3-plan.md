@@ -1,19 +1,23 @@
 # Sprint 3 — Plan
 
-**Status:** ready
+**Status:** in-progress (Epics 11–12.3 done, 12.4 and 13 remaining)
 **Date range:** 2026-09-06 → 2026-09-20 (target)
 **Duration:** 11 working days
 **Goal:** Warmth tracking is live and visible. Founders can send warmth-segmented broadcasts. Paddle billing gates Pro features. Domain authentication is walkable. The product is feature-complete for MVP launch.
 
 **Pre-requisite:** Epic 10 (Public Waitlist Page & Onboarding Redesign) must ship before Sprint 3 begins.
 
-**[UPDATED — 2026-09-13]** Sprint 3 now includes two additional epics that ship before Epic 13 (Billing):
+**[UPDATED — 2026-09-15]** Sprint 3 includes these epics:
 
-- **Epic 12.1 — Dashboard Overhaul:** Dashboard redesign, empty states, stat cards, tier gating, mobile, founder updates compose UI
-- **Epic 12.2 — Gap Fixes:** Legal compliance (Privacy Policy, ToS, consent), archive waitlist, edit after onboarding, unsubscribe mechanism, bounce suppression
-- **Epic 12.3 — Dashboard Section Pages:** Unlock sidebar nav, build Leaderboard/Qualification/Warmth pages
+- **Epic 11 — Warmth Tracking Engine:** ✅ DONE (8 stories, merged to dev)
+- **Epic 12 — Email System:** ✅ DONE (7 stories, merged to dev)
+- **Epic 12.1 — Dashboard Overhaul:** ✅ DONE (11 stories, 281 tests)
+- **Epic 12.2 — Gap Fixes:** ✅ DONE (14 stories, legal compliance + product gaps)
+- **Epic 12.3 — Dashboard Section Pages:** ✅ DONE (6 stories, shared layout)
+- **Epic 12.4 — Pre-Epic 13 Gaps:** 🔵 IN PROGRESS (5 stories, qualification fix + subscriber count + context + guard + tests)
+- **Epic 13 — Billing & Feature Gating:** 🔵 PLANNING (7 stories, Paddle integration)
 
-**Execution order:** Epic 11 → Epic 12 → Epic 12.1 → Epic 12.2 → Epic 12.3 → Epic 13
+**Execution order:** Epic 11 → Epic 12 → Epic 12.1 → Epic 12.2 → Epic 12.3 → Epic 12.4 → Epic 13
 
 ---
 
@@ -68,44 +72,44 @@ A founder on the free tier who hits the 500-signup cap sees the upgrade modal. A
 | Dashboard qualification page                                         | 🟢 Should | 12.3 |
 | Dashboard warmth page (Pro)                                          | 🟢 Should | 12.3 |
 
-> **Scope note:** "Multiple waitlists (Pro)" is Sprint 4 scope per the product vision (line 415). It is NOT part of Sprint 3.
+> **Scope note:** "Multiple waitlists (Pro)" is now fully implemented (Stories 12.2.14–12.2.18). It was originally Sprint 4 scope but shipped as part of Epic 12.2 gap fixes.
 
 ---
 
 ## Epic Index
 
-| ID   | Title                        | Stories | Depends on             | Status |
-| ---- | ---------------------------- | ------- | ---------------------- | ------ |
-| 11   | Warmth Tracking Engine       | 8       | —                      | ready  |
-| 12   | Email System                 | 7       | 11.0, 11.1             | ready  |
-| 12.1 | Dashboard Overhaul           | 11      | 12.0                   | ready  |
-| 12.2 | Gap Fixes (MVP Completeness) | 8       | —                      | ready  |
-| 12.3 | Dashboard Section Pages      | 5       | 12.1                   | ready  |
-| 13   | Billing & Feature Gating     | 7       | 12.0, 12.1, 12.2, 12.3 | ready  |
+| ID   | Title                        | Stories | Depends on | Status  |
+| ---- | ---------------------------- | ------- | ---------- | ------- |
+| 11   | Warmth Tracking Engine       | 8       | —          | ✅ done |
+| 12   | Email System                 | 7       | 11.0, 11.1 | ✅ done |
+| 12.1 | Dashboard Overhaul           | 11      | 12.0       | ✅ done |
+| 12.2 | Gap Fixes (MVP Completeness) | 14      | —          | ✅ done |
+| 12.3 | Dashboard Section Pages      | 6       | 12.1       | ✅ done |
+| 12.4 | Pre-Epic 13 Gaps             | 5       | —          | ready   |
+| 13   | Billing & Feature Gating     | 7       | 12.4       | ready   |
 
-**Execution order:** Epic 11 → Epic 12 → Epic 12.1 → Epic 12.2 → Epic 13. Epic 12 depends on warmth webhooks (11.0, 11.1) for confirmation email and moved-up trigger. Epic 12.1 depends on email system (12.0) for tier gating consistency. Epic 12.2 has no dependencies on Epic 11/12 (legal/compliance items). Epic 13 depends on email system (12.0) for upgrade modal email delivery, dashboard overhaul (12.1) for settings wiring, and gap fixes (12.2) for consent tracking and unsubscribe mechanism.
+**Execution order:** Epic 11 → Epic 12 → Epic 12.1 → Epic 12.2 → Epic 12.3 → Epic 12.4 → Epic 13. Epic 12 depends on warmth webhooks (11.0, 11.1) for confirmation email and moved-up trigger. Epic 12.1 depends on email system (12.0) for tier gating consistency. Epic 12.2 has no dependencies on Epic 11/12 (legal/compliance items). Epic 13 depends on email system (12.0) for upgrade modal email delivery, dashboard overhaul (12.1) for settings wiring, and gap fixes (12.2) for consent tracking and unsubscribe mechanism.
 
 ---
 
 ## What's NOT Built (Sprint 4 scope)
 
-| Feature                                                                  | Notes                                                    |
-| ------------------------------------------------------------------------ | -------------------------------------------------------- |
-| Automated warmth alerts (email to founder when cold % crosses threshold) | Was Growth tier — deferred to post-MVP                   |
-| Team member access                                                       | Was Growth tier — deferred to post-MVP                   |
-| Priority support                                                         | Was Growth tier — deferred to post-MVP                   |
-| Custom domain mapping                                                    | v1.1 — most technically complex feature                  |
-| Email sequences (drip)                                                   | Post-MVP — broadcast first                               |
-| Fraud detection                                                          | Post-MVP                                                 |
-| Feature voting, comments                                                 | Post-MVP                                                 |
-| Multiple waitlists (Pro)                                                 | Sprint 4 scope — lighter path for returning Pro founders |
-| Warmth trend charts                                                      | Post-MVP                                                 |
+| Feature                                                                  | Notes                                   |
+| ------------------------------------------------------------------------ | --------------------------------------- |
+| Automated warmth alerts (email to founder when cold % crosses threshold) | Was Growth tier — deferred to post-MVP  |
+| Team member access                                                       | Was Growth tier — deferred to post-MVP  |
+| Priority support                                                         | Was Growth tier — deferred to post-MVP  |
+| Custom domain mapping                                                    | v1.1 — most technically complex feature |
+| Email sequences (drip)                                                   | Post-MVP — broadcast first              |
+| Fraud detection                                                          | Post-MVP                                |
+| Feature voting, comments                                                 | Post-MVP                                |
+| Warmth trend charts                                                      | Post-MVP                                |
 
 ---
 
 # Epic 11 — Warmth Tracking Engine
 
-**Status:** ready
+**Status:** ✅ done
 **Source:** [PRD §2a](../PRD.md#2a-sprint-2--public-page-dashboard-active), [MVP Vision Module 3](../product-vision-mvp-waitlist-tool.md#module-3--warmth-tracking), [MVP Vision Module 4 §Email Open Tracking](../product-vision-mvp-waitlist-tool.md)
 
 ## Goal
@@ -118,22 +122,22 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 ## Story Index
 
-| ID   | Title                                     | Depends on | Status |
-| ---- | ----------------------------------------- | ---------- | ------ |
-| 11.0 | Resend Webhook Endpoint                   | —          | ready  |
-| 11.1 | Warmth Score Calculation Engine           | 11.0       | ready  |
-| 11.2 | Warmth Column + Filter in Subscriber List | 11.1       | done   |
-| 11.3 | Warmth Distribution Panel (Real Data)     | 11.1       | ready  |
-| 11.4 | Dashboard Warning State                   | 11.1       | ready  |
-| 11.5 | Warmth Score Decay + Time-Based Rules     | 11.1       | ready  |
-| 11.6 | Epic 11 Tests                             | 11.0–11.5  | ready  |
-| 11.7 | Schema Migration — Sprint 3 Columns       | —          | ready  |
+| ID   | Title                                     | Depends on | Status  |
+| ---- | ----------------------------------------- | ---------- | ------- |
+| 11.0 | Resend Webhook Endpoint                   | —          | ✅ done |
+| 11.1 | Warmth Score Calculation Engine           | 11.0       | ✅ done |
+| 11.2 | Warmth Column + Filter in Subscriber List | 11.1       | ✅ done |
+| 11.3 | Warmth Distribution Panel (Real Data)     | 11.1       | ✅ done |
+| 11.4 | Dashboard Warning State                   | 11.1       | ✅ done |
+| 11.5 | Warmth Score Decay + Time-Based Rules     | 11.1       | ✅ done |
+| 11.6 | Email Event Log                           | 11.0–11.5  | ✅ done |
+| 11.7 | Schema Migration — Sprint 3 Columns       | —          | ✅ done |
 
 ---
 
 ### Story 11.0 — Resend Webhook Endpoint
 
-**Status:** ready
+**Status:** ✅ done
 **Story:** As a developer, I want a webhook endpoint that receives Resend email events (opened, clicked, bounced, complained) so that the system can track subscriber engagement.
 
 **Acceptance Criteria (EARS):**
@@ -167,7 +171,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 ### Story 11.1 — Warmth Score Calculation Engine
 
-**Status:** ready
+**Status:** ✅ done
 **Story:** As a founder, I want each subscriber to have an engagement score (0–100) so that I can see who's Hot, Warm, or Cold.
 
 **Acceptance Criteria (EARS):**
@@ -225,7 +229,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 ### Story 11.3 — Warmth Distribution Panel (Real Data)
 
-**Status:** ready
+**Status:** ✅ done
 **Story:** As a founder, I want the warmth distribution panel to show real data so that I can see the health of my list at a glance.
 
 **Acceptance Criteria (EARS):**
@@ -253,7 +257,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 ### Story 11.4 — Dashboard Warning State
 
-**Status:** ready
+**Status:** ✅ done
 **Story:** As a founder, I want to be alerted when my list health is declining (high cold %) so that I can take action before launch.
 
 **Acceptance Criteria (EARS):**
@@ -278,7 +282,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 ### Story 11.5 — Warmth Score Decay + Time-Based Rules
 
-**Status:** ready
+**Status:** ✅ done
 **Story:** As a system, I want warmth scores to decay over time so that stale subscribers are correctly identified as Cold.
 
 **Acceptance Criteria (EARS):**
@@ -301,9 +305,9 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 ---
 
-### Story 11.6 — Epic 11 Tests
+### Story 11.6 — Email Event Log
 
-**Status:** ready
+**Status:** ✅ done
 **Story:** As a developer, I want comprehensive tests for the warmth tracking engine so that I can verify correctness and prevent regressions.
 
 **Acceptance Criteria (EARS):**
@@ -322,7 +326,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 ### Story 11.7 — Schema Migration — Sprint 3 Columns
 
-**Status:** ready
+**Status:** ✅ done
 **Story:** As a developer, I want all Sprint 3 database schema additions in a single migration so that subsequent stories can depend on the correct columns existing.
 
 **Acceptance Criteria (EARS):**
@@ -355,7 +359,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 # Epic 12 — Email System
 
-**Status:** ready
+**Status:** ✅ done
 **Source:** [MVP Vision Module 4](../product-vision-mvp-waitlist-tool.md#module-4--email-system), [PRD §2a](../PRD.md#2a-sprint-2--public-page-dashboard-active)
 
 ## Goal
@@ -368,21 +372,21 @@ Every new subscriber receives a confirmation email with their position and refer
 
 ## Story Index
 
-| ID   | Title                              | Depends on | Status |
-| ---- | ---------------------------------- | ---------- | ------ |
-| 12.0 | Confirmation Email                 | 11.7       | ready  |
-| 12.1 | Position Recalculation on Referral | —          | ready  |
-| 12.2 | "You Moved Up" Trigger Email       | 12.0, 12.1 | ready  |
-| 12.3 | Broadcast Email (Pro)              | 11.1, 11.7 | ready  |
-| 12.4 | Warmth-Segmented Broadcast (Pro)   | 11.1, 12.3 | ready  |
-| 12.5 | Email Customisation (Pro)          | 12.0       | ready  |
-| 12.6 | Email Infrastructure Separation    | 11.7       | ready  |
+| ID   | Title                              | Depends on | Status  |
+| ---- | ---------------------------------- | ---------- | ------- |
+| 12.0 | Confirmation Email                 | 11.7       | ✅ done |
+| 12.1 | Position Recalculation on Referral | —          | ✅ done |
+| 12.2 | "You Moved Up" Trigger Email       | 12.0, 12.1 | ✅ done |
+| 12.3 | Broadcast Email (Pro)              | 11.1, 11.7 | ✅ done |
+| 12.4 | Warmth-Segmented Broadcast (Pro)   | 11.1, 12.3 | ✅ done |
+| 12.5 | Email Customisation (Pro)          | 12.0       | ✅ done |
+| 12.6 | Email Infrastructure Separation    | 11.7       | ✅ done |
 
 ---
 
 ### Story 12.0 — Confirmation Email
 
-**Status:** ready
+**Status:** ✅ done
 **Story:** As a subscriber, I want to receive a confirmation email immediately after signing up so that I have my position number and referral link.
 
 **Acceptance Criteria (EARS):**
@@ -413,7 +417,7 @@ Every new subscriber receives a confirmation email with their position and refer
 
 ### Story 12.1 — Position Recalculation on Referral
 
-**Status:** ready
+**Status:** ✅ done
 **Story:** As a subscriber, I want my position to move up when someone I referred signs up so that the referral system feels fair and rewarding.
 
 **Acceptance Criteria (EARS):**
@@ -441,7 +445,7 @@ Every new subscriber receives a confirmation email with their position and refer
 
 ### Story 12.2 — "You Moved Up" Trigger Email
 
-**Status:** ready
+**Status:** ✅ done
 **Story:** As a referrer, I want to receive a "you moved up" email when someone I referred signs up so that I'm motivated to share more.
 
 **Acceptance Criteria (EARS):**
@@ -469,7 +473,7 @@ Every new subscriber receives a confirmation email with their position and refer
 
 ### Story 12.3 — Broadcast Email (Pro)
 
-**Status:** ready
+**Status:** ✅ done
 **Story:** As a Pro founder, I want to compose and send a broadcast email to all my subscribers so that I can communicate updates and launch announcements.
 
 **Acceptance Criteria (EARS):**
@@ -502,7 +506,7 @@ Every new subscriber receives a confirmation email with their position and refer
 
 ### Story 12.4 — Warmth-Segmented Broadcast (Pro)
 
-**Status:** ready
+**Status:** ✅ done
 **Story:** As a Pro founder, I want to send a broadcast to a specific warmth segment (Hot+Warm or Cold) so that I can target re-engagement emails to cold subscribers.
 
 **Acceptance Criteria (EARS):**
@@ -528,7 +532,7 @@ Every new subscriber receives a confirmation email with their position and refer
 
 ### Story 12.5 — Email Customisation (Pro)
 
-**Status:** ready
+**Status:** ✅ done
 **Story:** As a Pro founder, I want to customise the sender name and email body text so that my emails feel personal and on-brand.
 
 **Acceptance Criteria (EARS):**
@@ -556,7 +560,7 @@ Every new subscriber receives a confirmation email with their position and refer
 
 ### Story 12.6 — Email Infrastructure Separation
 
-**Status:** ready
+**Status:** ✅ done
 **Story:** As a system, I want transactional emails and marketing broadcasts to use separate sending domains so that a spam complaint on a broadcast does not affect deliverability of critical transactional emails (signup confirmations, position updates).
 
 **Acceptance Criteria (EARS):**
@@ -584,7 +588,7 @@ Every new subscriber receives a confirmation email with their position and refer
 
 # Epic 13 — Billing & Feature Gating
 
-**Status:** ready
+**Status:** ready (blocked on Paddle sandbox product catalog creation)
 **Source:** [MVP Vision Module 6](../product-vision-mvp-waitlist-tool.md#module-6--account-tiers--billing), [PRD §2a](../PRD.md#2a-sprint-2--public-page-dashboard-active)
 
 ## Goal
@@ -599,11 +603,11 @@ A free founder who hits the 500-signup cap sees an upgrade modal. Pro founders h
 
 | ID   | Title                                    | Depends on | Status |
 | ---- | ---------------------------------------- | ---------- | ------ |
-| 13.0 | Paddle Integration Foundation            | —          | ready  |
+| 13.0 | Paddle Integration Foundation            | 12.4       | ready  |
 | 13.1 | Upgrade Modal (7 Triggers)               | 13.0       | ready  |
 | 13.2 | Feature Gating Enforcement               | 13.0       | ready  |
 | 13.3 | Billing Management (Paddle Portal)       | 13.0       | ready  |
-| 13.4 | Pro-Tier Subscriber Limits (500 Cap)     | 13.2       | ready  |
+| 13.4 | Pro-Tier Subscriber Limits (500 Cap)     | 12.4.1     | ready  |
 | 13.5 | Sender Domain Authentication Walkthrough | —          | ready  |
 | 13.6 | Epic 13 Tests                            | 13.0–13.5  | ready  |
 
@@ -611,7 +615,7 @@ A free founder who hits the 500-signup cap sees an upgrade modal. Pro founders h
 
 ### Story 13.0 — Paddle Integration Foundation
 
-**Status:** ready
+**Status:** ready (blocked on Paddle sandbox product catalog)
 **Story:** As a founder, I want to upgrade to Pro via Paddle checkout so that I can access premium features.
 
 **Acceptance Criteria (EARS):**
@@ -727,7 +731,7 @@ A free founder who hits the 500-signup cap sees an upgrade modal. Pro founders h
 
 ### Story 13.4 — Pro-Tier Subscriber Limits (500 Cap)
 
-**Status:** ready
+**Status:** ready (depends on 12.4.1 subscriber_count wiring)
 **Story:** As a system, I want to enforce the 500 subscriber cap on Free tier so that Free founders upgrade when they hit the limit.
 
 **Acceptance Criteria (EARS):**
@@ -803,12 +807,12 @@ A free founder who hits the 500-signup cap sees an upgrade modal. Pro founders h
 
 ## Sprint 3 Cumulative Target
 
-| Metric     | Sprint 2 End | Sprint 3 Target                                                                                                                                                                                 |
-| ---------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Epics      | 10           | 13                                                                                                                                                                                              |
-| Stories    | 71           | 93                                                                                                                                                                                              |
-| Screens    | 21           | ~28                                                                                                                                                                                             |
-| Tables     | 8            | 12 (+broadcasts, +email_events.event_data, +waitlists.sending_domain, +waitlists.sender_name, +waitlists.cold_threshold, +waitlists.subscriber_count, +founder_profiles.paddle_subscription_id) |
-| API Routes | 15           | ~24                                                                                                                                                                                             |
-| Tests      | 225          | ≥270                                                                                                                                                                                            |
-| Components | 37           | ~45                                                                                                                                                                                             |
+| Metric     | Sprint 2 End | Sprint 3 Target (Planned) | Sprint 3 Actual (Epics 11–12.3) |
+| ---------- | ------------ | ------------------------- | ------------------------------- |
+| Epics      | 10           | 13                        | 12 (11, 12, 12.1, 12.2, 12.3)   |
+| Stories    | 71           | 93                        | 86 (46 completed)               |
+| Screens    | 21           | ~28                       | ~28                             |
+| Tables     | 8            | 12                        | 12                              |
+| API Routes | 15           | ~24                       | ~24                             |
+| Tests      | 225          | ≥270                      | 317+ (passing)                  |
+| Components | 37           | ~45                       | ~45                             |

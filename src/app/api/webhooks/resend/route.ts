@@ -3,6 +3,12 @@ import { after } from "next/server";
 import { resend } from "@/lib/resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+if (!process.env.RESEND_WEBHOOK_SECRET) {
+  console.error(
+    "RESEND_WEBHOOK_SECRET is not set — webhook signature verification will fail"
+  );
+}
+
 const SUPPORTED_EVENT_TYPES = new Set([
   "sent",
   "delivered",
@@ -69,60 +75,65 @@ export async function POST(req: NextRequest) {
   const createdAt = (event.created_at as string) || new Date().toISOString();
 
   after(async () => {
-    const supabase = createAdminClient();
+    try {
+      const supabase = createAdminClient();
 
-    const { data: subscriber } = await supabase
-      .from("subscribers")
-      .select("id, waitlist_id")
-      .eq("email", email)
-      .limit(1)
-      .single();
-
-    if (!subscriber) {
-      console.warn(`Webhook: subscriber not found for ${email}`);
-      return;
-    }
-
-    const { data: existing } = await supabase
-      .from("email_events")
-      .select("id")
-      .eq("waitlist_id", subscriber.waitlist_id)
-      .filter("event_data->>'svix_id'", "eq", svixId)
-      .limit(1);
-
-    if (existing && existing.length > 0) {
-      return;
-    }
-
-    await supabase.from("email_events").insert({
-      subscriber_id: subscriber.id,
-      waitlist_id: subscriber.waitlist_id,
-      event_type: mappedType,
-      event_data: { ...data, svix_id: svixId },
-      created_at: createdAt,
-    });
-
-    // Bounce/complain handling: insert into bounced_emails
-    if (mappedType === "bounced" || mappedType === "complained") {
-      const emailData = data as Record<string, unknown>;
-      const bounceType = determineBounceType(emailData);
-
-      await supabase.from("bounced_emails").insert({
-        waitlist_id: subscriber.waitlist_id,
-        email,
-        email_type: "transactional",
-        bounce_type: bounceType,
-      });
-    }
-
-    // Complaint handling: also mark subscriber as unsubscribed
-    // (spam complaints = permanent suppression)
-    if (mappedType === "complained") {
-      await supabase
+      const { data: subscriber } = await supabase
         .from("subscribers")
-        .update({ unsubscribed_at: createdAt })
-        .eq("id", subscriber.id)
-        .is("unsubscribed_at", null);
+        .select("id, waitlist_id")
+        .eq("email", email)
+        .limit(1)
+        .single();
+
+      if (!subscriber) {
+        console.warn(`Webhook: subscriber not found for ${email}`);
+        return;
+      }
+
+      const { data: existing } = await supabase
+        .from("email_events")
+        .select("id")
+        .eq("waitlist_id", subscriber.waitlist_id)
+        .filter("event_data->>'svix_id'", "eq", svixId)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        return;
+      }
+
+      await supabase.from("email_events").insert({
+        subscriber_id: subscriber.id,
+        waitlist_id: subscriber.waitlist_id,
+        event_type: mappedType,
+        event_data: { ...data, svix_id: svixId },
+        created_at: createdAt,
+      });
+
+      console.log(
+        `Webhook: recorded ${mappedType} event for ${email} (svix: ${svixId})`
+      );
+
+      if (mappedType === "bounced" || mappedType === "complained") {
+        const emailData = data as Record<string, unknown>;
+        const bounceType = determineBounceType(emailData);
+
+        await supabase.from("bounced_emails").insert({
+          waitlist_id: subscriber.waitlist_id,
+          email,
+          email_type: "transactional",
+          bounce_type: bounceType,
+        });
+      }
+
+      if (mappedType === "complained") {
+        await supabase
+          .from("subscribers")
+          .update({ unsubscribed_at: createdAt })
+          .eq("id", subscriber.id)
+          .is("unsubscribed_at", null);
+      }
+    } catch (err) {
+      console.error("Webhook after() callback failed:", err);
     }
   });
 

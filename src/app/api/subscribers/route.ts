@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkAndFulfillMilestones } from "@/lib/milestones";
@@ -6,6 +7,7 @@ import { recalculatePositions, getPositionUpdate } from "@/lib/positions";
 import {
   sendEmail,
   buildEmailFooter,
+  buildFreeEmailFooter,
   isUnsubscribed,
   interpolateEmail,
 } from "@/lib/email";
@@ -31,6 +33,7 @@ function buildConfirmationEmail(opts: {
   referralCode: string;
   rewardTiers: { threshold: number; label: string }[];
   footer: string;
+  tier?: string;
   customSubject?: string;
   customBody?: string;
 }): {
@@ -101,13 +104,16 @@ function buildConfirmationEmail(opts: {
 </head>
 <body style="margin: 0; padding: 0; background-color: ${BG_LIGHT}; font-family: Arial, Helvetica, sans-serif;">
   <div style="display: none; max-height: 0; overflow: hidden;">
-    You're #${opts.position}. Share your link to move up the waitlist.
+    You're #${opts.position}. Share & Move Up to move up the waitlist.
   </div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: ${BG_LIGHT};">
     <tr>
       <td align="center" style="padding: 40px 20px;">
         <div style="max-width: 600px; margin: 0 auto;">
-          <!-- Logo -->
+          ${
+            opts.tier !== "free"
+              ? `
+          <!-- Logo (Pro only) -->
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
               <td align="center" style="padding: 0 0 24px 0;">
@@ -115,6 +121,9 @@ function buildConfirmationEmail(opts: {
               </td>
             </tr>
           </table>
+          `
+              : ""
+          }
 
           <!-- Content card -->
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; border: 1px solid ${BORDER_LIGHT};">
@@ -168,7 +177,7 @@ function buildConfirmationEmail(opts: {
                   <tr>
                     <td style="border-radius: 8px; background-color: ${BRAND_GREEN};">
                       <a href="${opts.referralLink}" target="_blank" style="background-color: ${BRAND_GREEN}; border: 1px solid ${BRAND_GREEN}; border-radius: 8px; font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: bold; line-height: 16px; text-decoration: none; padding: 14px 28px; color: #ffffff; display: block;">
-                        Share your link
+                        Share & Move Up
                       </a>
                     </td>
                   </tr>
@@ -226,6 +235,7 @@ function buildMovedUpEmail(opts: {
   referralLink: string;
   rewardTiers: { threshold: number; label: string }[];
   footer: string;
+  tier?: string;
   customSubject?: string;
   customBody?: string;
 }): {
@@ -301,7 +311,10 @@ function buildMovedUpEmail(opts: {
     <tr>
       <td align="center" style="padding: 40px 20px;">
         <div style="max-width: 600px; margin: 0 auto;">
-          <!-- Logo -->
+          ${
+            opts.tier !== "free"
+              ? `
+          <!-- Logo (Pro only) -->
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
               <td align="center" style="padding: 0 0 24px 0;">
@@ -309,6 +322,9 @@ function buildMovedUpEmail(opts: {
               </td>
             </tr>
           </table>
+          `
+              : ""
+          }
 
           <!-- Content card -->
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; border: 1px solid ${BORDER_LIGHT};">
@@ -359,7 +375,7 @@ function buildMovedUpEmail(opts: {
                   <tr>
                     <td style="border-radius: 8px; background-color: ${BRAND_GREEN};">
                       <a href="${opts.referralLink}" target="_blank" style="background-color: ${BRAND_GREEN}; border: 1px solid ${BRAND_GREEN}; border-radius: 8px; font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: bold; line-height: 16px; text-decoration: none; padding: 14px 28px; color: #ffffff; display: block;">
-                        Share your link
+                        Share & Move Up
                       </a>
                     </td>
                   </tr>
@@ -560,92 +576,125 @@ export async function POST(request: NextRequest) {
   // --- Confirmation email (fire-and-forget) ---
   // AC1: Send immediately after subscriber creation
   // AC6: Error handling — email failure must not block signup
-  (async () => {
-    const adminSupabase = createAdminClient();
+  after(async () => {
+    try {
+      const adminSupabase = createAdminClient();
 
-    const { data: waitlist } = await adminSupabase
-      .from("waitlists")
-      .select(
-        "product_name, headline, subdomain, sender_name, sending_domain, business_address, email_subject, email_body"
-      )
-      .eq("id", waitlist_id)
-      .single();
+      const { data: waitlist } = await adminSupabase
+        .from("waitlists")
+        .select(
+          "product_name, headline, subdomain, sender_name, sending_domain, business_address, email_subject, email_body"
+        )
+        .eq("id", waitlist_id)
+        .single();
 
-    if (!waitlist) return;
+      if (!waitlist) return;
 
-    // Skip if subscriber has unsubscribed or email bounced
-    if (await isUnsubscribed(adminSupabase, data.id)) return;
-    if (await isEmailBounced(adminSupabase, waitlist_id, data.email)) return;
+      // Skip if subscriber has unsubscribed or email bounced
+      if (await isUnsubscribed(adminSupabase, data.id)) return;
+      if (await isEmailBounced(adminSupabase, waitlist_id, data.email)) return;
 
-    const productName =
-      waitlist.product_name || waitlist.headline || "PreWaitlist";
+      const productName =
+        waitlist.product_name || waitlist.headline || "PreWaitlist";
 
-    // Fetch subscriber display_name
-    const { data: subscriber } = await adminSupabase
-      .from("subscribers")
-      .select("display_name")
-      .eq("id", data.id)
-      .single();
+      // Fetch subscriber display_name
+      const { data: subscriber } = await adminSupabase
+        .from("subscribers")
+        .select("display_name")
+        .eq("id", data.id)
+        .single();
 
-    const subscriberName = subscriber?.display_name?.trim() || null;
+      const subscriberName = subscriber?.display_name?.trim() || null;
 
-    // Fetch subscriber count for social proof
-    const { count: subscriberCount } = await adminSupabase
-      .from("subscribers")
-      .select("id", { count: "exact", head: true })
-      .eq("waitlist_id", waitlist_id);
+      // Fetch subscriber count for social proof
+      const { count: subscriberCount } = await adminSupabase
+        .from("subscribers")
+        .select("id", { count: "exact", head: true })
+        .eq("waitlist_id", waitlist_id);
 
-    // Fetch milestone rewards
-    const { data: rewardTiers } = await adminSupabase
-      .from("milestone_rewards")
-      .select("tier_referrals, reward_label")
-      .eq("waitlist_id", waitlist_id)
-      .order("tier_referrals", { ascending: true });
+      // Fetch milestone rewards
+      const { data: rewardTiers } = await adminSupabase
+        .from("milestone_rewards")
+        .select("tier_referrals, reward_label")
+        .eq("waitlist_id", waitlist_id)
+        .order("tier_referrals", { ascending: true });
 
-    const referralLink = `https://${waitlist.subdomain}.prewaitlist.com?ref=${data.referral_code}`;
+      const referralLink = `https://${waitlist.subdomain}.prewaitlist.com?ref=${data.referral_code}`;
 
-    const footer = buildEmailFooter(waitlist.business_address);
+      // Fetch tier for email template selection
+      const { data: waitlistWithTier, error: tierError } = await adminSupabase
+        .from("waitlists")
+        .select("founder_profiles!inner(tier)")
+        .eq("id", waitlist_id)
+        .single();
 
-    const email = buildConfirmationEmail({
-      subscriberName,
-      productName,
-      position: correctedPosition,
-      subscriberCount: subscriberCount || 1,
-      referralLink,
-      referralCode: data.referral_code,
-      rewardTiers: (rewardTiers || []).map((t) => ({
-        threshold: t.tier_referrals,
-        label: t.reward_label,
-      })),
-      footer,
-      customSubject: waitlist.email_subject || undefined,
-      customBody: waitlist.email_body || undefined,
-    });
+      const tier =
+        (
+          waitlistWithTier?.founder_profiles as unknown as { tier: string }[]
+        )?.[0]?.tier || "free";
 
-    const emailResult = await sendEmail({
-      to: data.email,
-      subject: email.subject,
-      html: email.html,
-      text: email.text,
-      stream: "transactional",
-      senderName: waitlist.sender_name,
-      productName: waitlist.product_name,
-      headline: waitlist.headline,
-      sendingDomain: waitlist.sending_domain,
-      idempotencyKey: `confirmation-email/${data.id}`,
-    });
+      if (tierError) {
+        console.error("Tier query failed:", tierError.message);
+      }
+      console.log(`Email tier for waitlist ${waitlist_id}: ${tier}`);
 
-    // AC8: Log sent event to email_events
-    if (emailResult.ok) {
-      await supabase.from("email_events").insert({
-        subscriber_id: data.id,
-        waitlist_id,
-        event_type: "sent",
-        event_data: { email_id: emailResult.id, type: "confirmation" },
-        created_at: new Date().toISOString(),
+      const footer =
+        tier === "free"
+          ? buildFreeEmailFooter(waitlist.business_address)
+          : buildEmailFooter(waitlist.business_address);
+
+      const email = buildConfirmationEmail({
+        subscriberName,
+        productName,
+        position: correctedPosition,
+        subscriberCount: subscriberCount || 1,
+        referralLink,
+        referralCode: data.referral_code,
+        rewardTiers: (rewardTiers || []).map((t) => ({
+          threshold: t.tier_referrals,
+          label: t.reward_label,
+        })),
+        footer,
+        tier,
+        customSubject: waitlist.email_subject || undefined,
+        customBody: waitlist.email_body || undefined,
       });
+
+      const emailResult = await sendEmail({
+        to: data.email,
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+        stream: "transactional",
+        senderName: waitlist.sender_name,
+        productName: waitlist.product_name,
+        headline: waitlist.headline,
+        sendingDomain: waitlist.sending_domain,
+        idempotencyKey: `confirmation-email/${data.id}`,
+      });
+
+      // AC8: Log sent event to email_events
+      if (emailResult.ok) {
+        console.log(
+          `Confirmation email sent to ${data.email} (id: ${emailResult.id})`
+        );
+        await supabase.from("email_events").insert({
+          subscriber_id: data.id,
+          waitlist_id,
+          event_type: "sent",
+          event_data: { email_id: emailResult.id, type: "confirmation" },
+          created_at: new Date().toISOString(),
+        });
+      } else {
+        console.error(
+          `Confirmation email failed for ${data.email}:`,
+          emailResult.error
+        );
+      }
+    } catch (err) {
+      console.error("Confirmation email IIFE failed:", err);
     }
-  })();
+  });
 
   // --- Moved-up email (fire-and-forget) ---
   // AC1: Send when referrer moves up >=1 position
@@ -658,92 +707,122 @@ export async function POST(request: NextRequest) {
     subscriberUpdate.spots_moved >= 1 &&
     resolvedReferrerId
   ) {
-    (async () => {
-      const adminSupabase = createAdminClient();
+    after(async () => {
+      try {
+        const adminSupabase = createAdminClient();
 
-      const { data: referrer } = await adminSupabase
-        .from("subscribers")
-        .select("email, referral_code, display_name")
-        .eq("id", resolvedReferrerId)
-        .single();
+        const { data: referrer } = await adminSupabase
+          .from("subscribers")
+          .select("email, referral_code, display_name")
+          .eq("id", resolvedReferrerId)
+          .single();
 
-      if (!referrer) return;
+        if (!referrer) return;
 
-      const { data: waitlist } = await adminSupabase
-        .from("waitlists")
-        .select(
-          "product_name, headline, subdomain, sender_name, sending_domain, business_address, email_subject, email_body"
-        )
-        .eq("id", waitlist_id)
-        .single();
+        const { data: waitlist } = await adminSupabase
+          .from("waitlists")
+          .select(
+            "product_name, headline, subdomain, sender_name, sending_domain, business_address, email_subject, email_body"
+          )
+          .eq("id", waitlist_id)
+          .single();
 
-      if (!waitlist) return;
+        if (!waitlist) return;
 
-      // Skip if referrer has unsubscribed or email bounced
-      if (await isUnsubscribed(adminSupabase, resolvedReferrerId)) return;
-      if (await isEmailBounced(adminSupabase, waitlist_id, referrer.email))
-        return;
+        // Skip if referrer has unsubscribed or email bounced
+        if (await isUnsubscribed(adminSupabase, resolvedReferrerId)) return;
+        if (await isEmailBounced(adminSupabase, waitlist_id, referrer.email))
+          return;
 
-      const productName =
-        waitlist.product_name || waitlist.headline || "PreWaitlist";
+        const productName =
+          waitlist.product_name || waitlist.headline || "PreWaitlist";
 
-      const referralLink = `https://${waitlist.subdomain}.prewaitlist.com?ref=${referrer.referral_code}`;
+        const referralLink = `https://${waitlist.subdomain}.prewaitlist.com?ref=${referrer.referral_code}`;
 
-      // Fetch milestone rewards
-      const { data: rewardTiers } = await adminSupabase
-        .from("milestone_rewards")
-        .select("tier_referrals, reward_label")
-        .eq("waitlist_id", waitlist_id)
-        .order("tier_referrals", { ascending: true });
+        // Fetch milestone rewards
+        const { data: rewardTiers } = await adminSupabase
+          .from("milestone_rewards")
+          .select("tier_referrals, reward_label")
+          .eq("waitlist_id", waitlist_id)
+          .order("tier_referrals", { ascending: true });
 
-      const subscriberName = referrer.display_name?.trim() || null;
+        const subscriberName = referrer.display_name?.trim() || null;
 
-      const footer = buildEmailFooter(waitlist.business_address);
+        // Fetch tier for email template selection
+        const { data: waitlistWithTier, error: movedUpTierError } =
+          await adminSupabase
+            .from("waitlists")
+            .select("founder_profiles!inner(tier)")
+            .eq("id", waitlist_id)
+            .single();
 
-      const email = buildMovedUpEmail({
-        subscriberName,
-        productName,
-        newPosition: subscriberUpdate.new_position,
-        spotsMoved: subscriberUpdate.spots_moved,
-        referralLink,
-        rewardTiers: (rewardTiers || []).map((t) => ({
-          threshold: t.tier_referrals,
-          label: t.reward_label,
-        })),
-        footer,
-        customSubject: waitlist.email_subject || undefined,
-        customBody: waitlist.email_body || undefined,
-      });
+        const tier =
+          (
+            waitlistWithTier?.founder_profiles as unknown as {
+              tier: string;
+            }[]
+          )?.[0]?.tier || "free";
 
-      const emailResult = await sendEmail({
-        to: referrer.email,
-        subject: email.subject,
-        html: email.html,
-        text: email.text,
-        stream: "transactional",
-        senderName: waitlist.sender_name,
-        productName: waitlist.product_name,
-        headline: waitlist.headline,
-        sendingDomain: waitlist.sending_domain,
-        idempotencyKey: `moved-up/${resolvedReferrerId}/${subscriberUpdate.new_position}`,
-      });
+        if (movedUpTierError) {
+          console.error(
+            "Moved-up tier query failed:",
+            movedUpTierError.message
+          );
+        }
 
-      // AC7: Log event to email_events
-      if (emailResult.ok) {
-        await supabase.from("email_events").insert({
-          subscriber_id: resolvedReferrerId,
-          waitlist_id,
-          event_type: "sent",
-          event_data: {
-            email_id: emailResult.id,
-            type: "moved_up",
-            new_position: subscriberUpdate.new_position,
-            spots_moved: subscriberUpdate.spots_moved,
-          },
-          created_at: new Date().toISOString(),
+        const footer =
+          tier === "free"
+            ? buildFreeEmailFooter(waitlist.business_address)
+            : buildEmailFooter(waitlist.business_address);
+
+        const email = buildMovedUpEmail({
+          subscriberName,
+          productName,
+          newPosition: subscriberUpdate.new_position,
+          spotsMoved: subscriberUpdate.spots_moved,
+          referralLink,
+          rewardTiers: (rewardTiers || []).map((t) => ({
+            threshold: t.tier_referrals,
+            label: t.reward_label,
+          })),
+          footer,
+          tier,
+          customSubject: waitlist.email_subject || undefined,
+          customBody: waitlist.email_body || undefined,
         });
+
+        const emailResult = await sendEmail({
+          to: referrer.email,
+          subject: email.subject,
+          html: email.html,
+          text: email.text,
+          stream: "transactional",
+          senderName: waitlist.sender_name,
+          productName: waitlist.product_name,
+          headline: waitlist.headline,
+          sendingDomain: waitlist.sending_domain,
+          idempotencyKey: `moved-up/${resolvedReferrerId}/${subscriberUpdate.new_position}`,
+        });
+
+        // AC7: Log event to email_events
+        if (emailResult.ok) {
+          await supabase.from("email_events").insert({
+            subscriber_id: resolvedReferrerId,
+            waitlist_id,
+            event_type: "sent",
+            event_data: {
+              email_id: emailResult.id,
+              type: "moved_up",
+              new_position: subscriberUpdate.new_position,
+              spots_moved: subscriberUpdate.spots_moved,
+            },
+            created_at: new Date().toISOString(),
+          });
+        }
+      } catch (err) {
+        console.error("Moved-up email IIFE failed:", err);
       }
-    })();
+    });
   }
 
   return NextResponse.json(

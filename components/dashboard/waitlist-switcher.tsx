@@ -173,7 +173,7 @@ export function WaitlistSwitcher({
           <div className="border-t border-border px-3 py-2">
             {tier === "free" ? (
               <Link
-                href="/dashboard"
+                href="/dashboard/settings/profile?tab=billing"
                 onClick={close}
                 className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-accent bg-transparent px-3 py-2 text-body-sm font-medium text-accent transition-colors hover:bg-accent hover:text-accent-foreground"
               >
@@ -191,7 +191,7 @@ export function WaitlistSwitcher({
               <Link
                 href="/onboarding/1"
                 onClick={close}
-                className="flex w-full items-center gap-3 px-4 py-2 text-left text-body-sm text-accent transition-colors hover:bg-accent/10"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2 text-body-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
               >
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path
@@ -201,7 +201,7 @@ export function WaitlistSwitcher({
                     strokeLinecap="round"
                   />
                 </svg>
-                Create new waitlist
+                Add New Waitlist
               </Link>
             )}
           </div>

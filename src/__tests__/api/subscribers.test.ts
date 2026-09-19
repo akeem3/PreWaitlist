@@ -2,6 +2,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { createMockSupabaseClient } from "../helpers/supabase-mock";
 
+// Mock next/server after() — execute callback immediately in tests
+vi.mock("next/server", async () => {
+  const actual =
+    await vi.importActual<typeof import("next/server")>("next/server");
+  return {
+    ...actual,
+    after: (fn: () => Promise<void>) => fn(),
+  };
+});
+
 // Mock Supabase server client
 const mockSupabase = createMockSupabaseClient();
 vi.mock("@/lib/supabase/server", () => ({

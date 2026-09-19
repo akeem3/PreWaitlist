@@ -195,17 +195,24 @@ const OnboardingFormContext = createContext<
 
 export function LocalOnboardingProvider({
   children,
+  initialTier,
 }: {
   children: React.ReactNode;
+  initialTier?: "free" | "pro";
 }) {
   const [state, setState] = useState<OnboardingFormState>(() => {
     const stored = readStoredData();
     if (stored) {
       // Mark this tab as actively in onboarding
       setSessionFlag();
-      return { ...initialState, ...stored, loading: false };
+      return {
+        ...initialState,
+        ...stored,
+        tier: initialTier ?? (stored.tier as "free" | "pro") ?? "free",
+        loading: false,
+      };
     }
-    return initialState;
+    return { ...initialState, tier: initialTier ?? "free" };
   });
 
   // Ref always holds the latest state — fixes stale closures in async callbacks

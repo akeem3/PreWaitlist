@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  createContext,
+  useContext,
+} from "react";
 import { Sidebar } from "../../../components/dashboard/sidebar";
 import { useRouter, useSearchParams } from "next/navigation";
 import { STORAGE_KEY } from "../../../components/dashboard/waitlist-switcher";
@@ -11,6 +17,19 @@ interface WaitlistRow {
   product_name: string | null;
   logo_url: string | null;
   is_archived: boolean;
+}
+
+interface DashboardContextValue {
+  tier: string;
+}
+
+export const DashboardContext = createContext<DashboardContextValue | null>(
+  null
+);
+
+export function useDashboardTier(): string | null {
+  const ctx = useContext(DashboardContext);
+  return ctx?.tier ?? null;
 }
 
 interface DashboardShellProps {
@@ -121,7 +140,11 @@ export default function DashboardShell({
         </svg>
       </button>
 
-      <main className="min-h-screen lg:ml-67">{children}</main>
+      <main className="min-h-screen lg:ml-67">
+        <DashboardContext.Provider value={{ tier }}>
+          {children}
+        </DashboardContext.Provider>
+      </main>
     </div>
   );
 }

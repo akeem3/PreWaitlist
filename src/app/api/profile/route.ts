@@ -23,6 +23,13 @@ export async function GET() {
     return NextResponse.json({ error: profileError.message }, { status: 400 });
   }
 
+  const { data: waitlist } = await supabase
+    .from("waitlists")
+    .select("business_address")
+    .eq("founder_id", user.id)
+    .limit(1)
+    .single();
+
   return NextResponse.json({
     displayName: profile.display_name || "",
     avatarUrl: profile.avatar_url || "",
@@ -30,6 +37,7 @@ export async function GET() {
     tier: profile.tier || "free",
     email: user.email || "",
     createdAt: profile.created_at,
+    businessAddress: waitlist?.business_address || "",
   });
 }
 
@@ -92,6 +100,13 @@ export async function PATCH(request: NextRequest) {
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 400 });
+  }
+
+  if (typeof body.business_address === "string") {
+    await supabase
+      .from("waitlists")
+      .update({ business_address: body.business_address.trim() })
+      .eq("founder_id", user.id);
   }
 
   return NextResponse.json({ success: true });

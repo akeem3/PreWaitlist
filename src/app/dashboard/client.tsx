@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useDashboardTier } from "./shell";
 
 const SignupChart = dynamic(
   () => import("../../../components/dashboard/signup-chart"),
@@ -65,7 +66,7 @@ interface Subscriber {
 
 interface DashboardClientProps {
   liveUrl: string;
-  tier: string;
+  tier?: string;
   subdomain: string;
   subscribers?: Subscriber[];
   founderEmail?: string;
@@ -103,7 +104,7 @@ function computeTodayDelta(current: number, yesterday: number): string {
 
 export default function DashboardClient({
   liveUrl,
-  tier,
+  tier: tierProp,
   subdomain,
   subscribers = [],
   founderEmail,
@@ -112,6 +113,7 @@ export default function DashboardClient({
   coldThreshold,
   waitlistId,
 }: DashboardClientProps) {
+  const tier = useDashboardTier() || tierProp || "free";
   const [copied, setCopied] = useState(false);
   const [statsData, setStatsData] = useState<{
     current: {
@@ -241,16 +243,24 @@ export default function DashboardClient({
                     strokeLinecap="round"
                   />
                 </svg>
-                New waitlist
+                Add New Waitlist
               </Link>
-            ) : (
+            ) : waitlistId ? (
               <Link
-                href="/dashboard/settings"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/20"
+                href="/dashboard/settings/profile?tab=billing"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-accent bg-transparent px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent hover:text-accent-foreground"
               >
-                Upgrade for unlimited
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path
+                    d="M6 2V10M2 6H10"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                Upgrade to add
               </Link>
-            )}
+            ) : null}
             <Link
               href="/dashboard/settings/profile"
               className="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"

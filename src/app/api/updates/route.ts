@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { resend } from "@/lib/resend";
+import { resolveFromAddress, buildEmailFooter } from "@/lib/email";
+import { generateUnsubscribeUrl } from "@/lib/unsubscribe";
 
 const MAX_BODY_LENGTH = 2000;
 
@@ -32,7 +34,9 @@ export async function POST(request: NextRequest) {
 
   const { data: waitlist, error: waitlistError } = await supabase
     .from("waitlists")
-    .select("id, subdomain, name")
+    .select(
+      "id, subdomain, name, product_name, headline, sender_name, sending_domain, business_address"
+    )
     .eq("founder_id", user.id)
     .single();
 
@@ -66,16 +70,67 @@ export async function POST(request: NextRequest) {
     .eq("waitlist_id", waitlist.id);
 
   if (subscribers && subscribers.length > 0) {
+    const from = resolveFromAddress(
+      waitlist.sender_name,
+      waitlist.product_name,
+      waitlist.headline,
+      "broadcast",
+      waitlist.sending_domain
+    );
+
+    const productName =
+      waitlist.product_name || waitlist.headline || waitlist.subdomain;
+    const footerHtml = buildEmailFooter(waitlist.business_address);
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Update from ${productName}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: Arial, Helvetica, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f9fafb;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <div style="max-width: 600px; margin: 0 auto;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb;">
+            <tr>
+              <td style="padding: 40px;">
+                <p style="margin: 0 0 16px 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: #4b5563; white-space: pre-wrap;">${text}</p>
+              </td>
+            </tr>
+          </table>
+          <div style="line-height: 32px; height: 32px;">&nbsp;</div>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="padding: 0 40px;" align="center">
+                ${footerHtml}
+              </td>
+            </tr>
+          </table>
+        </div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
     const BATCH_SIZE = 100;
     const batchEmails = [];
 
     for (let i = 0; i < subscribers.length; i += BATCH_SIZE) {
       const batch = subscribers.slice(i, i + BATCH_SIZE);
       const emails = batch.map((sub) => ({
-        from: `${waitlist.name || waitlist.subdomain} <updates@prewaitlist.com>`,
+        from,
         to: sub.email,
-        subject: `Update from ${waitlist.name || waitlist.subdomain}`,
-        text: text,
+        subject: `Update from ${productName}`,
+        html,
+        text,
+        headers: {
+          "List-Unsubscribe": `<${generateUnsubscribeUrl(sub.id)}>`,
+          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        },
       }));
       batchEmails.push(...emails);
     }

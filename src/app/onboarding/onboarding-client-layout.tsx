@@ -187,14 +187,16 @@ function OnboardingLayoutInner({ children }: { children: React.ReactNode }) {
 
 export function OnboardingClientLayout({
   children,
+  tier,
 }: {
   children: React.ReactNode;
+  tier?: "free" | "pro";
 }) {
   const pathname = usePathname();
   const isAuthed = AUTHED_ROUTES.includes(pathname);
 
   return (
-    <LocalOnboardingProvider>
+    <LocalOnboardingProvider initialTier={tier}>
       {isAuthed ? (
         <FlushGate>
           <OnboardingLayoutInner>{children}</OnboardingLayoutInner>

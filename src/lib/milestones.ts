@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { sendEmail } from "@/lib/email";
+import { sendEmail, buildEmailFooter } from "@/lib/email";
 
 interface MilestoneTier {
   threshold: number;
@@ -10,24 +10,54 @@ interface MilestoneTier {
 function buildMilestoneEmailHTML(
   tier: { tier_referrals: number; reward_label: string },
   referralCount: number,
-  waitlist: { product_name: string | null; headline: string | null } | null
+  waitlist: {
+    product_name: string | null;
+    headline: string | null;
+    business_address?: string | null;
+  } | null
 ): string {
   const name = waitlist?.product_name || waitlist?.headline || "the waitlist";
-  return `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h1 style="color: #1a1a1a; font-size: 24px;">Congratulations!</h1>
-      <p style="color: #6b6459; font-size: 16px; line-height: 1.5;">
-        You've referred ${referralCount} friends to ${name} and earned: <strong>${tier.reward_label}</strong>
-      </p>
-      <p style="color: #6b6459; font-size: 16px; line-height: 1.5;">
-        Keep sharing to unlock more rewards!
-      </p>
-      <hr style="border: none; border-top: 1px solid #ccc9c3; margin: 20px 0;" />
-      <p style="color: #6b6459; font-size: 12px;">
-        Sent by ${name} via PreWaitlist
-      </p>
-    </div>
-  `;
+  const footerHtml = buildEmailFooter(waitlist?.business_address);
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Congratulations!</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: Arial, Helvetica, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f9fafb;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <div style="max-width: 600px; margin: 0 auto;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb;">
+            <tr>
+              <td style="padding: 40px;">
+                <h1 style="margin: 0 0 16px 0; font-family: Arial, Helvetica, sans-serif; font-size: 24px; line-height: 30px; font-weight: bold; color: #1a1a1a;">Congratulations!</h1>
+                <p style="margin: 0 0 16px 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: #4b5563;">
+                  You've referred ${referralCount} friends to <strong>${name}</strong> and earned: <strong style="color: #0F7A5E;">${tier.reward_label}</strong>
+                </p>
+                <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: #4b5563;">
+                  Keep sharing to unlock more rewards!
+                </p>
+              </td>
+            </tr>
+          </table>
+          <div style="line-height: 32px; height: 32px;">&nbsp;</div>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="padding: 0 40px;" align="center">
+                ${footerHtml}
+              </td>
+            </tr>
+          </table>
+        </div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }
 
 export async function checkAndFulfillMilestones(
@@ -89,7 +119,9 @@ export async function checkAndFulfillMilestones(
 
         const { data: waitlist } = await supabase
           .from("waitlists")
-          .select("product_name, headline, sender_name, sending_domain")
+          .select(
+            "product_name, headline, sender_name, sending_domain, business_address"
+          )
           .eq("id", waitlistId)
           .single();
 

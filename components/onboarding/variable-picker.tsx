@@ -134,7 +134,7 @@ export function VariablePicker({ onSelect, disabled }: VariablePickerProps) {
                 Available variables
               </p>
             </div>
-            <div className="p-1.5">
+            <div className="max-h-[280px] overflow-y-auto p-1.5">
               {VARIABLES.map((v) => (
                 <button
                   key={v.id}

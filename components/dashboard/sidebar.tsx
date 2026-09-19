@@ -408,9 +408,9 @@ export function Sidebar({
               })}
             </div>
           ))}
-          {tier === "free" && (
-            <button
-              type="button"
+          {tier === "free" ? (
+            <Link
+              href="/dashboard/settings/profile?tab=billing"
               className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-accent bg-transparent px-3 py-2 text-body-sm font-medium text-accent transition-colors hover:bg-accent hover:text-accent-foreground group"
             >
               <svg
@@ -421,12 +421,35 @@ export function Sidebar({
                 className="text-accent group-hover:text-accent-foreground"
               >
                 <path
-                  d="M7 1L8.8 5.2L13.5 5.8L10.1 9L11 13.5L7 11.4L3 13.5L3.9 9L0.5 5.8L5.2 5.2L7 1Z"
-                  fill="currentColor"
+                  d="M7 3V11M3 7H11"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
                 />
               </svg>
-              Upgrade to Pro
-            </button>
+              Upgrade to add
+            </Link>
+          ) : (
+            <Link
+              href="/onboarding/1"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2 text-body-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+                className="text-accent-foreground"
+              >
+                <path
+                  d="M7 3V11M3 7H11"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+              Add New Waitlist
+            </Link>
           )}
         </div>
       </aside>

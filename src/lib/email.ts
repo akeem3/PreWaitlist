@@ -99,6 +99,32 @@ export function buildEmailFooter(businessAddress?: string | null): string {
 }
 
 /**
+ * Build the free-tier email footer with "Powered by PreWaitlist" branding.
+ * Logo + text at the bottom, physical address below.
+ */
+export function buildFreeEmailFooter(businessAddress?: string | null): string {
+  const address = businessAddress?.trim() || DEFAULT_ADDRESS;
+
+  return `
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td align="center" style="padding: 0 0 8px 0;">
+          <a href="https://prewaitlist.com" target="_blank" style="text-decoration: none;">
+            <img src="https://prewaitlist.com/PreWaitlist-logo.svg" alt="PreWaitlist" width="20" height="20" style="display: inline-block; vertical-align: middle; border: 0; margin-right: 6px;" />
+            <span style="font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #6B6459; vertical-align: middle;">Powered by</span>
+            <span style="font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #0F7A5E; font-weight: 600; vertical-align: middle;"> PreWaitlist</span>
+          </a>
+        </td>
+      </tr>
+    </table>
+    <p style="font-size: 11px; color: #9ca3af; margin: 8px 0 0 0; text-align: center;">
+      ${address}
+    </p>
+  `;
+}
+
+/**
  * Build the email footer with unsubscribe link (for broadcast emails).
  */
 export function buildBroadcastEmailFooter(
