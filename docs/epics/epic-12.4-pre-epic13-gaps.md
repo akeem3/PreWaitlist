@@ -17,9 +17,11 @@ All 5 gaps closed. The qualification dashboard page works with multi-waitlist sc
 | ------ | ------------------------------------------- | ------------- | ------ |
 | 12.4.0 | Fix Qualification Page Waitlist Scoping     | —             | ready  |
 | 12.4.1 | Wire subscriber_count Increment/Decrement   | —             | ready  |
-| 12.4.2 | Expose activeWaitlistId in DashboardContext | 12.4.2        | ready  |
+| 12.4.2 | Expose activeWaitlistId in DashboardContext | —             | ready  |
 | 12.4.3 | Free-Tier Onboarding Guard                  | —             | ready  |
 | 12.4.4 | Epic 12.4 Tests                             | 12.4.0–12.4.3 | ready  |
+
+> **Note:** Story 12.4.2 had a self-dependency (`12.4.2` depends on `12.4.2`) — corrected to `—`.
 
 ---
 
@@ -42,6 +44,7 @@ All 5 gaps closed. The qualification dashboard page works with multi-waitlist sc
 - **Root cause:** `src/app/dashboard/qualification/page.tsx` line 27 renders `<QualificationClient subdomain={waitlist.subdomain} />` without passing `waitlistId`. The `QualificationPanel` component (`components/dashboard/qualification-panel.tsx` line 17) accepts `waitlistId` as optional and uses it in its API call (line 31). Without it, the API returns 400 "waitlist_id is required".
 - Fix: Add `waitlistId={waitlist.id}` to the `<QualificationClient>` render. The page already resolves the correct waitlist via `wid` search param (lines 16-24).
 - File: `src/app/dashboard/qualification/page.tsx` (28 lines — single-line fix)
+- **Status: NOT IMPLEMENTED** — qualification-panel.tsx accepts `waitlistId` and uses it in fetch (component ready), but page.tsx never passes it. The `QualificationClient` at `client.tsx` also doesn't accept or forward `waitlistId`. Two files need changes: `page.tsx` (pass prop) and `client.tsx` (accept + forward prop).
 
 ---
 
@@ -70,6 +73,7 @@ All 5 gaps closed. The qualification dashboard page works with multi-waitlist sc
 - **Decrement:** Check if any subscriber delete paths exist. The `DELETE /api/waitlist` route cascades to subscribers (foreign key), but doesn't explicitly decrement counts. For MVP, the 500-cap only matters for inserts. Deletions are rare (admin action) and the count will self-correct on next recalculation.
 - **No existing RPC function:** Create one if needed: `CREATE OR REPLACE FUNCTION increment_subscriber_count(p_waitlist_id uuid) RETURNS void AS $$ UPDATE waitlists SET subscriber_count = subscriber_count + 1 WHERE id = p_waitlist_id; $$ LANGUAGE sql;`
 - **Alternative (simpler):** Use Supabase's `.rpc()` or a direct `UPDATE` with a check. Since signups are low-volume (one founder's waitlist), the race condition is theoretical but correct to handle.
+- **Status: NOT IMPLEMENTED** — Zero references to `subscriber_count` exist anywhere in `src/`. The column exists in DB (Story 11.7 migration) but no code reads or writes it. No RPC function exists. `src/app/api/subscribers/route.ts` (837 lines) has no increment logic after insert.
 
 ---
 
@@ -95,6 +99,7 @@ All 5 gaps closed. The qualification dashboard page works with multi-waitlist sc
 - **New hook:** `export function useActiveWaitlistId(): string | null { const ctx = useContext(DashboardContext); return ctx?.activeWaitlistId ?? null; }`
 - **Adoption priority:** This is a quality-of-life improvement, not a blocker. Pages that already work via `?wid=` URL param don't need to change. The main beneficiary is any future component that needs the active waitlist ID without prop drilling.
 - **Existing `useDashboardTier()` hook:** Already exists at line 22-25. Follow the same pattern for `useActiveWaitlistId()`.
+- **Status: NOT IMPLEMENTED** — `DashboardContext` has only `{ tier: string }`. `activeWaitlistId` exists as local state in `DashboardShell` (line 53-82, aliased as `effectiveId`) but is NOT exposed via context. `useDashboardTier()` hook exists (lines 30-33) but no `useActiveWaitlistId()` hook exists. Only `dashboard/client.tsx` consumes `useDashboardTier` — no context consumer accesses `activeWaitlistId`.
 
 ---
 
@@ -119,6 +124,7 @@ All 5 gaps closed. The qualification dashboard page works with multi-waitlist sc
 - **Potential gap:** The guard wraps the onboarding layout (`src/app/onboarding/layout.tsx`). If a free user navigates directly to `/onboarding/1` with no waitlist, they should be allowed through (they need to create their first waitlist). The guard only blocks when count > 0.
 - **Verify:** Test that the guard correctly handles: (a) free user, 0 waitlists → allowed, (b) free user, 1 waitlist → redirect to /dashboard, (c) pro user, any count → allowed.
 - **This may already work.** If so, this story is just verification + adding a test.
+- **Status: FULLY IMPLEMENTED** — `OnboardingGuard` at `src/components/auth/onboarding-guard.tsx` (41 lines) checks `tier === "free"` and waitlist count > 0, redirects to `/dashboard`. Wraps onboarding layout at `src/app/onboarding/layout.tsx` lines 27-29. Pro-tier bypass works (only checks `tier === "free"`). Free user with 0 waitlists allowed through. No code changes needed — only test coverage missing.
 
 ---
 
@@ -143,3 +149,4 @@ All 5 gaps closed. The qualification dashboard page works with multi-waitlist sc
 - Test files go in `src/__tests__/api/` for route tests and `src/__tests__/components/` for component tests.
 - For the subscriber_count test: mock Supabase, call POST /api/subscribers, verify the update call was made with incremented count.
 - For the onboarding guard test: render the guard with mocked Supabase responses for different tier/count combinations, verify redirect behavior.
+- **Status: NOT IMPLEMENTED** — No tests exist for subscriber_count increment, qualification page waitlistId passing, DashboardContext activeWaitlistId, or onboarding guard redirect behavior. Existing `dashboard-qualification-page.test.tsx` (36 lines, 2 tests) only tests heading render and subdomain passing — not waitlistId. 54 test files total in `src/__tests__/`.

@@ -121,6 +121,7 @@ NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
 - Sandbox test card: `4242 4242 4242 4242`
 - Env var rename: current `PADDLE_CLIENT_TOKEN` needs `NEXT_PUBLIC_` prefix
 - Existing billing stubs (subscription-card, plan-comparison, invoice-history, cancellation-flow) wired in Story 13.3
+- **Status: NOT IMPLEMENTED** — No Paddle packages installed (`@paddle/paddle-js`, `@paddle/paddle-node-sdk` absent from package.json). No `src/hooks/` directory exists. No `src/app/api/billing/` directory. No `src/app/api/webhooks/paddle/` handler. `.env.local` has Paddle sandbox keys from Story 0.5 but nothing uses them.
 
 **Out of scope:** Upgrade modal (13.1), feature gating (13.2), billing management UI (13.3)
 
@@ -154,6 +155,7 @@ NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
 - Trigger content varies by source but shares same CTA and feature list.
 - Design: max-w-[480px], backdrop backdrop-blur-sm bg-black/50, focus trap, Escape dismisses.
 - The sidebar already shows locked state for Broadcast and Warmth — wire those click handlers to open the modal instead of just showing tooltip.
+- **Status: NOT IMPLEMENTED** — No `components/dashboard/upgrade-modal.tsx` exists. No upgrade modal component anywhere in codebase. Grep for `UpgradeModal` and `upgrade.*modal` returns zero results.
 
 ---
 
@@ -180,6 +182,7 @@ NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
 - Server-side: check in API routes before executing Pro logic, return 403 if not Pro.
 - Client-side: check in component render, show UpgradeModal or locked state.
 - qual question cap: Free = 2, Pro = 5 (already in `get_max_questions()` at onboarding/4a/page.tsx). Wire 3rd question attempt to show modal.
+- **Status: NOT IMPLEMENTED** — No `src/lib/tier-gating.ts` exists. No centralized `isPro()` or `requirePro()` utility. Only scattered local checks: `src/app/onboarding/5/page.tsx` has `const isPro = form.tier === "pro"`, billing components receive `isPro` as a prop. Sidebar has `isLocked` logic. No formalized gating layer.
 
 ---
 
@@ -210,6 +213,7 @@ NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
 - cancellation-flow: replace disabled button with portal link
 - invoice-history: Paddle portal handles invoice display, so this can stay as "View in Paddle portal" link
 - Billing tab already exists in profile settings at `/dashboard/settings/profile?tab=billing`
+- **Status: STUBS EXIST, NOT WIRED** — 5 billing components exist under `components/billing/`: `subscription-card.tsx` (hardcoded "October 1, 2026" date, no Paddle data), `plan-comparison.tsx` (static grid, "(coming soon)" button), `cancellation-flow.tsx` (disabled confirm button), `invoice-history.tsx` (placeholder text), `billing-details.tsx` (works — saves address). Billing tab exists at `/dashboard/settings/profile?tab=billing` and reads `profile?.tier` dynamically. But zero Paddle integration — no checkout, no portal, no real subscription data.
 
 ---
 
@@ -236,6 +240,7 @@ NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
 - Query tier: join waitlists with founder_profiles.
 - Public page (`[subdomain]/page.tsx`) needs to check count before rendering email capture form.
 - Progressive warnings: at 80% show info bar, at 96% show warning bar with upgrade CTA, at 100% block signup form and show upgrade modal.
+- **Status: NOT IMPLEMENTED** — No cap check in `POST /api/subscribers` (837 lines). No cap check in `src/app/(public)/[subdomain]/page.tsx`. No subscriber count check anywhere. Depends on 12.4.1 (subscriber_count increment) which is also not implemented.
 
 ---
 
@@ -266,6 +271,7 @@ NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
 - When `sending_domain` is set, `resolveFromAddress()` in `src/lib/email.ts` uses it (already wired in Story 12.6).
 - The existing `src/app/api/waitlist/verify-domain/route.ts` is a stub — replace with real implementation.
 - Simple 3-step wizard, not complex DNS management. Copy buttons are critical.
+- **Status: STUB ONLY** — `src/app/api/waitlist/verify-domain/route.ts` exists (8 lines) but returns hardcoded `{ verified: false, message: "Verification will be available in a future update" }`. No Resend domain API calls, no DNS record display, no settings UI section for domain auth.
 
 ---
 
@@ -293,3 +299,4 @@ NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
 - Test the webhook handler with synthetic Paddle payloads.
 - Test cooldown: set localStorage, verify modal doesn't show within 7 days.
 - Test cap: mock waitlist with subscriber_count=500, verify 403 response.
+- **Status: NOT IMPLEMENTED** — No tests exist for any Epic 13 story. All dependent code (Paddle hook, checkout route, webhook, upgrade modal, tier-gating, cap check) is not built yet.
