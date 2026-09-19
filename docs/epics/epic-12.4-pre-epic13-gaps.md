@@ -5,11 +5,11 @@
 
 ## Goal
 
-Close the implementation gaps that block Epic 13 (Billing & Feature Gating) from working correctly. These are wiring bugs, missing data flows, and test coverage gaps that exist because Epics 11-12.3 were built ahead of schedule and some cross-cutting concerns were missed.
+Close the implementation gaps that block Epic 13 (Billing & Feature Gating) from working correctly and fix critical account security/GDPR compliance gaps. These are wiring bugs, missing data flows, test coverage gaps, and missing account management features that exist because Epics 11-12.3 were built ahead of schedule and some cross-cutting concerns were missed.
 
 ## Definition of Done
 
-All 5 gaps closed. The qualification dashboard page works with multi-waitlist scoping. The `subscriber_count` cached counter is incremented/decremented on every subscriber insert/delete. The `DashboardContext` exposes `activeWaitlistId` to all dashboard children. Free-tier founders cannot enter onboarding when they already have a waitlist. Multi-waitlist scoping has test coverage. Lint and build pass with zero errors.
+All 6 gaps closed. The qualification dashboard page works with multi-waitlist scoping. The `subscriber_count` cached counter is incremented/decremented on every subscriber insert/delete. The `DashboardContext` exposes `activeWaitlistId` to all dashboard children. Free-tier founders cannot enter onboarding when they already have a waitlist. Founders can change their password and email. Founders can export their data and delete their account (GDPR). Archive confirmation dialog exists and archived waitlists return 410. Multi-waitlist scoping has test coverage. Lint and build pass with zero errors.
 
 ## Story Index
 
@@ -20,6 +20,7 @@ All 5 gaps closed. The qualification dashboard page works with multi-waitlist sc
 | 12.4.2 | Expose activeWaitlistId in DashboardContext | —             | ready  |
 | 12.4.3 | Free-Tier Onboarding Guard                  | —             | ready  |
 | 12.4.4 | Epic 12.4 Tests                             | 12.4.0–12.4.3 | ready  |
+| 12.4.5 | Account Security & GDPR Compliance          | —             | ready  |
 
 > **Note:** Story 12.4.2 had a self-dependency (`12.4.2` depends on `12.4.2`) — corrected to `—`.
 
@@ -150,3 +151,34 @@ All 5 gaps closed. The qualification dashboard page works with multi-waitlist sc
 - For the subscriber_count test: mock Supabase, call POST /api/subscribers, verify the update call was made with incremented count.
 - For the onboarding guard test: render the guard with mocked Supabase responses for different tier/count combinations, verify redirect behavior.
 - **Status: NOT IMPLEMENTED** — No tests exist for subscriber_count increment, qualification page waitlistId passing, DashboardContext activeWaitlistId, or onboarding guard redirect behavior. Existing `dashboard-qualification-page.test.tsx` (36 lines, 2 tests) only tests heading render and subdomain passing — not waitlistId. 54 test files total in `src/__tests__/`.
+
+---
+
+### Story 12.4.5 — Account Security & GDPR Compliance
+
+**Status:** ready
+**Story:** As a founder, I want to manage my account security (change password, change email) and exercise my GDPR rights (export data, delete account) so that I have full control over my identity and data.
+
+**Acceptance Criteria (EARS):**
+
+- AC1: The Security tab shall include a "Change Password" section with current password + new password + confirm password fields. On submit, the system shall call Supabase `updateUser({ password })` and show success/error feedback.
+- AC2: The Security tab shall include a "Change Email" section showing the current email (read-only) and an input for the new email. On submit, the system shall call Supabase `updateUser({ email })` which sends a confirmation link to the new email.
+- AC3: The Settings page shall include a "Danger Zone" section (visually separated, red accent) with two actions: "Export My Data" and "Delete Account".
+- AC4: "Export My Data" shall generate a JSON file containing the founder's profile, all waitlists, all subscribers (anonymized emails), and all founder updates. The download shall trigger automatically.
+- AC5: "Delete Account" shall show a multi-step confirmation: (1) warning explaining consequences, (2) require typing the account email to confirm, (3) call a `DELETE /api/profile` endpoint that deletes the founder's auth account and all associated data.
+- AC6: The `DELETE /api/profile` endpoint shall delete: auth user (cascades to founder_profiles), all waitlists (cascades to subscribers, qualification_questions, milestone_rewards, founder_updates), and any other orphaned data.
+- AC7: Lint and build shall pass with zero errors.
+
+**Tasks:** T1 (AC1) Change password · T2 (AC2) Change email · T3 (AC3-AC4) Data export · T4 (AC5-AC6) Account deletion · T5 (AC7) Lint + build
+
+**Out of scope:** Billing tab wiring (Story 13.3), Paddle integration (Story 13.0), 2FA/TOTP, active sessions, login history, notification preferences.
+
+**Dev Notes:**
+
+- Password change: `supabase.auth.updateUser({ password: newPassword })`. May require recent auth.
+- Email change: `supabase.auth.updateUser({ email: newEmail })` — sends confirmation link. Display notice.
+- Data export: JSON with `{ profile, waitlists, subscribers, updates }`. Anonymize emails via `anonymizeEmail` from `src/lib/format.ts`. File: `prewaitlist-export-{date}.json`.
+- Account deletion cascade: `auth.users` → `founder_profiles` → `waitlists` → `subscribers`, `qualification_questions`, `milestone_rewards`, `founder_updates`. Check `email_events`, `page_views`, `bounced_emails`, `milestones_earned`.
+- Danger Zone styling: `border-destructive/50`, `text-destructive` heading, `bg-destructive/5`.
+- Files: `settings/profile/client.tsx`, `settings/security/page.tsx`, `api/profile/route.ts`.
+- **Status: NOT IMPLEMENTED** — Password button exists but is `disabled`. Email is read-only. No account deletion API/UI. No data export. No Danger Zone.
