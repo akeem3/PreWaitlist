@@ -1,6 +1,6 @@
 # Story 12.4.1 — Wire subscriber_count Increment/Decrement
 
-**Status:** ready
+**Status:** done
 **Epic:** 12.4 — Pre-Epic 13 Gaps
 
 ## Story
@@ -33,15 +33,15 @@ T3 (AC6) Lint + build
 
 ## Implementation Status
 
-**Status: NOT IMPLEMENTED**
+**Status: IMPLEMENTED**
 
-| AC                                     | Status      | Evidence                                                 |
-| -------------------------------------- | ----------- | -------------------------------------------------------- |
-| AC1: Increment after subscriber insert | ❌ Not done | Zero references to `subscriber_count` anywhere in `src/` |
-| AC2: Decrement on delete               | ❌ Not done | No decrement logic                                       |
-| AC3: Atomic SQL operation              | ❌ Not done | No RPC function exists                                   |
-| AC4: Same request lifecycle            | ❌ Not done | —                                                        |
-| AC5: Error logging                     | ❌ Not done | —                                                        |
-| AC6: Lint + build                      | ⏳ Pending  | —                                                        |
+| AC                                     | Status  | Evidence                                                                         |
+| -------------------------------------- | ------- | -------------------------------------------------------------------------------- |
+| AC1: Increment after subscriber insert | ✅ Done | `route.ts:580-586` — `supabase.rpc('increment_subscriber_count')` after insert   |
+| AC2: Decrement on delete               | ⏭ N/A   | No individual subscriber DELETE API; ON DELETE CASCADE handles waitlist deletion |
+| AC3: Atomic SQL operation              | ✅ Done | RPC function `increment_subscriber_count` — atomic UPDATE                        |
+| AC4: Same request lifecycle            | ✅ Done | Fires after insert + recalculate, before response                                |
+| AC5: Error logging                     | ✅ Done | try/catch + console.error, does not throw                                        |
+| AC6: Lint + build                      | ✅ Done | 0 errors, build passes                                                           |
 
-**Gap:** Column exists in DB (Story 11.7 migration) but no code reads or writes it. No RPC function. `src/app/api/subscribers/route.ts` (837 lines) has no increment logic after insert.
+**SQL:** `docs/stories/sql-writeups/epic12.4-story1-subscriber-count.sql` — `CREATE OR REPLACE FUNCTION increment_subscriber_count`

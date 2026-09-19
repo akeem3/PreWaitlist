@@ -24,5 +24,10 @@ export default async function QualificationPage({ searchParams }: PageProps) {
   const { data: waitlist } = await wlQuery.maybeSingle();
   if (!waitlist) redirect("/onboarding/1");
 
-  return <QualificationClient subdomain={waitlist.subdomain} />;
+  return (
+    <QualificationClient
+      subdomain={waitlist.subdomain}
+      waitlistId={waitlist.id}
+    />
+  );
 }

@@ -1,6 +1,6 @@
 # Story 12.4.2 — Expose activeWaitlistId in DashboardContext
 
-**Status:** ready
+**Status:** done
 **Epic:** 12.4 — Pre-Epic 13 Gaps
 
 ## Story
@@ -30,13 +30,13 @@ T3 (AC4) Lint + build
 
 ## Implementation Status
 
-**Status: NOT IMPLEMENTED**
+**Status: IMPLEMENTED**
 
-| AC                                     | Status      | Evidence                                                                                                  |
-| -------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------- |
-| AC1: Context includes activeWaitlistId | ❌ Not done | `DashboardContext` has only `{ tier: string }`                                                            |
-| AC2: useActiveWaitlistId() hook        | ❌ Not done | No hook exists; `useDashboardTier()` exists at line 30-33                                                 |
-| AC3: Updates on switch                 | ❌ Not done | `activeWaitlistId` is local state in `DashboardShell` (line 53-82, aliased `effectiveId`), not in context |
-| AC4: Lint + build                      | ⏳ Pending  | —                                                                                                         |
+| AC                                     | Status  | Evidence                                                                                                  |
+| -------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------- |
+| AC1: Context includes activeWaitlistId | ✅ Done | `shell.tsx:23` — `DashboardContextValue` has `{ tier: string; activeWaitlistId: string }`                 |
+| AC2: useActiveWaitlistId() hook        | ✅ Done | `shell.tsx:36-39` — exported, returns `ctx?.activeWaitlistId ?? null`                                     |
+| AC3: Updates on switch                 | ✅ Done | Provider passes `activeWaitlistId: effectiveId` (line 155), `effectiveId` is state that updates on switch |
+| AC4: Lint + build                      | ✅ Done | 0 errors, build passes                                                                                    |
 
-**Gap:** `activeWaitlistId` exists as local `useState` in `DashboardShell` but is NOT exposed via context. Only `dashboard/client.tsx` consumes `useDashboardTier` — no consumer accesses `activeWaitlistId` from context.
+**Files:** `src/app/dashboard/shell.tsx` (context + hook + provider)

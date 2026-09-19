@@ -21,6 +21,7 @@ interface WaitlistRow {
 
 interface DashboardContextValue {
   tier: string;
+  activeWaitlistId: string;
 }
 
 export const DashboardContext = createContext<DashboardContextValue | null>(
@@ -30,6 +31,11 @@ export const DashboardContext = createContext<DashboardContextValue | null>(
 export function useDashboardTier(): string | null {
   const ctx = useContext(DashboardContext);
   return ctx?.tier ?? null;
+}
+
+export function useActiveWaitlistId(): string | null {
+  const ctx = useContext(DashboardContext);
+  return ctx?.activeWaitlistId ?? null;
 }
 
 interface DashboardShellProps {
@@ -141,7 +147,9 @@ export default function DashboardShell({
       </button>
 
       <main className="min-h-screen lg:ml-67">
-        <DashboardContext.Provider value={{ tier }}>
+        <DashboardContext.Provider
+          value={{ tier, activeWaitlistId: effectiveId }}
+        >
           {children}
         </DashboardContext.Provider>
       </main>

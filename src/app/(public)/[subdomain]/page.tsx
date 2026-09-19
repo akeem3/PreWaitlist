@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { WaitlistPageContent } from "../../../../components/public/waitlist-page-content";
 import { EmailCaptureForm } from "../../../../components/public/email-capture-form";
 import { LatestUpdateCard } from "../../../../components/public/updates-feed";
@@ -22,11 +22,14 @@ export default async function PublicSubdomainPage({ params }: Props) {
     `
     )
     .eq("subdomain", subdomain)
-    .eq("is_archived", false)
     .single();
 
   if (!waitlist) {
     notFound();
+  }
+
+  if (waitlist.is_archived) {
+    redirect(`/${subdomain}/gone`);
   }
 
   const founderProfile = Array.isArray(waitlist.founder_profiles)

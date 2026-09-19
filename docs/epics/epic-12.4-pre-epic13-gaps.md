@@ -15,9 +15,9 @@ All 6 gaps closed. The qualification dashboard page works with multi-waitlist sc
 
 | ID     | Title                                       | Depends on    | Status |
 | ------ | ------------------------------------------- | ------------- | ------ |
-| 12.4.0 | Fix Qualification Page Waitlist Scoping     | —             | ready  |
-| 12.4.1 | Wire subscriber_count Increment/Decrement   | —             | ready  |
-| 12.4.2 | Expose activeWaitlistId in DashboardContext | —             | ready  |
+| 12.4.0 | Fix Qualification Page Waitlist Scoping     | —             | done   |
+| 12.4.1 | Wire subscriber_count Increment/Decrement   | —             | done   |
+| 12.4.2 | Expose activeWaitlistId in DashboardContext | —             | done   |
 | 12.4.3 | Free-Tier Onboarding Guard                  | —             | ready  |
 | 12.4.4 | Epic 12.4 Tests                             | 12.4.0–12.4.3 | ready  |
 | 12.4.5 | Account Security & GDPR Compliance          | —             | ready  |

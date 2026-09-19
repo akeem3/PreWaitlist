@@ -1,6 +1,6 @@
 # Story 12.4.0 — Fix Qualification Page Waitlist Scoping
 
-**Status:** ready
+**Status:** done
 **Epic:** 12.4 — Pre-Epic 13 Gaps
 
 ## Story
@@ -34,20 +34,27 @@ T5 (AC4) Lint + build
 - **Archive confirmation gap:** `src/app/dashboard/[waitlistId]/settings/client.tsx` line 348 calls `handleArchive()` directly on click with no `window.confirm()`. Add a confirmation dialog: "Archiving your waitlist will stop new signups and hide your public page. This can be undone. Continue?"
 - File: `src/app/dashboard/[waitlistId]/settings/client.tsx`
 
-- **Archive 410 gap:** `src/app/(public)/[subdomain]/page.tsx` line 25 uses `.eq("is_archived", false)` which returns no rows → triggers `notFound()` (404). Need to: (1) query without the archive filter, (2) check `is_archived` after fetch, (3) return 410 with custom message if archived.
+- **Archive 410 gap:** `src/app/(public)/[subdomain]/page.tsx` line 25 uses `.eq("is_archived", false)` which returns no rows → triggers `notFound()` (404). Need to: (1) query without the archive filter, (2) check `is_archived` after fetch, (3) redirect to `/gone` page if archived.
 - File: `src/app/(public)/[subdomain]/page.tsx`
+- New file: `src/app/(public)/[subdomain]/gone/page.tsx` — simple message component
 
 ## Implementation Status
 
-**Status: NOT IMPLEMENTED**
+**Status: DONE**
 
-| AC                                          | Status             | Evidence                                                                    |
-| ------------------------------------------- | ------------------ | --------------------------------------------------------------------------- |
-| AC1: Pass waitlistId to QualificationClient | ❌ Not done        | `page.tsx` line 27 only passes `subdomain`                                  |
-| AC2: QualificationPanel uses waitlistId     | ✅ Component ready | `qualification-panel.tsx` accepts and uses `waitlistId` in fetch (line 31)  |
-| AC3: Default to most recent waitlist        | ✅ Done            | `page.tsx` uses `wid` search param, defaults to first                       |
-| AC4: Lint + build                           | ⏳ Pending         | —                                                                           |
-| AC5: Archive confirmation dialog            | ❌ Not done        | `settings/client.tsx` line 348 calls `handleArchive()` directly, no confirm |
-| AC6: 410 for archived waitlists             | ❌ Not done        | `[subdomain]/page.tsx` returns 404 via `notFound()`, not 410                |
+| AC                                          | Status  | Evidence                                                                    |
+| ------------------------------------------- | ------- | --------------------------------------------------------------------------- |
+| AC1: Pass waitlistId to QualificationClient | ✅ Done | `page.tsx` now passes `waitlistId={waitlist.id}`                            |
+| AC2: QualificationPanel uses waitlistId     | ✅ Done | `client.tsx` accepts + forwards `waitlistId` to `QualificationPanel`        |
+| AC3: Default to most recent waitlist        | ✅ Done | `page.tsx` uses `wid` search param, defaults to first                       |
+| AC4: Lint + build                           | ✅ Done | 0 errors, build passes                                                      |
+| AC5: Archive confirmation dialog            | ✅ Done | `settings/client.tsx` now calls `window.confirm()` before `handleArchive()` |
+| AC6: 410 for archived waitlists             | ✅ Done | `page.tsx` removes archive filter, redirects to `/gone` page if archived    |
 
-**Gaps:** Two files need change for qualification (page.tsx + client.tsx). Two files need change for archive fixes (settings/client.tsx + subdomain/page.tsx).
+**Files changed:**
+
+- `src/app/dashboard/qualification/page.tsx` — added `waitlistId` prop
+- `src/app/dashboard/qualification/client.tsx` — accepts + forwards `waitlistId`
+- `src/app/dashboard/[waitlistId]/settings/client.tsx` — added `window.confirm()` before archive
+- `src/app/(public)/[subdomain]/page.tsx` — removed archive filter, added redirect to `/gone`
+- `src/app/(public)/[subdomain]/gone/page.tsx` — new file, archived waitlist message

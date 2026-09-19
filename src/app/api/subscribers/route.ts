@@ -573,6 +573,24 @@ export async function POST(request: NextRequest) {
   const subscriberUpdate = getPositionUpdate(updates, data.id);
   const correctedPosition = subscriberUpdate?.new_position ?? data.position;
 
+  // Increment cached subscriber_count (atomic, fire-and-forget on error)
+  try {
+    const { error: countErr } = await supabase.rpc(
+      "increment_subscriber_count",
+      {
+        p_waitlist_id: waitlist_id,
+      }
+    );
+    if (countErr) {
+      console.error(
+        "[subscribers] increment_subscriber_count failed:",
+        countErr.message
+      );
+    }
+  } catch (e) {
+    console.error("[subscribers] increment_subscriber_count threw:", e);
+  }
+
   // --- Confirmation email (fire-and-forget) ---
   // AC1: Send immediately after subscriber creation
   // AC6: Error handling — email failure must not block signup

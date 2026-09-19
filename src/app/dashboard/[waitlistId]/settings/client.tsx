@@ -345,7 +345,15 @@ export default function WaitlistSettingsClient({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleArchive}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          "Archiving your waitlist will stop new signups and hide your public page. This can be undone. Continue?"
+                        )
+                      ) {
+                        handleArchive();
+                      }
+                    }}
                     disabled={archiving}
                   >
                     {archiving ? "Archiving…" : "Archive waitlist"}
