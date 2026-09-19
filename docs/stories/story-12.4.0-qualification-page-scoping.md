@@ -26,3 +26,16 @@ T3 (AC4) Lint + build
 - Fix: Add `waitlistId={waitlist.id}` to the `<QualificationClient>` render.
 - The page already resolves the correct waitlist via `wid` search param (lines 16-24).
 - File: `src/app/dashboard/qualification/page.tsx` (28 lines — single-line fix)
+
+## Implementation Status
+
+**Status: NOT IMPLEMENTED**
+
+| AC                                          | Status             | Evidence                                                                   |
+| ------------------------------------------- | ------------------ | -------------------------------------------------------------------------- |
+| AC1: Pass waitlistId to QualificationClient | ❌ Not done        | `page.tsx` line 27 only passes `subdomain`                                 |
+| AC2: QualificationPanel uses waitlistId     | ✅ Component ready | `qualification-panel.tsx` accepts and uses `waitlistId` in fetch (line 31) |
+| AC3: Default to most recent waitlist        | ✅ Done            | `page.tsx` uses `wid` search param, defaults to first                      |
+| AC4: Lint + build                           | ⏳ Pending         | —                                                                          |
+
+**Gap:** `QualificationClient` at `client.tsx` does not accept or forward `waitlistId` — two files need change: `page.tsx` (pass prop) and `client.tsx` (accept + forward prop).

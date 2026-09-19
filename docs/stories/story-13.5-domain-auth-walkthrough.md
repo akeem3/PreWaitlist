@@ -41,3 +41,20 @@ T5 (AC8) Lint + build
 - `src/app/dashboard/settings/waitlist-settings-page.tsx` — add Domain Authentication section
 - `src/app/api/waitlist/verify-domain/route.ts` — replace stub with real Resend API calls
 - `src/lib/resend.ts` — add domain management methods
+
+## Implementation Status
+
+**Status: STUB ONLY**
+
+| AC                                   | Status      | Evidence                                 |
+| ------------------------------------ | ----------- | ---------------------------------------- |
+| AC1: Domain Auth section in Settings | ❌ Not done | No domain auth section in settings pages |
+| AC2: 3-step wizard UI                | ❌ Not done | —                                        |
+| AC3: DNS record display + copy       | ❌ Not done | —                                        |
+| AC4: Plain-language instructions     | ❌ Not done | —                                        |
+| AC5: Verify button + Resend API      | ❌ Not done | —                                        |
+| AC6: Update sending_domain           | ❌ Not done | —                                        |
+| AC7: Status display                  | ❌ Not done | —                                        |
+| AC8: Lint + build                    | ⏳ Pending  | —                                        |
+
+**Existing stub:** `src/app/api/waitlist/verify-domain/route.ts` (8 lines) returns hardcoded `{ verified: false, message: "Verification will be available in a future update" }`. No Resend domain API calls, no DNS record display, no settings UI.

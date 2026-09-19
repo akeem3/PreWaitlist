@@ -41,3 +41,18 @@ T5 (AC6) Lint + build
 - `components/dashboard/warmth-panel.tsx` — wire upgrade modal
 - `components/dashboard/sidebar.tsx` — wire upgrade modal on locked item click
 - `src/app/onboarding/4a/page.tsx` — wire 3rd qual question modal
+
+## Implementation Status
+
+**Status: NOT IMPLEMENTED**
+
+| AC                           | Status      | Evidence                                                                            |
+| ---------------------------- | ----------- | ----------------------------------------------------------------------------------- |
+| AC1: isPro() utility         | ❌ Not done | No `src/lib/tier-gating.ts` exists                                                  |
+| AC2: requirePro() utility    | ❌ Not done | —                                                                                   |
+| AC3: Server-side enforcement | ⚠️ Partial  | Broadcast route has ad-hoc 403; warmth route has ad-hoc check. No formalized layer. |
+| AC4: Client-side enforcement | ⚠️ Partial  | Sidebar `isLocked` exists, warmth panel overlay exists. No upgrade modal wiring.    |
+| AC5: DashboardContext tier   | ✅ Done     | `DashboardContext` in `shell.tsx` exposes `tier`                                    |
+| AC6: Lint + build            | ⏳ Pending  | —                                                                                   |
+
+**Gap:** Ad-hoc gating exists in 3-4 places but is not centralized. `isPro` appears only as a local variable in `onboarding/5/page.tsx` (line 21). No reusable utility.

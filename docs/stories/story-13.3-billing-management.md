@@ -44,3 +44,26 @@ T5 (AC8) Lint + build
 - `components/billing/billing-details.tsx` — dynamic data
 - `components/billing/cancellation-flow.tsx` — wire portal link
 - `src/app/api/billing/portal/route.ts` — new route (session creation)
+
+## Implementation Status
+
+**Status: STUBS EXIST, NOT WIRED**
+
+| AC                                         | Status      | Evidence                                                                  |
+| ------------------------------------------ | ----------- | ------------------------------------------------------------------------- |
+| AC1: Dynamic plan display                  | ✅ Partial  | Billing tab reads `profile?.tier` dynamically from `/api/profile`         |
+| AC2: Manage Billing button (Paddle portal) | ❌ Not done | No Paddle SDK installed, no portal session API                            |
+| AC3: Paddle portal features                | ❌ Not done | —                                                                         |
+| AC4: Free upgrade button                   | ❌ Not done | `plan-comparison.tsx` has "(coming soon)" button                          |
+| AC5: Dynamic billing date                  | ❌ Not done | `subscription-card.tsx` hardcoded to "October 1, 2026"                    |
+| AC6: Cancellation wired to portal          | ❌ Not done | `cancellation-flow.tsx` confirm button is `disabled` with "(coming soon)" |
+| AC7: Real invoices                         | ❌ Not done | `invoice-history.tsx` shows placeholder text                              |
+| AC8: Lint + build                          | ⏳ Pending  | —                                                                         |
+
+**Existing stubs (5 components):**
+
+- `components/billing/subscription-card.tsx` — hardcoded date, no Paddle data
+- `components/billing/plan-comparison.tsx` — static grid, "(coming soon)" upgrade button
+- `components/billing/cancellation-flow.tsx` — disabled confirm button
+- `components/billing/invoice-history.tsx` — placeholder message
+- `components/billing/billing-details.tsx` — works (saves address), not Paddle-related

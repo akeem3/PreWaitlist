@@ -27,3 +27,16 @@ T3 (AC4) Lint + build
 - **New hook:** `export function useActiveWaitlistId(): string | null { return useContext(DashboardContext)?.activeWaitlistId ?? null; }`
 - **Existing `useDashboardTier()` hook** at line 22-25 — follow the same pattern.
 - This is quality-of-life, not a blocker. Pages working via `?wid=` URL param don't need to change.
+
+## Implementation Status
+
+**Status: NOT IMPLEMENTED**
+
+| AC                                     | Status      | Evidence                                                                                                  |
+| -------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------- |
+| AC1: Context includes activeWaitlistId | ❌ Not done | `DashboardContext` has only `{ tier: string }`                                                            |
+| AC2: useActiveWaitlistId() hook        | ❌ Not done | No hook exists; `useDashboardTier()` exists at line 30-33                                                 |
+| AC3: Updates on switch                 | ❌ Not done | `activeWaitlistId` is local state in `DashboardShell` (line 53-82, aliased `effectiveId`), not in context |
+| AC4: Lint + build                      | ⏳ Pending  | —                                                                                                         |
+
+**Gap:** `activeWaitlistId` exists as local `useState` in `DashboardShell` but is NOT exposed via context. Only `dashboard/client.tsx` consumes `useDashboardTier` — no consumer accesses `activeWaitlistId` from context.

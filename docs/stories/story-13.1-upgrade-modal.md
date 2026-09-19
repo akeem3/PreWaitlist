@@ -31,7 +31,7 @@ T4 (AC10) Lint + build
 
 - Modal UX: show short interstitial before opening Paddle checkout. Modal IS the pricing comparison.
 - Contextual triggers (feature gate clicks, limits) convert better than ambient ones.
-- Cooldown: `localStorage.setItem("upgrade-dismissed-{trigger}", JSON.stringify({ dismissedAt: Date.now() }))`. Check: if < 7 days since dismiss, don't show.
+- Cooldown: localStorage key `upgrade-dismissed-{trigger}` with `{ dismissedAt }` timestamp. If < 7 days since dismiss, don't show.
 - Trigger content varies by source but shares same CTA and feature list.
 - Design: max-w-[480px], backdrop backdrop-blur-sm bg-black/50, focus trap, Escape dismisses.
 - Sidebar already shows locked state for Broadcast and Warmth — wire those click handlers to open modal instead of just tooltip.
@@ -44,3 +44,22 @@ T4 (AC10) Lint + build
 - `src/app/onboarding/4a/page.tsx` — wire 3rd qual question
 - `src/app/dashboard/settings/profile/client.tsx` — wire billing CTA
 - `src/app/dashboard/client.tsx` — wire CSV export + first-subscriber
+
+## Implementation Status
+
+**Status: NOT IMPLEMENTED**
+
+| AC                             | Status      | Evidence                                           |
+| ------------------------------ | ----------- | -------------------------------------------------- |
+| AC1: UpgradeModal component    | ❌ Not done | No `components/dashboard/upgrade-modal.tsx` exists |
+| AC2: Props + usePaddle         | ❌ Not done | Component doesn't exist                            |
+| AC3: Context-specific headline | ❌ Not done | —                                                  |
+| AC4: Feature bullets + price   | ❌ Not done | —                                                  |
+| AC5: Paddle checkout CTA       | ❌ Not done | —                                                  |
+| AC6: Dismissable               | ❌ Not done | —                                                  |
+| AC7: Design system compliance  | ❌ Not done | —                                                  |
+| AC8: 7-day cooldown            | ❌ Not done | —                                                  |
+| AC9: 7 trigger points          | ❌ Not done | —                                                  |
+| AC10: Lint + build             | ⏳ Pending  | —                                                  |
+
+**Gap:** Depends on Story 13.0 (usePaddle hook). Sidebar already has locked state for Broadcast/Warmth — those click handlers need wiring to modal.

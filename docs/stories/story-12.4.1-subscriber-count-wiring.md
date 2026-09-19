@@ -30,3 +30,18 @@ T3 (AC6) Lint + build
 - **Or direct update:** `await supabase.from('waitlists').update({ subscriber_count: (count ?? 0) + 1 }).eq('id', waitlist_id)` — acceptable at MVP scale.
 - **Decrement:** `DELETE /api/waitlist` cascades to subscribers. For MVP, decrement is nice-to-have. Count self-corrects on next recalculation if needed.
 - **Error handling:** try/catch around increment, log error, don't throw.
+
+## Implementation Status
+
+**Status: NOT IMPLEMENTED**
+
+| AC                                     | Status      | Evidence                                                 |
+| -------------------------------------- | ----------- | -------------------------------------------------------- |
+| AC1: Increment after subscriber insert | ❌ Not done | Zero references to `subscriber_count` anywhere in `src/` |
+| AC2: Decrement on delete               | ❌ Not done | No decrement logic                                       |
+| AC3: Atomic SQL operation              | ❌ Not done | No RPC function exists                                   |
+| AC4: Same request lifecycle            | ❌ Not done | —                                                        |
+| AC5: Error logging                     | ❌ Not done | —                                                        |
+| AC6: Lint + build                      | ⏳ Pending  | —                                                        |
+
+**Gap:** Column exists in DB (Story 11.7 migration) but no code reads or writes it. No RPC function. `src/app/api/subscribers/route.ts` (837 lines) has no increment logic after insert.

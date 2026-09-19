@@ -37,3 +37,18 @@ T5 (AC6) Lint + build
 - `src/app/api/subscribers/route.ts` — add cap check
 - `src/app/(public)/[subdomain]/page.tsx` — add cap message
 - `components/dashboard/upgrade-modal.tsx` — trigger at cap (Story 13.1)
+
+## Implementation Status
+
+**Status: NOT IMPLEMENTED**
+
+| AC                           | Status      | Evidence                                                 |
+| ---------------------------- | ----------- | -------------------------------------------------------- |
+| AC1: Cap check on insert     | ❌ Not done | `POST /api/subscribers` (837 lines) has no cap check     |
+| AC2: 403 when cap hit        | ❌ Not done | —                                                        |
+| AC3: Public page cap message | ❌ Not done | `src/app/(public)/[subdomain]/page.tsx` has no cap check |
+| AC4: Pro bypass              | ❌ Not done | —                                                        |
+| AC5: Progressive warnings    | ❌ Not done | —                                                        |
+| AC6: Lint + build            | ⏳ Pending  | —                                                        |
+
+**Dependency:** Story 12.4.1 (subscriber_count increment) must be implemented first — without it, `subscriber_count` is always 0 and this check is dead code.

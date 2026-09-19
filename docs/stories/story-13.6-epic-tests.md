@@ -40,3 +40,19 @@ T5 (AC6-AC7) Lint + build + count
 - `src/__tests__/components/upgrade-modal.test.tsx` — new
 - `src/__tests__/api/subscribers-cap.test.ts` — new
 - `src/__tests__/components/feature-gating.test.tsx` — new
+
+## Implementation Status
+
+**Status: NOT IMPLEMENTED**
+
+| AC                          | Status      | Evidence                        |
+| --------------------------- | ----------- | ------------------------------- |
+| AC1: Billing checkout tests | ❌ Not done | No test files exist for billing |
+| AC2: Paddle webhook tests   | ❌ Not done | —                               |
+| AC3: Upgrade modal tests    | ❌ Not done | —                               |
+| AC4: Subscriber cap tests   | ❌ Not done | —                               |
+| AC5: Feature gating tests   | ❌ Not done | —                               |
+| AC6: Lint + build           | ⏳ Pending  | —                               |
+| AC7: +15 tests              | ❌ Not done | —                               |
+
+**Gap:** Depends on stories 13.0–13.5 being implemented first. All 5 test files listed above need to be created.
