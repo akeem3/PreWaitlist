@@ -218,34 +218,36 @@ function Header() {
 
 function Footer() {
   return (
-    <footer className="border-t border-[#CCC9C3]">
-      <div className="mx-auto flex h-24 max-w-7xl items-center justify-between px-6 text-body text-muted-foreground">
-        <p className="flex items-center gap-1">
-          <Image src="/just-logo.png" alt="" width={48} height={36} />
-          &copy; {new Date().getFullYear()} PreWaitlist
-        </p>
-        <nav className="flex gap-4">
-          <Link
-            href="/legal/privacy"
-            className="transition-colors duration-normal hover:text-foreground"
-          >
-            Privacy
-          </Link>
-          <Link
-            href="/legal/terms"
-            className="transition-colors duration-normal hover:text-foreground"
-          >
-            Terms
-          </Link>
-          <a
-            href="https://twitter.com/prewaitlist"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="transition-colors duration-normal hover:text-foreground"
-          >
-            Twitter
-          </a>
-        </nav>
+    <footer className="border-t border-border">
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        <div className="flex flex-col items-center gap-6 md:flex-row md:justify-between">
+          <p className="flex items-center gap-2 text-body-sm text-muted-foreground">
+            <Image src="/just-logo.png" alt="" width={32} height={24} />
+            &copy; {new Date().getFullYear()} PreWaitlist
+          </p>
+          <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-body-sm text-muted-foreground">
+            <Link
+              href="/legal/privacy"
+              className="transition-colors duration-normal hover:text-foreground"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              href="/legal/terms"
+              className="transition-colors duration-normal hover:text-foreground"
+            >
+              Terms of Service
+            </Link>
+            <a
+              href="https://twitter.com/prewaitlist"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors duration-normal hover:text-foreground"
+            >
+              Twitter
+            </a>
+          </nav>
+        </div>
       </div>
     </footer>
   );
