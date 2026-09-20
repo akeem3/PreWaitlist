@@ -254,7 +254,7 @@ export default function ProfileClient() {
   }
 
   return (
-    <div>
+    <div className="max-w-2xl px-8 py-12">
       <div className="mb-8">
         <div className="flex items-center gap-3">
           <Link
