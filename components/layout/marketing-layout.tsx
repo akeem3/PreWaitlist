@@ -106,6 +106,12 @@ function Header() {
 
         <nav className="hidden items-center gap-4 md:flex">
           <Link
+            href="/signin"
+            className="text-body-sm font-medium text-accent transition-colors duration-normal hover:text-accent-hover"
+          >
+            Sign in
+          </Link>
+          <Link
             href="/onboarding/1"
             className="inline-flex h-9 items-center rounded-(--button-radius) bg-accent px-3.5 text-body-sm text-accent-foreground transition-colors duration-normal hover:bg-accent-hover"
           >
