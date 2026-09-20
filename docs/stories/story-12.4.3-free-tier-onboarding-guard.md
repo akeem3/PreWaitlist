@@ -1,6 +1,6 @@
 # Story 12.4.3 — Free-Tier Onboarding Guard
 
-**Status:** ready
+**Status:** done
 **Epic:** 12.4 — Pre-Epic 13 Gaps
 
 ## Story
@@ -29,13 +29,11 @@ T4 (AC5) Lint + build
 
 ## Implementation Status
 
-**Status: FULLY IMPLEMENTED** (code complete, test coverage pending)
+**Status: IMPLEMENTED**
 
-| AC                                    | Status     | Evidence                                                                                            |
-| ------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------- |
-| AC1: Free with ≥1 waitlist → redirect | ✅ Done    | `onboarding-guard.tsx` lines 29-37: checks `tier === "free"` + count > 0, redirects to `/dashboard` |
-| AC2: Server-side check                | ✅ Done    | Guard runs server-side in layout                                                                    |
-| AC3: Pro not affected                 | ✅ Done    | Only checks `tier === "free"`                                                                       |
-| AC4: Lint + build                     | ⏳ Pending | —                                                                                                   |
-
-**Note:** No test file exists for onboarding guard. Story 12.4.4 will add test coverage.
+| AC                                    | Status  | Evidence                                                                                       |
+| ------------------------------------- | ------- | ---------------------------------------------------------------------------------------------- |
+| AC1: Free with ≥1 waitlist → redirect | ✅ Done | `onboarding-guard.tsx:29-37` — checks `tier === "free"` + count > 0, redirects to `/dashboard` |
+| AC2: Server-side check                | ✅ Done | Guard runs server-side in `onboarding/layout.tsx:27`                                           |
+| AC3: Pro not affected                 | ✅ Done | Only checks `tier === "free"` — pro/growth pass through                                        |
+| AC4: Lint + build                     | ✅ Done | 0 errors, build passes                                                                         |

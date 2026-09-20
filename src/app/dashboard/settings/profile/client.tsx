@@ -31,15 +31,34 @@ const TABS = [
 
 export default function ProfileClient() {
   const [activeTab, setActiveTab] = useState("profile");
-  const [signingOut, setSigningOut] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [bio, setBio] = useState("");
-  const [loaded, setLoaded] = useState(false);
   const router = useRouter();
+
+  // Security tab state
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState<{
+    type: "ok" | "err";
+    text: string;
+  } | null>(null);
+  const [newEmail, setNewEmail] = useState("");
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailMsg, setEmailMsg] = useState<{
+    type: "ok" | "err";
+    text: string;
+  } | null>(null);
+
+  // Danger Zone state
+  const [exporting, setExporting] = useState(false);
+  const [deleteStep, setDeleteStep] = useState<0 | 1 | 2>(0);
+  const [deleteEmail, setDeleteEmail] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,11 +70,8 @@ export default function ProfileClient() {
         setDisplayName(data.displayName);
         setAvatarUrl(data.avatarUrl);
         setBio(data.bio);
-        setLoaded(true);
       })
-      .catch(() => {
-        if (!cancelled) setLoaded(true);
-      });
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -96,14 +112,6 @@ export default function ProfileClient() {
     }
   }
 
-  async function handleSignOut() {
-    setSigningOut(true);
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/signin");
-    router.refresh();
-  }
-
   const handleAddressSave = useCallback(async (address: string) => {
     const res = await fetch("/api/profile", {
       method: "PATCH",
@@ -116,6 +124,119 @@ export default function ProfileClient() {
       );
     }
   }, []);
+
+  async function handlePasswordChange() {
+    setPasswordSaving(true);
+    setPasswordMsg(null);
+    if (newPassword !== confirmPassword) {
+      setPasswordMsg({ type: "err", text: "New passwords do not match." });
+      setPasswordSaving(false);
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordMsg({
+        type: "err",
+        text: "Password must be at least 6 characters.",
+      });
+      setPasswordSaving(false);
+      return;
+    }
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      if (error) {
+        setPasswordMsg({
+          type: "err",
+          text: error.message.includes("recent")
+            ? "Please sign in again to change your password."
+            : error.message,
+        });
+      } else {
+        setPasswordMsg({ type: "ok", text: "Password updated." });
+        setNewPassword("");
+        setConfirmPassword("");
+      }
+    } catch {
+      setPasswordMsg({ type: "err", text: "Something went wrong." });
+    } finally {
+      setPasswordSaving(false);
+    }
+  }
+
+  async function handleEmailChange() {
+    setEmailSaving(true);
+    setEmailMsg(null);
+    if (!newEmail || !newEmail.includes("@")) {
+      setEmailMsg({ type: "err", text: "Enter a valid email address." });
+      setEmailSaving(false);
+      return;
+    }
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({ email: newEmail });
+      if (error) {
+        setEmailMsg({
+          type: "err",
+          text: error.message.includes("recent")
+            ? "Please sign in again to change your email."
+            : error.message,
+        });
+      } else {
+        setEmailMsg({
+          type: "ok",
+          text: "Check your new email for a confirmation link.",
+        });
+        setNewEmail("");
+      }
+    } catch {
+      setEmailMsg({ type: "err", text: "Something went wrong." });
+    } finally {
+      setEmailSaving(false);
+    }
+  }
+
+  async function handleExportData() {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/profile/export");
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `prewaitlist-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      setPasswordMsg({ type: "err", text: "Export failed. Please try again." });
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/profile", { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "Delete failed");
+      }
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push("/");
+    } catch (e) {
+      setPasswordMsg({
+        type: "err",
+        text: e instanceof Error ? e.message : "Delete failed.",
+      });
+      setDeleting(false);
+    }
+  }
 
   return (
     <div>
@@ -258,45 +379,219 @@ export default function ProfileClient() {
         )}
 
         {activeTab === "security" && (
-          <div className="rounded-xl border border-border bg-card p-6">
-            <h2 className="mb-4 text-h4 font-medium text-foreground">
-              Security
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <h3 className="mb-1 text-body-sm font-medium text-foreground">
-                  Reset password
-                </h3>
-                <p className="mb-3 text-body-sm text-muted-foreground">
-                  Send a password reset email to your registered address.
-                </p>
+          <div className="space-y-6">
+            {/* Change Password */}
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="mb-4 text-h4 font-medium text-foreground">
+                Change password
+              </h2>
+              <div className="space-y-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-foreground">
+                    New password
+                  </label>
+                  <Input
+                    type="password"
+                    placeholder="New password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Confirm password
+                  </label>
+                  <Input
+                    type="password"
+                    placeholder="Confirm new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+                {passwordMsg && (
+                  <p
+                    className={`text-sm ${passwordMsg.type === "ok" ? "text-accent" : "text-destructive"}`}
+                  >
+                    {passwordMsg.text}
+                  </p>
+                )}
                 <button
                   type="button"
-                  disabled
-                  className="rounded-lg border border-border bg-card px-4 py-2 text-body-sm font-medium text-muted-foreground opacity-50 cursor-not-allowed"
+                  onClick={handlePasswordChange}
+                  disabled={passwordSaving || !newPassword || !confirmPassword}
+                  className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Reset password
+                  {passwordSaving ? "Updating…" : "Update password"}
                 </button>
               </div>
-              <div className="border-t border-border pt-4">
-                <h3 className="mb-1 text-body-sm font-medium text-foreground">
-                  Sign out
-                </h3>
-                <p className="mb-3 text-body-sm text-muted-foreground">
-                  Sign out of your account on this device.
-                </p>
+            </div>
+
+            {/* Change Email */}
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="mb-4 text-h4 font-medium text-foreground">
+                Change email
+              </h2>
+              <div className="space-y-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Current email
+                  </label>
+                  <Input
+                    value={profile?.email || ""}
+                    disabled
+                    className="opacity-60"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-foreground">
+                    New email
+                  </label>
+                  <Input
+                    type="email"
+                    placeholder="new@email.com"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    A confirmation link will be sent to the new email.
+                  </p>
+                </div>
+                {emailMsg && (
+                  <p
+                    className={`text-sm ${emailMsg.type === "ok" ? "text-accent" : "text-destructive"}`}
+                  >
+                    {emailMsg.text}
+                  </p>
+                )}
                 <button
                   type="button"
-                  onClick={handleSignOut}
-                  disabled={signingOut}
-                  className="rounded-lg border border-border bg-card px-4 py-2 text-body-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+                  onClick={handleEmailChange}
+                  disabled={emailSaving || !newEmail}
+                  className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {signingOut ? "Signing out…" : "Sign out"}
+                  {emailSaving ? "Updating…" : "Update email"}
                 </button>
               </div>
             </div>
           </div>
         )}
+      </div>
+
+      {/* Danger Zone */}
+      <div className="mt-8 rounded-xl border border-destructive/50 bg-destructive/5 p-6">
+        <h2 className="mb-1 text-h4 font-medium text-destructive">
+          Danger Zone
+        </h2>
+        <p className="mb-6 text-body-sm text-muted-foreground">
+          Irreversible actions. Please proceed with caution.
+        </p>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-body-sm font-medium text-foreground">
+                Export my data
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Download a JSON file with your profile, waitlists, and
+                subscribers.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleExportData}
+              disabled={exporting}
+              className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 disabled:opacity-50"
+            >
+              {exporting ? "Exporting…" : "Export data"}
+            </button>
+          </div>
+
+          {/* Delete Account */}
+          <div className="border-t border-destructive/20 pt-4">
+            {deleteStep === 0 && (
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-body-sm font-medium text-foreground">
+                    Delete account
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Permanently delete your account and all associated data.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDeleteStep(1)}
+                  className="rounded-lg border border-destructive/50 bg-card px-4 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+                >
+                  Delete account
+                </button>
+              </div>
+            )}
+
+            {deleteStep === 1 && (
+              <div>
+                <p className="mb-3 text-body-sm text-foreground">
+                  <strong>Warning:</strong> This will permanently delete your
+                  profile, all waitlists, subscribers, and updates. This action
+                  cannot be undone.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteStep(2);
+                      setDeleteEmail("");
+                    }}
+                    className="rounded-lg border border-destructive/50 bg-card px-4 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+                  >
+                    Continue
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteStep(0)}
+                    className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {deleteStep === 2 && (
+              <div>
+                <p className="mb-3 text-body-sm text-foreground">
+                  Type your email <strong>{profile?.email}</strong> to confirm
+                  deletion:
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    type="email"
+                    placeholder="your@email.com"
+                    value={deleteEmail}
+                    onChange={(e) => setDeleteEmail(e.target.value)}
+                    className="max-w-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    disabled={deleting || deleteEmail !== profile?.email}
+                    className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {deleting ? "Deleting…" : "Permanently delete"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteStep(0)}
+                    disabled={deleting}
+                    className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

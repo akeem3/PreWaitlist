@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { anonymizeEmail } from "@/lib/format";
 
 export async function GET() {
   const supabase = await createClient();
@@ -107,6 +109,47 @@ export async function PATCH(request: NextRequest) {
       .from("waitlists")
       .update({ business_address: body.business_address.trim() })
       .eq("founder_id", user.id);
+  }
+
+  return NextResponse.json({ success: true });
+}
+
+export async function DELETE() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const admin = createAdminClient();
+
+  // Delete waitlists (cascades to subscribers, qualification_questions, milestone_rewards, founder_updates)
+  const { data: waitlists } = await admin
+    .from("waitlists")
+    .select("id")
+    .eq("founder_id", user.id);
+
+  if (waitlists && waitlists.length > 0) {
+    const ids = waitlists.map((w) => w.id);
+    await admin.from("waitlists").delete().in("id", ids);
+  }
+
+  // Delete founder profile
+  await admin.from("founder_profiles").delete().eq("id", user.id);
+
+  // Delete auth user (final step — no going back)
+  const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
+
+  if (deleteError) {
+    return NextResponse.json(
+      { error: "Failed to delete account: " + deleteError.message },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ success: true });

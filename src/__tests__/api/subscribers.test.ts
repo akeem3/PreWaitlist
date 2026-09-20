@@ -184,4 +184,31 @@ describe("POST /api/subscribers", () => {
     const data = await response.json();
     expect(data.referral_code).toHaveLength(8);
   });
+
+  it("increments subscriber_count via RPC after successful insert", async () => {
+    mockSupabase.__queue.push({
+      data: {
+        id: "sub-1",
+        email: "test@test.com",
+        referral_code: "abc12345",
+        position: 1,
+      },
+      error: null,
+    });
+
+    const request = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      body: JSON.stringify({
+        waitlist_id: "waitlist-1",
+        email: "test@test.com",
+      }),
+    });
+
+    await POST(request);
+
+    expect(mockSupabase.rpc).toHaveBeenCalledWith(
+      "increment_subscriber_count",
+      { p_waitlist_id: "waitlist-1" }
+    );
+  });
 });

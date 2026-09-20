@@ -1,6 +1,6 @@
 # Story 12.4.5 — Account Security & GDPR Compliance
 
-**Status:** ready
+**Status:** done
 **Epic:** 12.4 — Pre-Epic 13 Gaps
 
 ## Story
