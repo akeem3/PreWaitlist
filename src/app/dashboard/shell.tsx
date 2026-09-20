@@ -8,6 +8,10 @@ import {
   useContext,
 } from "react";
 import { Sidebar } from "../../../components/dashboard/sidebar";
+import {
+  UpgradeModal,
+  isSuppressed,
+} from "../../../components/dashboard/upgrade-modal";
 import { useRouter, useSearchParams } from "next/navigation";
 import { STORAGE_KEY } from "../../../components/dashboard/waitlist-switcher";
 
@@ -22,6 +26,7 @@ interface WaitlistRow {
 interface DashboardContextValue {
   tier: string;
   activeWaitlistId: string;
+  setUpgradeModal: (value: { open: boolean; triggerSource: string }) => void;
 }
 
 export const DashboardContext = createContext<DashboardContextValue | null>(
@@ -36,6 +41,18 @@ export function useDashboardTier(): string | null {
 export function useActiveWaitlistId(): string | null {
   const ctx = useContext(DashboardContext);
   return ctx?.activeWaitlistId ?? null;
+}
+
+export function useUpgradeModal() {
+  const ctx = useContext(DashboardContext);
+  return useCallback(
+    (triggerSource: string) => {
+      if (ctx?.setUpgradeModal) {
+        ctx.setUpgradeModal({ open: true, triggerSource });
+      }
+    },
+    [ctx]
+  );
 }
 
 interface DashboardShellProps {
@@ -62,6 +79,10 @@ export default function DashboardShell({
   tier,
 }: DashboardShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [upgradeModal, setUpgradeModal] = useState<{
+    open: boolean;
+    triggerSource: string;
+  }>({ open: false, triggerSource: "" });
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeWaitlistId, setActiveWaitlistId] = useState(() =>
@@ -118,6 +139,11 @@ export default function DashboardShell({
     }
   }
 
+  function handleUpgradeClick(triggerSource: string) {
+    if (isSuppressed(triggerSource)) return;
+    setUpgradeModal({ open: true, triggerSource });
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Sidebar
@@ -129,6 +155,13 @@ export default function DashboardShell({
         tier={tier}
         isArchived={activeWaitlist?.is_archived ?? false}
         onUnarchive={handleUnarchive}
+        onUpgradeClick={handleUpgradeClick}
+      />
+
+      <UpgradeModal
+        open={upgradeModal.open}
+        onOpenChange={(open) => setUpgradeModal((prev) => ({ ...prev, open }))}
+        triggerSource={upgradeModal.triggerSource}
       />
 
       <button
@@ -148,7 +181,11 @@ export default function DashboardShell({
 
       <main className="min-h-screen lg:ml-67">
         <DashboardContext.Provider
-          value={{ tier, activeWaitlistId: effectiveId }}
+          value={{
+            tier,
+            activeWaitlistId: effectiveId,
+            setUpgradeModal: (v) => setUpgradeModal(v),
+          }}
         >
           {children}
         </DashboardContext.Provider>

@@ -90,7 +90,7 @@ NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
 
 ### Story 13.0 — Paddle Integration Foundation
 
-**Status:** ready
+**Status:** done
 **Story:** As a founder, I want to upgrade to Pro via Paddle checkout so that I can access premium features. The integration must work in sandbox mode now and transition to production by swapping env vars only.
 
 **Acceptance Criteria (EARS):**
@@ -129,7 +129,7 @@ NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
 
 ### Story 13.1 — Upgrade Modal (7 Triggers)
 
-**Status:** ready
+**Status:** done
 **Story:** As a free founder, I want to see a context-sensitive upgrade modal when I hit a feature limit so that I understand what I'm missing and how to get it.
 
 **Acceptance Criteria (EARS):**
@@ -161,7 +161,7 @@ NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
 
 ### Story 13.2 — Feature Gating Enforcement
 
-**Status:** ready
+**Status:** done
 **Story:** As a system, I want consistent tier-based feature access enforcement so that Free founders cannot access Pro features through any path.
 
 **Acceptance Criteria (EARS):**

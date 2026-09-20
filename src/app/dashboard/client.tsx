@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { useDashboardTier } from "./shell";
+import { useDashboardTier, useUpgradeModal } from "./shell";
 
 const SignupChart = dynamic(
   () => import("../../../components/dashboard/signup-chart"),
@@ -114,6 +114,7 @@ export default function DashboardClient({
   waitlistId,
 }: DashboardClientProps) {
   const tier = useDashboardTier() || tierProp || "free";
+  const triggerUpgrade = useUpgradeModal();
   const [copied, setCopied] = useState(false);
   const [statsData, setStatsData] = useState<{
     current: {
@@ -499,7 +500,11 @@ export default function DashboardClient({
                 subdomain={subdomain}
                 waitlistId={waitlistId}
               />
-              <WarmthPanel tier={tier} warmthData={warmthData} />
+              <WarmthPanel
+                tier={tier}
+                warmthData={warmthData}
+                onUpgradeClick={() => triggerUpgrade("warmth")}
+              />
             </div>
 
             <div className="mb-6">

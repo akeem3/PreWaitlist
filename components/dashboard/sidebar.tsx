@@ -23,6 +23,7 @@ interface SidebarProps {
   tier?: string;
   isArchived?: boolean;
   onUnarchive?: () => void;
+  onUpgradeClick?: (triggerSource: string) => void;
 }
 
 interface NavItem {
@@ -248,6 +249,7 @@ export function Sidebar({
   tier = "free",
   isArchived,
   onUnarchive,
+  onUpgradeClick,
 }: SidebarProps) {
   const pathname = usePathname();
   const NAV_SECTIONS = buildNavSections(activeWaitlistId);
@@ -307,11 +309,17 @@ export function Sidebar({
                 const isActive = item.href.split("?")[0] === pathname;
 
                 if (isLocked) {
+                  const triggerSource =
+                    item.label === "Broadcast" ? "broadcast" : "warmth";
                   return (
-                    <span
+                    <button
                       key={item.label}
-                      title="Pro feature — upgrade to unlock"
-                      className="flex items-center gap-3 rounded-[10px] px-3 py-2 text-body-sm text-muted-foreground opacity-50 cursor-not-allowed"
+                      type="button"
+                      onClick={() => {
+                        onUpgradeClick?.(triggerSource);
+                        onClose();
+                      }}
+                      className="flex w-full items-center gap-3 rounded-[10px] px-3 py-2 text-body-sm text-muted-foreground opacity-50 hover:opacity-75 transition-opacity"
                     >
                       {item.icon}
                       {item.label}
@@ -338,7 +346,7 @@ export function Sidebar({
                           strokeLinecap="round"
                         />
                       </svg>
-                    </span>
+                    </button>
                   );
                 }
 

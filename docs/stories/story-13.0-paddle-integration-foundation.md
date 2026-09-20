@@ -44,22 +44,22 @@ T5 (AC10) Lint + build
 
 ## Implementation Status
 
-**Status: NOT IMPLEMENTED**
+**Status: DONE**
 
-| AC                                        | Status      | Evidence                                                                     |
-| ----------------------------------------- | ----------- | ---------------------------------------------------------------------------- |
-| AC1: Install Paddle packages              | ❌ Not done | `@paddle/paddle-js` and `@paddle/paddle-node-sdk` absent from `package.json` |
-| AC2: usePaddle hook                       | ❌ Not done | No `src/hooks/` directory exists                                             |
-| AC3: Lazy load Paddle.js                  | ❌ Not done | —                                                                            |
-| AC4: POST /api/billing/checkout           | ❌ Not done | No `src/app/api/billing/` directory                                          |
-| AC5: POST /api/webhooks/paddle            | ❌ Not done | Only `src/app/api/webhooks/resend/` exists                                   |
-| AC6: subscription.created → tier update   | ❌ Not done | —                                                                            |
-| AC7: subscription.canceled → tier revert  | ❌ Not done | —                                                                            |
-| AC8: customData with user_id, waitlist_id | ❌ Not done | —                                                                            |
-| AC9: req.text() for webhook               | ❌ Not done | —                                                                            |
-| AC10: Lint + build                        | ⏳ Pending  | —                                                                            |
+| AC                                        | Status  | Evidence                                                                     |
+| ----------------------------------------- | ------- | ---------------------------------------------------------------------------- |
+| AC1: Install Paddle packages              | ✅ Done | `@paddle/paddle-js@1.6.5` + `@paddle/paddle-node-sdk@3.10.0` in package.json |
+| AC2: usePaddle hook                       | ✅ Done | `src/hooks/use-paddle.ts` — `initializePaddle()` with token + environment    |
+| AC3: Lazy load Paddle.js                  | ✅ Done | `useEffect` only runs on client mount, ref guards double-init                |
+| AC4: POST /api/billing/checkout           | ✅ Done | `src/app/api/billing/checkout/route.ts` — returns priceId + customData       |
+| AC5: POST /api/webhooks/paddle            | ✅ Done | `src/app/api/webhooks/paddle/route.ts` — unmarshal + signature verify        |
+| AC6: subscription.created → tier update   | ✅ Done | Updates `founder_profiles.tier` to "pro" + stores `paddle_subscription_id`   |
+| AC7: subscription.canceled → tier revert  | ✅ Done | Reverts `founder_profiles.tier` to "free" + nulls `paddle_subscription_id`   |
+| AC8: customData with user_id, waitlist_id | ✅ Done | Checkout route assembles `{ user_id, waitlist_id, trigger_source }`          |
+| AC9: req.text() for webhook               | ✅ Done | `await req.text()` for raw body before unmarshal                             |
+| AC10: Lint + build                        | ✅ Done | 0 errors, build passes                                                       |
 
-**Note:** `.env.local` has Paddle sandbox keys from Story 0.5 (`PADDLE_API_KEY`, `PADDLE_CLIENT_TOKEN`, `PADDLE_WEBHOOK_SECRET`) but nothing uses them. `PADDLE_CLIENT_TOKEN` needs `NEXT_PUBLIC_` prefix rename.
+**Note:** `.env.local` has Paddle sandbox keys from Story 0.5. `PADDLE_CLIENT_TOKEN` renamed to `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`. `NEXT_PUBLIC_PADDLE_ENV=sandbox` added.
 
 ## Files to Create/Modify
 

@@ -4,6 +4,7 @@ import { Button } from "../ui/button";
 
 interface PlanComparisonProps {
   currentTier: string;
+  onUpgradeClick?: () => void;
 }
 
 const plans = [
@@ -41,7 +42,10 @@ const plans = [
   },
 ];
 
-export function PlanComparison({ currentTier }: PlanComparisonProps) {
+export function PlanComparison({
+  currentTier,
+  onUpgradeClick,
+}: PlanComparisonProps) {
   const isPro = currentTier === "pro";
 
   return (
@@ -115,12 +119,13 @@ export function PlanComparison({ currentTier }: PlanComparisonProps) {
                   variant={plan.name === "Pro" ? "primary" : "secondary"}
                   size="sm"
                   className="w-full"
-                  disabled
+                  disabled={plan.name !== "Pro"}
+                  onClick={plan.name === "Pro" ? onUpgradeClick : undefined}
                 >
                   {plan.name === "Pro"
                     ? isPro
                       ? "Your current plan"
-                      : "Upgrade (coming soon)"
+                      : "Upgrade to Pro"
                     : "Downgrade"}
                 </Button>
               )}

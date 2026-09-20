@@ -13,6 +13,7 @@ interface WarmthData {
 interface WarmthPanelProps {
   tier?: string;
   warmthData?: WarmthData | null;
+  onUpgradeClick?: () => void;
 }
 
 function WarmthBar({
@@ -48,6 +49,7 @@ function WarmthBar({
 export default function WarmthPanel({
   tier = "free",
   warmthData: externalData,
+  onUpgradeClick,
 }: WarmthPanelProps) {
   const [internalData, setInternalData] = useState<WarmthData | null>(null);
   const [internalLoading, setInternalLoading] = useState(true);
@@ -95,14 +97,18 @@ export default function WarmthPanel({
             </div>
           ))}
         </div>
-        <div className="absolute inset-0 flex flex-col items-center justify-center rounded-[var(--card-radius)] bg-card/80">
+        <button
+          type="button"
+          onClick={onUpgradeClick}
+          className="absolute inset-0 flex flex-col items-center justify-center rounded-[var(--card-radius)] bg-card/80 hover:bg-card/90 transition-colors"
+        >
           <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">
             Pro
           </span>
           <p className="text-body-sm text-muted-foreground">
             Upgrade to Pro to see warmth scores
           </p>
-        </div>
+        </button>
       </div>
     );
   }

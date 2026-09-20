@@ -8,6 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@paddle/paddle-js':
+        specifier: ^1.6.5
+        version: 1.6.5
+      '@paddle/paddle-node-sdk':
+        specifier: ^3.10.0
+        version: 3.10.0
       '@supabase/ssr':
         specifier: ^0.12.4
         version: 0.12.4(@supabase/supabase-js@2.116.0)
@@ -502,6 +508,13 @@ packages:
 
   '@oxc-project/types@0.139.0':
     resolution: {integrity: sha512-r9gHphtCs+1M7J0pw6Sn/hh/Wpa/iQrOOkrNAlVLF/gHq+/CJmHIWKKUUhdWjcD6CIa8idarspCsASiXCXvFUw==}
+
+  '@paddle/paddle-js@1.6.5':
+    resolution: {integrity: sha512-uFRvptUzYRqRlqTU5XmfcZWC9BGVYpZNdANd3giJjZbJlHesnE4gn8PyjtYpesU1ar2ZGPuJxHvrrSIV9jjdVw==}
+
+  '@paddle/paddle-node-sdk@3.10.0':
+    resolution: {integrity: sha512-njqp+L6e/2aR99EYh/Ulyu6B9sIyVERTFclGOznKmLZcy11pAwHoHyIgq1BUH1ybQH+YmJQmrrUQC/Rfg8JAAw==}
+    engines: {node: '>=20'}
 
   '@playwright/test@1.62.0':
     resolution: {integrity: sha512-9zOJ6ZQRAena31MpOH9VSzIz8Ou3YJ/wtY/eQm5T2uhfhG7/U3COrMS8xOtUrZrp9OgdmzEnIYODye3nY1VqzA==}
@@ -3147,6 +3160,10 @@ snapshots:
   '@nolyfill/is-core-module@1.0.39': {}
 
   '@oxc-project/types@0.139.0': {}
+
+  '@paddle/paddle-js@1.6.5': {}
+
+  '@paddle/paddle-node-sdk@3.10.0': {}
 
   '@playwright/test@1.62.0':
     dependencies:

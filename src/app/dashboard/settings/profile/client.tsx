@@ -12,6 +12,7 @@ import { PlanComparison } from "../../../../../components/billing/plan-compariso
 import { InvoiceHistory } from "../../../../../components/billing/invoice-history";
 import { BillingDetails } from "../../../../../components/billing/billing-details";
 import { CancellationFlow } from "../../../../../components/billing/cancellation-flow";
+import { useUpgradeModal } from "../../shell";
 
 interface ProfileData {
   displayName: string;
@@ -38,6 +39,7 @@ export default function ProfileClient() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [bio, setBio] = useState("");
   const router = useRouter();
+  const triggerUpgrade = useUpgradeModal();
 
   // Security tab state
   const [newPassword, setNewPassword] = useState("");
@@ -368,7 +370,10 @@ export default function ProfileClient() {
               tier={profile?.tier || "free"}
               waitlistCount={1}
             />
-            <PlanComparison currentTier={profile?.tier || "free"} />
+            <PlanComparison
+              currentTier={profile?.tier || "free"}
+              onUpgradeClick={() => triggerUpgrade("billing")}
+            />
             <BillingDetails
               businessAddress={profile?.businessAddress || ""}
               onAddressSave={handleAddressSave}

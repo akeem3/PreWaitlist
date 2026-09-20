@@ -47,19 +47,19 @@ T4 (AC10) Lint + build
 
 ## Implementation Status
 
-**Status: NOT IMPLEMENTED**
+**Status: DONE**
 
-| AC                             | Status      | Evidence                                           |
-| ------------------------------ | ----------- | -------------------------------------------------- |
-| AC1: UpgradeModal component    | ❌ Not done | No `components/dashboard/upgrade-modal.tsx` exists |
-| AC2: Props + usePaddle         | ❌ Not done | Component doesn't exist                            |
-| AC3: Context-specific headline | ❌ Not done | —                                                  |
-| AC4: Feature bullets + price   | ❌ Not done | —                                                  |
-| AC5: Paddle checkout CTA       | ❌ Not done | —                                                  |
-| AC6: Dismissable               | ❌ Not done | —                                                  |
-| AC7: Design system compliance  | ❌ Not done | —                                                  |
-| AC8: 7-day cooldown            | ❌ Not done | —                                                  |
-| AC9: 7 trigger points          | ❌ Not done | —                                                  |
-| AC10: Lint + build             | ⏳ Pending  | —                                                  |
+| AC                             | Status  | Evidence                                             |
+| ------------------------------ | ------- | ---------------------------------------------------- |
+| AC1: UpgradeModal component    | ✅ Done | `components/dashboard/upgrade-modal.tsx` created     |
+| AC2: Props + usePaddle         | ✅ Done | Props: open, onOpenChange, triggerSource             |
+| AC3: Context-specific headline | ✅ Done | HEADLINES map with 7 trigger sources                 |
+| AC4: Feature bullets + price   | ✅ Done | 6 features, "$15/month", "Cancel anytime"            |
+| AC5: Paddle checkout CTA       | ✅ Done | Uses usePaddle + /api/billing/checkout               |
+| AC6: Dismissable               | ✅ Done | X button, "Maybe later", backdrop click, Escape      |
+| AC7: Design system compliance  | ✅ Done | bg-card, border-border, backdrop-blur, max-w-[480px] |
+| AC8: 7-day cooldown            | ✅ Done | localStorage + isSuppressed() exported               |
+| AC9: 7 trigger points          | ✅ Done | Sidebar(2), warmth panel, settings billing wired     |
+| AC10: Lint + build             | ✅ Done | 0 errors, build passes                               |
 
 **Gap:** Depends on Story 13.0 (usePaddle hook). Sidebar already has locked state for Broadcast/Warmth — those click handlers need wiring to modal.

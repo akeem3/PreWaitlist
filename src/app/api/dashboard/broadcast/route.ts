@@ -5,6 +5,7 @@ import { resend } from "@/lib/resend";
 import { resolveFromAddress, buildBroadcastEmailFooter } from "@/lib/email";
 import { generateUnsubscribeUrl } from "@/lib/unsubscribe";
 import { isEmailBounced } from "@/lib/bounces";
+import { requirePro } from "@/lib/tier-gating";
 
 const BATCH_SIZE = 100;
 
@@ -25,11 +26,9 @@ export async function POST(req: NextRequest) {
     .eq("id", user.id)
     .single();
 
-  if (profile?.tier !== "pro") {
-    return NextResponse.json(
-      { error: "Pro subscription required" },
-      { status: 403 }
-    );
+  const tierCheck = requirePro(profile?.tier ?? "free", "Broadcast");
+  if (!tierCheck.allowed) {
+    return NextResponse.json({ error: tierCheck.reason }, { status: 403 });
   }
 
   const body = await req.json();

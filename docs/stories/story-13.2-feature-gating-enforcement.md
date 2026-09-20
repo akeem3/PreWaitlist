@@ -44,15 +44,15 @@ T5 (AC6) Lint + build
 
 ## Implementation Status
 
-**Status: NOT IMPLEMENTED**
+**Status: DONE**
 
-| AC                           | Status      | Evidence                                                                            |
-| ---------------------------- | ----------- | ----------------------------------------------------------------------------------- |
-| AC1: isPro() utility         | ❌ Not done | No `src/lib/tier-gating.ts` exists                                                  |
-| AC2: requirePro() utility    | ❌ Not done | —                                                                                   |
-| AC3: Server-side enforcement | ⚠️ Partial  | Broadcast route has ad-hoc 403; warmth route has ad-hoc check. No formalized layer. |
-| AC4: Client-side enforcement | ⚠️ Partial  | Sidebar `isLocked` exists, warmth panel overlay exists. No upgrade modal wiring.    |
-| AC5: DashboardContext tier   | ✅ Done     | `DashboardContext` in `shell.tsx` exposes `tier`                                    |
-| AC6: Lint + build            | ⏳ Pending  | —                                                                                   |
+| AC                           | Status  | Evidence                                                             |
+| ---------------------------- | ------- | -------------------------------------------------------------------- |
+| AC1: isPro() utility         | ✅ Done | `src/lib/tier-gating.ts` — `isPro(tier)`                             |
+| AC2: requirePro() utility    | ✅ Done | `src/lib/tier-gating.ts` — `requirePro(tier, feature)`               |
+| AC3: Server-side enforcement | ✅ Done | broadcast, warmth, verify-domain routes use `requirePro()`           |
+| AC4: Client-side enforcement | ✅ Done | Sidebar locked items + warmth panel overlay wire to UpgradeModal     |
+| AC5: DashboardContext tier   | ✅ Done | `DashboardContext` in `shell.tsx` exposes `tier` + `setUpgradeModal` |
+| AC6: Lint + build            | ✅ Done | 0 errors, build passes                                               |
 
 **Gap:** Ad-hoc gating exists in 3-4 places but is not centralized. `isPro` appears only as a local variable in `onboarding/5/page.tsx` (line 21). No reusable utility.
