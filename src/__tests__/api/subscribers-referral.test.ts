@@ -52,6 +52,14 @@ describe("POST /api/subscribers — referral tracking", () => {
   });
 
   it("stores referrer_id on valid referral", async () => {
+    // Cap check query
+    mockSupabase.__queue.push({
+      data: {
+        subscriber_count: 10,
+        founder_profiles: { tier: "free" },
+      },
+      error: null,
+    });
     mockSupabase.__queue.push(
       { data: { id: "referrer-1", waitlist_id: "wl-1" }, error: null },
       {
@@ -82,6 +90,14 @@ describe("POST /api/subscribers — referral tracking", () => {
   });
 
   it("rejects invalid referral code", async () => {
+    // Cap check query
+    mockSupabase.__queue.push({
+      data: {
+        subscriber_count: 10,
+        founder_profiles: { tier: "free" },
+      },
+      error: null,
+    });
     mockSupabase.__queue.push({ data: null, error: null });
 
     const request = new NextRequest("http://localhost/api/subscribers", {
@@ -98,6 +114,14 @@ describe("POST /api/subscribers — referral tracking", () => {
   });
 
   it("rejects cross-waitlist referral code", async () => {
+    // Cap check query
+    mockSupabase.__queue.push({
+      data: {
+        subscriber_count: 10,
+        founder_profiles: { tier: "free" },
+      },
+      error: null,
+    });
     mockSupabase.__queue.push({
       data: { id: "referrer-1", waitlist_id: "wl-other" },
       error: null,
@@ -117,6 +141,14 @@ describe("POST /api/subscribers — referral tracking", () => {
   });
 
   it("handles self-referral by nullifying referrer_id", async () => {
+    // Cap check query
+    mockSupabase.__queue.push({
+      data: {
+        subscriber_count: 10,
+        founder_profiles: { tier: "free" },
+      },
+      error: null,
+    });
     mockSupabase.__queue.push(
       { data: { id: "sub-1", waitlist_id: "wl-1" }, error: null },
       {

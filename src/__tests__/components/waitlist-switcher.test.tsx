@@ -140,7 +140,7 @@ describe("WaitlistSwitcher", () => {
     render(<WaitlistSwitcher {...defaultProps} tier="pro" />);
 
     await user.click(screen.getByRole("button"));
-    const link = screen.getByText("Create new waitlist");
+    const link = screen.getByText("Add New Waitlist");
     expect(link).toBeDefined();
     expect(link.closest("a")?.getAttribute("href")).toBe("/onboarding/1");
   });
@@ -152,7 +152,9 @@ describe("WaitlistSwitcher", () => {
     await user.click(screen.getByRole("button"));
     const upgradeBtn = screen.getByText("Upgrade to add");
     expect(upgradeBtn).toBeDefined();
-    expect(upgradeBtn.closest("a")?.getAttribute("href")).toBe("/dashboard");
+    expect(upgradeBtn.closest("a")?.getAttribute("href")).toBe(
+      "/dashboard/settings/profile?tab=billing"
+    );
   });
 
   it("exports STORAGE_KEY constant", () => {

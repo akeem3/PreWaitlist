@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 const sectionLinks = [
   { label: "Problem", id: "problem" },
@@ -105,14 +106,17 @@ function Header() {
 
         <nav className="hidden items-center gap-4 md:flex">
           <Link
-            href="/signin"
-            className="text-body-sm font-medium text-muted-foreground transition-colors duration-normal hover:text-accent"
+            href="/onboarding/1"
+            className="inline-flex h-9 items-center rounded-(--button-radius) bg-accent px-3.5 text-body-sm text-accent-foreground transition-colors duration-normal hover:bg-accent-hover"
           >
-            Sign in
+            Build it free
           </Link>
+        </nav>
+
+        <nav className="flex items-center gap-3 md:hidden">
           <Link
             href="/onboarding/1"
-            className="inline-flex h-10 items-center rounded-(--button-radius) bg-accent px-4 text-body-sm text-accent-foreground transition-colors duration-normal hover:bg-accent-hover"
+            className="inline-flex h-9 items-center rounded-(--button-radius) bg-accent px-3.5 text-body-sm text-accent-foreground transition-colors duration-normal hover:bg-accent-hover"
           >
             Build it free
           </Link>
@@ -141,76 +145,67 @@ function Header() {
         </button>
       </div>
 
-      {menuOpen && (
-        <div className="fixed inset-0 md:hidden" style={{ zIndex: 30 }}>
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setMenuOpen(false)}
-          />
-          <div
-            className="absolute right-0 top-0 flex h-full w-72 flex-col bg-background p-6"
-            style={{ zIndex: 40, boxShadow: "var(--shadow-float)" }}
-          >
-            <div className="mb-8 flex items-center justify-between">
-              <span className="flex items-center">
-                <Image
-                  src="/PreWaitlist-logo.svg"
-                  alt="PreWaitlist"
-                  width={132}
-                  height={45}
-                />
-              </span>
-              <button
-                type="button"
-                onClick={() => setMenuOpen(false)}
-                aria-label="Close menu"
-              >
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+      {menuOpen &&
+        createPortal(
+          <div className="fixed inset-0 md:hidden" style={{ zIndex: 9999 }}>
+            <div
+              className="absolute inset-0 bg-black/40"
+              onClick={() => setMenuOpen(false)}
+            />
+            <div className="absolute right-0 top-0 flex w-72 flex-col rounded-bl-2xl bg-background p-6 shadow-[var(--shadow-float)]">
+              <div className="mb-8 flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen(false)}
+                  aria-label="Close menu"
                 >
-                  <path
-                    d="M18 6L6 18M6 6L18 18"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </button>
-            </div>
-            <nav className="flex flex-col gap-4">
-              {isHome &&
-                sectionLinks.map((link) => (
-                  <button
-                    key={link.id}
-                    type="button"
-                    onClick={() => handleNavClick(link.id)}
-                    className="text-left text-body font-medium text-foreground transition-colors duration-normal hover:text-accent"
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
                   >
-                    {link.label}
-                  </button>
-                ))}
-              <Link
-                href="/signin"
-                onClick={() => setMenuOpen(false)}
-                className="text-body font-medium text-foreground transition-colors duration-normal hover:text-accent"
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/onboarding/1"
-                onClick={() => setMenuOpen(false)}
-                className="inline-flex h-10 items-center justify-center rounded-(--button-radius) bg-accent px-4 text-body text-accent-foreground transition-colors duration-normal hover:bg-accent-hover"
-              >
-                Build it free
-              </Link>
-            </nav>
-          </div>
-        </div>
-      )}
+                    <path
+                      d="M18 6L6 18M6 6L18 18"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <nav className="flex flex-col">
+                <Link
+                  href="/signin"
+                  onClick={() => setMenuOpen(false)}
+                  className="text-body font-medium text-accent transition-colors duration-normal hover:text-accent-hover border-b border-border pb-4 mb-4"
+                >
+                  Sign in
+                </Link>
+                {isHome &&
+                  sectionLinks.map((link) => (
+                    <button
+                      key={link.id}
+                      type="button"
+                      onClick={() => handleNavClick(link.id)}
+                      className="text-left text-body font-medium text-foreground transition-colors duration-normal hover:text-accent py-2"
+                    >
+                      {link.label}
+                    </button>
+                  ))}
+                <Link
+                  href="/onboarding/1"
+                  onClick={() => setMenuOpen(false)}
+                  className="mt-4 inline-flex h-10 items-center justify-center rounded-(--button-radius) bg-accent px-4 text-body text-accent-foreground transition-colors duration-normal hover:bg-accent-hover"
+                >
+                  Build it free
+                </Link>
+              </nav>
+            </div>
+          </div>,
+          document.body
+        )}
     </header>
   );
 }
@@ -256,7 +251,7 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col overflow-x-hidden">
       <Header />
       <main className="flex-1">{children}</main>
       <Footer />

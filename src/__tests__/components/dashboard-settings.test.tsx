@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/dashboard/settings",
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
 
 vi.mock("next/image", () => ({
@@ -29,57 +29,44 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-import SettingsClient from "../../app/dashboard/settings/client";
+vi.mock("../../../lib/supabase/client", () => ({
+  createClient: () => ({
+    auth: { signOut: vi.fn().mockResolvedValue({}) },
+  }),
+}));
 
-const baseProps = {
-  waitlistId: "w1",
-  waitlistName: "Acme",
-  logoUrl: null as string | null,
-  senderName: null,
-  coldThreshold: 40,
-  sendingDomain: null,
-  tier: "free",
-  paddleSubscriptionId: null,
-};
+import SettingsHubClient from "../../app/dashboard/settings/client";
 
-describe("Settings", () => {
+describe("Settings Hub", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("renders settings page heading", () => {
-    render(<SettingsClient {...baseProps} />);
+    render(<SettingsHubClient waitlistCount={1} />);
     expect(
       screen.getByRole("heading", { level: 1, name: "Settings" })
     ).toBeDefined();
   });
 
-  it("renders sender name input", () => {
-    render(<SettingsClient {...baseProps} />);
-    expect(screen.getByText("Sender name")).toBeDefined();
+  it("renders waitlist settings category", () => {
+    render(<SettingsHubClient waitlistCount={2} />);
+    expect(screen.getByText("Waitlist Settings")).toBeDefined();
+    expect(screen.getByText("2 waitlists")).toBeDefined();
   });
 
-  it("renders cold threshold section", () => {
-    render(<SettingsClient {...baseProps} />);
-    expect(screen.getByText("Cold threshold (%)")).toBeDefined();
+  it("renders profile category", () => {
+    render(<SettingsHubClient waitlistCount={1} />);
+    expect(screen.getByText("Profile")).toBeDefined();
   });
 
-  it("upgrade button has coming soon title for free tier", () => {
-    render(<SettingsClient {...baseProps} tier="free" />);
-    const upgradeBtns = screen.getAllByText("Upgrade to Pro");
-    const billingSection = upgradeBtns.find(
-      (el) =>
-        el.closest("button")?.getAttribute("title") ===
-        "Paddle billing coming soon"
-    );
-    expect(billingSection).toBeDefined();
+  it("shows sign out button", () => {
+    render(<SettingsHubClient waitlistCount={0} />);
+    expect(screen.getByText("Sign out")).toBeDefined();
   });
 
-  it("manage billing button appears for pro tier", () => {
-    render(<SettingsClient {...baseProps} tier="pro" />);
-    const billingBtn = screen.getByText("Manage billing").closest("button");
-    expect(billingBtn?.getAttribute("title")).toBe(
-      "Paddle billing coming soon"
-    );
+  it("shows waitlist count correctly for single waitlist", () => {
+    render(<SettingsHubClient waitlistCount={1} />);
+    expect(screen.getByText("1 waitlist")).toBeDefined();
   });
 });

@@ -60,6 +60,15 @@ describe("POST /api/subscribers", () => {
   });
 
   it("creates subscriber with valid data", async () => {
+    // Cap check query returns waitlist with tier and count
+    mockSupabase.__queue.push({
+      data: {
+        subscriber_count: 10,
+        founder_profiles: { tier: "free" },
+      },
+      error: null,
+    });
+    // Insert returns subscriber
     mockSupabase.__queue.push(
       {
         data: {
@@ -113,6 +122,14 @@ describe("POST /api/subscribers", () => {
   });
 
   it("returns 409 on duplicate email", async () => {
+    // Cap check query
+    mockSupabase.__queue.push({
+      data: {
+        subscriber_count: 10,
+        founder_profiles: { tier: "free" },
+      },
+      error: null,
+    });
     // Insert fails with 23505 unique constraint violation
     mockSupabase.__queue.push({
       data: null,
@@ -138,6 +155,14 @@ describe("POST /api/subscribers", () => {
   });
 
   it("stores qual_answers when provided", async () => {
+    // Cap check query
+    mockSupabase.__queue.push({
+      data: {
+        subscriber_count: 10,
+        founder_profiles: { tier: "free" },
+      },
+      error: null,
+    });
     mockSupabase.__queue.push({
       data: {
         id: "sub-1",
@@ -162,6 +187,14 @@ describe("POST /api/subscribers", () => {
   });
 
   it("generates 8-char referral code", async () => {
+    // Cap check query
+    mockSupabase.__queue.push({
+      data: {
+        subscriber_count: 10,
+        founder_profiles: { tier: "free" },
+      },
+      error: null,
+    });
     mockSupabase.__queue.push({
       data: {
         id: "sub-1",
@@ -186,6 +219,14 @@ describe("POST /api/subscribers", () => {
   });
 
   it("increments subscriber_count via RPC after successful insert", async () => {
+    // Cap check query
+    mockSupabase.__queue.push({
+      data: {
+        subscriber_count: 10,
+        founder_profiles: { tier: "free" },
+      },
+      error: null,
+    });
     mockSupabase.__queue.push({
       data: {
         id: "sub-1",

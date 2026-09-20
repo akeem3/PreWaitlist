@@ -23,7 +23,7 @@ function HeroContent() {
             </FadeIn>
 
             <FadeIn delay={0.1}>
-              <h1 className="max-w-4xl text-display">
+              <h1 className="max-w-xl text-display md:max-w-4xl">
                 That waitlist runs on{" "}
                 <span className="text-accent">PreWaitlist</span>. Yours can be
                 live in 4 minutes.
@@ -56,7 +56,7 @@ function HeroContent() {
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-col items-center gap-10 text-center">
           <FadeIn>
-            <h1 className="max-w-4xl text-display">
+            <h1 className="max-w-xl text-display md:max-w-4xl">
               Most waitlists convert 2-3%. Know which of yours are the real 3% —
               before you ship
             </h1>

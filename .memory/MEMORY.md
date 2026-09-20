@@ -972,7 +972,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 60. ~~Execute Epic 12.1 (remaining: 12.1.1–12.1.10)~~ ✅ Done — all 11 stories, 281 passing tests
 61. ~~Execute Epic 12.2 (12.2.0–12.2.13)~~ ✅ Done — all 14 stories complete
 62. ~~Execute Epic 12.3 (12.3.0–12.3.5)~~ ✅ Done — all 6 stories, shared layout, 317+ passing tests
-63. Epic 13 — Billing & Feature Gating (Sprint 3)
+63. ~~Epic 13 — Billing & Feature Gating~~ ✅ Done (all 7 stories, 23 tests, merged to dev)
 
 ## Decision + bug fix: "Powered by PreWaitlist" footer (2026-07)
 
@@ -1340,3 +1340,12 @@ canonical. The API routes (`POST /api/updates`) and auth callback logic
 - **Settings hub layout:** Content left-aligned (`max-w-2xl px-8 py-12`, no `mx-auto`), vertical card list with brand color accents (green icon backgrounds, hover effects), sign out button at bottom. Cards use `rounded-xl border border-border bg-card` with hover state (`hover:border-accent/30 hover:bg-accent/50`).
 - **Sidebar nav items:** Active pill uses `rounded-[10px]` (not `rounded-full`). CONFIG section pinned to bottom via `mt-auto` in the `<aside>` flex column. ACCOUNT section (Profile, Security) removed — settings hub has its own sign out button. Gear icon for Settings (hexagonal cog shape). **Signout removed from sidebar** — sign out lives in the settings hub page (`/dashboard/settings`) only, not in the sidebar component. Sidebar has no `onSignOut` prop.
 - **Settings three-level hierarchy:** Hub (`/dashboard/settings`) → Waitlist List (`/dashboard/settings/waitlists`) → Waitlist Detail (`/dashboard/[waitlistId]/settings`). Profile at `/dashboard/settings/profile`. Security redirects to profile.
+
+## Epic 13 Gotchas (Billing & Feature Gating)
+
+- **Paddle SDK `customerPortalSessions.create()` return type:** The actual SDK returns `{ urls: { general: { overview: string } } }` — NOT `{ url: string }` or `{ data: { url: string } }`. The `data.url` pattern from older Paddle SDK docs is incorrect for Paddle Billing (vs Paddle Classic). Always use `session.urls.general.overview`.
+- **`after` from `next/server` fails in test context:** `vi.mock("next/server", ...)` can mock `after`, but the mock must return `fn()` synchronously: `after: vi.fn((fn) => fn())`. Without this, callbacks passed to `after()` never execute in tests.
+- **Resend `domains.verify()` lacks `status` field:** After calling `resend.domains.verify()`, you must call `resend.domains.get()` separately to check if the domain status changed to "verified". The verify response itself doesn't include the updated status.
+- **`components/` at project root, not under `src/`:** Billing components (`subscription-card.tsx`, `plan-comparison.tsx`, etc.) live in `components/billing/`, not `src/components/billing/`. Import from `../../../../components/billing/...` in settings pages (5 levels up from `src/app/dashboard/settings/profile/client.tsx`).
+- **Settings profile page padding fix (2026-09-20):** Profile sub-page was missing `max-w-2xl px-8 py-12` on root `<div>`, causing content to sit flush against the sidebar. The settings hub page had this padding but the profile sub-page didn't. Always match padding across settings sub-pages.
+- **SQL migrations needed before deploying Epic 13:** `epic13-story3-paddle-customer-id.sql` (adds `paddle_customer_id` column to `founder_profiles`) + `epic13-story5-resend-domain-id.sql` (adds `resend_domain_id` column to `waitlists`). Without these, Paddle portal session creation and domain auth will fail at runtime.

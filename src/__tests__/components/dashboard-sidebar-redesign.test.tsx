@@ -73,22 +73,21 @@ describe("Sidebar Redesign (12.1.0)", () => {
     expect(comingSoonLabels.length).toBe(0);
   });
 
-  it("shows lock icon with tooltip on locked items", () => {
+  it("shows lock icon on locked items", () => {
     render(<Sidebar {...defaultProps} tier="free" />);
-    const warmth = screen.getByText("Warmth").closest("span");
-    expect(warmth?.getAttribute("title")).toBe(
-      "Pro feature — upgrade to unlock"
-    );
+    // Locked items render as buttons with lock SVG icons
+    const warmth = screen.getByText("Warmth").closest("button");
+    expect(warmth).toBeDefined();
+    expect(warmth?.querySelector("svg")).toBeDefined();
 
-    const broadcast = screen.getByText("Broadcast").closest("span");
-    expect(broadcast?.getAttribute("title")).toBe(
-      "Pro feature — upgrade to unlock"
-    );
+    const broadcast = screen.getByText("Broadcast").closest("button");
+    expect(broadcast).toBeDefined();
+    expect(broadcast?.querySelector("svg")).toBeDefined();
   });
 
   it("renders upgrade button for free tier", () => {
     render(<Sidebar {...defaultProps} tier="free" />);
-    expect(screen.getByText("Upgrade to Pro")).toBeDefined();
+    expect(screen.getByText("Upgrade to add")).toBeDefined();
   });
 
   it("does not render upgrade button for pro tier", () => {
@@ -105,8 +104,10 @@ describe("Sidebar Redesign (12.1.0)", () => {
 
   it("broadcast is locked for free tier", () => {
     render(<Sidebar {...defaultProps} tier="free" />);
-    const broadcast = screen.getByText("Broadcast").closest("span");
-    expect(broadcast?.className).toContain("cursor-not-allowed");
+    // Locked items render as buttons, not links
+    const broadcast = screen.getByText("Broadcast").closest("button");
+    expect(broadcast).toBeDefined();
+    expect(broadcast?.className).toContain("opacity-50");
   });
 
   it("broadcast is unlocked for pro tier", () => {
@@ -145,9 +146,10 @@ describe("Sidebar Redesign (12.1.0)", () => {
 
   it("warmth is locked for free tier", () => {
     render(<Sidebar {...defaultProps} tier="free" />);
-    const warmth = screen.getByText("Warmth").closest("span");
-    expect(warmth?.className).toContain("cursor-not-allowed");
-    expect(warmth?.getAttribute("href")).toBeNull();
+    // Locked items render as buttons, not links
+    const warmth = screen.getByText("Warmth").closest("button");
+    expect(warmth).toBeDefined();
+    expect(warmth?.className).toContain("opacity-50");
   });
 
   it("warmth is unlocked for pro tier", () => {

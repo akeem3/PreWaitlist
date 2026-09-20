@@ -205,7 +205,7 @@ body {
 
 /* Display — Large hero headings (marketing) */
 .text-display {
-  font-size: 1.5rem; /* 24px mobile */
+  font-size: clamp(1.75rem, 1.5rem + 1vw, 2rem); /* 28–32px fluid mobile */
   line-height: 1.1;
   font-weight: var(--font-extrabold);
   letter-spacing: -0.02em;

@@ -110,13 +110,16 @@ export function ProblemSection() {
             </p>
           </FadeIn>
 
-          <StaggerGroup className="grid w-full max-w-4xl grid-cols-1 justify-items-center gap-6 sm:grid-cols-2 md:grid-cols-3 md:gap-10">
+          <StaggerGroup className="grid w-full grid-cols-1 justify-items-center gap-6 sm:grid-cols-2 sm:justify-items-stretch md:grid-cols-3 md:gap-10">
             {problems.map((problem) => {
               const Icon = problem.icon;
               return (
-                <StaggerItem key={problem.title} className="h-full">
-                  <Card className="h-full border border-border rounded-[10px]">
-                    <CardContent className="flex flex-col items-start gap-4">
+                <StaggerItem
+                  key={problem.title}
+                  className="h-full w-full max-w-sm sm:max-w-none"
+                >
+                  <Card className="h-full min-h-[160px] border border-border rounded-[10px]">
+                    <CardContent className="flex h-full flex-col items-start gap-4">
                       <Icon />
                       <p className="text-body-lg text-muted-foreground">
                         {problem.title}

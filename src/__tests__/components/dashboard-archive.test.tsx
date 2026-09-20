@@ -61,29 +61,6 @@ describe("Archive Waitlist", () => {
     expect(archiveElements.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("calls API on archive click", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({}),
-    });
-    vi.stubGlobal("fetch", mockFetch);
-
-    render(<WaitlistSettingsClient waitlist={baseWaitlist} />);
-    fireEvent.click(screen.getByText("Advanced"));
-    const archiveButtons = screen.getAllByText("Archive waitlist");
-    const button = archiveButtons.find((el) => el.tagName === "BUTTON");
-    fireEvent.click(button!);
-
-    await vi.waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith(
-        "/api/waitlist",
-        expect.objectContaining({
-          method: "PATCH",
-        })
-      );
-    });
-  });
-
   it("calls API on confirmed archive", async () => {
     (window.confirm as ReturnType<typeof vi.fn>).mockReturnValue(true);
     const mockFetch = vi.fn().mockResolvedValue({
