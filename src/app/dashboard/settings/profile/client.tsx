@@ -12,6 +12,7 @@ import { PlanComparison } from "../../../../../components/billing/plan-compariso
 import { InvoiceHistory } from "../../../../../components/billing/invoice-history";
 import { BillingDetails } from "../../../../../components/billing/billing-details";
 import { CancellationFlow } from "../../../../../components/billing/cancellation-flow";
+import { DomainAuthSection } from "../../../../../components/billing/domain-auth-section";
 import { useUpgradeModal } from "../../shell";
 
 interface ProfileData {
@@ -124,6 +125,18 @@ export default function ProfileClient() {
       setProfile((prev) =>
         prev ? { ...prev, businessAddress: address } : prev
       );
+    }
+  }, []);
+
+  const handleManageBilling = useCallback(async () => {
+    try {
+      const res = await fetch("/api/billing/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      // Silently fail — user can retry
     }
   }, []);
 
@@ -369,6 +382,9 @@ export default function ProfileClient() {
             <SubscriptionCard
               tier={profile?.tier || "free"}
               waitlistCount={1}
+              onManageBilling={
+                profile?.tier === "pro" ? handleManageBilling : undefined
+              }
             />
             <PlanComparison
               currentTier={profile?.tier || "free"}
@@ -379,6 +395,7 @@ export default function ProfileClient() {
               onAddressSave={handleAddressSave}
             />
             <InvoiceHistory isPro={profile?.tier === "pro"} />
+            {profile?.tier === "pro" && <DomainAuthSection />}
             <CancellationFlow isPro={profile?.tier === "pro"} />
           </div>
         )}

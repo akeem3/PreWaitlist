@@ -894,6 +894,20 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - `loading.tsx` fixed — no more embedded sidebar skeleton (was causing double-sidebar during loading)
 - Each page still does its own auth + data fetch (redundant with layout, harmless, not optimized)
 
+## Epic 13 Progress (Billing & Feature Gating)
+
+| Story | Status  | Summary                                                                 |
+| ----- | ------- | ----------------------------------------------------------------------- |
+| 13.0  | ✅ done | Paddle Integration Foundation — SDK install, checkout API, webhook      |
+| 13.1  | ✅ done | Upgrade Modal (7 Triggers) — modal component, cooldown, 4/7 triggers    |
+| 13.2  | ✅ done | Feature Gating Enforcement — isPro, requirePro, server+client gates     |
+| 13.3  | ✅ done | Billing Management — portal session API, subscription-card, cancel flow |
+| 13.4  | ✅ done | 500 Subscriber Cap — API check, public page warnings, progressive tiers |
+| 13.5  | ✅ done | Sender Domain Auth — Resend API, 3-step wizard, DNS records + verify    |
+| 13.6  | ✅ done | Epic 13 Tests — 23 new tests (billing, webhook, modal, cap, gating)     |
+
+**Branch:** `epic-13` (created from `dev`)
+
 ## Next Steps
 
 1. ~~Implement Story 1.2 (Toggle, Select, Textarea)~~ ✅ Done

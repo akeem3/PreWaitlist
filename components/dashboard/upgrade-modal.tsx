@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { usePaddle } from "@/hooks/use-paddle";
 
 interface UpgradeModalProps {
@@ -132,6 +132,7 @@ export function UpgradeModal({
           <button
             type="button"
             onClick={handleDismiss}
+            aria-label="Close"
             className="rounded-lg p-1 text-muted-foreground hover:text-foreground"
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">

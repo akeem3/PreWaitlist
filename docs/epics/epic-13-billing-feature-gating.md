@@ -188,7 +188,7 @@ NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
 
 ### Story 13.3 — Billing Management (Paddle Portal)
 
-**Status:** ready
+**Status:** done
 **Story:** As a Pro founder, I want to view my plan, manage my subscription, and cancel if needed so that I have full control over my billing.
 
 **Acceptance Criteria (EARS):**
@@ -219,7 +219,7 @@ NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
 
 ### Story 13.4 — Pro-Tier Subscriber Limits (500 Cap)
 
-**Status:** ready
+**Status:** done
 **Story:** As a system, I want to enforce the 500 subscriber cap on Free tier so that Free founders are prompted to upgrade when they hit the limit.
 
 **Acceptance Criteria (EARS):**
@@ -246,7 +246,7 @@ NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
 
 ### Story 13.5 — Sender Domain Authentication Walkthrough
 
-**Status:** ready
+**Status:** done
 **Story:** As a Pro founder, I want a step-by-step walkthrough to set up my own sending domain (SPF/DKIM) so that my emails have better deliverability.
 
 **Acceptance Criteria (EARS):**
@@ -277,7 +277,7 @@ NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
 
 ### Story 13.6 — Epic 13 Tests
 
-**Status:** ready
+**Status:** done
 **Story:** As a developer, I want comprehensive tests for billing and feature gating so that I can verify correctness and prevent regressions.
 
 **Acceptance Criteria (EARS):**

@@ -459,6 +459,31 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // 500 cap check — Free tier only
+  const { data: waitlistRow } = await supabase
+    .from("waitlists")
+    .select("subscriber_count, founder_profiles!inner ( tier )")
+    .eq("id", waitlist_id)
+    .single();
+
+  if (waitlistRow) {
+    const founderProfile = Array.isArray(waitlistRow.founder_profiles)
+      ? waitlistRow.founder_profiles[0]
+      : waitlistRow.founder_profiles;
+    const tier = founderProfile?.tier || "free";
+    const count = waitlistRow.subscriber_count ?? 0;
+
+    if (tier === "free" && count >= 500) {
+      return NextResponse.json(
+        {
+          error:
+            "Subscriber limit reached. Upgrade to Pro for unlimited signups.",
+        },
+        { status: 403 }
+      );
+    }
+  }
+
   // Resolve referral_code → referrer_id
   let resolvedReferrerId: string | null = null;
   if (

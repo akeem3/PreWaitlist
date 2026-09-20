@@ -3,11 +3,13 @@
 interface SubscriptionCardProps {
   tier: string;
   waitlistCount: number;
+  onManageBilling?: () => void;
 }
 
 export function SubscriptionCard({
   tier,
   waitlistCount,
+  onManageBilling,
 }: SubscriptionCardProps) {
   const isPro = tier === "pro";
 
@@ -28,14 +30,6 @@ export function SubscriptionCard({
             </span>
           </div>
         </div>
-        {isPro && (
-          <div className="text-right">
-            <p className="text-body-sm text-muted-foreground">Next billing</p>
-            <p className="text-body-sm font-medium text-foreground">
-              October 1, 2026
-            </p>
-          </div>
-        )}
       </div>
 
       <div className="mt-4 flex items-center gap-3">
@@ -60,6 +54,18 @@ export function SubscriptionCard({
           <p className="text-body-sm text-accent">
             Your Pro subscription is active
           </p>
+        </div>
+      )}
+
+      {isPro && onManageBilling && (
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={onManageBilling}
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/30"
+          >
+            Manage Billing
+          </button>
         </div>
       )}
     </div>

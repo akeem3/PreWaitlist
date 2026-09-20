@@ -11,6 +11,18 @@ export function CancellationFlow({ isPro }: CancellationFlowProps) {
 
   if (!isPro) return null;
 
+  async function handleConfirmCancel() {
+    try {
+      const res = await fetch("/api/billing/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      // Silently fail — user can retry
+    }
+  }
+
   return (
     <div className="rounded-xl border border-border bg-card p-6">
       <h3 className="mb-2 text-h4 font-medium text-foreground">
@@ -39,10 +51,10 @@ export function CancellationFlow({ isPro }: CancellationFlowProps) {
           <div className="flex gap-3">
             <button
               type="button"
-              disabled
-              className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-white opacity-50 cursor-not-allowed"
+              onClick={handleConfirmCancel}
+              className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive/90"
             >
-              Confirm cancellation (coming soon)
+              Confirm cancellation
             </button>
             <button
               type="button"

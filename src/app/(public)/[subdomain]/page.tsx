@@ -111,6 +111,7 @@ export default async function PublicSubdomainPage({ params }: Props) {
             tier={tier}
             questions={questions}
             qualificationEnabled={waitlist.qualification_enabled}
+            subscriberCount={signupCount}
           />
         </Suspense>
       }

@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
   const data = event.data as {
     id: string;
     status: string;
+    customerId: string;
     customData: { user_id?: string; waitlist_id?: string } | null;
   };
 
@@ -64,6 +65,7 @@ export async function POST(req: NextRequest) {
         .update({
           tier: "pro",
           paddle_subscription_id: data.id,
+          paddle_customer_id: data.customerId,
         })
         .eq("id", userId);
 
@@ -80,6 +82,7 @@ export async function POST(req: NextRequest) {
         .update({
           tier: "free",
           paddle_subscription_id: null,
+          paddle_customer_id: null,
         })
         .eq("id", userId);
 
