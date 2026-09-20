@@ -96,7 +96,7 @@ function Header() {
                 key={link.id}
                 type="button"
                 onClick={() => scrollTo(link.id)}
-                className="text-body-sm font-medium text-accent transition-colors duration-normal hover:text-accent-hover"
+                className="text-body-sm font-medium text-muted-foreground transition-colors duration-normal hover:text-accent"
               >
                 {link.label}
               </button>
@@ -107,7 +107,7 @@ function Header() {
         <nav className="hidden items-center gap-4 md:flex">
           <Link
             href="/signin"
-            className="text-body-sm font-medium text-muted-foreground transition-colors duration-normal hover:text-accent"
+            className="text-body-sm font-medium text-accent transition-colors duration-normal hover:text-accent-hover"
           >
             Sign in
           </Link>
