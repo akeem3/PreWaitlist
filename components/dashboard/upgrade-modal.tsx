@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
-import { usePaddle } from "../../src/hooks/use-paddle";
+import { useCallback, useEffect } from "react";
+import { usePaddle } from "@/hooks/use-paddle";
 
 interface UpgradeModalProps {
   open: boolean;
