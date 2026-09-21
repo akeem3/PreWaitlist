@@ -29,8 +29,9 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Redirect authenticated users away from marketing homepage to dashboard
-  if (user && request.nextUrl.pathname === "/") {
+  // Redirect authenticated users away from marketing homepage to dashboard (production only)
+  const hostname = request.headers.get("host")?.split(":")[0] ?? "";
+  if (user && request.nextUrl.pathname === "/" && hostname !== "localhost") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
