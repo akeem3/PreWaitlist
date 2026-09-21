@@ -25,6 +25,8 @@ export default function WaitlistListClient({
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [archiving, setArchiving] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const activeWaitlists = waitlists.filter((wl) => !wl.is_archived);
@@ -58,6 +60,23 @@ export default function WaitlistListClient({
       router.refresh();
     } finally {
       setArchiving(null);
+    }
+  }
+
+  async function handleDelete(waitlistId: string) {
+    setDeleting(waitlistId);
+    try {
+      const res = await fetch("/api/waitlist", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ waitlist_ids: [waitlistId] }),
+      });
+      if (res.ok) {
+        setConfirmDelete(null);
+        router.refresh();
+      }
+    } finally {
+      setDeleting(null);
     }
   }
 
@@ -308,14 +327,45 @@ export default function WaitlistListClient({
                       {wl.subscriberCount !== 1 ? "s" : ""}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleArchive(wl.id)}
-                    disabled={archiving === wl.id}
-                    className="shrink-0 rounded-lg border border-border bg-card px-3 py-1.5 text-body-sm font-medium text-foreground transition-colors hover:bg-muted"
-                  >
-                    {archiving === wl.id ? "Working…" : "Unarchive"}
-                  </button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {confirmDelete === wl.id ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(wl.id)}
+                          disabled={deleting === wl.id}
+                          className="rounded-lg bg-destructive px-3 py-1.5 text-body-sm font-medium text-white transition-colors hover:bg-destructive/90 disabled:opacity-50"
+                        >
+                          {deleting === wl.id ? "Deleting…" : "Confirm"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDelete(null)}
+                          className="rounded-lg px-3 py-1.5 text-body-sm text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleArchive(wl.id)}
+                          disabled={archiving === wl.id}
+                          className="rounded-lg border border-border bg-card px-3 py-1.5 text-body-sm font-medium text-foreground transition-colors hover:bg-muted"
+                        >
+                          {archiving === wl.id ? "Working…" : "Unarchive"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDelete(wl.id)}
+                          className="rounded-lg px-3 py-1.5 text-body-sm text-destructive transition-colors hover:bg-destructive/5"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
