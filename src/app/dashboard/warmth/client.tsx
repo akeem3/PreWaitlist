@@ -112,9 +112,7 @@ export default function WarmthClient({
             <div className="grid grid-cols-4 gap-4">
               {["Hot", "Warm", "Cold", "Unscored"].map((label) => (
                 <div key={label} className="text-center">
-                  <div className="text-2xl font-semibold text-foreground">
-                    —
-                  </div>
+                  <div className="text-3xl font-bold text-foreground">—</div>
                   <div className="text-xs text-muted-foreground">{label}</div>
                 </div>
               ))}
@@ -162,7 +160,7 @@ export default function WarmthClient({
                 key={item.label}
                 className="rounded-[var(--card-radius)] border border-border bg-card p-4 text-center"
               >
-                <div className={`text-2xl font-semibold ${item.color}`}>
+                <div className={`text-3xl font-bold ${item.color}`}>
                   {item.count}
                 </div>
                 <div className="text-xs text-muted-foreground">
