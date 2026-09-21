@@ -27,6 +27,7 @@ export default function WaitlistListClient({
   const [showArchived, setShowArchived] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [confirmText, setConfirmText] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
 
   const activeWaitlists = waitlists.filter((wl) => !wl.is_archived);
@@ -328,48 +329,100 @@ export default function WaitlistListClient({
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    {confirmDelete === wl.id ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(wl.id)}
-                          disabled={deleting === wl.id}
-                          className="rounded-lg bg-destructive px-3 py-1.5 text-body-sm font-medium text-white transition-colors hover:bg-destructive/90 disabled:opacity-50"
-                        >
-                          {deleting === wl.id ? "Deleting…" : "Confirm"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setConfirmDelete(null)}
-                          className="rounded-lg px-3 py-1.5 text-body-sm text-muted-foreground transition-colors hover:text-foreground"
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => handleArchive(wl.id)}
-                          disabled={archiving === wl.id}
-                          className="rounded-lg border border-border bg-card px-3 py-1.5 text-body-sm font-medium text-foreground transition-colors hover:bg-muted"
-                        >
-                          {archiving === wl.id ? "Working…" : "Unarchive"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setConfirmDelete(wl.id)}
-                          className="rounded-lg px-3 py-1.5 text-body-sm text-destructive transition-colors hover:bg-destructive/5"
-                        >
-                          Delete
-                        </button>
-                      </>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleArchive(wl.id)}
+                      disabled={archiving === wl.id}
+                      className="rounded-lg border border-border bg-card px-3 py-1.5 text-body-sm font-medium text-foreground transition-colors hover:bg-muted"
+                    >
+                      {archiving === wl.id ? "Working…" : "Unarchive"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setConfirmDelete(wl.id);
+                        setConfirmText("");
+                      }}
+                      className="rounded-lg px-3 py-1.5 text-body-sm text-destructive transition-colors hover:bg-destructive/5"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           )}
+        </div>
+      )}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-lg">
+            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                className="text-destructive"
+              >
+                <path
+                  d="M6 4H14M8 4V3C8 2.44772 8.44772 2 9 2H11C11.5523 2 12 2.44772 12 3V4M4.5 4L5.2 16.5C5.25 17.0523 5.69772 17.5 6.25 17.5H13.75C14.3023 17.5 14.75 17.0523 14.8 16.5L15.5 4"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <h2 className="mb-2 text-h4 font-medium text-foreground">
+              Delete waitlist?
+            </h2>
+            <p className="mb-2 text-body-sm text-muted-foreground">
+              This will permanently delete{" "}
+              <span className="font-medium text-foreground">
+                &ldquo;
+                {waitlists.find((w) => w.id === confirmDelete)?.headline ||
+                  waitlists.find((w) => w.id === confirmDelete)?.product_name ||
+                  "Untitled waitlist"}
+                &rdquo;
+              </span>{" "}
+              and all of its data including subscribers, settings, and milestone
+              rewards. This action cannot be undone.
+            </p>
+            <p className="mb-4 text-body-sm text-muted-foreground">
+              Type <span className="font-medium text-foreground">delete</span>{" "}
+              to confirm.
+            </p>
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder='Type "delete" to confirm'
+              className="mb-4 w-full rounded-lg border border-border bg-card px-3 py-2 text-body-sm text-foreground placeholder:text-muted-foreground focus:border-destructive focus:outline-none focus:ring-1 focus:ring-destructive"
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmDelete(null);
+                  setConfirmText("");
+                }}
+                className="rounded-lg px-4 py-2 text-body-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(confirmDelete)}
+                disabled={
+                  deleting === confirmDelete || confirmText !== "delete"
+                }
+                className="rounded-lg bg-destructive px-4 py-2 text-body-sm font-medium text-white transition-colors hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting === confirmDelete ? "Deleting…" : "Delete forever"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
