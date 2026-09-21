@@ -440,14 +440,14 @@ export function Sidebar({
           ) : (
             <Link
               href="/onboarding/1"
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2 text-body-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-accent bg-transparent px-3 py-2 text-body-sm font-medium text-accent transition-colors hover:bg-accent hover:text-accent-foreground group"
             >
               <svg
                 width="14"
                 height="14"
                 viewBox="0 0 14 14"
                 fill="none"
-                className="text-accent-foreground"
+                className="text-accent group-hover:text-accent-foreground"
               >
                 <path
                   d="M7 3V11M3 7H11"
