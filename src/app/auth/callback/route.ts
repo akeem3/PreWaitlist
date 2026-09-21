@@ -4,6 +4,28 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const error = searchParams.get("error");
+  const errorDescription = searchParams.get("error_description");
+
+  console.log("[auth/callback] Hit:", {
+    origin,
+    hasCode: !!code,
+    error,
+    errorDescription,
+    hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    hasPublishableKey: !!process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    cookieRedirect: request.cookies.get("auth_redirect_to")?.value,
+    allParams: Object.fromEntries(searchParams.entries()),
+  });
+
+  if (error) {
+    console.error(
+      "[auth/callback] OAuth error from provider:",
+      error,
+      errorDescription
+    );
+    return NextResponse.redirect(`${origin}/auth/auth-code-error`);
+  }
 
   const cookieRedirect = request.cookies.get("auth_redirect_to")?.value;
   const next = cookieRedirect || searchParams.get("next") || "/dashboard";
@@ -32,11 +54,28 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
+    const { error: exchangeError } =
+      await supabase.auth.exchangeCodeForSession(code);
+
+    console.log("[auth/callback] Exchange result:", {
+      hasError: !!exchangeError,
+      errorMessage: exchangeError?.message,
+      errorStatus: exchangeError?.status,
+    });
+
+    if (!exchangeError) {
       const {
         data: { user },
       } = await supabase.auth.getUser();
+
+      console.log(
+        "[auth/callback] Session established, redirecting to:",
+        next,
+        {
+          hasUser: !!user,
+          userId: user?.id,
+        }
+      );
 
       // Capture acquisition source from cookie
       const acquisitionCookie = request.cookies.get("mw_acquisition")?.value;
@@ -60,9 +99,6 @@ export async function GET(request: NextRequest) {
 
       let redirectPath = next;
 
-      // If no specific redirect was requested (no cookie, no next param),
-      // default to dashboard. The dashboard layout is the single source of
-      // truth — it checks for waitlists and redirects to onboarding if needed.
       if (!cookieRedirect && !searchParams.get("next")) {
         redirectPath = "/dashboard";
       }
@@ -75,7 +111,10 @@ export async function GET(request: NextRequest) {
       response.cookies.delete("mw_acquisition");
       return response;
     }
+
+    console.error("[auth/callback] Code exchange failed:", exchangeError);
   }
 
+  console.log("[auth/callback] Falling through to error page");
   return NextResponse.redirect(`${origin}/auth/auth-code-error`);
 }
