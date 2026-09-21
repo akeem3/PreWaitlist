@@ -21,11 +21,11 @@ interface WaitlistData {
   is_archived: boolean | null;
   tier: string;
   business_address: string | null;
+  product_name: string | null;
 }
 
 interface WaitlistSettingsClientProps {
   waitlist: WaitlistData;
-  segmentOverrides?: Record<string, string>;
 }
 
 const TABS = [
@@ -37,7 +37,6 @@ const TABS = [
 
 export default function WaitlistSettingsClient({
   waitlist,
-  segmentOverrides,
 }: WaitlistSettingsClientProps) {
   const [activeTab, setActiveTab] = useState("content");
   const [headline, setHeadline] = useState(waitlist.headline ?? "");
@@ -132,7 +131,15 @@ export default function WaitlistSettingsClient({
 
   return (
     <div className="mx-auto max-w-4xl px-8 py-12">
-      <Breadcrumb segmentOverrides={segmentOverrides} />
+      <Breadcrumb
+        items={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Settings", href: "/dashboard/settings" },
+          {
+            label: waitlist.headline || waitlist.product_name || "Untitled",
+          },
+        ]}
+      />
       <div className="mb-8">
         <h1 className="text-h3 font-semibold text-foreground">
           Waitlist Settings

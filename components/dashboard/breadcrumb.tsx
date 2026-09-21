@@ -22,42 +22,60 @@ function formatSegment(
   return segment.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-interface BreadcrumbProps {
-  segmentOverrides?: Record<string, string>;
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
 }
 
-export function Breadcrumb({ segmentOverrides }: BreadcrumbProps) {
+interface BreadcrumbProps {
+  segmentOverrides?: Record<string, string>;
+  items?: BreadcrumbItem[];
+}
+
+export function Breadcrumb({ segmentOverrides, items }: BreadcrumbProps) {
   const pathname = usePathname();
-  const segments = pathname.split("/").filter(Boolean);
 
-  if (segments.length <= 1) return null;
+  let resolvedItems: { label: string; href: string; isLast: boolean }[];
 
-  const items: { label: string; href: string; isLast: boolean }[] = [];
-  let builtPath = "";
+  if (items && items.length > 0) {
+    resolvedItems = items.map((item, i) => ({
+      label: item.label,
+      href: item.href ?? pathname,
+      isLast: i === items.length - 1,
+    }));
+  } else {
+    const segments = pathname.split("/").filter(Boolean);
+    if (segments.length <= 1) return null;
 
-  for (let i = 0; i < segments.length; i++) {
-    const segment = segments[i];
-    builtPath += `/${segment}`;
-    const label = formatSegment(segment, segmentOverrides);
+    const computed: { label: string; href: string; isLast: boolean }[] = [];
+    let builtPath = "";
 
-    if (!label) {
-      if (i < segments.length - 1) builtPath += `/${segments[i + 1]}`;
-      continue;
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i];
+      builtPath += `/${segment}`;
+      const label = formatSegment(segment, segmentOverrides);
+
+      if (!label) {
+        if (i < segments.length - 1) builtPath += `/${segments[i + 1]}`;
+        continue;
+      }
+
+      computed.push({
+        label,
+        href: builtPath,
+        isLast: i === segments.length - 1,
+      });
     }
 
-    items.push({
-      label,
-      href: builtPath,
-      isLast: i === segments.length - 1,
-    });
+    resolvedItems = computed;
   }
 
-  if (items.length <= 1) return null;
+  if (resolvedItems.length <= 1) return null;
 
   return (
     <nav aria-label="Breadcrumb" className="mb-4">
       <ol className="flex items-center gap-1.5 text-sm">
-        {items.map((item, index) => (
+        {resolvedItems.map((item, index) => (
           <li key={item.href} className="flex items-center gap-1.5">
             {index > 0 && (
               <svg

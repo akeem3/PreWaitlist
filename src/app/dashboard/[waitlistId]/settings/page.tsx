@@ -43,9 +43,6 @@ export default async function WaitlistSettingsPage({
         ...waitlist,
         tier: profile?.tier ?? "free",
       }}
-      segmentOverrides={{
-        [waitlistId]: waitlist.headline || waitlist.product_name || "Untitled",
-      }}
     />
   );
 }
