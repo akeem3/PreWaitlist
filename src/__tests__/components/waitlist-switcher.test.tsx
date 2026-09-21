@@ -153,7 +153,7 @@ describe("WaitlistSwitcher", () => {
     const upgradeBtn = screen.getByText("Upgrade to add");
     expect(upgradeBtn).toBeDefined();
     expect(upgradeBtn.closest("a")?.getAttribute("href")).toBe(
-      "/dashboard/settings/profile?tab=billing"
+      "/dashboard/settings/billing"
     );
   });
 

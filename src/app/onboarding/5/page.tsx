@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useOnboardingForm } from "../context";
+import { useOnboardingUpgrade } from "../onboarding-client-layout";
+import { isPro as checkIsPro } from "../../../lib/tier-gating";
 import { Input } from "../../../../components/ui/input";
 import {
   EmailTokenEditor,
@@ -14,11 +16,12 @@ import { VariablePicker } from "../../../../components/onboarding/variable-picke
 export default function OnboardingStep5() {
   const router = useRouter();
   const form = useOnboardingForm();
+  const upgrade = useOnboardingUpgrade();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const subjectEditorRef = useRef<EmailTokenEditorHandle>(null);
   const bodyEditorRef = useRef<EmailTokenEditorHandle>(null);
 
-  const isPro = form.tier === "pro";
+  const isPro = checkIsPro(form.tier);
 
   useEffect(() => {
     form.setLoading(false);
@@ -157,10 +160,9 @@ export default function OnboardingStep5() {
             </div>
 
             {/* Upgrade button — inside card, below email mock */}
-            <a
-              href="/#pricing"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={() => upgrade?.triggerUpgrade("email_customisation")}
               className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-dashed border-accent bg-accent/5 py-3 text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-accent-foreground"
             >
               <span>Upgrade to customise emails</span>
@@ -180,7 +182,7 @@ export default function OnboardingStep5() {
                   strokeLinejoin="round"
                 />
               </svg>
-            </a>
+            </button>
 
             {/* Comparison: Free vs Pro */}
             <div className="mt-3 grid grid-cols-2 gap-2.5">

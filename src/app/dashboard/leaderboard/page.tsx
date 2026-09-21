@@ -126,5 +126,11 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     })
     .map((s, i) => ({ ...s, rank: i + 1 }));
 
-  return <LeaderboardClient rows={ranked} totalCount={ranked.length} />;
+  return (
+    <LeaderboardClient
+      rows={ranked}
+      totalCount={ranked.length}
+      waitlistId={waitlist.id}
+    />
+  );
 }

@@ -247,8 +247,9 @@ export default function DashboardClient({
                 Add New Waitlist
               </Link>
             ) : waitlistId ? (
-              <Link
-                href="/dashboard/settings/profile?tab=billing"
+              <button
+                type="button"
+                onClick={() => triggerUpgrade("subscriber_cap")}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-accent bg-transparent px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent hover:text-accent-foreground"
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -260,7 +261,7 @@ export default function DashboardClient({
                   />
                 </svg>
                 Upgrade to add
-              </Link>
+              </button>
             ) : null}
             <Link
               href="/dashboard/settings/profile"
@@ -507,13 +508,15 @@ export default function DashboardClient({
               />
             </div>
 
-            <div className="mb-6">
-              <TopReferrers
-                subscribers={subscribers}
-                founderEmail={founderEmail}
-                waitlistId={waitlistId}
-              />
-            </div>
+            {tier === "pro" && (
+              <div className="mb-6">
+                <TopReferrers
+                  subscribers={subscribers}
+                  founderEmail={founderEmail}
+                  waitlistId={waitlistId}
+                />
+              </div>
+            )}
           </>
         )}
       </div>

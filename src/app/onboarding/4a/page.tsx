@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useOnboardingForm } from "../context";
+import { useOnboardingUpgrade } from "../onboarding-client-layout";
 
 interface Question {
   text: string;
@@ -22,6 +23,7 @@ function get_max_questions(tier: string): number {
 export default function OnboardingStep4a() {
   const router = useRouter();
   const form = useOnboardingForm();
+  const upgrade = useOnboardingUpgrade();
   const [questions, setQuestions] = useState<Question[]>(() => {
     if (form.questions.length > 0) {
       const filtered = form.questions.filter((q) => q.text.trim().length > 0);
@@ -190,7 +192,7 @@ export default function OnboardingStep4a() {
         ) : (
           <button
             type="button"
-            onClick={() => router.push("/dashboard?upgrade=true")}
+            onClick={() => upgrade?.triggerUpgrade("qual_question")}
             disabled={isSubmitting}
             className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-accent bg-accent/5 py-3 text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
           >

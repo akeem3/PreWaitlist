@@ -68,9 +68,11 @@ function formatMilestone(row: Row) {
 export default function LeaderboardClient({
   rows,
   totalCount,
+  waitlistId,
 }: {
   rows: Row[];
   totalCount: number;
+  waitlistId?: string;
 }) {
   const [sortKey, setSortKey] = useState<SortKey>("rank");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -131,7 +133,42 @@ export default function LeaderboardClient({
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
-      <h1 className="mb-6 text-h2 text-foreground">Leaderboard</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-h2 text-foreground">Leaderboard</h1>
+        <button
+          type="button"
+          onClick={() => {
+            const params = waitlistId ? `?wid=${waitlistId}` : "";
+            window.open(`/api/subscribers/export${params}`, "_blank");
+          }}
+          className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-body-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 14 14"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <path
+              d="M7 1.5V9.5M7 9.5L4 6.5M7 9.5L10 6.5"
+              stroke="currentColor"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M2 9.5V11.5C2 12.05 2.45 12.5 3 12.5H11C11.55 12.5 12 12.05 12 11.5V9.5"
+              stroke="currentColor"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Export CSV
+        </button>
+      </div>
 
       <div className="rounded-[var(--card-radius)] border border-border bg-card">
         {/* Search bar */}

@@ -417,8 +417,12 @@ export function Sidebar({
             </div>
           ))}
           {tier === "free" ? (
-            <Link
-              href="/dashboard/settings/profile?tab=billing"
+            <button
+              type="button"
+              onClick={() => {
+                onUpgradeClick?.("subscriber_cap");
+                onClose();
+              }}
               className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-accent bg-transparent px-3 py-2 text-body-sm font-medium text-accent transition-colors hover:bg-accent hover:text-accent-foreground group"
             >
               <svg
@@ -436,7 +440,7 @@ export function Sidebar({
                 />
               </svg>
               Upgrade to add
-            </Link>
+            </button>
           ) : (
             <Link
               href="/onboarding/1"

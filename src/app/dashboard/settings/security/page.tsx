@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import SecurityClient from "./client";
 
 export default function SecurityPage() {
-  redirect("/dashboard/settings/profile");
+  return <SecurityClient />;
 }

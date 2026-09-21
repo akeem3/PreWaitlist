@@ -1,9 +1,12 @@
 "use client";
 
+import { useState, useCallback, createContext, useContext } from "react";
 import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { LocalOnboardingProvider, useOnboardingForm } from "./context";
 import { FlushGate } from "../../components/auth/flush-gate";
+import { UpgradeModal } from "../../../components/dashboard/upgrade-modal";
+import { usePaddleUpgrade } from "../../hooks/use-paddle-upgrade";
 
 const LivePreview = dynamic(
   () =>
@@ -57,6 +60,29 @@ function getCurrentStep(pathname: string): number {
   return STEP_ROUTES[pathname] ?? 1;
 }
 
+// ---------------------------------------------------------------------------
+// Upgrade Modal Context (for onboarding steps that need to trigger upgrade)
+// ---------------------------------------------------------------------------
+
+interface OnboardingUpgradeContextValue {
+  triggerUpgrade: (triggerSource: string) => void;
+  upgradeModal: { open: boolean; triggerSource: string };
+  setUpgradeModal: React.Dispatch<
+    React.SetStateAction<{ open: boolean; triggerSource: string }>
+  >;
+}
+
+const OnboardingUpgradeContext =
+  createContext<OnboardingUpgradeContextValue | null>(null);
+
+export function useOnboardingUpgrade() {
+  return useContext(OnboardingUpgradeContext);
+}
+
+// ---------------------------------------------------------------------------
+// Progress Dots
+// ---------------------------------------------------------------------------
+
 function ProgressDots({
   currentStep,
   showDots,
@@ -95,6 +121,10 @@ function ProgressDots({
     </nav>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Layouts
+// ---------------------------------------------------------------------------
 
 function TwoPaneLayout({
   children,
@@ -161,6 +191,10 @@ function CenteredLayout({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Inner layout (needs form context for LivePreview)
+// ---------------------------------------------------------------------------
+
 function OnboardingLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const currentStep = getCurrentStep(pathname);
@@ -185,6 +219,60 @@ function OnboardingLayoutInner({ children }: { children: React.ReactNode }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Upgrade modal wrapper (needs usePaddleUpgrade which requires client context)
+// ---------------------------------------------------------------------------
+
+function UpgradeModalWrapper({ children }: { children: React.ReactNode }) {
+  const [upgradeModal, setUpgradeModal] = useState<{
+    open: boolean;
+    triggerSource: string;
+  }>({ open: false, triggerSource: "" });
+
+  const form = useOnboardingForm();
+
+  const handleTierChanged = useCallback(() => {
+    // Update onboarding context tier
+    form.updateField("tier", "pro" as "free" | "pro");
+  }, [form]);
+
+  const paddleUpgrade = usePaddleUpgrade({
+    onTierChanged: handleTierChanged,
+    triggerSource: upgradeModal.triggerSource,
+  });
+
+  const triggerUpgrade = useCallback((triggerSource: string) => {
+    setUpgradeModal({ open: true, triggerSource });
+  }, []);
+
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      setUpgradeModal((prev) => ({ ...prev, open }));
+      if (!open) {
+        paddleUpgrade.cancel();
+      }
+    },
+    [paddleUpgrade]
+  );
+
+  return (
+    <OnboardingUpgradeContext.Provider
+      value={{ triggerUpgrade, upgradeModal, setUpgradeModal }}
+    >
+      {children}
+      <UpgradeModal
+        open={upgradeModal.open}
+        onOpenChange={handleOpenChange}
+        triggerSource={upgradeModal.triggerSource}
+      />
+    </OnboardingUpgradeContext.Provider>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main layout export
+// ---------------------------------------------------------------------------
+
 export function OnboardingClientLayout({
   children,
   tier,
@@ -197,13 +285,15 @@ export function OnboardingClientLayout({
 
   return (
     <LocalOnboardingProvider initialTier={tier}>
-      {isAuthed ? (
-        <FlushGate>
+      <UpgradeModalWrapper>
+        {isAuthed ? (
+          <FlushGate>
+            <OnboardingLayoutInner>{children}</OnboardingLayoutInner>
+          </FlushGate>
+        ) : (
           <OnboardingLayoutInner>{children}</OnboardingLayoutInner>
-        </FlushGate>
-      ) : (
-        <OnboardingLayoutInner>{children}</OnboardingLayoutInner>
-      )}
+        )}
+      </UpgradeModalWrapper>
     </LocalOnboardingProvider>
   );
 }

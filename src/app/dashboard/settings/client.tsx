@@ -63,8 +63,7 @@ const SECTIONS = [
   {
     title: "Billing",
     description: "Manage your subscription, invoices, and payment method",
-    href: "/dashboard/settings/profile",
-    tab: "billing",
+    href: "/dashboard/settings/billing",
     icon: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
         <rect
@@ -90,8 +89,7 @@ const SECTIONS = [
   {
     title: "Security",
     description: "Update your password and email address",
-    href: "/dashboard/settings/profile",
-    tab: "security",
+    href: "/dashboard/settings/security",
     icon: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
         <path

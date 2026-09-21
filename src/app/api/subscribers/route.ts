@@ -868,6 +868,74 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  // --- 90% subscriber cap warning (fire-and-forget, free tier only) ---
+  after(async () => {
+    try {
+      const adminSupabase = createAdminClient();
+
+      const { data: wl } = await adminSupabase
+        .from("waitlists")
+        .select("subscriber_count, subdomain, product_name, founder_id")
+        .eq("id", waitlist_id)
+        .single();
+
+      if (!wl) return;
+
+      const founderId = (wl as unknown as { founder_id?: string }).founder_id;
+      if (!founderId) return;
+
+      const { data: profile } = await adminSupabase
+        .from("founder_profiles")
+        .select("tier")
+        .eq("id", founderId)
+        .single();
+
+      if (!profile || profile.tier !== "free") return;
+
+      const count = wl.subscriber_count ?? 0;
+      if (count < 450) return; // Not yet at 90%
+
+      // Get founder email from auth.users
+      const { data: authUser } =
+        await adminSupabase.auth.admin.getUserById(founderId);
+      const founderEmail = authUser?.user?.email;
+      if (!founderEmail) return;
+
+      const subdomain = wl.subdomain;
+      const productName = wl.product_name || subdomain || "Your waitlist";
+
+      const upgradeUrl = `https://prewaitlist.com/dashboard?upgrade=cap`;
+
+      const html = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 0;">
+          <h2 style="font-size: 20px; font-weight: 600; color: #1a1a1a; margin: 0 0 12px;">
+            ${productName} is almost full
+          </h2>
+          <p style="font-size: 15px; color: #4a4a4a; margin: 0 0 24px; line-height: 1.5;">
+            You've reached ${count} of 500 subscribers on the Free plan.
+            Upgrade to Pro to keep collecting signups without limits.
+          </p>
+          <a href="${upgradeUrl}" style="display: inline-block; background-color: #0f7a5e; color: #ffffff; font-size: 15px; font-weight: 600; padding: 12px 24px; border-radius: 8px; text-decoration: none;">
+            Upgrade to Pro
+          </a>
+          <p style="font-size: 13px; color: #9ca3af; margin: 24px 0 0; line-height: 1.5;">
+            Pro removes the 500 subscriber cap and unlocks warmth tracking, broadcast emails, and more.
+          </p>
+        </div>
+      `;
+
+      await sendEmail({
+        to: founderEmail,
+        subject: `${productName} is almost full — upgrade to keep growing`,
+        html,
+        stream: "transactional",
+        idempotencyKey: `cap-warning/${waitlist_id}`,
+      });
+    } catch (err) {
+      console.error("Cap warning email IIFE failed:", err);
+    }
+  });
+
   return NextResponse.json(
     {
       id: data.id,
