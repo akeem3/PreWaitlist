@@ -22,13 +22,8 @@ export default function WaitlistListClient({
   waitlists,
 }: WaitlistListClientProps) {
   const router = useRouter();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<{
-    ids: string[];
-    names: string[];
-  } | null>(null);
+  const [archiving, setArchiving] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,47 +36,25 @@ export default function WaitlistListClient({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  function toggleSelect(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  async function handleDelete(ids: string[]) {
-    setDeleting(true);
+  async function handleArchive(waitlistId: string) {
+    setArchiving(waitlistId);
     try {
-      const res = await fetch("/api/waitlist", {
-        method: "DELETE",
+      const wl = waitlists.find((w) => w.id === waitlistId);
+      const isArchived = wl?.is_archived;
+      await fetch("/api/waitlist", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ waitlist_ids: ids }),
+        body: JSON.stringify({
+          waitlist_id: waitlistId,
+          is_archived: !isArchived,
+          archived_at: isArchived ? null : new Date().toISOString(),
+        }),
       });
-      if (res.ok) {
-        setSelected((prev) => {
-          const next = new Set(prev);
-          ids.forEach((id) => next.delete(id));
-          return next;
-        });
-        setConfirmDelete(null);
-        setOpenMenu(null);
-        router.refresh();
-      }
+      setOpenMenu(null);
+      router.refresh();
     } finally {
-      setDeleting(false);
+      setArchiving(null);
     }
-  }
-
-  function getNames(ids: string[]) {
-    return ids
-      .map(
-        (id) =>
-          waitlists.find((w) => w.id === id)?.headline ||
-          waitlists.find((w) => w.id === id)?.product_name ||
-          "Untitled"
-      )
-      .slice(0, 3);
   }
 
   if (waitlists.length === 0) {
@@ -157,45 +130,12 @@ export default function WaitlistListClient({
         </p>
       </div>
 
-      {selected.size > 0 && (
-        <div className="mb-4 flex items-center gap-3 rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3">
-          <span className="text-body-sm text-foreground">
-            {selected.size} selected
-          </span>
-          <button
-            type="button"
-            onClick={() =>
-              setConfirmDelete({
-                ids: Array.from(selected),
-                names: getNames(Array.from(selected)),
-              })
-            }
-            className="ml-auto rounded-lg bg-destructive px-3 py-1.5 text-body-sm font-medium text-white transition-colors hover:bg-destructive/90"
-          >
-            Delete selected
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelected(new Set())}
-            className="rounded-lg px-3 py-1.5 text-body-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Cancel
-          </button>
-        </div>
-      )}
-
       <div className="space-y-3">
         {waitlists.map((wl) => (
           <div
             key={wl.id}
             className="group relative flex items-center gap-4 rounded-xl border border-border bg-card p-5 transition-colors hover:bg-muted/30"
           >
-            <input
-              type="checkbox"
-              checked={selected.has(wl.id)}
-              onChange={() => toggleSelect(wl.id)}
-              className="h-4 w-4 shrink-0 cursor-pointer rounded border-border text-accent accent-accent"
-            />
             <Link
               href={`/dashboard/${wl.id}/settings`}
               className="flex flex-1 min-w-0 items-center gap-4"
@@ -276,26 +216,33 @@ export default function WaitlistListClient({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      setConfirmDelete({
-                        ids: [wl.id],
-                        names: [
-                          wl.headline || wl.product_name || "Untitled waitlist",
-                        ],
-                      });
+                      handleArchive(wl.id);
                       setOpenMenu(null);
                     }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-body-sm text-destructive transition-colors hover:bg-destructive/5"
+                    disabled={archiving === wl.id}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-body-sm text-foreground transition-colors hover:bg-muted"
                   >
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <path
-                        d="M2.5 4H11.5M5 4V3C5 2.44772 5.44772 2 6 2H8C8.55228 2 9 2.44772 9 3V4M3.5 4L4.2 11.5C4.25 12.0523 4.69772 12.5 5.25 12.5H8.75C9.30228 12.5 9.75 12.0523 9.8 11.5L10.5 4"
+                      <rect
+                        x="2"
+                        y="3"
+                        width="10"
+                        height="8"
+                        rx="1.5"
                         stroke="currentColor"
                         strokeWidth="1.2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M2 5.5H12"
+                        stroke="currentColor"
+                        strokeWidth="1.2"
                       />
                     </svg>
-                    Delete waitlist
+                    {archiving === wl.id
+                      ? "Working…"
+                      : wl.is_archived
+                        ? "Unarchive"
+                        : "Archive"}
                   </button>
                 </div>
               )}
@@ -303,52 +250,6 @@ export default function WaitlistListClient({
           </div>
         ))}
       </div>
-
-      {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-lg">
-            <h2 className="mb-2 text-h4 font-medium text-foreground">
-              Delete {confirmDelete.ids.length > 1 ? "waitlists" : "waitlist"}?
-            </h2>
-            <p className="mb-1 text-body-sm text-muted-foreground">
-              This permanently deletes:
-            </p>
-            <ul className="mb-4 list-disc pl-5 text-body-sm text-foreground">
-              {confirmDelete.names.map((name, i) => (
-                <li key={confirmDelete.ids[i]}>{name}</li>
-              ))}
-              {confirmDelete.ids.length > 3 && (
-                <li className="text-muted-foreground">
-                  ...and {confirmDelete.ids.length - 3} more
-                </li>
-              )}
-            </ul>
-            <p className="mb-6 text-body-sm text-muted-foreground">
-              All subscribers, data, and settings will be lost. This cannot be
-              undone.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(null)}
-                className="rounded-lg px-4 py-2 text-body-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDelete(confirmDelete.ids)}
-                disabled={deleting}
-                className="rounded-lg bg-destructive px-4 py-2 text-body-sm font-medium text-white transition-colors hover:bg-destructive/90 disabled:opacity-50"
-              >
-                {deleting
-                  ? "Deleting…"
-                  : `Delete ${confirmDelete.ids.length > 1 ? "all" : ""}`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

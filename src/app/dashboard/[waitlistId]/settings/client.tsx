@@ -56,6 +56,8 @@ export default function WaitlistSettingsClient({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
 
@@ -129,12 +131,29 @@ export default function WaitlistSettingsClient({
     }
   }
 
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/waitlist", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ waitlist_ids: [waitlist.id] }),
+      });
+      if (res.ok) {
+        router.push("/dashboard/settings/waitlists");
+      }
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-8 py-12">
       <Breadcrumb
         items={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Settings", href: "/dashboard/settings" },
+          { label: "Waitlist Settings", href: "/dashboard/settings/waitlists" },
           {
             label: waitlist.headline || waitlist.product_name || "Untitled",
           },
@@ -201,13 +220,13 @@ export default function WaitlistSettingsClient({
                       value={brandColor}
                       onChange={(e) => setBrandColor(e.target.value)}
                       onBlur={() => saveField("brand_color", brandColor)}
-                      className="h-10 w-10 cursor-pointer rounded-lg border border-border"
+                      className="h-10 flex-1 cursor-pointer rounded-lg border border-border"
                     />
                     <Input
                       value={brandColor}
                       onChange={(e) => setBrandColor(e.target.value)}
                       onBlur={() => saveField("brand_color", brandColor)}
-                      className="flex-1"
+                      className="w-28"
                     />
                   </div>
                 </div>
@@ -326,52 +345,87 @@ export default function WaitlistSettingsClient({
         )}
 
         {activeTab === "advanced" && (
-          <div className="rounded-xl border border-border bg-card p-6">
-            <h2 className="mb-4 text-h4 font-medium text-foreground">
-              Advanced
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <h3 className="mb-1 text-body-sm font-medium text-foreground">
-                  Archive waitlist
-                </h3>
-                <p className="mb-3 text-body-sm text-muted-foreground">
-                  Archiving hides your public page and stops new signups. You
-                  can unarchive at any time.
-                </p>
-                {waitlist.is_archived ? (
-                  <div className="flex items-center gap-3">
-                    <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-                      Archived
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleUnarchive}
-                      disabled={archiving}
-                    >
-                      {archiving ? "Working…" : "Unarchive"}
-                    </Button>
-                  </div>
-                ) : (
+          <div className="space-y-6">
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="mb-4 text-h4 font-medium text-foreground">
+                Archive
+              </h2>
+              <p className="mb-4 text-body-sm text-muted-foreground">
+                Archiving hides your public page and stops new signups. You can
+                unarchive at any time.
+              </p>
+              {waitlist.is_archived ? (
+                <div className="flex items-center gap-3">
+                  <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+                    Archived
+                  </span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          "Archiving your waitlist will stop new signups and hide your public page. This can be undone. Continue?"
-                        )
-                      ) {
-                        handleArchive();
-                      }
-                    }}
+                    onClick={handleUnarchive}
                     disabled={archiving}
                   >
-                    {archiving ? "Archiving…" : "Archive waitlist"}
+                    {archiving ? "Working…" : "Unarchive"}
                   </Button>
-                )}
-              </div>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "Archiving your waitlist will stop new signups and hide your public page. This can be undone. Continue?"
+                      )
+                    ) {
+                      handleArchive();
+                    }
+                  }}
+                  disabled={archiving}
+                >
+                  {archiving ? "Archiving…" : "Archive waitlist"}
+                </Button>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-destructive/20 bg-card p-6">
+              <h2 className="mb-1 text-h4 font-medium text-destructive">
+                Danger Zone
+              </h2>
+              <p className="mb-4 text-body-sm text-muted-foreground">
+                Permanently delete this waitlist and all its data. This action
+                cannot be undone.
+              </p>
+              {confirmDelete ? (
+                <div className="flex items-center gap-3">
+                  <span className="text-body-sm text-muted-foreground">
+                    Are you sure? All subscribers and data will be lost.
+                  </span>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                  >
+                    {deleting ? "Deleting…" : "Confirm delete"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setConfirmDelete(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  Delete waitlist
+                </Button>
+              )}
             </div>
           </div>
         )}
