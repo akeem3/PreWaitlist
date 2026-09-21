@@ -58,6 +58,7 @@ export default function WaitlistSettingsClient({
   const [archiving, setArchiving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
 
@@ -428,33 +429,16 @@ export default function WaitlistSettingsClient({
                     action cannot be undone.
                   </p>
                   <div className="mt-4">
-                    {confirmDelete ? (
-                      <div className="flex items-center gap-3">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={handleDelete}
-                          disabled={deleting}
-                        >
-                          {deleting ? "Deleting…" : "Yes, delete forever"}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setConfirmDelete(false)}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => setConfirmDelete(true)}
-                      >
-                        Delete waitlist
-                      </Button>
-                    )}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        setConfirmDelete(true);
+                        setConfirmText("");
+                      }}
+                    >
+                      Delete waitlist
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -462,6 +446,76 @@ export default function WaitlistSettingsClient({
           </div>
         )}
       </div>
+
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-lg">
+            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                className="text-destructive"
+              >
+                <path
+                  d="M6 4H14M8 4V3C8 2.44772 8.44772 2 9 2H11C11.5523 2 12 2.44772 12 3V4M4.5 4L5.2 16.5C5.25 17.0523 5.69772 17.5 6.25 17.5H13.75C14.3023 17.5 14.75 17.0523 14.8 16.5L15.5 4"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <h2 className="mb-2 text-h4 font-medium text-foreground">
+              Delete waitlist?
+            </h2>
+            <p className="mb-2 text-body-sm text-muted-foreground">
+              This will permanently delete{" "}
+              <span className="font-medium text-foreground">
+                &ldquo;
+                {waitlist.headline ||
+                  waitlist.product_name ||
+                  "Untitled waitlist"}
+                &rdquo;
+              </span>{" "}
+              and all of its data including subscribers, settings, and milestone
+              rewards. This action cannot be undone.
+            </p>
+            <p className="mb-4 text-body-sm text-muted-foreground">
+              Type <span className="font-medium text-foreground">delete</span>{" "}
+              to confirm.
+            </p>
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder='Type "delete" to confirm'
+              className="mb-4 w-full rounded-lg border border-border bg-card px-3 py-2 text-body-sm text-foreground placeholder:text-muted-foreground focus:border-destructive focus:outline-none focus:ring-1 focus:ring-destructive"
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmDelete(false);
+                  setConfirmText("");
+                }}
+                className="rounded-lg px-4 py-2 text-body-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting || confirmText !== "delete"}
+                className="rounded-lg bg-destructive px-4 py-2 text-body-sm font-medium text-white transition-colors hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting ? "Deleting…" : "Delete forever"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
