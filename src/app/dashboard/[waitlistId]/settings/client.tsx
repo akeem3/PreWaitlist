@@ -347,85 +347,117 @@ export default function WaitlistSettingsClient({
         {activeTab === "advanced" && (
           <div className="space-y-6">
             <div className="rounded-xl border border-border bg-card p-6">
-              <h2 className="mb-4 text-h4 font-medium text-foreground">
-                Archive
-              </h2>
-              <p className="mb-4 text-body-sm text-muted-foreground">
-                Archiving hides your public page and stops new signups. You can
-                unarchive at any time.
-              </p>
-              {waitlist.is_archived ? (
-                <div className="flex items-center gap-3">
-                  <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-                    Archived
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleUnarchive}
-                    disabled={archiving}
-                  >
-                    {archiving ? "Working…" : "Unarchive"}
-                  </Button>
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <rect
+                      x="3"
+                      y="4"
+                      width="14"
+                      height="12"
+                      rx="2"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    />
+                    <path d="M3 8H17" stroke="currentColor" strokeWidth="1.5" />
+                  </svg>
                 </div>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        "Archiving your waitlist will stop new signups and hide your public page. This can be undone. Continue?"
-                      )
-                    ) {
-                      handleArchive();
-                    }
-                  }}
-                  disabled={archiving}
-                >
-                  {archiving ? "Archiving…" : "Archive waitlist"}
-                </Button>
-              )}
+                <div className="flex-1">
+                  <h2 className="text-body-lg font-medium text-foreground">
+                    {waitlist.is_archived
+                      ? "This waitlist is archived"
+                      : "Archive this waitlist"}
+                  </h2>
+                  <p className="mt-1 text-body-sm text-muted-foreground">
+                    {waitlist.is_archived
+                      ? "Archived waitlists are hidden from your public page and stop accepting new signups."
+                      : "Archiving hides your public page and stops new signups. You can unarchive at any time."}
+                  </p>
+                  <div className="mt-4">
+                    {waitlist.is_archived ? (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleUnarchive}
+                        disabled={archiving}
+                      >
+                        {archiving ? "Working…" : "Unarchive waitlist"}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              "Archiving your waitlist will stop new signups and hide your public page. This can be undone. Continue?"
+                            )
+                          ) {
+                            handleArchive();
+                          }
+                        }}
+                        disabled={archiving}
+                      >
+                        {archiving ? "Archiving…" : "Archive waitlist"}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="rounded-xl border border-destructive/20 bg-card p-6">
-              <h2 className="mb-1 text-h4 font-medium text-destructive">
-                Danger Zone
-              </h2>
-              <p className="mb-4 text-body-sm text-muted-foreground">
-                Permanently delete this waitlist and all its data. This action
-                cannot be undone.
-              </p>
-              {confirmDelete ? (
-                <div className="flex items-center gap-3">
-                  <span className="text-body-sm text-muted-foreground">
-                    Are you sure? All subscribers and data will be lost.
-                  </span>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                  >
-                    {deleting ? "Deleting…" : "Confirm delete"}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setConfirmDelete(false)}
-                  >
-                    Cancel
-                  </Button>
+            <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-6">
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M6 4H14M8 4V3C8 2.44772 8.44772 2 9 2H11C11.5523 2 12 2.44772 12 3V4M4.5 4L5.2 16.5C5.25 17.0523 5.69772 17.5 6.25 17.5H13.75C14.3023 17.5 14.75 17.0523 14.8 16.5L15.5 4"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </div>
-              ) : (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setConfirmDelete(true)}
-                >
-                  Delete waitlist
-                </Button>
-              )}
+                <div className="flex-1">
+                  <h2 className="text-body-lg font-medium text-destructive">
+                    Delete this waitlist
+                  </h2>
+                  <p className="mt-1 text-body-sm text-muted-foreground">
+                    Permanently delete this waitlist and all its data. This
+                    action cannot be undone.
+                  </p>
+                  <div className="mt-4">
+                    {confirmDelete ? (
+                      <div className="flex items-center gap-3">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={handleDelete}
+                          disabled={deleting}
+                        >
+                          {deleting ? "Deleting…" : "Yes, delete forever"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setConfirmDelete(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setConfirmDelete(true)}
+                      >
+                        Delete waitlist
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}

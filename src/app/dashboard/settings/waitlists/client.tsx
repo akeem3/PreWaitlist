@@ -24,7 +24,11 @@ export default function WaitlistListClient({
   const router = useRouter();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [archiving, setArchiving] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const activeWaitlists = waitlists.filter((wl) => !wl.is_archived);
+  const archivedWaitlists = waitlists.filter((wl) => wl.is_archived);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -131,7 +135,7 @@ export default function WaitlistListClient({
       </div>
 
       <div className="space-y-3">
-        {waitlists.map((wl) => (
+        {activeWaitlists.map((wl) => (
           <div
             key={wl.id}
             className="group relative flex items-center gap-4 rounded-xl border border-border bg-card p-5 transition-colors hover:bg-muted/30"
@@ -155,16 +159,9 @@ export default function WaitlistListClient({
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h2 className="truncate text-body-lg font-medium text-foreground">
-                    {wl.headline || wl.product_name || "Untitled waitlist"}
-                  </h2>
-                  {wl.is_archived && (
-                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                      Archived
-                    </span>
-                  )}
-                </div>
+                <h2 className="truncate text-body-lg font-medium text-foreground">
+                  {wl.headline || wl.product_name || "Untitled waitlist"}
+                </h2>
                 <p className="mt-0.5 text-body-sm text-muted-foreground">
                   {wl.subdomain}.prewaitlist.com · {wl.subscriberCount}{" "}
                   subscriber
@@ -217,7 +214,6 @@ export default function WaitlistListClient({
                       e.preventDefault();
                       e.stopPropagation();
                       handleArchive(wl.id);
-                      setOpenMenu(null);
                     }}
                     disabled={archiving === wl.id}
                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-body-sm text-foreground transition-colors hover:bg-muted"
@@ -238,11 +234,7 @@ export default function WaitlistListClient({
                         strokeWidth="1.2"
                       />
                     </svg>
-                    {archiving === wl.id
-                      ? "Working…"
-                      : wl.is_archived
-                        ? "Unarchive"
-                        : "Archive"}
+                    {archiving === wl.id ? "Working…" : "Archive"}
                   </button>
                 </div>
               )}
@@ -250,6 +242,86 @@ export default function WaitlistListClient({
           </div>
         ))}
       </div>
+
+      {archivedWaitlists.length > 0 && (
+        <div className="mt-8">
+          <button
+            type="button"
+            onClick={() => setShowArchived(!showArchived)}
+            className="flex items-center gap-2 text-body-sm font-medium text-muted-foreground transition-colors hover:text-foreground mb-3"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              className={`transition-transform ${showArchived ? "rotate-90" : ""}`}
+            >
+              <path
+                d="M4.5 2L7.5 6L4.5 10"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Archived ({archivedWaitlists.length})
+          </button>
+
+          {showArchived && (
+            <div className="space-y-3">
+              {archivedWaitlists.map((wl) => (
+                <div
+                  key={wl.id}
+                  className="group flex items-center gap-4 rounded-xl border border-border bg-muted/30 p-5 opacity-70 transition-colors hover:opacity-100"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <rect
+                        x="2"
+                        y="3"
+                        width="16"
+                        height="14"
+                        rx="2"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      />
+                      <path
+                        d="M2 7H18"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h2 className="truncate text-body-lg font-medium text-foreground">
+                        {wl.headline || wl.product_name || "Untitled waitlist"}
+                      </h2>
+                      <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                        Archived
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-body-sm text-muted-foreground">
+                      {wl.subdomain}.prewaitlist.com · {wl.subscriberCount}{" "}
+                      subscriber
+                      {wl.subscriberCount !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleArchive(wl.id)}
+                    disabled={archiving === wl.id}
+                    className="shrink-0 rounded-lg border border-border bg-card px-3 py-1.5 text-body-sm font-medium text-foreground transition-colors hover:bg-muted"
+                  >
+                    {archiving === wl.id ? "Working…" : "Unarchive"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
