@@ -220,13 +220,13 @@ export default function WaitlistSettingsClient({
                       value={brandColor}
                       onChange={(e) => setBrandColor(e.target.value)}
                       onBlur={() => saveField("brand_color", brandColor)}
-                      className="h-10 flex-1 cursor-pointer rounded-lg border border-border"
+                      className="h-10 w-10 cursor-pointer rounded-lg border border-border"
                     />
                     <Input
                       value={brandColor}
                       onChange={(e) => setBrandColor(e.target.value)}
                       onBlur={() => saveField("brand_color", brandColor)}
-                      className="w-28"
+                      className="flex-1"
                     />
                   </div>
                 </div>
