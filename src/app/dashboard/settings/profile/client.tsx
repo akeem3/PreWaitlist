@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input } from "../../../../../components/ui/input";
 import { Textarea } from "../../../../../components/ui/textarea";
@@ -13,6 +12,7 @@ import { InvoiceHistory } from "../../../../../components/billing/invoice-histor
 import { BillingDetails } from "../../../../../components/billing/billing-details";
 import { CancellationFlow } from "../../../../../components/billing/cancellation-flow";
 import { DomainAuthSection } from "../../../../../components/billing/domain-auth-section";
+import { Breadcrumb } from "../../../../../components/dashboard/breadcrumb";
 import { useUpgradeModal } from "../../shell";
 
 interface ProfileData {
@@ -254,30 +254,13 @@ export default function ProfileClient() {
   }
 
   return (
-    <div className="max-w-2xl px-8 py-12">
+    <div className="mx-auto max-w-4xl px-8 py-12">
+      <Breadcrumb />
       <div className="mb-8">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard/settings"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path
-                d="M10 12L6 8L10 4"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </Link>
-          <div>
-            <h1 className="text-h3 font-semibold text-foreground">Profile</h1>
-            <p className="mt-1 text-body text-muted-foreground">
-              Manage your account settings.
-            </p>
-          </div>
-        </div>
+        <h1 className="text-h3 font-semibold text-foreground">Profile</h1>
+        <p className="mt-1 text-body text-muted-foreground">
+          Manage your account settings.
+        </p>
       </div>
 
       <SettingsTabs

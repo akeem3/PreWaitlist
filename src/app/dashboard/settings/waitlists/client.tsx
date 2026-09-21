@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Breadcrumb } from "../../../../../components/dashboard/breadcrumb";
 
 interface Waitlist {
   id: string;
@@ -85,7 +86,8 @@ export default function WaitlistListClient({
 
   if (waitlists.length === 0) {
     return (
-      <div>
+      <div className="mx-auto max-w-4xl px-8 py-12">
+        <Breadcrumb />
         <div className="mb-8">
           <h1 className="text-h3 font-semibold text-foreground">
             Waitlist Settings
@@ -144,32 +146,15 @@ export default function WaitlistListClient({
   }
 
   return (
-    <div>
+    <div className="mx-auto max-w-4xl px-8 py-12">
+      <Breadcrumb />
       <div className="mb-8">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard/settings"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path
-                d="M10 12L6 8L10 4"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </Link>
-          <div>
-            <h1 className="text-h3 font-semibold text-foreground">
-              Waitlist Settings
-            </h1>
-            <p className="mt-1 text-body text-muted-foreground">
-              Select a waitlist to configure.
-            </p>
-          </div>
-        </div>
+        <h1 className="text-h3 font-semibold text-foreground">
+          Waitlist Settings
+        </h1>
+        <p className="mt-1 text-body text-muted-foreground">
+          Select a waitlist to configure.
+        </p>
       </div>
 
       {selected.size > 0 && (

@@ -6,6 +6,7 @@ import { SettingsTabs } from "../../../../../components/dashboard/settings/tabs"
 import { Button } from "../../../../../components/ui/button";
 import { Input } from "../../../../../components/ui/input";
 import { LivePreview } from "../../../../../components/onboarding/live-preview";
+import { Breadcrumb } from "../../../../../components/dashboard/breadcrumb";
 
 interface WaitlistData {
   id: string;
@@ -128,7 +129,8 @@ export default function WaitlistSettingsClient({
   }
 
   return (
-    <div>
+    <div className="mx-auto max-w-4xl px-8 py-12">
+      <Breadcrumb />
       <div className="mb-8">
         <h1 className="text-h3 font-semibold text-foreground">
           Waitlist Settings
