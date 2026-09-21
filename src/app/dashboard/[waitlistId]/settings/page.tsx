@@ -21,7 +21,7 @@ export default async function WaitlistSettingsPage({
   const { data: waitlist } = await supabase
     .from("waitlists")
     .select(
-      "id, headline, subheadline, cta_text, logo_url, brand_color, template, sender_name, cold_threshold, is_archived, business_address"
+      "id, headline, subheadline, cta_text, logo_url, brand_color, template, sender_name, cold_threshold, is_archived, business_address, product_name"
     )
     .eq("id", waitlistId)
     .eq("founder_id", user.id)
@@ -42,6 +42,9 @@ export default async function WaitlistSettingsPage({
       waitlist={{
         ...waitlist,
         tier: profile?.tier ?? "free",
+      }}
+      segmentOverrides={{
+        [waitlistId]: waitlist.headline || waitlist.product_name || "Untitled",
       }}
     />
   );

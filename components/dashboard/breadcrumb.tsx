@@ -12,13 +12,21 @@ const SEGMENT_LABELS: Record<string, string> = {
   billing: "Billing",
 };
 
-function formatSegment(segment: string): string {
+function formatSegment(
+  segment: string,
+  overrides?: Record<string, string>
+): string {
+  if (overrides?.[segment]) return overrides[segment];
   if (SEGMENT_LABELS[segment]) return SEGMENT_LABELS[segment];
   if (segment.startsWith("[") && segment.endsWith("]")) return "";
   return segment.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export function Breadcrumb() {
+interface BreadcrumbProps {
+  segmentOverrides?: Record<string, string>;
+}
+
+export function Breadcrumb({ segmentOverrides }: BreadcrumbProps) {
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean);
 
@@ -30,7 +38,7 @@ export function Breadcrumb() {
   for (let i = 0; i < segments.length; i++) {
     const segment = segments[i];
     builtPath += `/${segment}`;
-    const label = formatSegment(segment);
+    const label = formatSegment(segment, segmentOverrides);
 
     if (!label) {
       if (i < segments.length - 1) builtPath += `/${segments[i + 1]}`;
