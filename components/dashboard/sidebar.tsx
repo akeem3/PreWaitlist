@@ -440,7 +440,7 @@ export function Sidebar({
           ) : (
             <Link
               href="/onboarding/1"
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-transparent px-3 py-2 text-body-sm font-medium text-accent transition-colors hover:bg-accent/10"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-accent bg-transparent px-3 py-2 text-body-sm font-medium text-accent transition-colors hover:bg-accent/10"
             >
               <svg
                 width="14"
