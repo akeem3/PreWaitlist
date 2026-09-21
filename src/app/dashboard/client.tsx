@@ -415,72 +415,62 @@ export default function DashboardClient({
               </div>
             )}
           </Link>
-          {tier === "pro" ? (
-            <Link
-              href={`/dashboard/warmth${waitlistId ? `?wid=${waitlistId}` : ""}`}
-              className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center transition-colors hover:bg-muted/30"
-            >
-              <div className="mb-1 text-h3 text-foreground">
-                {warmthData ? (
-                  <>
-                    <span className="text-status-hot">{warmthData.hot}</span>
-                    <span className="text-body-sm text-muted-foreground">
-                      {" "}
-                      /{" "}
-                    </span>
-                    <span className="text-status-warm">{warmthData.warm}</span>
-                    <span className="text-body-sm text-muted-foreground">
-                      {" "}
-                      /{" "}
-                    </span>
-                    <span className="text-status-cold">{warmthData.cold}</span>
-                  </>
-                ) : (
-                  "\u2014"
-                )}
-              </div>
-              <div className="text-caption text-muted-foreground">
-                Hot / Warm / Cold
-              </div>
-              {warmthData && (
-                <div className="mt-1 text-xs text-muted-foreground">
-                  {warmthData.unscored > 0
-                    ? `${warmthData.unscored} unscored`
-                    : `${warmthData.total} total`}
+          {(() => {
+            const warmthContent = (
+              <>
+                <div className="mb-1 text-h3 text-foreground">
+                  {warmthData ? (
+                    <>
+                      <span className="text-status-hot">{warmthData.hot}</span>
+                      <span className="text-body-sm text-muted-foreground">
+                        {" "}
+                        /{" "}
+                      </span>
+                      <span className="text-status-warm">
+                        {warmthData.warm}
+                      </span>
+                      <span className="text-body-sm text-muted-foreground">
+                        {" "}
+                        /{" "}
+                      </span>
+                      <span className="text-status-cold">
+                        {warmthData.cold}
+                      </span>
+                    </>
+                  ) : (
+                    "\u2014"
+                  )}
                 </div>
-              )}
-            </Link>
-          ) : (
-            <div className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
-              <div className="mb-1 flex items-center justify-center gap-1.5 text-h3 text-foreground">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  className="text-muted-foreground"
+                <div className="text-caption text-muted-foreground">
+                  Hot / Warm / Cold
+                </div>
+                {warmthData && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {warmthData.unscored > 0
+                      ? `${warmthData.unscored} unscored`
+                      : `${warmthData.total} total`}
+                  </div>
+                )}
+              </>
+            );
+
+            if (tier === "pro") {
+              return (
+                <Link
+                  href={`/dashboard/warmth${waitlistId ? `?wid=${waitlistId}` : ""}`}
+                  className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center transition-colors hover:bg-muted/30"
                 >
-                  <rect
-                    x="2.5"
-                    y="5"
-                    width="7"
-                    height="5.5"
-                    rx="1"
-                    stroke="currentColor"
-                    strokeWidth="1.2"
-                  />
-                  <path
-                    d="M4 5V3.5C4 2.4 4.9 1.5 6 1.5C7.1 1.5 8 2.4 8 3.5V5"
-                    stroke="currentColor"
-                    strokeWidth="1.2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                {"\u2014"}
+                  {warmthContent}
+                </Link>
+              );
+            }
+
+            return (
+              <div className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
+                {warmthContent}
               </div>
-              <div className="text-caption text-muted-foreground">Warmth</div>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         {!isEmpty && (

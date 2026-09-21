@@ -28,7 +28,7 @@ const FEATURES = [
   "Custom sender domain",
 ];
 
-const COOLDOWN_DAYS = 7;
+const COOLDOWN_DAYS = 1;
 
 function getCooldownKey(triggerSource: string): string {
   return `upgrade-dismissed-${triggerSource}`;
