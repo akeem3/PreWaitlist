@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { SubscriptionCard } from "../../../../../components/billing/subscription-card";
 import { PlanComparison } from "../../../../../components/billing/plan-comparison";
 import { InvoiceHistory } from "../../../../../components/billing/invoice-history";
@@ -15,23 +15,55 @@ interface ProfileData {
   businessAddress: string;
 }
 
+function fetchProfile(): Promise<ProfileData | null> {
+  return fetch("/api/profile")
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null);
+}
+
 export default function BillingClient() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const triggerUpgrade = useUpgradeModal();
+  const billingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopPolling = useCallback(() => {
+    if (billingRef.current) {
+      clearInterval(billingRef.current);
+      billingRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/profile")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: ProfileData | null) => {
-        if (cancelled || !data) return;
-        setProfile(data);
-      })
-      .catch(() => {});
+    fetchProfile().then((data) => {
+      if (!cancelled && data) setProfile(data);
+    });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const startPolling = useCallback(() => {
+    stopPolling();
+    billingRef.current = setInterval(async () => {
+      const data = await fetchProfile();
+      if (data && data.tier === "pro") {
+        stopPolling();
+        setProfile(data);
+      }
+    }, 2000);
+
+    setTimeout(stopPolling, 30000);
+  }, [stopPolling]);
+
+  useEffect(() => {
+    const handler = () => startPolling();
+    window.addEventListener("paddle-checkout-opened", handler);
+    return () => {
+      window.removeEventListener("paddle-checkout-opened", handler);
+      stopPolling();
+    };
+  }, [startPolling, stopPolling]);
 
   const handleAddressSave = useCallback(async (address: string) => {
     const res = await fetch("/api/profile", {

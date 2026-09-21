@@ -73,18 +73,26 @@ export function UpgradeModal({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ triggerSource }),
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`Checkout failed: ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
+        if (data.error) {
+          console.error("Checkout error:", data.error);
+          return;
+        }
         if (data.priceId) {
           paddle.Checkout.open({
             items: [{ priceId: data.priceId, quantity: 1 }],
             customData: data.customData,
             settings: { variant: "one-page" },
           });
+          window.dispatchEvent(new CustomEvent("paddle-checkout-opened"));
         }
       })
-      .catch(() => {
-        // silent
+      .catch((err) => {
+        console.error("Failed to open checkout:", err);
       });
 
     onOpenChange(false);

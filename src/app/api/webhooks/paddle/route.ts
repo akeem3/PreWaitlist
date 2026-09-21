@@ -9,6 +9,7 @@ const SUPPORTED_EVENTS = new Set([
   "subscription.activated",
   "subscription.canceled",
   "subscription.past_due",
+  "transaction.completed",
 ]);
 
 export async function POST(req: NextRequest) {
@@ -71,6 +72,38 @@ export async function POST(req: NextRequest) {
 
       if (error) {
         console.error("Failed to update tier to pro", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      break;
+    }
+
+    case "transaction.completed": {
+      const txData = event.data as {
+        id: string;
+        customerId: string;
+        customData: { user_id?: string; waitlist_id?: string } | null;
+        subscriptionId?: string;
+      };
+      const txUserId = txData.customData?.user_id;
+      if (!txUserId) {
+        console.error(
+          "Paddle transaction.completed missing user_id",
+          txData.id
+        );
+        return NextResponse.json({ received: true });
+      }
+
+      const { error } = await admin
+        .from("founder_profiles")
+        .update({
+          tier: "pro",
+          paddle_subscription_id: txData.subscriptionId ?? null,
+          paddle_customer_id: txData.customerId,
+        })
+        .eq("id", txUserId);
+
+      if (error) {
+        console.error("Failed to update tier to pro via transaction", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
       break;

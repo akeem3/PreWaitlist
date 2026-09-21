@@ -30,7 +30,7 @@ export async function GET() {
     .select("business_address")
     .eq("founder_id", user.id)
     .limit(1)
-    .single();
+    .maybeSingle();
 
   return NextResponse.json({
     displayName: profile.display_name || "",
