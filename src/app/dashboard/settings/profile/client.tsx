@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "../../../../../components/ui/input";
-import { Textarea } from "../../../../../components/ui/textarea";
 import { SettingsTabs } from "../../../../../components/dashboard/settings/tabs";
 import { createClient } from "../../../../lib/supabase/client";
 import { SubscriptionCard } from "../../../../../components/billing/subscription-card";
@@ -17,8 +16,6 @@ import { useUpgradeModal } from "../../shell";
 
 interface ProfileData {
   displayName: string;
-  avatarUrl: string;
-  bio: string;
   tier: string;
   email: string;
   createdAt: string;
@@ -37,10 +34,18 @@ export default function ProfileClient() {
   const [saved, setSaved] = useState(false);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [displayName, setDisplayName] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [bio, setBio] = useState("");
   const router = useRouter();
   const triggerUpgrade = useUpgradeModal();
+  const [signingOut, setSigningOut] = useState(false);
+
+  // Email change state
+  const [showEmailChange, setShowEmailChange] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailMsg, setEmailMsg] = useState<{
+    type: "ok" | "err";
+    text: string;
+  } | null>(null);
 
   // Security tab state
   const [newPassword, setNewPassword] = useState("");
@@ -50,15 +55,8 @@ export default function ProfileClient() {
     type: "ok" | "err";
     text: string;
   } | null>(null);
-  const [newEmail, setNewEmail] = useState("");
-  const [emailSaving, setEmailSaving] = useState(false);
-  const [emailMsg, setEmailMsg] = useState<{
-    type: "ok" | "err";
-    text: string;
-  } | null>(null);
 
-  // Danger Zone state
-  const [exporting, setExporting] = useState(false);
+  // Danger Zone state (Security tab only)
   const [deleteStep, setDeleteStep] = useState<0 | 1 | 2>(0);
   const [deleteEmail, setDeleteEmail] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -71,8 +69,6 @@ export default function ProfileClient() {
         if (cancelled || !data) return;
         setProfile(data);
         setDisplayName(data.displayName);
-        setAvatarUrl(data.avatarUrl);
-        setBio(data.bio);
       })
       .catch(() => {});
     return () => {
@@ -80,11 +76,7 @@ export default function ProfileClient() {
     };
   }, []);
 
-  const hasChanges =
-    profile &&
-    (displayName !== profile.displayName ||
-      avatarUrl !== profile.avatarUrl ||
-      bio !== profile.bio);
+  const hasChanges = profile && displayName !== profile.displayName;
 
   async function handleSave() {
     setSaving(true);
@@ -93,15 +85,10 @@ export default function ProfileClient() {
       const res = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          display_name: displayName,
-          avatar_url: avatarUrl,
-          bio,
-        }),
+        body: JSON.stringify({ display_name: displayName }),
       });
       if (res.ok) {
         setSaved(true);
-        // Re-fetch profile to sync
         fetch("/api/profile")
           .then((r) => (r.ok ? r.json() : null))
           .then((data: ProfileData | null) => {
@@ -136,9 +123,46 @@ export default function ProfileClient() {
         window.location.href = data.url;
       }
     } catch {
-      // Silently fail — user can retry
+      // Silent
     }
   }, []);
+
+  async function handleEmailChange() {
+    setEmailSaving(true);
+    setEmailMsg(null);
+    if (!newEmail || !newEmail.includes("@")) {
+      setEmailMsg({ type: "err", text: "Enter a valid email address." });
+      setEmailSaving(false);
+      return;
+    }
+    if (newEmail === profile?.email) {
+      setEmailMsg({ type: "err", text: "This is already your email address." });
+      setEmailSaving(false);
+      return;
+    }
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({ email: newEmail });
+      if (error) {
+        setEmailMsg({
+          type: "err",
+          text: error.message.includes("recent")
+            ? "Please sign in again to change your email."
+            : error.message,
+        });
+      } else {
+        setEmailMsg({
+          type: "ok",
+          text: "Check your new email for a confirmation link. Your email will update after you confirm.",
+        });
+        setNewEmail("");
+      }
+    } catch {
+      setEmailMsg({ type: "err", text: "Something went wrong." });
+    } finally {
+      setEmailSaving(false);
+    }
+  }
 
   async function handlePasswordChange() {
     setPasswordSaving(true);
@@ -180,59 +204,6 @@ export default function ProfileClient() {
     }
   }
 
-  async function handleEmailChange() {
-    setEmailSaving(true);
-    setEmailMsg(null);
-    if (!newEmail || !newEmail.includes("@")) {
-      setEmailMsg({ type: "err", text: "Enter a valid email address." });
-      setEmailSaving(false);
-      return;
-    }
-    try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.updateUser({ email: newEmail });
-      if (error) {
-        setEmailMsg({
-          type: "err",
-          text: error.message.includes("recent")
-            ? "Please sign in again to change your email."
-            : error.message,
-        });
-      } else {
-        setEmailMsg({
-          type: "ok",
-          text: "Check your new email for a confirmation link.",
-        });
-        setNewEmail("");
-      }
-    } catch {
-      setEmailMsg({ type: "err", text: "Something went wrong." });
-    } finally {
-      setEmailSaving(false);
-    }
-  }
-
-  async function handleExportData() {
-    setExporting(true);
-    try {
-      const res = await fetch("/api/profile/export");
-      if (!res.ok) throw new Error("Export failed");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `prewaitlist-export-${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch {
-      setPasswordMsg({ type: "err", text: "Export failed. Please try again." });
-    } finally {
-      setExporting(false);
-    }
-  }
-
   async function handleDeleteAccount() {
     setDeleting(true);
     try {
@@ -253,6 +224,14 @@ export default function ProfileClient() {
     }
   }
 
+  async function handleSignOut() {
+    setSigningOut(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/signin");
+    router.refresh();
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-8 py-12">
       <Breadcrumb />
@@ -270,96 +249,166 @@ export default function ProfileClient() {
       />
 
       <div className="mt-6">
+        {/* ── Profile Tab ───────────────────────────────────── */}
         {activeTab === "profile" && (
-          <div className="rounded-xl border border-border bg-card p-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-h4 font-medium text-foreground">
-                Profile details
-              </h2>
-              {profile?.tier === "pro" && (
-                <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
-                  Pro
-                </span>
-              )}
-            </div>
-
-            <div className="mt-6 space-y-5">
-              {/* Email (read-only) */}
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-foreground">
-                  Email
-                </label>
-                <Input
-                  value={profile?.email || ""}
-                  disabled
-                  className="opacity-60"
-                />
-              </div>
-
-              {/* Display Name */}
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-foreground">
-                  Display name
-                </label>
-                <Input
-                  placeholder="Your name"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Shown in dashboard and emails. Leave blank to use your email.
-                </p>
-              </div>
-
-              {/* Avatar URL */}
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-foreground">
-                  Avatar URL
-                </label>
-                <Input
-                  placeholder="https://example.com/avatar.jpg"
-                  value={avatarUrl}
-                  onChange={(e) => setAvatarUrl(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Paste a URL to your profile picture.
-                </p>
-              </div>
-
-              {/* Bio */}
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-foreground">
-                  Bio
-                </label>
-                <Textarea
-                  placeholder="Tell us about yourself"
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  rows={3}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {bio.length}/500 characters
-                </p>
-              </div>
-
-              {/* Save */}
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saving || !hasChanges}
-                  className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {saving ? "Saving…" : saved ? "Saved!" : "Save changes"}
-                </button>
-                {saved && (
-                  <span className="text-xs text-accent">Changes saved.</span>
+          <div className="space-y-6">
+            {/* Account details */}
+            <div className="rounded-xl border border-border bg-card p-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-h4 font-medium text-foreground">Account</h2>
+                {profile?.tier === "pro" && (
+                  <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
+                    Pro
+                  </span>
                 )}
               </div>
+
+              <div className="mt-6 space-y-5">
+                {/* Email — visible */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Email
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <span className="text-body text-foreground">
+                      {profile?.email || "—"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowEmailChange(!showEmailChange);
+                        setEmailMsg(null);
+                        setNewEmail("");
+                      }}
+                      className="text-sm text-accent transition-colors hover:text-accent/80"
+                    >
+                      {showEmailChange ? "Cancel" : "Change email"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Inline email change form */}
+                {showEmailChange && (
+                  <div className="rounded-lg border border-border bg-muted/30 p-4">
+                    <div className="space-y-3">
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-foreground">
+                          New email
+                        </label>
+                        <Input
+                          type="email"
+                          placeholder="new@email.com"
+                          value={newEmail}
+                          onChange={(e) => setNewEmail(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          A confirmation link will be sent to the new email.
+                          Your current email will remain active until you
+                          confirm.
+                        </p>
+                      </div>
+                      {emailMsg && (
+                        <p
+                          className={`text-sm ${emailMsg.type === "ok" ? "text-accent" : "text-destructive"}`}
+                        >
+                          {emailMsg.text}
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleEmailChange}
+                        disabled={emailSaving || !newEmail}
+                        className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {emailSaving
+                          ? "Sending confirmation…"
+                          : "Send confirmation"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Display name */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Display name
+                  </label>
+                  <Input
+                    placeholder="Your name"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Shown in dashboard and emails. Leave blank to use your
+                    email.
+                  </p>
+                </div>
+
+                {/* Save */}
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving || !hasChanges}
+                    className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {saving ? "Saving…" : saved ? "Saved!" : "Save changes"}
+                  </button>
+                  {saved && (
+                    <span className="text-xs text-accent">Changes saved.</span>
+                  )}
+                </div>
+              </div>
             </div>
+
+            {/* Sign out */}
+            <button
+              type="button"
+              onClick={handleSignOut}
+              disabled={signingOut}
+              className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-6 py-4 text-left transition-colors hover:bg-muted/30"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                className="shrink-0 text-muted-foreground"
+              >
+                <path
+                  d="M7.5 2.5H5C3.89543 2.5 3 3.39543 3 4.5V15.5C3 16.6046 3.89543 17.5 5 17.5H7.5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M13.75 10L17.5 10M17.5 10L15.5 8M17.5 10L15.5 12"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M8.25 10H13.75C14.4404 10 15 10.5596 15 11.25V14.5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <div>
+                <p className="text-body-sm font-medium text-foreground">
+                  {signingOut ? "Signing out…" : "Sign out"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Sign out of your account on this device
+                </p>
+              </div>
+            </button>
           </div>
         )}
 
+        {/* ── Billing Tab ──────────────────────────────────── */}
         {activeTab === "billing" && (
           <div className="space-y-6">
             <SubscriptionCard
@@ -383,6 +432,7 @@ export default function ProfileClient() {
           </div>
         )}
 
+        {/* ── Security Tab ─────────────────────────────────── */}
         {activeTab === "security" && (
           <div className="space-y-6">
             {/* Change Password */}
@@ -431,98 +481,17 @@ export default function ProfileClient() {
               </div>
             </div>
 
-            {/* Change Email */}
-            <div className="rounded-xl border border-border bg-card p-6">
-              <h2 className="mb-4 text-h4 font-medium text-foreground">
-                Change email
+            {/* Danger Zone — Delete Account */}
+            <div className="rounded-xl border border-destructive/50 bg-destructive/5 p-6">
+              <h2 className="mb-1 text-h4 font-medium text-destructive">
+                Delete account
               </h2>
-              <div className="space-y-4">
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-foreground">
-                    Current email
-                  </label>
-                  <Input
-                    value={profile?.email || ""}
-                    disabled
-                    className="opacity-60"
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-foreground">
-                    New email
-                  </label>
-                  <Input
-                    type="email"
-                    placeholder="new@email.com"
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    A confirmation link will be sent to the new email.
-                  </p>
-                </div>
-                {emailMsg && (
-                  <p
-                    className={`text-sm ${emailMsg.type === "ok" ? "text-accent" : "text-destructive"}`}
-                  >
-                    {emailMsg.text}
-                  </p>
-                )}
-                <button
-                  type="button"
-                  onClick={handleEmailChange}
-                  disabled={emailSaving || !newEmail}
-                  className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {emailSaving ? "Updating…" : "Update email"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Danger Zone */}
-      <div className="mt-8 rounded-xl border border-destructive/50 bg-destructive/5 p-6">
-        <h2 className="mb-1 text-h4 font-medium text-destructive">
-          Danger Zone
-        </h2>
-        <p className="mb-6 text-body-sm text-muted-foreground">
-          Irreversible actions. Please proceed with caution.
-        </p>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-body-sm font-medium text-foreground">
-                Export my data
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Download a JSON file with your profile, waitlists, and
-                subscribers.
+              <p className="mb-6 text-body-sm text-muted-foreground">
+                Permanently delete your account and all associated data. This
+                action cannot be undone.
               </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleExportData}
-              disabled={exporting}
-              className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 disabled:opacity-50"
-            >
-              {exporting ? "Exporting…" : "Export data"}
-            </button>
-          </div>
 
-          {/* Delete Account */}
-          <div className="border-t border-destructive/20 pt-4">
-            {deleteStep === 0 && (
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-body-sm font-medium text-foreground">
-                    Delete account
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Permanently delete your account and all associated data.
-                  </p>
-                </div>
+              {deleteStep === 0 && (
                 <button
                   type="button"
                   onClick={() => setDeleteStep(1)}
@@ -530,73 +499,72 @@ export default function ProfileClient() {
                 >
                   Delete account
                 </button>
-              </div>
-            )}
+              )}
 
-            {deleteStep === 1 && (
-              <div>
-                <p className="mb-3 text-body-sm text-foreground">
-                  <strong>Warning:</strong> This will permanently delete your
-                  profile, all waitlists, subscribers, and updates. This action
-                  cannot be undone.
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDeleteStep(2);
-                      setDeleteEmail("");
-                    }}
-                    className="rounded-lg border border-destructive/50 bg-card px-4 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
-                  >
-                    Continue
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteStep(0)}
-                    className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
-                  >
-                    Cancel
-                  </button>
+              {deleteStep === 1 && (
+                <div>
+                  <p className="mb-3 text-body-sm text-foreground">
+                    <strong>Warning:</strong> This will permanently delete your
+                    profile, all waitlists, subscribers, and updates.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteStep(2);
+                        setDeleteEmail("");
+                      }}
+                      className="rounded-lg border border-destructive/50 bg-card px-4 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+                    >
+                      Continue
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteStep(0)}
+                      className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {deleteStep === 2 && (
-              <div>
-                <p className="mb-3 text-body-sm text-foreground">
-                  Type your email <strong>{profile?.email}</strong> to confirm
-                  deletion:
-                </p>
-                <div className="flex gap-2">
-                  <Input
-                    type="email"
-                    placeholder="your@email.com"
-                    value={deleteEmail}
-                    onChange={(e) => setDeleteEmail(e.target.value)}
-                    className="max-w-xs"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleDeleteAccount}
-                    disabled={deleting || deleteEmail !== profile?.email}
-                    className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {deleting ? "Deleting…" : "Permanently delete"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteStep(0)}
-                    disabled={deleting}
-                    className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
-                  >
-                    Cancel
-                  </button>
+              {deleteStep === 2 && (
+                <div>
+                  <p className="mb-3 text-body-sm text-foreground">
+                    Type your email <strong>{profile?.email}</strong> to confirm
+                    deletion:
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      type="email"
+                      placeholder="your@email.com"
+                      value={deleteEmail}
+                      onChange={(e) => setDeleteEmail(e.target.value)}
+                      className="max-w-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleDeleteAccount}
+                      disabled={deleting || deleteEmail !== profile?.email}
+                      className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {deleting ? "Deleting…" : "Permanently delete"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteStep(0)}
+                      disabled={deleting}
+                      className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
