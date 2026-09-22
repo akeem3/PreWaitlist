@@ -30,7 +30,7 @@
 
 - **Decision:** Use memsearch with ONNX embeddings (bge-m3) for fork-agnostic semantic search over markdown memory files.
 - **Reason:** Stores data as plain markdown files readable even without the tool. Uses local ONNX embeddings — zero API key, zero cost, zero dependency on whichever model provider is active.
-- **Status:** ✅ Working — CLI v0.4.16, Docker v29.7.2, Milvus v2.5.1 containers running, 708 chunks indexed.
+- **Status:** ✅ Working — CLI v0.4.16, Docker v29.7.2, Milvus v2.5.1 containers running, 421 chunks indexed.
 - **Fix:** Windows console encoding bug — must set `$env:PYTHONIOENCODING="utf-8"` before running memsearch commands (or add to PowerShell profile permanently). Without this, `click.echo` crashes on Unicode characters (emojis, arrows).
 - **Gotcha:** Collection name defaults to `memsearch_chunks` for CLI. When indexing with `--force`, it may create a separate collection. Always verify with `memsearch stats` and use `-c memsearch_chunks` if needed.
 - **Date:** 2026-07-26 (updated 2026-09-13)
@@ -110,8 +110,12 @@
 ### Paddle (Story 0.5)
 
 - **Sandbox account:** Created at sandbox-vendors.paddle.com
-- **Keys:** API key, client token, webhook secret — all in .env.local
-- **Not done:** Client module not yet written (setup-only story)
+- **Keys:** API key (`pdl_sdbx_apikey_*`), client token (`test_*`), webhook secret (`pdl_ntfset_*`), price ID (`pri_01m2y3y0acax4jvdcvfgjck4zn`) — all in .env.local AND Vercel
+- **Client module:** ✅ Done — `src/hooks/use-paddle.ts` (SDK init), `src/hooks/use-paddle-upgrade.ts` (onboarding upgrade hook)
+- **Checkout API:** ✅ Done — `src/app/api/billing/checkout/route.ts` (returns priceId + customData)
+- **Webhook:** ✅ Done — `src/app/api/webhooks/paddle/route.ts` (handles subscription.created, subscription.activated, subscription.canceled, subscription.past_due, transaction.completed)
+- **Domain approval:** Submitted `prewaitlist.com` for approval in Paddle Dashboard. Waiting for approval before checkout works.
+- **Status:** Paddle sandbox configured but not yet operational (pending domain approval). All env vars are sandbox tokens — sandbox checkouts only work with sandbox Paddle accounts.
 
 ### Vercel (Story 0.6)
 
@@ -1349,3 +1353,83 @@ canonical. The API routes (`POST /api/updates`) and auth callback logic
 - **`components/` at project root, not under `src/`:** Billing components (`subscription-card.tsx`, `plan-comparison.tsx`, etc.) live in `components/billing/`, not `src/components/billing/`. Import from `../../../../components/billing/...` in settings pages (5 levels up from `src/app/dashboard/settings/profile/client.tsx`).
 - **Settings profile page padding fix (2026-09-20):** Profile sub-page was missing `max-w-2xl px-8 py-12` on root `<div>`, causing content to sit flush against the sidebar. The settings hub page had this padding but the profile sub-page didn't. Always match padding across settings sub-pages.
 - **SQL migrations needed before deploying Epic 13:** `epic13-story3-paddle-customer-id.sql` (adds `paddle_customer_id` column to `founder_profiles`) + `epic13-story5-resend-domain-id.sql` (adds `resend_domain_id` column to `waitlists`). Without these, Paddle portal session creation and domain auth will fail at runtime.
+
+## Epic 13 Post-Deployment Fixes (2026-09-22)
+
+### Billing Page Polling After Checkout
+
+- **Problem:** Billing page fetched tier once on mount, never re-fetched after Paddle checkout. Even if the webhook updated the tier to "pro", the page stayed "free".
+- **Fix:** Billing page now listens for `paddle-checkout-opened` custom event dispatched by `UpgradeModal`, then polls `/api/profile` every 2s for 30s. Stops polling when tier becomes "pro".
+- **Files:** `src/app/dashboard/settings/billing/client.tsx`, `components/dashboard/upgrade-modal.tsx`
+- **Date:** 2026-09-22
+
+### Webhook: Handle `transaction.completed`
+
+- **Problem:** Paddle Billing v2 sends `transaction.completed` for the initial payment before `subscription.created`/`subscription.activated`. The webhook only listened for subscription events, so the first payment was silently ignored and the tier never updated.
+- **Fix:** Added `transaction.completed` to `SUPPORTED_EVENTS` and a case handler that extracts `customData.user_id` and `customerId`, sets tier to "pro" with `subscriptionId` from the transaction if available.
+- **File:** `src/app/api/webhooks/paddle/route.ts`
+- **Date:** 2026-09-22
+
+### Profile API: `.single()` → `.maybeSingle()`
+
+- **Problem:** `GET /api/profile` used `.single()` for the waitlist query. If a user had 0 or 2+ waitlists, `.single()` throws a 400 error. The billing page's `.catch(() => {})` silently swallowed it, defaulting to "free".
+- **Fix:** Changed to `.maybeSingle()` which returns null instead of throwing.
+- **File:** `src/app/api/profile/route.ts`
+- **Date:** 2026-09-22
+
+### Upgrade Modal Error Handling
+
+- **Problem:** Checkout API errors were silently swallowed. If the API returned an error (e.g., "Already subscribed"), the modal just did nothing.
+- **Fix:** Added `res.ok` check, `data.error` validation, and `console.error` for failed checkouts.
+- **File:** `components/dashboard/upgrade-modal.tsx`
+- **Date:** 2026-09-22
+
+## Seamless Onboarding Upgrade (2026-09-22)
+
+- **Decision:** User upgrades via Paddle and continues exactly where they stopped in onboarding. They click Next themselves, no auto-advance.
+- **Implementation:** `usePaddleUpgrade` hook (`src/hooks/use-paddle-upgrade.ts`) opens checkout, polls `/api/profile` every 2s, cleans up on unmount. `OnboardingUpgradeContext` in `onboarding-client-layout.tsx` wraps Steps 4a and 5 with `UpgradeModalWrapper`.
+- **Files:** `src/hooks/use-paddle-upgrade.ts`, `src/app/onboarding/onboarding-client-layout.tsx`, `src/app/onboarding/4a/page.tsx`, `src/app/onboarding/5/page.tsx`
+- **Date:** 2026-09-22
+
+## User Decisions (2026-09-22)
+
+### Pricing CTA
+
+- **Decision:** Marketing homepage pricing CTA: logged-in users see "Open Dashboard" button; anonymous users sign up/login first.
+- **Date:** 2026-09-22
+
+### Free Dashboard Warmth UX
+
+- **Decision:** Free users see warmth stat numbers (hot/warm/cold) without lock icon. WarmthPanel shows bars + "Upgrade to target segments" nudge badge. TopReferrers hidden for free.
+- **Date:** 2026-09-22
+
+### Upgrade Modal Cooldown
+
+- **Decision:** Reduced from 7 days to 1 day (`COOLDOWN_DAYS = 1`). User found 7-day cooldown too aggressive.
+- **Date:** 2026-09-22
+
+### CSV Export Placement
+
+- **Decision:** CSV export button on leaderboard page next to the data, NOT in settings.
+- **Date:** 2026-09-22
+
+### 90% Subscriber Cap Email
+
+- **Decision:** Single CTA email linking to `/dashboard?upgrade=cap`. Single-CTA emails get 371% more clicks.
+- **File:** `src/app/api/subscribers/route.ts` — after insert, checks `subscriber_count >= 450` + free tier, sends email.
+- **Date:** 2026-09-22
+
+### Paddle Sandbox on Production
+
+- **Decision:** Test Paddle in sandbox mode on the production Vercel deployment (not localhost). All Paddle env vars are sandbox tokens. Webhook endpoint must be configured in Paddle sandbox dashboard at `sandbox-vendors.paddle.com`.
+- **Status:** Paddle domain `prewaitlist.com` submitted for approval. Waiting for approval before checkout works end-to-end.
+- **Date:** 2026-09-22
+
+## Billing Page Gotchas
+
+- **Billing page fetches tier independently from layout** — dashboard layout gets tier server-side, billing page gets it client-side via `/api/profile`. These should match but there's a timing window where they differ.
+- **`profile?.tier || "free"` fallback** — If the API returns null/undefined for tier (e.g., profile not found), defaults to "free". This is correct for new users but misleading if the profile query fails silently.
+- **`UpgradeModal` dispatches `paddle-checkout-opened` custom event** — billing page listens for this to start polling. Other pages that trigger upgrades also get this event.
+- **Paddle sandbox tokens on production** — `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=test_*`, `NEXT_PUBLIC_PADDLE_ENV=sandbox`, `PADDLE_API_KEY=pdl_sdbx_*`, `PADDLE_WEBHOOK_SECRET=pdl_ntfset_*`. These connect to `sandbox-vendors.paddle.com`. Sandbox checkouts only work with sandbox accounts. Domain approval needed for custom checkout domains.
+- **Webhook signature verification** — Uses `paddle.webhooks.unmarshal(body, secret, signature)` from `@paddle/paddle-node-sdk`. Body must be raw text (`req.text()`), not JSON — HMAC breaks if body is re-serialized.
+- **`customData` passed through checkout → webhook** — `paddle.Checkout.open({ customData: { user_id, waitlist_id, trigger_source } })`. Webhook reads `data.customData?.user_id` to identify the founder. If missing, webhook logs error and returns early without updating tier.
