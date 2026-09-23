@@ -26,13 +26,16 @@ export default function BillingClient() {
   const contextTier = useDashboardTier();
   const triggerUpgrade = useUpgradeModal();
   const billingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const contextTierRef = useRef(contextTier);
+  useEffect(() => {
+    contextTierRef.current = contextTier;
+  }, [contextTier]);
 
-  // Prefer server-fetched tier (post-checkout polling) over layout context;
-  // fall back to context when /api/profile fails so a Pro account never shows Free.
+  // Shell context is the source of truth after mount (polling/events update it).
+  // Local profile is fallback for initial paint if context is missing.
   const tier = useMemo(() => {
-    if (profile?.tier) return profile.tier;
-    return contextTier || "free";
-  }, [profile?.tier, contextTier]);
+    return contextTier || profile?.tier || "free";
+  }, [contextTier, profile?.tier]);
   const isPro = tier === "pro";
 
   const stopPolling = useCallback(() => {
@@ -49,6 +52,10 @@ export default function BillingClient() {
       if (data && data.tier === "pro") {
         stopPolling();
         setProfile(data);
+        // Let the shell (and every other dashboard surface) unlock immediately.
+        window.dispatchEvent(
+          new CustomEvent("tier-changed", { detail: { tier: "pro" } })
+        );
       }
     }, 2000);
 
@@ -57,22 +64,31 @@ export default function BillingClient() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchProfile().then((data) => {
-      if (!cancelled && data) setProfile(data);
-    });
-    // Post-checkout return: Paddle redirects with ?upgraded=1
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("upgraded") === "1") {
-      startPolling();
-      const url = new URL(window.location.href);
-      url.searchParams.delete("upgraded");
-      window.history.replaceState({}, "", url.pathname + url.search);
-    }
+    const syncProfile = async () => {
+      const data = await fetchProfile();
+      if (cancelled || !data) return;
+      setProfile(data);
+      // Catch webhook races (e.g. return from Paddle portal before
+      // subscription.canceled / activated lands in Postgres).
+      if (data.tier && data.tier !== contextTierRef.current) {
+        window.dispatchEvent(
+          new CustomEvent("tier-changed", { detail: { tier: data.tier } })
+        );
+      }
+    };
+    syncProfile();
+    const t1 = setTimeout(syncProfile, 2000);
+    const t2 = setTimeout(syncProfile, 5000);
     return () => {
       cancelled = true;
+      clearTimeout(t1);
+      clearTimeout(t2);
     };
-  }, [startPolling]);
+    // Mount-only: contextTierRef tracks live context without re-running.
+  }, []);
 
+  // Shell also listens globally; local polling keeps SubscriptionCard painting
+  // in the same tick and dispatches tier-changed for the sidebar/context.
   useEffect(() => {
     const handler = () => startPolling();
     window.addEventListener("paddle-checkout-opened", handler);
