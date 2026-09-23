@@ -260,17 +260,17 @@ export default function DashboardClient({
                     strokeLinecap="round"
                   />
                 </svg>
-                Upgrade to add
+                Add new waitlist
               </button>
             ) : null}
             <Link
               href="/dashboard/settings/profile"
-              className="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="group relative inline-flex items-center rounded-full transition-colors hover:bg-muted"
             >
-              <span className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold text-foreground">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
                 {(displayName || founderEmail || "U").charAt(0).toUpperCase()}
               </span>
-              <span className="hidden sm:inline">
+              <span className="pointer-events-none absolute left-1/2 top-full z-50 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground opacity-0 shadow-[var(--shadow-float)] transition-opacity duration-150 group-hover:opacity-100">
                 {displayName || founderEmail?.split("@")[0] || "Profile"}
               </span>
             </Link>
@@ -466,9 +466,13 @@ export default function DashboardClient({
             }
 
             return (
-              <div className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center">
+              <button
+                type="button"
+                onClick={() => triggerUpgrade("warmth")}
+                className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center transition-colors hover:bg-muted/30"
+              >
                 {warmthContent}
-              </div>
+              </button>
             );
           })()}
         </div>

@@ -37,12 +37,20 @@ describe("Tier Gating — WarmthPanel", () => {
     vi.clearAllMocks();
   });
 
-  it("renders locked overlay for free tier", () => {
-    render(<WarmthPanel tier="free" />);
-    expect(screen.getByText("Pro")).toBeDefined();
-    expect(
-      screen.getByText("Upgrade to Pro to see warmth scores")
-    ).toBeDefined();
+  it("renders view-only bars with upgrade CTA for free tier", () => {
+    render(
+      <WarmthPanel
+        tier="free"
+        warmthData={{ hot: 10, warm: 5, cold: 3, unscored: 2, total: 20 }}
+        onUpgradeClick={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Hot")).toBeDefined();
+    expect(screen.getByText("Warm")).toBeDefined();
+    expect(screen.getByText("Cold")).toBeDefined();
+    expect(screen.getByText("Unscored")).toBeDefined();
+    expect(screen.getByText("10 (50%)")).toBeDefined();
+    expect(screen.getByText("Upgrade to target segments")).toBeDefined();
   });
 
   it("renders live data bars for pro tier with data", () => {

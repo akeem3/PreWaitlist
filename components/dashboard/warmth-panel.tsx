@@ -80,16 +80,16 @@ export default function WarmthPanel({
 
   if (tier === "free") {
     return (
-      <div className="rounded-[var(--card-radius)] border border-border bg-card p-5">
+      <button
+        type="button"
+        onClick={onUpgradeClick}
+        className="block w-full rounded-[var(--card-radius)] border border-border bg-card p-5 text-left transition-colors hover:bg-muted/30"
+      >
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-foreground">
             Warmth Distribution
           </h3>
-          <button
-            type="button"
-            onClick={onUpgradeClick}
-            className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent transition-colors hover:bg-accent/20"
-          >
+          <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">
             <svg
               width="12"
               height="12"
@@ -103,7 +103,7 @@ export default function WarmthPanel({
               />
             </svg>
             Upgrade to target segments
-          </button>
+          </span>
         </div>
         <div className="space-y-3">
           <WarmthBar
@@ -131,7 +131,7 @@ export default function WarmthPanel({
             color="bg-muted"
           />
         </div>
-      </div>
+      </button>
     );
   }
 

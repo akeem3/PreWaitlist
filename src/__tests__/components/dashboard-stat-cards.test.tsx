@@ -51,7 +51,7 @@ describe("Stat Cards", () => {
     expect(screen.getByText("Total signups")).toBeDefined();
     expect(screen.getByText("Referral %")).toBeDefined();
     expect(screen.getByText("Today")).toBeDefined();
-    expect(screen.getAllByText("Warmth").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Hot / Warm / Cold")).toBeDefined();
   });
 
   it("displays actual count when stats provided", () => {

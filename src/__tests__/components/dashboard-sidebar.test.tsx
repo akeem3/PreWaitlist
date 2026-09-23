@@ -133,6 +133,6 @@ describe("Sidebar", () => {
 
   it("renders upgrade to pro link", () => {
     render(<Sidebar {...defaultProps} tier="free" />);
-    expect(screen.getByText("Upgrade to add")).toBeDefined();
+    expect(screen.getByText("Upgrade to Pro")).toBeDefined();
   });
 });

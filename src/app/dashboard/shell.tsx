@@ -8,10 +8,7 @@ import {
   useContext,
 } from "react";
 import { Sidebar } from "../../../components/dashboard/sidebar";
-import {
-  UpgradeModal,
-  isSuppressed,
-} from "../../../components/dashboard/upgrade-modal";
+import { UpgradeModal } from "../../../components/dashboard/upgrade-modal";
 import { useRouter, useSearchParams } from "next/navigation";
 import { STORAGE_KEY } from "../../../components/dashboard/waitlist-switcher";
 
@@ -140,7 +137,6 @@ export default function DashboardShell({
   }
 
   function handleUpgradeClick(triggerSource: string) {
-    if (isSuppressed(triggerSource)) return;
     setUpgradeModal({ open: true, triggerSource });
   }
 

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { requirePro } from "@/lib/tier-gating";
 import { resend } from "@/lib/resend";
 import { resolveFromAddress, buildEmailFooter } from "@/lib/email";
 import { generateUnsubscribeUrl } from "@/lib/unsubscribe";
@@ -16,6 +17,17 @@ export async function POST(request: NextRequest) {
 
   if (authError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { data: profile } = await supabase
+    .from("founder_profiles")
+    .select("tier")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const tierCheck = requirePro(profile?.tier ?? "free", "Founder updates");
+  if (!tierCheck.allowed) {
+    return NextResponse.json({ error: tierCheck.reason }, { status: 403 });
   }
 
   const body = await request.json();

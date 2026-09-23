@@ -145,16 +145,23 @@ describe("WaitlistSwitcher", () => {
     expect(link.closest("a")?.getAttribute("href")).toBe("/onboarding/1");
   });
 
-  it("shows upgrade link for free tier", async () => {
+  it("calls onUpgradeClick for free tier instead of linking to billing", async () => {
     const user = userEvent.setup();
-    render(<WaitlistSwitcher {...defaultProps} tier="free" />);
-
-    await user.click(screen.getByRole("button"));
-    const upgradeBtn = screen.getByText("Upgrade to add");
-    expect(upgradeBtn).toBeDefined();
-    expect(upgradeBtn.closest("a")?.getAttribute("href")).toBe(
-      "/dashboard/settings/billing"
+    const onUpgradeClick = vi.fn();
+    render(
+      <WaitlistSwitcher
+        {...defaultProps}
+        tier="free"
+        onUpgradeClick={onUpgradeClick}
+      />
     );
+
+    await user.click(screen.getByRole("button", { name: /PreWaitlist|Acme/ }));
+    const upgradeBtn = screen.getByText("Add new waitlist");
+    expect(upgradeBtn).toBeDefined();
+    expect(upgradeBtn.closest("a")).toBeNull();
+    await user.click(upgradeBtn);
+    expect(onUpgradeClick).toHaveBeenCalledTimes(1);
   });
 
   it("exports STORAGE_KEY constant", () => {

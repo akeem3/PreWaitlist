@@ -276,6 +276,7 @@ export function Sidebar({
             activeWaitlistId={activeWaitlistId}
             onSelect={onSelectWaitlist}
             tier={tier}
+            onUpgradeClick={() => onUpgradeClick?.("subscriber_cap")}
           />
         </div>
 
@@ -304,13 +305,18 @@ export function Sidebar({
                 const isLocked =
                   ("locked" in item && item.locked) ||
                   (item.label === "Broadcast" && tier === "free") ||
-                  (item.label === "Warmth" && tier === "free");
+                  (item.label === "Warmth" && tier === "free") ||
+                  (item.label === "Updates" && tier === "free");
                 const isDisabled = "disabled" in item && item.disabled;
                 const isActive = item.href.split("?")[0] === pathname;
 
                 if (isLocked) {
                   const triggerSource =
-                    item.label === "Broadcast" ? "broadcast" : "warmth";
+                    item.label === "Broadcast"
+                      ? "broadcast"
+                      : item.label === "Updates"
+                        ? "updates"
+                        : "warmth";
                   return (
                     <button
                       key={item.label}
@@ -439,7 +445,7 @@ export function Sidebar({
                   strokeLinecap="round"
                 />
               </svg>
-              Upgrade to add
+              Upgrade to Pro
             </button>
           ) : (
             <Link

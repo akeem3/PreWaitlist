@@ -87,7 +87,7 @@ describe("Sidebar Redesign (12.1.0)", () => {
 
   it("renders upgrade button for free tier", () => {
     render(<Sidebar {...defaultProps} tier="free" />);
-    expect(screen.getByText("Upgrade to add")).toBeDefined();
+    expect(screen.getByText("Upgrade to Pro")).toBeDefined();
   });
 
   it("does not render upgrade button for pro tier", () => {
@@ -119,11 +119,18 @@ describe("Sidebar Redesign (12.1.0)", () => {
     );
   });
 
-  it("updates has correct href", () => {
-    render(<Sidebar {...defaultProps} />);
+  it("updates has correct href for pro tier", () => {
+    render(<Sidebar {...defaultProps} tier="pro" />);
     const updates = screen.getByText("Updates").closest("a");
     expect(updates).toBeDefined();
     expect(updates?.getAttribute("href")).toBe("/dashboard/updates?wid=wl-1");
+  });
+
+  it("updates is locked for free tier", () => {
+    render(<Sidebar {...defaultProps} tier="free" />);
+    const updates = screen.getByText("Updates").closest("button");
+    expect(updates).toBeDefined();
+    expect(updates?.className).toContain("opacity-50");
   });
 
   it("qualification has correct href", () => {

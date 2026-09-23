@@ -17,6 +17,16 @@ export default async function UpdatesPage({ searchParams }: PageProps) {
     redirect("/signin");
   }
 
+  const { data: profile } = await supabase
+    .from("founder_profiles")
+    .select("tier")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if ((profile?.tier ?? "free") !== "pro") {
+    redirect("/dashboard");
+  }
+
   const { wid } = await searchParams;
 
   let wlQuery = supabase.from("waitlists").select("id");

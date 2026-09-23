@@ -17,6 +17,7 @@ const HEADLINES: Record<string, string> = {
   billing: "Manage your subscription",
   csv_export: "Export your subscriber data",
   first_subscriber: "Unlock Pro features for your waitlist",
+  updates: "Share updates and email your waitlist",
 };
 
 const FEATURES = [

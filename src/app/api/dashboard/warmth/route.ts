@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requirePro } from "@/lib/tier-gating";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -33,16 +32,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Waitlist not found" }, { status: 404 });
   }
 
-  const { data: profile } = await supabase
-    .from("founder_profiles")
-    .select("tier")
-    .eq("id", user.id)
-    .single();
-
-  const tierCheck = requirePro(profile?.tier ?? "free", "Warmth");
-  if (!tierCheck.allowed) {
-    return NextResponse.json({ error: tierCheck.reason }, { status: 403 });
-  }
+  // View-only: free tier sees warmth numbers on dashboard cards (decision 2026-09-22).
+  // Pro tier gates the full Warmth page and segment targeting, not this summary.
 
   const { data: subscribers } = await supabase
     .from("subscribers")
