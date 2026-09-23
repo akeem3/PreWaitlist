@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { usePaddle } from "@/hooks/use-paddle";
+import { PRO_FEATURES } from "@/lib/pricing-features";
 
 interface UpgradeModalProps {
   open: boolean;
@@ -19,15 +20,6 @@ const HEADLINES: Record<string, string> = {
   first_subscriber: "Unlock Pro features for your waitlist",
   updates: "Share updates and email your waitlist",
 };
-
-const FEATURES = [
-  "Unlimited subscribers",
-  "Broadcast emails",
-  "Warmth tracking",
-  "5 qualification questions",
-  "CSV export",
-  "Custom sender domain",
-];
 
 const COOLDOWN_DAYS = 1;
 
@@ -158,7 +150,7 @@ export function UpgradeModal({
         <p className="mb-4 text-body text-muted-foreground">{headline}</p>
 
         <ul className="mb-6 space-y-2">
-          {FEATURES.map((f) => (
+          {PRO_FEATURES.map((f) => (
             <li
               key={f}
               className="flex items-center gap-2 text-body-sm text-foreground"

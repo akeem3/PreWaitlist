@@ -1,6 +1,11 @@
 "use client";
 
 import { Button } from "../ui/button";
+import {
+  FREE_FEATURES,
+  PRO_FEATURES,
+  isExcludedFeature,
+} from "@/lib/pricing-features";
 
 interface PlanComparisonProps {
   currentTier: string;
@@ -12,33 +17,13 @@ const plans = [
     name: "Free",
     price: "$0",
     period: "forever",
-    features: [
-      { text: "1 waitlist", included: true },
-      { text: "500 signups", included: true },
-      { text: "3 templates", included: true },
-      { text: "Referral system + leaderboard", included: true },
-      { text: "2 qualification questions", included: true },
-      { text: "Warmth tracking (view)", included: true },
-      { text: "Founder updates feed", included: true },
-      { text: "CSV export", included: true },
-      { text: "API access", included: true },
-      { text: "Branded footer", included: true },
-    ],
+    features: FREE_FEATURES,
   },
   {
     name: "Pro",
     price: "$15",
     period: "/month",
-    features: [
-      { text: "Everything in Free, plus:", included: true, highlight: true },
-      { text: "Unlimited waitlists", included: true },
-      { text: "Unlimited signups", included: true },
-      { text: "5 qualification questions", included: true },
-      { text: "Warmth-segmented broadcast", included: true },
-      { text: "Sender name + domain auth", included: true },
-      { text: "No branding", included: true },
-      { text: "Full dashboard analytics", included: true },
-    ],
+    features: PRO_FEATURES,
   },
 ];
 
@@ -84,34 +69,37 @@ export function PlanComparison({
               </div>
 
               <ul className="mb-4 space-y-2">
-                {plan.features.map((feature) => (
-                  <li
-                    key={feature.text}
-                    className={`flex items-start gap-2 text-sm ${
-                      feature.highlight
-                        ? "font-medium text-foreground"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 14 14"
-                      fill="none"
-                      className="mt-0.5 shrink-0"
-                      aria-hidden="true"
+                {plan.features.map((feature) => {
+                  const excluded = isExcludedFeature(feature);
+                  return (
+                    <li
+                      key={feature}
+                      className={`flex items-start gap-2 text-sm ${
+                        excluded ? "text-muted-foreground" : "text-foreground"
+                      }`}
                     >
-                      <path
-                        d="M3 7L5.5 9.5L11 4"
-                        stroke="#0F7A5E"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    {feature.text}
-                  </li>
-                ))}
+                      {!excluded && (
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 14 14"
+                          fill="none"
+                          className="mt-0.5 shrink-0"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M3 7L5.5 9.5L11 4"
+                            stroke="#0F7A5E"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      )}
+                      {feature}
+                    </li>
+                  );
+                })}
               </ul>
 
               {!isCurrent && (

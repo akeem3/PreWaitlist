@@ -4,6 +4,11 @@ import Link from "next/link";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { FadeIn, StaggerGroup, StaggerItem } from "./animations";
+import {
+  FREE_FEATURES,
+  PRO_FEATURES,
+  isExcludedFeature,
+} from "@/lib/pricing-features";
 
 function CheckIcon() {
   return (
@@ -31,36 +36,14 @@ const tiers = [
   {
     name: "Base",
     priceLine: "Free \u2013 $0/month",
-    features: [
-      "1 waitlist, 500 signups",
-      "3 templates",
-      "Referral system + leaderboard",
-      "2 qualification questions",
-      "Qualification dashboard (basic aggregate)",
-      "Warmth tracking (view)",
-      "Founder updates feed",
-      "Confirmation + \u2018moved up\u2019 email",
-      "CSV export, all columns",
-      "API access",
-      "\u2014 \u2018Powered by\u2019 footer shown",
-      "\u2014 No broadcast email (Pro feature)",
-    ],
+    features: FREE_FEATURES,
     variant: "secondary" as const,
   },
   {
     name: "Pro",
     priceLine: "$15/month",
     badge: "Popular",
-    features: [
-      "Everything in Base, plus",
-      "Unlimited waitlists + signups",
-      "5 qualification questions + full breakdown dashboard",
-      "Broadcast email, warmth-segmented",
-      "Sender name + domain authentication (one-time)",
-      "Branding removed",
-      "New templates as released",
-      "Full dashboard analytics",
-    ],
+    features: PRO_FEATURES,
     variant: "primary" as const,
   },
 ];
@@ -97,7 +80,7 @@ export function PricingSection() {
 
                     <ul className="flex flex-col gap-2">
                       {tier.features.map((feature) => {
-                        const isExcluded = feature.startsWith("\u2014");
+                        const isExcluded = isExcludedFeature(feature);
                         return (
                           <li
                             key={feature}
@@ -108,7 +91,7 @@ export function PricingSection() {
                             }`}
                           >
                             {!isExcluded && <CheckIcon />}
-                            {isExcluded ? feature : feature}
+                            {feature}
                           </li>
                         );
                       })}
