@@ -1,7 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { Paddle } from "@paddle/paddle-node-sdk";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { anonymizeEmail } from "@/lib/format";
+
+function getPaddle(): Paddle | null {
+  return process.env.PADDLE_API_KEY
+    ? new Paddle(process.env.PADDLE_API_KEY)
+    : null;
+}
 
 export async function GET() {
   const supabase = await createClient();
@@ -72,6 +78,12 @@ export async function GET() {
     .limit(1)
     .maybeSingle();
 
+  const providers =
+    user.identities?.map((i) => i.provider) ??
+    (typeof user.app_metadata?.provider === "string"
+      ? [user.app_metadata.provider]
+      : []);
+
   return NextResponse.json({
     displayName: profile?.display_name || "",
     avatarUrl: profile?.avatar_url || "",
@@ -80,6 +92,7 @@ export async function GET() {
     email: user.email || "",
     createdAt: profile?.created_at ?? null,
     businessAddress: waitlist?.business_address || "",
+    hasPassword: providers.includes("email"),
   });
 }
 
@@ -168,21 +181,35 @@ export async function DELETE() {
 
   const admin = createAdminClient();
 
-  // Delete waitlists (cascades to subscribers, qualification_questions, milestone_rewards, founder_updates)
-  const { data: waitlists } = await admin
-    .from("waitlists")
-    .select("id")
-    .eq("founder_id", user.id);
+  // Cancel active Paddle subscription first so deletion never leaves billing running
+  const { data: profile } = await admin
+    .from("founder_profiles")
+    .select("paddle_subscription_id")
+    .eq("id", user.id)
+    .maybeSingle();
 
-  if (waitlists && waitlists.length > 0) {
-    const ids = waitlists.map((w) => w.id);
-    await admin.from("waitlists").delete().in("id", ids);
+  const subscriptionId = profile?.paddle_subscription_id as string | null;
+  const paddle = getPaddle();
+  if (subscriptionId && paddle) {
+    try {
+      await paddle.subscriptions.cancel(subscriptionId, {
+        effectiveFrom: "immediately",
+      });
+    } catch (err) {
+      console.error("Failed to cancel Paddle subscription on delete", err);
+      return NextResponse.json(
+        {
+          error:
+            "Could not cancel your subscription. Cancel it from Billing, then try again.",
+        },
+        { status: 409 }
+      );
+    }
   }
 
-  // Delete founder profile
-  await admin.from("founder_profiles").delete().eq("id", user.id);
-
-  // Delete auth user (final step — no going back)
+  // Single delete — FK cascade: auth.users → founder_profiles → waitlists →
+  // subscribers, qualification_questions, milestone_rewards, founder_updates,
+  // email_events, page_views, bounced_emails
   const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
 
   if (deleteError) {

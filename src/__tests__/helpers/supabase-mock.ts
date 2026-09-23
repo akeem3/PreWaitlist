@@ -93,6 +93,11 @@ export function createMockSupabaseClient(responses: MockResponse[] = []) {
         data: { user: { id: "user-1", email: "test@test.com" } },
         error: null,
       }),
+      reauthenticate: vi.fn().mockResolvedValue({ error: null }),
+      updateUser: vi
+        .fn()
+        .mockResolvedValue({ data: { user: null }, error: null }),
+      signOut: vi.fn().mockResolvedValue({ error: null }),
     },
     __calls: calls,
     __queue: queue,

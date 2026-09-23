@@ -8,13 +8,20 @@ import { Breadcrumb } from "../../../../../components/dashboard/breadcrumb";
 
 interface ProfileData {
   email: string;
+  hasPassword?: boolean;
 }
+
+type PasswordStep = "request" | "verify" | "set";
 
 export default function SecurityClient() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const router = useRouter();
 
-  // Password state
+  // Password reauth flow
+  const [passwordStep, setPasswordStep] = useState<PasswordStep>("request");
+  const [sendingCode, setSendingCode] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [verifying, setVerifying] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordSaving, setPasswordSaving] = useState(false);
@@ -46,7 +53,52 @@ export default function SecurityClient() {
     };
   }, []);
 
-  async function handlePasswordChange() {
+  async function handleSendCode() {
+    setSendingCode(true);
+    setPasswordMsg(null);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.reauthenticate();
+      if (error) {
+        setPasswordMsg({ type: "err", text: error.message });
+      } else {
+        setPasswordStep("verify");
+        setPasswordMsg({
+          type: "ok",
+          text: `We sent a 6-digit code to ${profile?.email ?? "your email"}.`,
+        });
+      }
+    } catch {
+      setPasswordMsg({
+        type: "err",
+        text: "Could not send verification code. Try again.",
+      });
+    } finally {
+      setSendingCode(false);
+    }
+  }
+
+  async function handleVerifyCode() {
+    if (otp.trim().length < 6) {
+      setPasswordMsg({ type: "err", text: "Enter the 6-digit code." });
+      return;
+    }
+    // Nonce is validated server-side with updateUser({ password, nonce })
+    setVerifying(true);
+    setPasswordMsg(null);
+    setPasswordStep("set");
+    setVerifying(false);
+  }
+
+  function handleCancelPasswordFlow() {
+    setPasswordStep("request");
+    setOtp("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordMsg(null);
+  }
+
+  async function handleCreatePassword() {
     setPasswordSaving(true);
     setPasswordMsg(null);
     if (newPassword !== confirmPassword) {
@@ -68,16 +120,86 @@ export default function SecurityClient() {
         password: newPassword,
       });
       if (error) {
-        setPasswordMsg({
-          type: "err",
-          text: error.message.includes("recent")
-            ? "Please sign in again to change your password."
-            : error.message,
-        });
+        const msg = error.message.toLowerCase();
+        if (
+          msg.includes("recent") ||
+          msg.includes("reauthenticate") ||
+          msg.includes("secure")
+        ) {
+          setPasswordMsg({
+            type: "err",
+            text: "Please sign in again to create a password.",
+          });
+        } else {
+          setPasswordMsg({ type: "err", text: error.message });
+        }
       } else {
-        setPasswordMsg({ type: "ok", text: "Password updated." });
+        setPasswordMsg({
+          type: "ok",
+          text: "Password created. You can now sign in with email and password.",
+        });
         setNewPassword("");
         setConfirmPassword("");
+        setOtp("");
+        setPasswordStep("request");
+        setProfile((prev) => (prev ? { ...prev, hasPassword: true } : prev));
+      }
+    } catch {
+      setPasswordMsg({ type: "err", text: "Something went wrong." });
+    } finally {
+      setPasswordSaving(false);
+    }
+  }
+
+  async function handlePasswordChange() {
+    setPasswordSaving(true);
+    setPasswordMsg(null);
+    if (newPassword !== confirmPassword) {
+      setPasswordMsg({ type: "err", text: "New passwords do not match." });
+      setPasswordSaving(false);
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordMsg({
+        type: "err",
+        text: "Password must be at least 6 characters.",
+      });
+      setPasswordSaving(false);
+      return;
+    }
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+        nonce: otp.trim(),
+      });
+      if (error) {
+        const msg = error.message.toLowerCase();
+        if (
+          msg.includes("nonce") ||
+          msg.includes("otp") ||
+          msg.includes("token")
+        ) {
+          setPasswordMsg({
+            type: "err",
+            text: "That code is invalid or expired. Send a new code.",
+          });
+          setPasswordStep("verify");
+          setOtp("");
+        } else if (msg.includes("recent")) {
+          setPasswordMsg({
+            type: "err",
+            text: "Please sign in again to change your password.",
+          });
+        } else {
+          setPasswordMsg({ type: "err", text: error.message });
+        }
+      } else {
+        setPasswordMsg({ type: "ok", text: "Password updated." });
+        setOtp("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setPasswordStep("request");
       }
     } catch {
       setPasswordMsg({ type: "err", text: "Something went wrong." });
@@ -107,6 +229,9 @@ export default function SecurityClient() {
     }
   }
 
+  const showPassword = profile?.hasPassword !== false;
+  const canSendCode = !!profile?.email;
+
   return (
     <div className="mx-auto max-w-4xl px-8 py-12">
       <Breadcrumb />
@@ -118,51 +243,225 @@ export default function SecurityClient() {
       </div>
 
       <div className="space-y-6">
-        {/* Change Password */}
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="mb-4 text-h4 font-medium text-foreground">
-            Change password
-          </h2>
-          <div className="space-y-4">
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-foreground">
-                New password
-              </label>
-              <Input
-                type="password"
-                placeholder="New password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-foreground">
-                Confirm password
-              </label>
-              <Input
-                type="password"
-                placeholder="Confirm new password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-            </div>
-            {passwordMsg && (
-              <p
-                className={`text-sm ${passwordMsg.type === "ok" ? "text-accent" : "text-destructive"}`}
-              >
-                {passwordMsg.text}
-              </p>
+        {/* Change Password — email OTP reauth first */}
+        {showPassword && (
+          <div className="rounded-xl border border-border bg-card p-6">
+            <h2 className="mb-4 text-h4 font-medium text-foreground">
+              Change password
+            </h2>
+
+            {passwordStep === "request" && (
+              <div className="space-y-4">
+                <p className="text-body-sm text-muted-foreground">
+                  We&apos;ll email a 6-digit code to{" "}
+                  <strong className="text-foreground">
+                    {profile?.email || "your email"}
+                  </strong>{" "}
+                  before you set a new password.
+                </p>
+                {passwordMsg && (
+                  <p
+                    className={`text-sm ${passwordMsg.type === "ok" ? "text-accent" : "text-destructive"}`}
+                  >
+                    {passwordMsg.text}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={handleSendCode}
+                  disabled={sendingCode || !canSendCode}
+                  className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {sendingCode ? "Sending…" : "Send verification code"}
+                </button>
+              </div>
             )}
-            <button
-              type="button"
-              onClick={handlePasswordChange}
-              disabled={passwordSaving || !newPassword || !confirmPassword}
-              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {passwordSaving ? "Updating\u2026" : "Update password"}
-            </button>
+
+            {passwordStep === "verify" && (
+              <div className="space-y-4">
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="reauth-otp"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    Verification code
+                  </label>
+                  <Input
+                    id="reauth-otp"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    placeholder="Enter 6-digit code"
+                    value={otp}
+                    onChange={(e) =>
+                      setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                    }
+                    className="max-w-xs tracking-[0.3em]"
+                  />
+                </div>
+                {passwordMsg && (
+                  <p
+                    className={`text-sm ${passwordMsg.type === "ok" ? "text-accent" : "text-destructive"}`}
+                  >
+                    {passwordMsg.text}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleVerifyCode}
+                    disabled={verifying || otp.length < 6}
+                    className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {verifying ? "Verifying…" : "Verify"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSendCode}
+                    disabled={sendingCode}
+                    className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 disabled:opacity-50"
+                  >
+                    {sendingCode ? "Sending…" : "Resend code"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelPasswordFlow}
+                    disabled={sendingCode}
+                    className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {passwordStep === "set" && (
+              <div className="space-y-4">
+                <p className="text-body-sm text-muted-foreground">
+                  Code verified. Set your new password.
+                </p>
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="new-password"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    New password
+                  </label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    placeholder="New password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="confirm-password"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    Confirm password
+                  </label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    placeholder="Confirm new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+                {passwordMsg && (
+                  <p
+                    className={`text-sm ${passwordMsg.type === "ok" ? "text-accent" : "text-destructive"}`}
+                  >
+                    {passwordMsg.text}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handlePasswordChange}
+                    disabled={
+                      passwordSaving || !newPassword || !confirmPassword
+                    }
+                    className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {passwordSaving ? "Updating…" : "Update password"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelPasswordFlow}
+                    disabled={passwordSaving}
+                    className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        )}
+
+        {!showPassword && profile && (
+          <div className="rounded-xl border border-border bg-card p-6">
+            <h2 className="mb-4 text-h4 font-medium text-foreground">
+              Create a password
+            </h2>
+            <div className="space-y-4">
+              <p className="text-body-sm text-muted-foreground">
+                You&apos;re signed in with Google. Create a password so you can
+                also sign in with email.
+              </p>
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="create-password"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Password
+                </label>
+                <Input
+                  id="create-password"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Create a password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="confirm-create-password"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Confirm password
+                </label>
+                <Input
+                  id="confirm-create-password"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Confirm new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
+              {passwordMsg && (
+                <p
+                  className={`text-sm ${passwordMsg.type === "ok" ? "text-accent" : "text-destructive"}`}
+                >
+                  {passwordMsg.text}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={handleCreatePassword}
+                disabled={passwordSaving || !newPassword || !confirmPassword}
+                className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {passwordSaving ? "Creating…" : "Create password"}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Danger Zone — Delete Account */}
         <div className="rounded-xl border border-destructive/50 bg-destructive/5 p-6">
@@ -240,7 +539,7 @@ export default function SecurityClient() {
                   disabled={deleting || deleteEmail !== profile?.email}
                   className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {deleting ? "Deleting\u2026" : "Permanently delete"}
+                  {deleting ? "Deleting…" : "Permanently delete"}
                 </button>
                 <button
                   type="button"

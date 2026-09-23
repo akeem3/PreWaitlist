@@ -270,8 +270,8 @@ export default function DashboardClient({
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
                 {(displayName || founderEmail || "U").charAt(0).toUpperCase()}
               </span>
-              <span className="pointer-events-none absolute left-1/2 top-full z-50 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground opacity-0 shadow-[var(--shadow-float)] transition-opacity duration-150 group-hover:opacity-100">
-                {displayName || founderEmail?.split("@")[0] || "Profile"}
+              <span className="pointer-events-none absolute right-0 top-full z-50 mt-1.5 max-w-[min(90vw,20rem)] truncate rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground opacity-0 shadow-[var(--shadow-float)] transition-opacity duration-150 group-hover:opacity-100">
+                {founderEmail || displayName || "Profile"}
               </span>
             </Link>
           </div>
