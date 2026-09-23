@@ -15,14 +15,54 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: profile, error: profileError } = await supabase
+  type ProfileRow = {
+    display_name?: string | null;
+    avatar_url?: string | null;
+    bio?: string | null;
+    tier?: string | null;
+    created_at?: string | null;
+  };
+
+  let profile: ProfileRow | null = null;
+
+  const fullSelect = await supabase
     .from("founder_profiles")
     .select("display_name, avatar_url, bio, tier, created_at")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
-  if (profileError) {
-    return NextResponse.json({ error: profileError.message }, { status: 400 });
+  if (fullSelect.error) {
+    const msg = fullSelect.error.message || "";
+    const missingProfileColumns =
+      fullSelect.error.code === "42703" ||
+      fullSelect.error.code === "PGRST204" ||
+      msg.includes("display_name") ||
+      msg.includes("avatar_url") ||
+      msg.includes("bio");
+
+    if (!missingProfileColumns) {
+      return NextResponse.json(
+        { error: fullSelect.error.message },
+        { status: 400 }
+      );
+    }
+
+    // Profile-settings columns not migrated yet — still return tier so billing/gating work
+    const coreSelect = await supabase
+      .from("founder_profiles")
+      .select("tier, created_at")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (coreSelect.error) {
+      return NextResponse.json(
+        { error: coreSelect.error.message },
+        { status: 400 }
+      );
+    }
+    profile = coreSelect.data;
+  } else {
+    profile = fullSelect.data;
   }
 
   const { data: waitlist } = await supabase
@@ -33,12 +73,12 @@ export async function GET() {
     .maybeSingle();
 
   return NextResponse.json({
-    displayName: profile.display_name || "",
-    avatarUrl: profile.avatar_url || "",
-    bio: profile.bio || "",
-    tier: profile.tier || "free",
+    displayName: profile?.display_name || "",
+    avatarUrl: profile?.avatar_url || "",
+    bio: profile?.bio || "",
+    tier: profile?.tier || "free",
     email: user.email || "",
-    createdAt: profile.created_at,
+    createdAt: profile?.created_at ?? null,
     businessAddress: waitlist?.business_address || "",
   });
 }

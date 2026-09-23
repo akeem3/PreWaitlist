@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { SubscriptionCard } from "../../../../../components/billing/subscription-card";
 import { PlanComparison } from "../../../../../components/billing/plan-comparison";
 import { InvoiceHistory } from "../../../../../components/billing/invoice-history";
@@ -8,11 +8,11 @@ import { BillingDetails } from "../../../../../components/billing/billing-detail
 import { CancellationFlow } from "../../../../../components/billing/cancellation-flow";
 import { DomainAuthSection } from "../../../../../components/billing/domain-auth-section";
 import { Breadcrumb } from "../../../../../components/dashboard/breadcrumb";
-import { useUpgradeModal } from "../../shell";
+import { useDashboardTier, useUpgradeModal } from "../../shell";
 
 interface ProfileData {
-  tier: string;
-  businessAddress: string;
+  tier?: string;
+  businessAddress?: string;
 }
 
 function fetchProfile(): Promise<ProfileData | null> {
@@ -23,8 +23,17 @@ function fetchProfile(): Promise<ProfileData | null> {
 
 export default function BillingClient() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const contextTier = useDashboardTier();
   const triggerUpgrade = useUpgradeModal();
   const billingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Prefer server-fetched tier (post-checkout polling) over layout context;
+  // fall back to context when /api/profile fails so a Pro account never shows Free.
+  const tier = useMemo(() => {
+    if (profile?.tier) return profile.tier;
+    return contextTier || "free";
+  }, [profile?.tier, contextTier]);
+  const isPro = tier === "pro";
 
   const stopPolling = useCallback(() => {
     if (billingRef.current) {
@@ -102,23 +111,21 @@ export default function BillingClient() {
 
       <div className="space-y-6">
         <SubscriptionCard
-          tier={profile?.tier || "free"}
+          tier={tier}
           waitlistCount={1}
-          onManageBilling={
-            profile?.tier === "pro" ? handleManageBilling : undefined
-          }
+          onManageBilling={isPro ? handleManageBilling : undefined}
         />
         <PlanComparison
-          currentTier={profile?.tier || "free"}
+          currentTier={tier}
           onUpgradeClick={() => triggerUpgrade("billing")}
         />
         <BillingDetails
           businessAddress={profile?.businessAddress || ""}
           onAddressSave={handleAddressSave}
         />
-        <InvoiceHistory isPro={profile?.tier === "pro"} />
-        {profile?.tier === "pro" && <DomainAuthSection />}
-        <CancellationFlow isPro={profile?.tier === "pro"} />
+        <InvoiceHistory isPro={isPro} />
+        {isPro && <DomainAuthSection />}
+        <CancellationFlow isPro={isPro} />
       </div>
     </div>
   );
