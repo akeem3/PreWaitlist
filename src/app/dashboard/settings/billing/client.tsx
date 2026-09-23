@@ -42,16 +42,6 @@ export default function BillingClient() {
     }
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetchProfile().then((data) => {
-      if (!cancelled && data) setProfile(data);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const startPolling = useCallback(() => {
     stopPolling();
     billingRef.current = setInterval(async () => {
@@ -64,6 +54,24 @@ export default function BillingClient() {
 
     setTimeout(stopPolling, 30000);
   }, [stopPolling]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchProfile().then((data) => {
+      if (!cancelled && data) setProfile(data);
+    });
+    // Post-checkout return: Paddle redirects with ?upgraded=1
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("upgraded") === "1") {
+      startPolling();
+      const url = new URL(window.location.href);
+      url.searchParams.delete("upgraded");
+      window.history.replaceState({}, "", url.pathname + url.search);
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [startPolling]);
 
   useEffect(() => {
     const handler = () => startPolling();

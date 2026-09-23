@@ -79,7 +79,10 @@ export function UpgradeModal({
           paddle.Checkout.open({
             items: [{ priceId: data.priceId, quantity: 1 }],
             customData: data.customData,
-            settings: { variant: "one-page" },
+            settings: {
+              variant: "one-page",
+              successUrl: `${window.location.origin}/dashboard/settings/billing?upgraded=1`,
+            },
           });
           window.dispatchEvent(new CustomEvent("paddle-checkout-opened"));
         }

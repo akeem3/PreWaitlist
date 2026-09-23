@@ -62,18 +62,28 @@ export function usePaddleUpgrade({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ triggerSource }),
       });
+      if (!res.ok) {
+        console.error("Checkout API failed", res.status);
+        return;
+      }
       const data = await res.json();
+      if (data.error) {
+        console.error("Checkout API error", data.error);
+        return;
+      }
       if (data.priceId) {
         paddle.Checkout.open({
           items: [{ priceId: data.priceId, quantity: 1 }],
           customData: data.customData,
-          settings: { variant: "one-page" },
+          settings: {
+            variant: "one-page",
+            successUrl: `${window.location.origin}/dashboard/settings/billing?upgraded=1`,
+          },
         });
-        // Start polling for tier change after checkout opens
         startPolling();
       }
-    } catch {
-      // Silent
+    } catch (err) {
+      console.error("Failed to open Paddle checkout", err);
     }
   }, [paddle, triggerSource, startPolling]);
 

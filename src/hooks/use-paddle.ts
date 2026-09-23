@@ -19,7 +19,36 @@ export function usePaddle() {
       return;
     }
 
-    initializePaddle({ token, environment }).then((instance) => {
+    initializePaddle({
+      token,
+      environment,
+      eventCallback: (event) => {
+        if (
+          event.name === "checkout.error" ||
+          event.name === "checkout.payment.error" ||
+          event.name === "checkout.failed"
+        ) {
+          console.error("Paddle checkout event", event.name, {
+            type: event.type,
+            code: event.code,
+            detail: event.detail,
+            documentation_url: event.documentation_url,
+          });
+          return;
+        }
+
+        if (
+          event.name === "checkout.completed" ||
+          event.name === "checkout.closed"
+        ) {
+          console.info("Paddle checkout event", event.name, {
+            transactionId: event.data?.transaction_id,
+            status: event.data?.status,
+            customData: event.data?.custom_data,
+          });
+        }
+      },
+    }).then((instance) => {
       if (instance) {
         paddleRef.current = instance;
         setPaddle(instance);

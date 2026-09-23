@@ -36,6 +36,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
+  console.info("Paddle webhook received", {
+    eventType: event.eventType,
+    eventId: event.eventId,
+    supported: SUPPORTED_EVENTS.has(event.eventType ?? ""),
+  });
+
   if (!event.eventType || !SUPPORTED_EVENTS.has(event.eventType)) {
     return NextResponse.json({ received: true });
   }
@@ -49,10 +55,12 @@ export async function POST(req: NextRequest) {
 
   const userId = data.customData?.user_id;
   if (!userId) {
-    console.error(
-      "Paddle webhook missing user_id in customData",
-      event.eventType
-    );
+    console.error("Paddle webhook missing user_id in customData", {
+      eventType: event.eventType,
+      eventId: event.eventId,
+      dataId: data.id,
+      customData: data.customData ?? null,
+    });
     return NextResponse.json({ received: true });
   }
 
@@ -74,6 +82,12 @@ export async function POST(req: NextRequest) {
         console.error("Failed to update tier to pro", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
+      console.info("Tier upgraded via subscription event", {
+        userId,
+        eventType: event.eventType,
+        subscriptionId: data.id,
+        customerId: data.customerId,
+      });
       break;
     }
 
@@ -82,30 +96,41 @@ export async function POST(req: NextRequest) {
         id: string;
         customerId: string;
         customData: { user_id?: string; waitlist_id?: string } | null;
-        subscriptionId?: string;
+        subscriptionId?: string | null;
       };
       const txUserId = txData.customData?.user_id;
       if (!txUserId) {
-        console.error(
-          "Paddle transaction.completed missing user_id",
-          txData.id
-        );
+        console.error("Paddle transaction.completed missing user_id", {
+          dataId: txData.id,
+          customData: txData.customData ?? null,
+        });
         return NextResponse.json({ received: true });
+      }
+
+      const txUpdate: Record<string, string | null> = {
+        tier: "pro",
+        paddle_customer_id: txData.customerId,
+      };
+      // Only write subscription id when present — never null out an id
+      // already set by subscription.created if this event races first/without one.
+      if (txData.subscriptionId) {
+        txUpdate.paddle_subscription_id = txData.subscriptionId;
       }
 
       const { error } = await admin
         .from("founder_profiles")
-        .update({
-          tier: "pro",
-          paddle_subscription_id: txData.subscriptionId ?? null,
-          paddle_customer_id: txData.customerId,
-        })
+        .update(txUpdate)
         .eq("id", txUserId);
 
       if (error) {
         console.error("Failed to update tier to pro via transaction", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
+      console.info("Tier upgraded via transaction.completed", {
+        userId: txUserId,
+        transactionId: txData.id,
+        subscriptionId: txData.subscriptionId ?? null,
+      });
       break;
     }
 
@@ -123,6 +148,7 @@ export async function POST(req: NextRequest) {
         console.error("Failed to revert tier to free", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
+      console.info("Tier reverted via subscription.canceled", { userId });
       break;
     }
 
