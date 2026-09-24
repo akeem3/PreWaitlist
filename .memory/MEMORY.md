@@ -1433,3 +1433,55 @@ canonical. The API routes (`POST /api/updates`) and auth callback logic
 - **Paddle sandbox tokens on production** — `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=test_*`, `NEXT_PUBLIC_PADDLE_ENV=sandbox`, `PADDLE_API_KEY=pdl_sdbx_*`, `PADDLE_WEBHOOK_SECRET=pdl_ntfset_*`. These connect to `sandbox-vendors.paddle.com`. Sandbox checkouts only work with sandbox accounts. Domain approval needed for custom checkout domains.
 - **Webhook signature verification** — Uses `paddle.webhooks.unmarshal(body, secret, signature)` from `@paddle/paddle-node-sdk`. Body must be raw text (`req.text()`), not JSON — HMAC breaks if body is re-serialized.
 - **`customData` passed through checkout → webhook** — `paddle.Checkout.open({ customData: { user_id, waitlist_id, trigger_source } })`. Webhook reads `data.customData?.user_id` to identify the founder. If missing, webhook logs error and returns early without updating tier.
+
+## Session Work — Paddle Diagnostics + Dashboard Tier Refresh (2026-09-22/23)
+
+### Commit `2cf62be` — Paddle checkout diagnostics (2026-09-22)
+
+- **Message:** `fix: paddle checkout diagnostics, success redirect, webhook logging` (5 files, +106/−30)
+- Added checkout diagnostics, post-checkout success redirect, and structured webhook logging so failed/silent Paddle events become observable in Vercel logs.
+- Merged to `main` same day.
+
+### Open Blocker — Paddle webhook 308 redirect (UNRESOLVED, user action)
+
+- **Symptom:** Paddle events never reach `/api/webhooks/paddle` — destination URL is apex `https://prewaitlist.com/api/webhooks/paddle` (no `www`) → 308 redirect → **Paddle does not follow redirects**.
+- **Fix (user, in Paddle sandbox dashboard at `sandbox-vendors.paddle.com`):** change destination to `https://www.prewaitlist.com/api/webhooks/paddle`, then re-send a failed event or run a new test payment.
+- **Verify:** Vercel logs show `Paddle webhook received` and `founder_profiles.tier` flips to `pro`.
+- Signing secret suffix `…ySB9` matches `PADDLE_WEBHOOK_SECRET` — secret itself is fine.
+- **Sandbox test cards (given to user):** success `4000 0566 5566 5556`, 3DS `4000 0276 0003 1981`, decline `4000 0000 0000 0002`.
+- `.env.local` sandbox keys (gitignored, **do not commit**): `PADDLE_API_KEY=pdl_sdbx_apikey_…`, `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=test_e2c0a872d3be44905be553a1a77`, `NEXT_PUBLIC_PADDLE_ENV=sandbox`, `PADDLE_WEBHOOK_SECRET=pdl_ntfset_…ySB9`, `PADDLE_PRO_PRICE_ID=pri_01m372ngyv142t467ar24w3pk6`. Vercel env still unverified (no `vercel` CLI installed).
+
+### Commit `211085f` — Dashboard tier refresh mechanism (2026-09-23)
+
+**Problem:** After a successful Paddle upgrade, the sidebar stayed locked (`tier="free"`) until a full page reload — server layout tier prop never refreshed client-side.
+
+**Design (approved plan:** `.sisyphus/plans/dashboard-tier-refresh.md`, untracked):
+
+- Shell owns tier as **client state** seeded from server prop.
+- **Poll** `GET /api/profile` every **2s** for **60s cap** after upgrade triggers.
+- **Triggers:** `paddle-checkout-opened` custom event (from `UpgradeModal`), `tier-changed` custom event, mount-only `?upgraded=1` (read via `window.location.search`, stripped with `history.replaceState`), cross-tab `BroadcastChannel("prewaitlist-tier")`.
+- **`router.refresh()`** on every tier change so server layout/sidebar seed stays current.
+- Context expands to `{ tier, activeWaitlistId, setUpgradeModal, refreshTier }`; new export **`useRefreshTier()`**.
+- Billing page: tier resolution `contextTier || profile?.tier || "free"` (context = source of truth); mount re-fetch at **0/2/5s** dispatching `tier-changed` when tier ≠ current; local poll retained for `?upgraded=1`/checkout races.
+
+**Files:**
+
+- `src/app/dashboard/shell.tsx` — rewritten: `useState(serverTier)` + `tierRef` + `applyTier`; `stopTierPolling`/`startTierPolling`; `fetchTier`; `refreshTier` (one-shot + dispatch `tier-changed`); `broadcastTier`; event listeners; `?upgraded=1` handling; BroadcastChannel; `useRefreshTier`.
+- `src/app/dashboard/settings/billing/client.tsx` — context-first tier, mount sync 0/2/5s, dispatches `tier-changed`.
+- `src/__tests__/components/dashboard-context.test.tsx` — updated (`baseValue` with `setUpgradeModal` + `refreshTier`; new `useRefreshTier` test).
+- `src/__tests__/components/dashboard-tier-refresh.test.tsx` — **new, 10 tests** (init lock state, poll-on-checkout, stop-after-success, 60s cap, `tier-changed`, `?upgraded=1` strip, `refreshTier`, server-prop sync, unmount cleanup).
+
+**Deliberately NOT changed:** `components/billing/cancellation-flow.tsx` — cancel happens in Paddle portal externally; billing mount re-fetch at 0/2/5s covers the race.
+
+**Verification:** `pnpm lint` → 0 errors, 5 pre-existing warnings. Full suite → **443 passed, 7 failed** (exact baseline: `dashboard-archive` 4 + `dashboard-subscriber-table` 3). Targeted tier-refresh + context = 15/15.
+
+**Deployed:** commit `211085f` → push `dev` → FF merge → push `main` (both remotes at `211085f`). On branch `dev` after deploy. Vercel auto-deploys from `main`.
+
+### Gotchas learned this session
+
+- **Parallel git command calls race** — `status`/`log`/`push` issued together can report pre-commit state. Run git operations **sequentially**.
+- **`react-hooks/set-state-in-effect`:** shell server-prop→state sync effect and billing `contextTierRef` sync must not assign refs/setState "during render"; ref sync lives in `useEffect`, state updates go through `applyTier`.
+- **Circular dispatch safety:** shell `onTierChanged` handler checks `detail.tier !== tierRef.current` before acting; BroadcastChannel message back is a no-op because `tierRef` already updated.
+- **Fake timers + `waitFor` hang** — use `vi.advanceTimersByTimeAsync` inside `act`; do not combine Vitest fake timers with RTL `waitFor`.
+- **`.sisyphus/` plan folder is untracked** — intentional; do not commit unless asked.
+- **Test baseline for full-suite runs:** 7 fixed failures (`dashboard-archive` 4 + `dashboard-subscriber-table` 3) + flaky `billing.test.ts` webhook test in full suite (passes in isolation). New failures beyond this count indicate a real regression.
