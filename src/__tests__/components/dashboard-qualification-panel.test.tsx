@@ -72,7 +72,8 @@ describe("QualificationPanel", () => {
     });
     render(<QualificationPanel subdomain="acme" waitlistId="wl-1" />);
     expect(await screen.findByText("No responses yet")).toBeDefined();
-    expect(screen.getByText("0 respondents")).toBeDefined();
+    // both displays (meta line + per-card) show the count
+    expect(screen.getAllByText("0 respondents")).toHaveLength(2);
   });
 
   it("renders MC bars with percent widths and count/percent labels (AC3)", async () => {
@@ -91,7 +92,7 @@ describe("QualificationPanel", () => {
     });
     render(<QualificationPanel subdomain="acme" waitlistId="wl-1" />);
 
-    expect(await screen.findByText("4 respondents")).toBeDefined();
+    expect(await screen.findAllByText("4 respondents")).toHaveLength(2);
     expect(screen.getByText("Twitter (3, 75%)")).toBeDefined();
     expect(screen.getByText("Friend (1, 25%)")).toBeDefined();
 
@@ -118,7 +119,7 @@ describe("QualificationPanel", () => {
     });
     render(<QualificationPanel subdomain="acme" waitlistId="wl-1" />);
 
-    expect(await screen.findByText("1 respondent")).toBeDefined();
+    expect(await screen.findAllByText("1 respondent")).toHaveLength(2);
     expect(screen.getByText("Twitter")).toBeDefined();
     expect(document.querySelectorAll("[style*='width']")).toHaveLength(0);
   });
@@ -142,7 +143,7 @@ describe("QualificationPanel", () => {
     });
     render(<QualificationPanel subdomain="acme" waitlistId="wl-1" />);
 
-    expect(await screen.findByText("3 respondents")).toBeDefined();
+    expect(await screen.findAllByText("3 respondents")).toHaveLength(2);
     expect(screen.getByText("A great product")).toBeDefined();
     expect(screen.getByText("(2)")).toBeDefined();
     expect(screen.getByText("Something else")).toBeDefined();
@@ -204,10 +205,12 @@ describe("QualificationPanel", () => {
       ],
       respondentTotal: 7,
     });
-    render(<QualificationPanel subdomain="acme" waitlistId="wl-1" />);
-    expect(
-      await screen.findByText("7 respondents · 2 questions")
-    ).toBeDefined();
+    const { container } = render(
+      <QualificationPanel subdomain="acme" waitlistId="wl-1" />
+    );
+    await screen.findByText("How did you hear about us?");
+    const meta = container.querySelector("p.mb-4");
+    expect(meta?.textContent).toBe("7 respondents · 2 questions");
   });
 
   it("singularizes the meta line for one respondent and one question", async () => {
@@ -215,8 +218,12 @@ describe("QualificationPanel", () => {
       questions: [{ ...question, respondentCount: 1 }],
       respondentTotal: 1,
     });
-    render(<QualificationPanel subdomain="acme" waitlistId="wl-1" />);
-    expect(await screen.findByText("1 respondent · 1 question")).toBeDefined();
+    const { container } = render(
+      <QualificationPanel subdomain="acme" waitlistId="wl-1" />
+    );
+    await screen.findByText("How did you hear about us?");
+    const meta = container.querySelector("p.mb-4");
+    expect(meta?.textContent).toBe("1 respondent · 1 question");
   });
 
   it("renders type badges for question types", async () => {
@@ -297,5 +304,32 @@ describe("QualificationPanel", () => {
     const link = await screen.findByRole("link", { name: /View all/ });
     expect(link.className).toContain("text-accent");
     expect(link.className).not.toContain("text-muted-foreground");
+  });
+
+  it("renders respondent counts in accent brand color", async () => {
+    mockFetchWith({ questions: [question], respondentTotal: 2 });
+    const { container } = render(
+      <QualificationPanel subdomain="acme" waitlistId="wl-1" />
+    );
+    await screen.findByText("How did you hear about us?");
+
+    // meta line respondent portion + per-card respondent count
+    const counts = screen.getAllByText("2 respondents");
+    expect(counts).toHaveLength(2);
+    for (const el of counts) {
+      expect(el.className).toContain("text-accent");
+    }
+
+    // meta line still reads as one string with muted question count
+    const meta = container.querySelector("p.mb-4");
+    expect(meta?.textContent).toBe("2 respondents · 1 question");
+    expect(meta?.querySelector("span.text-accent")?.textContent).toBe(
+      "2 respondents"
+    );
+
+    // all accent spans are token-based utilities (no hex / arbitrary values)
+    for (const el of container.querySelectorAll("[class*='accent']")) {
+      expect(el.className).not.toMatch(/#[0-9a-fA-F]{3,8}|\[var\(/);
+    }
   });
 });

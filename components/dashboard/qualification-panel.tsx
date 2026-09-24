@@ -132,7 +132,7 @@ function QuestionContent({
           </span>
           <TypeBadge type={question.type} />
         </span>
-        <span className="shrink-0 text-xs text-muted-foreground">
+        <span className="shrink-0 text-xs text-accent">
           {respondentLabel(question.respondentCount)}
         </span>
       </div>
@@ -230,7 +230,9 @@ function PanelBody({
 
   const meta = (
     <p className="mb-4 text-body-sm text-muted-foreground">
-      {respondentLabel(respondentTotal)} · {questionLabel(questions.length)}
+      <span className="text-accent">{respondentLabel(respondentTotal)}</span>
+      {" · "}
+      {questionLabel(questions.length)}
     </p>
   );
 
