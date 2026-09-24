@@ -1,6 +1,6 @@
 # Epic 14 — Qualification Engine Fix & Hardening
 
-**Status:** ready
+**Status:** in-progress
 **Source:** [PRD §6.9 Step 4 Decision](../PRD.md#64-onboarding-step-4-qualification-decision-f-b1-qual-decision-variant), [PRD §6.10 Step 4a Configure Questions](../PRD.md#65-onboarding-step-4a-configure-qualification-questions-f-b1), [PRD §7.4 Data Model](../PRD.md#74-data-model--implementation-grade), [Five-Engine Audit §1](../scans/engine-audit-5-engines.md#1-qualification--%EF%B8%8F-partial-verified-rescan-confidence-97)
 
 ## Design References
@@ -35,10 +35,10 @@ A Free founder can create up to 2 questions (Pro: 5) as free-text or multiple-ch
 
 | ID   | Title                                              | Depends on | Status |
 | ---- | -------------------------------------------------- | ---------- | ------ |
-| 14.0 | Schema, Answer-Key Migration, Server Caps, Privacy | —          | ready  |
-| 14.1 | Question Builder + Public Capture (MC + free-text) | 14.0       | ready  |
-| 14.2 | Settings Question Editor (post-onboarding)         | 14.0, 14.1 | ready  |
-| 14.3 | Qualification Dashboard Redesign                   | 14.0       | ready  |
+| 14.0 | Schema, Answer-Key Migration, Server Caps, Privacy | —          | done   |
+| 14.1 | Question Builder + Public Capture (MC + free-text) | 14.0       | done   |
+| 14.2 | Settings Question Editor (post-onboarding)         | 14.0, 14.1 | done   |
+| 14.3 | Qualification Dashboard Redesign                   | 14.0       | done   |
 | 14.4 | CSV Export, Tests, Cleanup & Doc Sync              | 14.0–14.3  | ready  |
 
 **Execution order:** 14.0 first (foundation — run SQL before deploy). Then 14.1 + 14.3 in parallel. Then 14.2 (reuses shared editor from 14.1). Then 14.4 last.
@@ -49,7 +49,7 @@ Stories must be executed in dependency order; 14.0's migration SQL is a hard gat
 
 ### Story 14.0 — Schema, Answer-Key Migration, Server Caps, Privacy
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (no SVG; infrastructure story)
 **Story:** As a founder/subscriber/platform, I want qualification data modeled correctly, capped server-side, and private so that answer keys stay stable, tier rules hold under API abuse, and PII is not world-readable.
 
@@ -82,7 +82,7 @@ Stories must be executed in dependency order; 14.0's migration SQL is a hard gat
 
 ### Story 14.1 — Question Builder + Public Capture (MC + free-text)
 
-**Status:** ready
+**Status:** done
 **Design Refs:** Onboarding Step 4a flow (Epic 4 analysis); public form via Story 7.2/7.3 patterns
 **Story:** As a founder, I want to create free-text or multiple-choice questions in onboarding Step 4a so that subscribers can answer in the format that fits each question; as a subscriber, I want those questions rendered correctly with stable answer keys.
 
@@ -119,7 +119,7 @@ Stories must be executed in dependency order; 14.0's migration SQL is a hard gat
 
 ### Story 14.2 — Settings Question Editor (post-onboarding)
 
-**Status:** ready
+**Status:** done
 **Design Refs:** Settings hub patterns (`docs` three-level hierarchy); no HF SVG for editor
 **Story:** As a founder after onboarding, I want to edit my waitlist's qualification questions from settings so that the product keeps the promise made on Step 4 ("Add questions later from settings").
 
@@ -143,12 +143,13 @@ Stories must be executed in dependency order; 14.0's migration SQL is a hard gat
 - Circular debt to break: 12.3.2 out-scoped editing → pointed at 12.2.2; 12.2.2 out-scoped it. This story is the resolution.
 - Import path gotcha: shared editor should live under `components/onboarding/` or `components/settings/` with relative imports consistent with repo (`components/` at project root).
 - Depends on 14.1 for the MC/options builder UI to extract.
+- **Status: implemented** (commits `d3843f0`, `25d99f1`) — AC1 choice documented here (ships to `dev`, no PR): settings surface = **qualification tab inside `/dashboard/[waitlistId]/settings`** (`src/app/dashboard/[waitlistId]/settings/client.tsx`). Shared editor extracted to root **`components/onboarding/question-editor.tsx`** (single implementation; Step 4a reduced to a consumer). PATCH made **id-preserving** in `src/app/api/waitlist/route.ts`. AC4 CTA = "Edit questions" link, styled as solid accent primary button (`bg-accent text-accent-foreground`) per design guide §9.
 
 ---
 
 ### Story 14.3 — Qualification Dashboard Redesign
 
-**Status:** ready
+**Status:** done
 **Design Refs:** `docs/design/dashboard-design-guide.md` §8 Qualification Breakdown (bars, top answer accent, max-5 + Show all); Story 12.3.2 AC2–AC5
 **Story:** As a founder, I want the qualification dashboard to show the right chart per question type with percentages and respondent totals so that I can act on subscriber answers.
 
@@ -176,6 +177,13 @@ Stories must be executed in dependency order; 14.0's migration SQL is a hard gat
 - Aggregation may still load subscribers with `qual_answers` for MVP scale (<500) — optional: select only needed columns; full SQL aggregation is nice-to-have, not AC (12.1.9 AC3 debt may be partially addressed by column minimization).
 - Loading skeleton: match actual question count when known, or generic 1–3 groups — avoid misleading fixed 3 if trivial.
 - Panel file: `components/dashboard/qualification-panel.tsx` (project root `components/`, not `src/components/`).
+- **Status: implemented** (commits `d3843f0`, `e51dcc6`, `25d99f1`) — beyond the original ACs, per design-guide §8 + founder design decisions:
+  - **Shared panel shell** `components/dashboard/panel.tsx` (`Panel`, `PanelHeader`, `panelChrome` = `rounded-[var(--card-radius)] border border-border bg-card p-5`) adopted by `signup-chart.tsx`, `warmth-panel.tsx`, `top-referrers.tsx` — structural AC9 parity.
+  - **`qualification-panel.tsx` variant prop** `page | overview` (default `page`): page = meta line `N respondents · M questions` (middot, singularized — founder-approved copy pattern) + **2-column question-card grid**; overview = titled **"Qualification Breakdown"** panel (guide §8 title, founder-approved) + **max 2 questions** + divider `border-t` + "View all →".
+  - **Per-question card** = ordinal badge + TypeBadge ("Free text"/"Multiple choice") + per-card respondent count + question text + viz (MC bars only when `respondentCount >= 2`, styled answer rows for n=1 — AC8).
+  - Overview got non-empty `<h1>Overview</h1>` (`.text-h2`, sidebar label — founder-approved verbatim).
+  - **Brand accents** (founder decision 2026-09-24, "keep white cards + smart accents"): ordinal badges `bg-accent/10 text-accent`, both "View all →" links `text-accent hover:text-accent/80`, "Edit questions" solid accent CTA, stat deltas up `text-accent` / down `text-destructive` / flat `text-muted-foreground` (`DeltaText` in `dashboard/client.tsx`). Guide §9 Color Rules #2–#4 amended to sanction these uses; white-card rule unchanged.
+  - **Tests:** `dashboard-qualification-panel.test.tsx` (14 incl. badge/link accent), `api/qualification-aggregation.test.ts`, extended `dashboard-qualification-page.test.tsx` (incl. solid-CTA assertion), `dashboard-stat-cards.test.tsx` delta-tone assertion.
 
 ---
 

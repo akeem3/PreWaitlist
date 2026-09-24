@@ -1,6 +1,6 @@
 # Story 14.2 — Settings Question Editor (post-onboarding)
 
-**Status:** ready
+**Status:** done
 **Epic:** 14 — Qualification Engine Fix & Hardening
 **Depends on:** 14.0, 14.1
 
@@ -33,13 +33,23 @@ T5 (AC7) Lint + build
 - Shared component location: `components/onboarding/` or `components/settings/` at project **root** `components/`, consistent with repo import style.
 - Load existing questions with `id`, `type`, `options` from `GET /api/waitlist`; seed editor state; dirty-check optional.
 
+## Implementation Notes (added on completion)
+
+- **Status: done** — commits `d3843f0` (implementation) + `25d99f1` (CTA accent), gates green.
+- **AC1 choice (documented here, no PR — work ships to `dev`):** settings surface = **qualification tab inside `/dashboard/[waitlistId]/settings`** (`src/app/dashboard/[waitlistId]/settings/client.tsx`, +143 lines) — not the `/dashboard/settings/waitlists` detail route.
+- **AC2:** shared editor extracted to **`components/onboarding/question-editor.tsx`** (330 lines, single implementation); `src/app/onboarding/4a/page.tsx` reduced −294 lines to consume it.
+- **AC3:** save path `PATCH /api/waitlist` made **id-preserving** (no delete+reinsert of unchanged questions — `src/app/api/waitlist/route.ts` +103) so existing `question_id` answer keys stay stable (AC5).
+- **AC4:** "Edit questions" link on `/dashboard/qualification` → `/dashboard/{id}/settings?tab=qualification`; styled as **solid accent primary CTA** (`bg-accent text-accent-foreground hover:bg-accent/90`) per design guide §9.
+- **AC6:** Free-cap upsell reuses `triggerUpgrade("qual_question")` inside the shared editor.
+- Tests: `src/__tests__/components/dashboard-qualification-page.test.tsx` (incl. solid-CTA class assertion).
+
 ## Files to Create/Modify
 
-- `components/…/question-editor.tsx` — shared editor (extracted from 4a)
-- `src/app/onboarding/4a/page.tsx` — consume shared editor
-- `src/app/dashboard/[waitlistId]/settings/…` (or equivalent) — new qualification section
-- `src/app/dashboard/qualification/client.tsx` — Edit questions CTA
-- `src/app/api/waitlist/route.ts` — already covered by 14.0; verify PATCH path only
+- `components/onboarding/question-editor.tsx` — shared editor (extracted from 4a) _(created)_
+- `src/app/onboarding/4a/page.tsx` — consume shared editor ✓
+- `src/app/dashboard/[waitlistId]/settings/client.tsx` — qualification tab (chosen surface) ✓
+- `src/app/dashboard/qualification/client.tsx` — Edit questions CTA ✓
+- `src/app/api/waitlist/route.ts` — id-preserving PATCH ✓
 
 ## Out of Scope
 
