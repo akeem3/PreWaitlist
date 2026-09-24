@@ -127,7 +127,7 @@ function QuestionContent({
     <>
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-2">
-          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/10 text-xs font-medium text-accent">
             {index + 1}
           </span>
           <TypeBadge type={question.type} />
@@ -179,7 +179,7 @@ function PanelBody({
   const viewAllLink = (
     <Link
       href={`/dashboard/qualification${waitlistId ? `?wid=${waitlistId}` : ""}`}
-      className="text-body-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+      className="text-body-sm font-medium text-accent transition-colors hover:text-accent/80"
     >
       View all &rarr;
     </Link>

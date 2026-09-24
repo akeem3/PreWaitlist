@@ -306,11 +306,11 @@ Badge style: `rounded-full px-2 py-0.5 text-xs font-medium`
 
 ### Accent Palette
 
-| Token                       | Hex       | Use                                   |
-| --------------------------- | --------- | ------------------------------------- |
-| `--color-accent`            | `#0F7A5E` | CTAs, active sidebar item, chart bars |
-| Accent hover                | `#0D6B52` | Button hover state                    |
-| `--color-accent-foreground` | `#FFFFFF` | Text on accent backgrounds            |
+| Token                       | Hex       | Use                                                                                |
+| --------------------------- | --------- | ---------------------------------------------------------------------------------- |
+| `--color-accent`            | `#0F7A5E` | CTAs, active sidebar item, chart bars, text links, positive deltas, ordinal badges |
+| Accent hover                | `#0D6B52` | Button hover state                                                                 |
+| `--color-accent-foreground` | `#FFFFFF` | Text on accent backgrounds                                                         |
 
 ### Status Palette (Reserved for alerts/badges ONLY)
 
@@ -325,9 +325,9 @@ Badge style: `rounded-full px-2 py-0.5 text-xs font-medium`
 ### Color Rules
 
 1. **Never use colored card backgrounds** — cards stay white (`bg-card`)
-2. **Reserve saturated color for status/alerts only** — green, red, amber are functional, not decorative
-3. **Use the accent color sparingly** — CTAs, active nav item, chart bars. That's it.
-4. **Text colors:** Only `text-foreground` and `text-muted-foreground` — no other text colors unless status badge
+2. **Reserve saturated color for status/alerts and the functional uses in rules 3–4** — green, red, amber are functional, not decorative
+3. **Use the accent color sparingly** — CTAs and text links, active nav item, chart bars, positive stat deltas, ordinal badges (question numbers). Nothing decorative.
+4. **Text colors:** `text-foreground` and `text-muted-foreground` by default; `text-accent` only for the rule-3 links/deltas/badges; `text-destructive` only for negative deltas and errors; status colors only for badges
 5. **Consistency:** If "Hot" is red in the warmth panel, it's red everywhere — never reassign
 
 ---

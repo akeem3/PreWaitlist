@@ -5,10 +5,16 @@ vi.mock("next/link", () => ({
   default: ({
     children,
     href,
+    className,
   }: {
     children: React.ReactNode;
     href: string;
-  }) => <a href={href}>{children}</a>,
+    className?: string;
+  }) => (
+    <a href={href} className={className}>
+      {children}
+    </a>
+  ),
 }));
 
 vi.mock("../../../components/dashboard/qualification-panel", () => ({
@@ -69,5 +75,13 @@ describe("Dashboard Qualification Page", () => {
       <QualificationClient subdomain="acme" waitlistId="wl-1" />
     );
     expect(container.firstChild).toHaveClass("max-w-6xl");
+  });
+
+  it("renders Edit questions as a solid accent CTA (brand color)", () => {
+    render(<QualificationClient subdomain="acme" waitlistId="wl-1" />);
+    const link = screen.getByRole("link", { name: "Edit questions" });
+    expect(link.className).toContain("bg-accent");
+    expect(link.className).toContain("text-accent-foreground");
+    expect(link.className).not.toContain("border-border");
   });
 });

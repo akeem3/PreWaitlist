@@ -18,7 +18,7 @@ export default function QualificationClient({
         <h1 className="text-h2 text-foreground">Qualification</h1>
         <Link
           href={`/dashboard/${waitlistId}/settings?tab=qualification`}
-          className="inline-flex h-8 shrink-0 items-center justify-center gap-2 rounded-[var(--button-radius)] border border-border bg-card px-3 text-xs font-medium text-foreground transition-colors duration-normal ease-out hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+          className="inline-flex h-8 shrink-0 items-center justify-center gap-2 rounded-[var(--button-radius)] bg-accent px-3 text-xs font-medium text-accent-foreground transition-colors duration-normal ease-out hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         >
           Edit questions
         </Link>

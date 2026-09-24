@@ -84,22 +84,46 @@ function formatStat(value: number): string {
   return value > 0 ? String(value) : "\u2014";
 }
 
-function computeDelta(current: number, previous: number): string {
-  if (previous === 0 && current === 0) return "\u2014";
-  if (previous === 0) return "\u2191 new";
-  const pct = Math.round(((current - previous) / previous) * 100);
-  if (pct > 0) return `\u2191 ${pct}% vs last week`;
-  if (pct < 0) return `\u2193 ${Math.abs(pct)}% vs last week`;
-  return "\u2014 no change";
+type DeltaTone = "up" | "down" | "flat";
+
+interface Delta {
+  text: string;
+  tone: DeltaTone;
 }
 
-function computeTodayDelta(current: number, yesterday: number): string {
-  if (yesterday === 0 && current === 0) return "\u2014";
-  if (yesterday === 0 && current > 0) return "\u2191 new today";
+const DELTA_TONE_CLASS: Record<DeltaTone, string> = {
+  up: "text-accent",
+  down: "text-destructive",
+  flat: "text-muted-foreground",
+};
+
+function computeDelta(current: number, previous: number): Delta {
+  if (previous === 0 && current === 0) return { text: "\u2014", tone: "flat" };
+  if (previous === 0) return { text: "\u2191 new", tone: "up" };
+  const pct = Math.round(((current - previous) / previous) * 100);
+  if (pct > 0) return { text: `\u2191 ${pct}% vs last week`, tone: "up" };
+  if (pct < 0)
+    return { text: `\u2193 ${Math.abs(pct)}% vs last week`, tone: "down" };
+  return { text: "\u2014 no change", tone: "flat" };
+}
+
+function computeTodayDelta(current: number, yesterday: number): Delta {
+  if (yesterday === 0 && current === 0) return { text: "\u2014", tone: "flat" };
+  if (yesterday === 0 && current > 0)
+    return { text: "\u2191 new today", tone: "up" };
   const diff = current - yesterday;
-  if (diff > 0) return `\u2191 ${diff} vs yesterday`;
-  if (diff < 0) return `\u2193 ${Math.abs(diff)} vs yesterday`;
-  return "\u2014 same as yesterday";
+  if (diff > 0) return { text: `\u2191 ${diff} vs yesterday`, tone: "up" };
+  if (diff < 0)
+    return { text: `\u2193 ${Math.abs(diff)} vs yesterday`, tone: "down" };
+  return { text: "\u2014 same as yesterday", tone: "flat" };
+}
+
+function DeltaText({ value }: { value: Delta }) {
+  return (
+    <div className={`mt-1 text-xs ${DELTA_TONE_CLASS[value.tone]}`}>
+      {value.text}
+    </div>
+  );
 }
 
 export default function DashboardClient({
@@ -373,12 +397,12 @@ export default function DashboardClient({
               Total signups
             </div>
             {statsData?.current && (
-              <div className="mt-1 text-xs text-muted-foreground">
-                {computeDelta(
+              <DeltaText
+                value={computeDelta(
                   statsData.current.total,
                   statsData.previous.total
                 )}
-              </div>
+              />
             )}
           </Link>
           <Link
@@ -392,12 +416,12 @@ export default function DashboardClient({
             </div>
             <div className="text-caption text-muted-foreground">Referral %</div>
             {statsData?.current && (
-              <div className="mt-1 text-xs text-muted-foreground">
-                {computeDelta(
+              <DeltaText
+                value={computeDelta(
                   statsData.current.referrals,
                   statsData.previous.referrals
                 )}
-              </div>
+              />
             )}
           </Link>
           <Link
@@ -409,12 +433,12 @@ export default function DashboardClient({
             </div>
             <div className="text-caption text-muted-foreground">Today</div>
             {statsData?.current && (
-              <div className="mt-1 text-xs text-muted-foreground">
-                {computeTodayDelta(
+              <DeltaText
+                value={computeTodayDelta(
                   statsData.current.today,
                   statsData.current.yesterday
                 )}
-              </div>
+              />
             )}
           </Link>
           {(() => {

@@ -6,10 +6,16 @@ vi.mock("next/link", () => ({
   default: ({
     children,
     href,
+    className,
   }: {
     children: React.ReactNode;
     href: string;
-  }) => <a href={href}>{children}</a>,
+    className?: string;
+  }) => (
+    <a href={href} className={className}>
+      {children}
+    </a>
+  ),
 }));
 
 const question = {
@@ -266,5 +272,30 @@ describe("QualificationPanel", () => {
     await screen.findByText("How did you hear about us?");
     expect(screen.getByText("Second question?")).toBeDefined();
     expect(screen.queryByText("Third question?")).toBeNull();
+  });
+
+  it("renders ordinal badges with accent tint (brand color)", async () => {
+    mockFetchWith({ questions: [question], respondentTotal: 2 });
+    const { container } = render(
+      <QualificationPanel subdomain="acme" waitlistId="wl-1" />
+    );
+    await screen.findByText("How did you hear about us?");
+    const badges = container.querySelectorAll("[class*='bg-accent/10']");
+    expect(badges).toHaveLength(1);
+    expect(badges[0].className).toContain("text-accent");
+  });
+
+  it("styles the View all link with accent color (brand color)", async () => {
+    mockFetchWith({ questions: [question], respondentTotal: 2 });
+    render(
+      <QualificationPanel
+        subdomain="acme"
+        waitlistId="wl-9"
+        variant="overview"
+      />
+    );
+    const link = await screen.findByRole("link", { name: /View all/ });
+    expect(link.className).toContain("text-accent");
+    expect(link.className).not.toContain("text-muted-foreground");
   });
 });

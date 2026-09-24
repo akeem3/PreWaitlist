@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
@@ -44,6 +44,10 @@ const baseProps = {
 describe("Stat Cards", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("renders 4 stat cards", () => {
@@ -92,5 +96,39 @@ describe("Stat Cards", () => {
       />
     );
     expect(screen.getByText("1234")).toBeDefined();
+  });
+
+  it("tints positive deltas accent, flat deltas muted (brand color)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((url: unknown) => {
+        if (String(url).includes("/api/dashboard/stats")) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                current: { total: 10, referrals: 5, today: 3, yesterday: 1 },
+                previous: { total: 5, referrals: 5 },
+              }),
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({}),
+        });
+      })
+    );
+
+    render(<DashboardClient {...baseProps} />);
+
+    const positive = await screen.findByText("↑ 100% vs last week");
+    expect(positive.className).toContain("text-accent");
+
+    const today = screen.getByText("↑ 2 vs yesterday");
+    expect(today.className).toContain("text-accent");
+
+    const flat = screen.getByText("— no change");
+    expect(flat.className).toContain("text-muted-foreground");
+    expect(flat.className).not.toContain("text-accent");
   });
 });

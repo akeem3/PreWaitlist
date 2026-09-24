@@ -48,7 +48,7 @@ export default function TopReferrers({
       action={
         <Link
           href={`/dashboard/leaderboard${waitlistId ? `?wid=${waitlistId}` : ""}`}
-          className="text-body-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          className="text-body-sm font-medium text-accent transition-colors hover:text-accent/80"
         >
           View all &rarr;
         </Link>
