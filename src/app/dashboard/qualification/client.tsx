@@ -23,7 +23,11 @@ export default function QualificationClient({
           Edit questions
         </Link>
       </div>
-      <QualificationPanel subdomain={subdomain} waitlistId={waitlistId} />
+      <QualificationPanel
+        subdomain={subdomain}
+        waitlistId={waitlistId}
+        variant="page"
+      />
     </div>
   );
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Panel, { PanelHeader, panelChrome } from "./panel";
+import { cn } from "../lib/cn";
 
 interface WarmthData {
   hot: number;
@@ -83,28 +85,31 @@ export default function WarmthPanel({
       <button
         type="button"
         onClick={onUpgradeClick}
-        className="block w-full rounded-[var(--card-radius)] border border-border bg-card p-5 text-left transition-colors hover:bg-muted/30"
+        className={cn(
+          panelChrome,
+          "block w-full text-left transition-colors hover:bg-muted/30"
+        )}
       >
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-foreground">
-            Warmth Distribution
-          </h3>
-          <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-              fill="none"
-              className="text-accent"
-            >
-              <path
-                d="M6 2L7.5 5H10.5L8 7L9 10.5L6 8.5L3 10.5L4 7L1.5 5H4.5L6 2Z"
-                fill="currentColor"
-              />
-            </svg>
-            Upgrade to target segments
-          </span>
-        </div>
+        <PanelHeader
+          title="Warmth Distribution"
+          action={
+            <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                className="text-accent"
+              >
+                <path
+                  d="M6 2L7.5 5H10.5L8 7L9 10.5L6 8.5L3 10.5L4 7L1.5 5H4.5L6 2Z"
+                  fill="currentColor"
+                />
+              </svg>
+              Upgrade to target segments
+            </span>
+          }
+        />
         <div className="space-y-3">
           <WarmthBar
             label="Hot"
@@ -137,10 +142,7 @@ export default function WarmthPanel({
 
   if (loading) {
     return (
-      <div className="rounded-[var(--card-radius)] border border-border bg-card p-5">
-        <h3 className="mb-4 text-lg font-semibold text-foreground">
-          Warmth Distribution
-        </h3>
+      <Panel title="Warmth Distribution">
         <div className="space-y-3">
           {["Hot", "Warm", "Cold", "Unscored"].map((label) => (
             <div key={label} className="flex items-center gap-3">
@@ -150,15 +152,12 @@ export default function WarmthPanel({
             </div>
           ))}
         </div>
-      </div>
+      </Panel>
     );
   }
 
   return (
-    <div className="rounded-[var(--card-radius)] border border-border bg-card p-5">
-      <h3 className="mb-4 text-lg font-semibold text-foreground">
-        Warmth Distribution
-      </h3>
+    <Panel title="Warmth Distribution">
       <div className="space-y-3">
         <WarmthBar
           label="Hot"
@@ -185,6 +184,6 @@ export default function WarmthPanel({
           color="bg-muted"
         />
       </div>
-    </div>
+    </Panel>
   );
 }

@@ -11,7 +11,7 @@ const SignupChart = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="rounded-(--card-radius) border border-border bg-card p-5">
+      <div className="rounded-[var(--card-radius)] border border-border bg-card p-5">
         <div className="mb-4 flex items-center justify-between">
           <div className="h-5 w-40 animate-pulse rounded bg-muted" />
           <div className="h-5 w-20 animate-pulse rounded bg-muted" />
@@ -331,7 +331,7 @@ export default function DashboardClient({
               </a>
             </div>
 
-            <div className="mb-8 rounded-(--card-radius) border border-border bg-card p-5">
+            <div className="mb-8 rounded-[var(--card-radius)] border border-border bg-card p-5">
               <h2 className="mb-3 text-body-sm font-semibold text-foreground">
                 What to do next
               </h2>
@@ -357,12 +357,14 @@ export default function DashboardClient({
               </ol>
             </div>
           </>
-        ) : null}
+        ) : (
+          <h1 className="mb-6 text-h2 text-foreground">Overview</h1>
+        )}
 
         <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Link
             href={`/dashboard/leaderboard${waitlistId ? `?wid=${waitlistId}` : ""}`}
-            className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center transition-colors hover:bg-muted/30"
+            className="rounded-[var(--card-radius)] border border-border bg-card px-4 py-3 text-center transition-colors hover:bg-muted/30"
           >
             <div className="mb-1 text-h3 text-foreground">
               {stats ? formatStat(stats.totalSignups) : "\u2014"}
@@ -381,7 +383,7 @@ export default function DashboardClient({
           </Link>
           <Link
             href={`/dashboard/leaderboard${waitlistId ? `?wid=${waitlistId}` : ""}`}
-            className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center transition-colors hover:bg-muted/30"
+            className="rounded-[var(--card-radius)] border border-border bg-card px-4 py-3 text-center transition-colors hover:bg-muted/30"
           >
             <div className="mb-1 text-h3 text-foreground">
               {stats && stats.referralPercentage !== null
@@ -400,7 +402,7 @@ export default function DashboardClient({
           </Link>
           <Link
             href={`/dashboard/leaderboard${waitlistId ? `?wid=${waitlistId}` : ""}`}
-            className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center transition-colors hover:bg-muted/30"
+            className="rounded-[var(--card-radius)] border border-border bg-card px-4 py-3 text-center transition-colors hover:bg-muted/30"
           >
             <div className="mb-1 text-h3 text-foreground">
               {stats ? formatStat(stats.todaySignups) : "\u2014"}
@@ -458,7 +460,7 @@ export default function DashboardClient({
               return (
                 <Link
                   href={`/dashboard/warmth${waitlistId ? `?wid=${waitlistId}` : ""}`}
-                  className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center transition-colors hover:bg-muted/30"
+                  className="rounded-[var(--card-radius)] border border-border bg-card px-4 py-3 text-center transition-colors hover:bg-muted/30"
                 >
                   {warmthContent}
                 </Link>
@@ -469,7 +471,7 @@ export default function DashboardClient({
               <button
                 type="button"
                 onClick={() => triggerUpgrade("warmth")}
-                className="rounded-(--card-radius) border border-border bg-card px-4 py-3 text-center transition-colors hover:bg-muted/30"
+                className="rounded-[var(--card-radius)] border border-border bg-card px-4 py-3 text-center transition-colors hover:bg-muted/30"
               >
                 {warmthContent}
               </button>
@@ -494,6 +496,7 @@ export default function DashboardClient({
               <QualificationPanel
                 subdomain={subdomain}
                 waitlistId={waitlistId}
+                variant="overview"
               />
               <WarmthPanel
                 tier={tier}

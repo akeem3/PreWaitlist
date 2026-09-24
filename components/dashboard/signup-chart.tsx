@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Panel from "./panel";
 import {
   BarChart,
   Bar,
@@ -143,11 +144,9 @@ export default function SignupChart({
   const [range, setRange] = useState<"30d" | "all">("30d");
 
   return (
-    <div className="rounded-(--card-radius) border border-border bg-card p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-foreground">
-          Signups Over Time
-        </h3>
+    <Panel
+      title="Signups Over Time"
+      action={
         <div className="flex gap-1">
           <button
             type="button"
@@ -172,14 +171,14 @@ export default function SignupChart({
             All Time
           </button>
         </div>
-      </div>
-
+      }
+    >
       <ChartBody
         key={range}
         subdomain={subdomain}
         range={range}
         waitlistId={waitlistId}
       />
-    </div>
+    </Panel>
   );
 }

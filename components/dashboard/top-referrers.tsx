@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { anonymizeEmail } from "../../src/lib/format";
+import Panel from "./panel";
 
 interface Subscriber {
   id: string;
@@ -42,16 +43,17 @@ export default function TopReferrers({
       : null;
 
   return (
-    <div className="rounded-[var(--card-radius)] border border-border bg-card p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-foreground">Top Referrers</h3>
+    <Panel
+      title="Top Referrers"
+      action={
         <Link
           href={`/dashboard/leaderboard${waitlistId ? `?wid=${waitlistId}` : ""}`}
           className="text-body-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           View all &rarr;
         </Link>
-      </div>
+      }
+    >
       {referrers.length === 0 ? (
         <div className="py-4 text-center">
           <p className="mb-3 text-body-sm text-muted-foreground">
@@ -131,6 +133,6 @@ export default function TopReferrers({
           )}
         </>
       )}
-    </div>
+    </Panel>
   );
 }
