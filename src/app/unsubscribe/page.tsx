@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyUnsubscribeToken } from "@/lib/unsubscribe";
 
 type Props = { searchParams: Promise<{ token?: string }> };
@@ -45,7 +45,7 @@ export default async function UnsubscribePage({ searchParams }: Props) {
     );
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: subscriber } = await supabase
     .from("subscribers")

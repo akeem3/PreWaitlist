@@ -912,6 +912,42 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 **Branch:** `epic-13` (created from `dev`)
 
+## Epic 14 Progress (Qualification Engine Fix)
+
+**Status:** 14.0 + 14.1 implemented and audited (Prompt #3 complete 2026-09-24) — **not committed** (4 audit-fix files staged); stories 14.2–14.4 ready, not started. Branch: `dev` (no epic branch).
+
+| Story | Status   | Summary                                                                                                                                                                                    |
+| ----- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 14.0  | ✅ done  | Schema + migration + server caps + privacy — options jsonb, remap/drop, RLS: revoke anon SELECT + drop public policy, cap checks, normalizeQuestions, GET shape, leaderboard route deleted |
+| 14.1  | ✅ done  | Question builder + public capture — type selector, options editor, tier badge/upsell, id-keyed answers, AC11 id sanitization, dark-template fixes                                          |
+| 14.2  | ⬜ ready | Settings question editor (founder edits post-onboarding)                                                                                                                                   |
+| 14.3  | ⬜ ready | Dashboard qualification page — switch from text-keyed to id-keyed answers                                                                                                                  |
+| 14.4  | ⬜ ready | CSV/tests/cleanup — dead `questions`/`qualificationEnabled` props on waitlist-page-content, `qual_answers` select                                                                          |
+
+**Artifacts:** `docs/epics/epic-14-qualification-engine-fix.md`, `docs/stories/story-14.0-*` through `story-14.4-*`, `docs/stories/sql-writeups/epic14-story0-qualification-schema.sql`
+
+**Deploy gate:** founder must run `epic14-story0-qualification-schema.sql` in Supabase SQL Editor BEFORE deploying (adds `options jsonb`, remaps answers, drops `required`? — no, CHECK kept / no `required` col existed; drops public SELECT policy on subscribers, revokes anon SELECT, grants authenticated SELECT).
+
+**Prompt #3 audit fixes (staged, 2026-09-24):**
+
+1. `src/lib/milestones.ts` — switched `createClient()` → `createAdminClient()` (public POST /api/subscribers referral path; anon SELECT/UPDATE on subscribers dies after migration revoke).
+2. `src/app/unsubscribe/page.tsx` + `src/app/unsubscribe/resubscribe/page.tsx` — switched to `createAdminClient()` (`.update().select()` RETURNING needs SELECT privilege; HMAC token verified before DB access so authz unchanged).
+3. `components/public/email-capture-form.tsx` — MC fieldset now dark-aware (`inputBorder`/`inputBg` instead of hardcoded `bg-card border-border`); `(optional)` spans + "No spam" footer use `isDark ? text-dark-template-muted : text-muted-foreground`; question/label text uses `inputText`. Matches LivePreview `cardBorder`/`cardText`.
+
+**Gates after fixes:** lint 0 errors (5 pre-existing warnings), clean build success (deleted `.next` first), full suite **442 passed / 8 failed = exact baseline** (dashboard-archive 4, dashboard-subscriber-table 3, flaky billing 1), targeted 34/34 (unsubscribe, unsubscribe-page, subscribers-referral, subscribers, email-capture-form).
+
+**Key decisions / gotchas (Epic 14):**
+
+- Anon has NO public UPDATE policy on subscribers (only "founders manage own" + public read, and 14.0 drops the public read) → all public-page server code paths must use `createAdminClient()` with explicit column selects.
+- `revoke select on subscribers from anon` also breaks anon `UPDATE...RETURNING` (Postgres requires SELECT privilege for RETURNING columns).
+- COPY GAP resolved for 14.1: `Free text` | `Multiple choice`, `PRO — 5 questions max`, `FREE — 2 questions max`, placeholders `Option 1`/`Option 2…`, no helper text under type selector. 14.2/14.3 settings CTAs still COPY GAPs (stop-and-ask when reached).
+- GET question shape is breaking → 14.0 + 14.1 ship same release train.
+- Dashboard qualification API (`src/app/api/dashboard/qualification/route.ts:56-57`) still text-keyed — accepted temporary gap, fixed in 14.3.
+- Epic 16.8 also claims deleting `src/app/api/leaderboard/[subdomain]/route.ts` — already deleted in 14.0; coordinate to avoid double-delete conflict.
+- Mock helper: `vi.clearAllMocks()` does NOT clear `__queue`/`__calls` — clear manually in beforeEach; `after()` mock executes sync so email IIFEs consume admin queue items after insert.
+- Unresolved (flagged, not fixed): `src/app/api/subscribers/[id]/route.ts` PATCH display_name uses `createClient()` + `.select()` before update — possible AC8 gap on public read path; disposition decided as known gap? verify when touching 14.4.
+- Known deferred: `waitlist-page-content.tsx` dead props (14.4 AC3), `dashboard/page.tsx:56` `qual_answers` select (14.4), Pro-at-cap shows upgrade button (no AC forbids).
+
 ## Epic 17 Progress (Broadcasting Engine Fix)
 
 **Status:** planning complete — **not implemented** (create-epic done 2026-09-24)
@@ -1008,6 +1044,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 62. ~~Execute Epic 12.3 (12.3.0–12.3.5)~~ ✅ Done — all 6 stories, shared layout, 317+ passing tests
 63. ~~Epic 13 — Billing & Feature Gating~~ ✅ Done (all 7 stories, 23 tests, merged to dev)
 64. ~~Epic 17 create-epic (Broadcasting Engine Fix)~~ ✅ Done (2026-09-24) — epic doc + 8 story files; **not implemented**; MEMORY merge-tag claims corrected early
+65. **Execute Epic 14.0 + 14.1 + Prompt #3 audit** ✅ Done (2026-09-24) — implemented, audited, 3 findings fixed (milestones/unsubscribe admin clients, email-capture dark tokens); gates green at baseline; **fixes staged, not committed**; founder must run `epic14-story0-qualification-schema.sql` before deploy; next: 14.2
 
 ## Decision + bug fix: "Powered by PreWaitlist" footer (2026-07)
 

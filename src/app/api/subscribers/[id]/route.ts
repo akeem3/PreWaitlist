@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -70,7 +71,9 @@ export async function PATCH(request: NextRequest, { params }: Props) {
     );
   }
 
-  const supabase = await createClient();
+  // Ownership proof: (id, referral_code) pair. Admin client required —
+  // anon SELECT on subscribers was revoked by the Epic 14.0 migration (AC8).
+  const supabase = createAdminClient();
 
   // Validate subscriber owns this record via referral_code
   const { data: subscriber } = await supabase

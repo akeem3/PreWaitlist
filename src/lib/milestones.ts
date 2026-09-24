@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail, buildEmailFooter } from "@/lib/email";
 
 interface MilestoneTier {
@@ -66,7 +66,7 @@ export async function checkAndFulfillMilestones(
   referralCount: number
 ) {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data: tiers } = await supabase
       .from("milestone_rewards")

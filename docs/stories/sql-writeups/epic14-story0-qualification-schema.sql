@@ -16,6 +16,8 @@ alter table public.qualification_questions
 -- AC2: Rewrite subscribers.qual_answers keys
 -- from question_text → qualification_questions.id
 -- Match on waitlist_id + question_text.
+-- Keys already equal to a question id are kept as-is
+-- (makes the migration safe to re-run).
 -- Unmappable keys are DROPPED (not left as text keys).
 -- ============================================
 
@@ -47,7 +49,7 @@ begin
       select id into q_id
       from public.qualification_questions
       where waitlist_id = sub.waitlist_id
-        and question_text = pair.key
+        and (question_text = pair.key or id::text = pair.key)
       limit 1;
 
       if q_id is not null then

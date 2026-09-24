@@ -221,13 +221,17 @@ export function EmailCaptureForm({
                 {visibleQuestions.map((q) => (
                   <div key={q.id} className="relative">
                     {q.type === "multiple_choice" && q.options?.length ? (
-                      <fieldset className="rounded-[var(--input-radius)] border border-border bg-card px-3 py-2.5">
+                      <fieldset
+                        className={`rounded-[var(--input-radius)] ${inputBorder} ${inputBg} px-3 py-2.5`}
+                      >
                         <legend className="sr-only">{q.text}</legend>
-                        <p className="text-sm text-foreground mb-2">
+                        <p className={`text-sm ${inputText} mb-2`}>
                           {q.text.trim().endsWith("?")
                             ? q.text.trim()
                             : `${q.text.trim()}?`}
-                          <span className="ml-1 text-muted-foreground">
+                          <span
+                            className={`ml-1 ${isDark ? "text-dark-template-muted" : "text-muted-foreground"}`}
+                          >
                             (optional)
                           </span>
                         </p>
@@ -235,7 +239,7 @@ export function EmailCaptureForm({
                           {q.options.map((opt) => (
                             <label
                               key={opt}
-                              className="flex items-center gap-2 text-sm text-foreground cursor-pointer"
+                              className={`flex items-center gap-2 text-sm ${inputText} cursor-pointer`}
                             >
                               <input
                                 type="radio"
@@ -281,7 +285,9 @@ export function EmailCaptureForm({
                           aria-label={q.text}
                           className={`${inputHeight} w-full rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50 pr-16`}
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
+                        <span
+                          className={`absolute right-3 top-1/2 -translate-y-1/2 text-sm ${isDark ? "text-dark-template-muted" : "text-muted-foreground"} pointer-events-none`}
+                        >
                           (optional)
                         </span>
                       </>
@@ -305,7 +311,9 @@ export function EmailCaptureForm({
                   ctaText || "Join Waitlist"
                 )}
               </button>
-              <p className="mt-2 text-center text-xs text-muted-foreground">
+              <p
+                className={`mt-2 text-center text-xs ${isDark ? "text-dark-template-muted" : "text-muted-foreground"}`}
+              >
                 No spam. Unsubscribe anytime.
               </p>
             </>
@@ -344,7 +352,9 @@ export function EmailCaptureForm({
                 </button>
               </div>
 
-              <p className="mt-2 text-center text-xs text-muted-foreground">
+              <p
+                className={`mt-2 text-center text-xs ${isDark ? "text-dark-template-muted" : "text-muted-foreground"}`}
+              >
                 No spam. Unsubscribe anytime.
               </p>
             </>
