@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound, redirect } from "next/navigation";
 import { WaitlistPageContent } from "../../../../components/public/waitlist-page-content";
 import { EmailCaptureForm } from "../../../../components/public/email-capture-form";
@@ -37,6 +38,9 @@ export default async function PublicSubdomainPage({ params }: Props) {
     : waitlist.founder_profiles;
   const tier = founderProfile?.tier || "free";
 
+  // Subscribers table has no public SELECT — count via server-only admin path (14.0 AC8)
+  const admin = createAdminClient();
+
   const [milestonesResult, questionsResult, countResult, latestUpdateResult] =
     await Promise.all([
       waitlist.milestone_rewards_enabled
@@ -49,12 +53,12 @@ export default async function PublicSubdomainPage({ params }: Props) {
       waitlist.qualification_enabled
         ? supabase
             .from("qualification_questions")
-            .select("id, question_text, question_type, sort_order")
+            .select("id, question_text, question_type, sort_order, options")
             .eq("waitlist_id", waitlist.id)
             .order("sort_order", { ascending: true })
         : Promise.resolve({ data: [] }),
       waitlist.signup_counter_enabled
-        ? supabase
+        ? admin
             .from("subscribers")
             .select("id", { count: "exact", head: true })
             .eq("waitlist_id", waitlist.id)
@@ -73,9 +77,12 @@ export default async function PublicSubdomainPage({ params }: Props) {
     label: r.reward_label,
   }));
 
+  // 14.1 AC6: pass full question shape { id, text, type, options } — not { text, required }
   const questions = (questionsResult.data || []).map((q) => ({
+    id: q.id,
     text: q.question_text,
-    required: false,
+    type: (q.question_type as "free_text" | "multiple_choice") || "free_text",
+    options: (q.options as string[] | null) ?? null,
   }));
 
   const signupCount = countResult.count ?? 0;

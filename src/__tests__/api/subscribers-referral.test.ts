@@ -46,32 +46,48 @@ vi.mock("@/lib/bounces", () => ({
 
 import { POST } from "../../app/api/subscribers/route";
 
+function pushCapCheck() {
+  mockSupabase.__queue.push({
+    data: {
+      subscriber_count: 10,
+      founder_profiles: { tier: "free" },
+    },
+    error: null,
+  });
+}
+
 describe("POST /api/subscribers — referral tracking", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSupabase.__queue.length = 0;
+    mockAdminSupabase.__queue.length = 0;
+    mockSupabase.__calls.length = 0;
+    mockAdminSupabase.__calls.length = 0;
   });
 
   it("stores referrer_id on valid referral", async () => {
-    // Cap check query
-    mockSupabase.__queue.push({
+    pushCapCheck();
+    // referral lookup on admin (14.0)
+    mockAdminSupabase.__queue.push({
+      data: { id: "referrer-1", waitlist_id: "wl-1" },
+      error: null,
+    });
+    // insert on admin
+    mockAdminSupabase.__queue.push({
       data: {
-        subscriber_count: 10,
-        founder_profiles: { tier: "free" },
+        id: "sub-new",
+        email: "new@example.com",
+        referral_code: "new123",
+        position: 3,
       },
       error: null,
     });
-    mockSupabase.__queue.push(
-      { data: { id: "referrer-1", waitlist_id: "wl-1" }, error: null },
-      {
-        data: {
-          id: "sub-new",
-          email: "new@example.com",
-          referral_code: "new123",
-          position: 3,
-        },
-        error: null,
-      }
-    );
+    // referral count (head) on admin after insert
+    mockAdminSupabase.__queue.push({
+      data: null,
+      error: null,
+      count: 0,
+    });
 
     const request = new NextRequest("http://localhost/api/subscribers", {
       method: "POST",
@@ -90,15 +106,9 @@ describe("POST /api/subscribers — referral tracking", () => {
   });
 
   it("rejects invalid referral code", async () => {
-    // Cap check query
-    mockSupabase.__queue.push({
-      data: {
-        subscriber_count: 10,
-        founder_profiles: { tier: "free" },
-      },
-      error: null,
-    });
-    mockSupabase.__queue.push({ data: null, error: null });
+    pushCapCheck();
+    // referral lookup on admin → not found
+    mockAdminSupabase.__queue.push({ data: null, error: null });
 
     const request = new NextRequest("http://localhost/api/subscribers", {
       method: "POST",
@@ -114,15 +124,9 @@ describe("POST /api/subscribers — referral tracking", () => {
   });
 
   it("rejects cross-waitlist referral code", async () => {
-    // Cap check query
-    mockSupabase.__queue.push({
-      data: {
-        subscriber_count: 10,
-        founder_profiles: { tier: "free" },
-      },
-      error: null,
-    });
-    mockSupabase.__queue.push({
+    pushCapCheck();
+    // referral lookup on admin → wrong waitlist
+    mockAdminSupabase.__queue.push({
       data: { id: "referrer-1", waitlist_id: "wl-other" },
       error: null,
     });
@@ -141,26 +145,27 @@ describe("POST /api/subscribers — referral tracking", () => {
   });
 
   it("handles self-referral by nullifying referrer_id", async () => {
-    // Cap check query
-    mockSupabase.__queue.push({
+    pushCapCheck();
+    // referral lookup on admin — same subscriber id will be inserted below
+    mockAdminSupabase.__queue.push({
+      data: { id: "sub-1", waitlist_id: "wl-1" },
+      error: null,
+    });
+    // insert returns same id → self-referral detected
+    mockAdminSupabase.__queue.push({
       data: {
-        subscriber_count: 10,
-        founder_profiles: { tier: "free" },
+        id: "sub-1",
+        email: "self@example.com",
+        referral_code: "self123",
+        position: 1,
       },
       error: null,
     });
-    mockSupabase.__queue.push(
-      { data: { id: "sub-1", waitlist_id: "wl-1" }, error: null },
-      {
-        data: {
-          id: "sub-1",
-          email: "self@example.com",
-          referral_code: "self123",
-          position: 1,
-        },
-        error: null,
-      }
-    );
+    // update referrer_id=null on admin
+    mockAdminSupabase.__queue.push({
+      data: null,
+      error: null,
+    });
 
     const request = new NextRequest("http://localhost/api/subscribers", {
       method: "POST",

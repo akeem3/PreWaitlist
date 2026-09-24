@@ -38,8 +38,10 @@ vi.mock("@/lib/bounces", () => ({
 }));
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const mockCreateClient = vi.mocked(createClient);
+const mockCreateAdminClient = vi.mocked(createAdminClient);
 
 function makeChain(data: unknown, error: unknown = null) {
   const chain = {
@@ -133,6 +135,27 @@ describe("POST /api/subscribers — 500 cap check", () => {
       },
       from: vi.fn().mockReturnValue(makeChain(capData)),
     } as ReturnType<typeof createClient>);
+
+    // Cap passes — insert path uses admin client
+    mockCreateAdminClient.mockReturnValue({
+      from: vi.fn().mockReturnValue(
+        makeChain({
+          id: "sub-1",
+          email: "test@example.com",
+          referral_code: "abc12345",
+          position: 1,
+        })
+      ),
+      rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
+      auth: {
+        admin: {
+          getUserById: vi.fn().mockResolvedValue({
+            data: { user: { email: "test@example.com" } },
+            error: null,
+          }),
+        },
+      },
+    } as unknown as ReturnType<typeof createAdminClient>);
 
     const { POST } = await import("@/app/api/subscribers/route");
     const req = new Request("http://localhost/api/subscribers", {

@@ -7,28 +7,35 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: () => Promise.resolve(mockSupabase),
 }));
 
+const mockAdminSupabase = createMockSupabaseClient();
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: () => mockAdminSupabase,
+}));
+
 import { GET } from "../../app/api/warmth/[subdomain]/route";
 
 describe("GET /api/warmth/:subdomain", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSupabase.__queue.length = 0;
+    mockAdminSupabase.__queue.length = 0;
   });
 
   it("returns warmth distribution counts", async () => {
-    mockSupabase.__queue.push(
-      { data: { id: "wl-1" }, error: null }, // waitlist lookup
-      {
-        data: [
-          { warmth_score: "hot" },
-          { warmth_score: "hot" },
-          { warmth_score: "warm" },
-          { warmth_score: "cold" },
-          { warmth_score: null },
-          { warmth_score: null },
-        ],
-        error: null,
-      } // subscribers
-    );
+    // waitlist lookup via server client
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+    // subscribers via admin client (14.0 AC8)
+    mockAdminSupabase.__queue.push({
+      data: [
+        { warmth_score: "hot" },
+        { warmth_score: "hot" },
+        { warmth_score: "warm" },
+        { warmth_score: "cold" },
+        { warmth_score: null },
+        { warmth_score: null },
+      ],
+      error: null,
+    });
 
     const request = new NextRequest("http://localhost/api/warmth/test-sub");
     const response = await GET(request, {
@@ -47,7 +54,7 @@ describe("GET /api/warmth/:subdomain", () => {
   });
 
   it("returns 404 for unknown subdomain", async () => {
-    mockSupabase.__queue.push({ data: null, error: null }); // waitlist not found
+    mockSupabase.__queue.push({ data: null, error: null });
 
     const request = new NextRequest("http://localhost/api/warmth/unknown");
     const response = await GET(request, {
@@ -58,10 +65,8 @@ describe("GET /api/warmth/:subdomain", () => {
   });
 
   it("returns zeros for empty subscriber list", async () => {
-    mockSupabase.__queue.push(
-      { data: { id: "wl-1" }, error: null }, // waitlist lookup
-      { data: [], error: null } // no subscribers
-    );
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+    mockAdminSupabase.__queue.push({ data: [], error: null });
 
     const request = new NextRequest("http://localhost/api/warmth/test-sub");
     const response = await GET(request, {
@@ -80,17 +85,15 @@ describe("GET /api/warmth/:subdomain", () => {
   });
 
   it("counts null warmth_score as unscored", async () => {
-    mockSupabase.__queue.push(
-      { data: { id: "wl-1" }, error: null },
-      {
-        data: [
-          { warmth_score: null },
-          { warmth_score: null },
-          { warmth_score: null },
-        ],
-        error: null,
-      }
-    );
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+    mockAdminSupabase.__queue.push({
+      data: [
+        { warmth_score: null },
+        { warmth_score: null },
+        { warmth_score: null },
+      ],
+      error: null,
+    });
 
     const request = new NextRequest("http://localhost/api/warmth/test-sub");
     const response = await GET(request, {

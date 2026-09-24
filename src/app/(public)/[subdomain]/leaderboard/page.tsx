@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { PoweredByFooter } from "../../../../../components/share/powered-by-footer";
@@ -38,7 +39,8 @@ export default async function LeaderboardPage({ params, searchParams }: Props) {
     : waitlist.founder_profiles;
   const tier = founderProfile?.tier || "free";
 
-  // Try with display_name; fall back without it if column doesn't exist yet
+  // 14.0 AC3/AC8: no public SELECT on subscribers — admin client, server-only.
+  // Explicit columns; raw email + qual_answers never leave this server component.
   type SubscriberRow = {
     id: string;
     email: string;
@@ -49,7 +51,9 @@ export default async function LeaderboardPage({ params, searchParams }: Props) {
     display_name?: string;
   };
 
-  let selectResult = await supabase
+  const admin = createAdminClient();
+
+  let selectResult = await admin
     .from("subscribers")
     .select(
       "id, email, referral_code, referrer_id, qual_answers, created_at, display_name"
@@ -61,7 +65,7 @@ export default async function LeaderboardPage({ params, searchParams }: Props) {
     selectResult.error?.code === "PGRST204" &&
     selectResult.error?.message?.includes("display_name")
   ) {
-    selectResult = (await supabase
+    selectResult = (await admin
       .from("subscribers")
       .select("id, email, referral_code, referrer_id, qual_answers, created_at")
       .eq("waitlist_id", waitlist.id)

@@ -5,19 +5,17 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useOnboardingForm } from "../context";
 import { useOnboardingUpgrade } from "../onboarding-client-layout";
+import { getTierLimits, type Tier } from "@/lib/tier-gating";
 
 interface Question {
+  id?: string;
   text: string;
-  required: boolean;
+  type: "free_text" | "multiple_choice";
+  options?: string[] | null;
 }
 
-function get_max_questions(tier: string): number {
-  switch (tier) {
-    case "pro":
-      return 5;
-    default:
-      return 2;
-  }
+function makeQuestion(): Question {
+  return { text: "", type: "free_text", options: null };
 }
 
 export default function OnboardingStep4a() {
@@ -27,9 +25,9 @@ export default function OnboardingStep4a() {
   const [questions, setQuestions] = useState<Question[]>(() => {
     if (form.questions.length > 0) {
       const filtered = form.questions.filter((q) => q.text.trim().length > 0);
-      return filtered.length > 0 ? filtered : [{ text: "", required: false }];
+      return filtered.length > 0 ? filtered : [makeQuestion()];
     }
-    return [{ text: "", required: false }];
+    return [makeQuestion()];
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,32 +42,89 @@ export default function OnboardingStep4a() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questions]);
 
-  const max_questions = get_max_questions(form.tier);
+  const max_questions = getTierLimits(form.tier as Tier).maxQuestions;
   const at_cap = questions.length >= max_questions;
   const hasAtLeastOneQuestion = questions.some((q) => q.text.trim().length > 0);
 
   const handle_add_question = useCallback(() => {
     if (at_cap) return;
-    setQuestions((prev) => [...prev, { text: "", required: false }]);
+    setQuestions((prev) => [...prev, makeQuestion()]);
   }, [at_cap]);
 
   const handle_remove_question = useCallback((index: number) => {
     setQuestions((prev) => {
       const next = prev.filter((_, i) => i !== index);
-      return next.length > 0 ? next : [{ text: "", required: false }];
+      return next.length > 0 ? next : [makeQuestion()];
     });
   }, []);
 
   const handle_update_question = useCallback(
     (index: number, value: string) => {
       setQuestions((prev) =>
-        prev.map((q, i) =>
-          i === index ? { text: value, required: q.required } : q
-        )
+        prev.map((q, i) => (i === index ? { ...q, text: value } : q))
       );
       if (error) setError(null);
     },
     [error]
+  );
+
+  const handle_set_type = useCallback(
+    (index: number, type: "free_text" | "multiple_choice") => {
+      setQuestions((prev) =>
+        prev.map((q, i) => {
+          if (i !== index) return q;
+          if (type === "multiple_choice") {
+            const existing =
+              Array.isArray(q.options) && q.options.length >= 2
+                ? q.options
+                : ["", ""];
+            return { ...q, type, options: existing };
+          }
+          return { ...q, type, options: null };
+        })
+      );
+      if (error) setError(null);
+    },
+    [error]
+  );
+
+  const handle_update_option = useCallback(
+    (questionIndex: number, optionIndex: number, value: string) => {
+      setQuestions((prev) =>
+        prev.map((q, i) => {
+          if (i !== questionIndex || !Array.isArray(q.options)) return q;
+          const options = [...q.options];
+          options[optionIndex] = value;
+          return { ...q, options };
+        })
+      );
+      if (error) setError(null);
+    },
+    [error]
+  );
+
+  const handle_add_option = useCallback((questionIndex: number) => {
+    setQuestions((prev) =>
+      prev.map((q, i) => {
+        if (i !== questionIndex) return q;
+        const options = Array.isArray(q.options) ? [...q.options] : [];
+        options.push("");
+        return { ...q, options };
+      })
+    );
+  }, []);
+
+  const handle_remove_option = useCallback(
+    (questionIndex: number, optionIndex: number) => {
+      setQuestions((prev) =>
+        prev.map((q, i) => {
+          if (i !== questionIndex || !Array.isArray(q.options)) return q;
+          const options = q.options.filter((_, oi) => oi !== optionIndex);
+          return { ...q, options };
+        })
+      );
+    },
+    []
   );
 
   const handleSubmit = useCallback(
@@ -93,9 +148,26 @@ export default function OnboardingStep4a() {
           return;
         }
 
-        const validQuestions = questions.filter(
-          (q) => q.text.trim().length > 0
-        );
+        const validQuestions = questions
+          .filter((q) => q.text.trim().length > 0)
+          .map((q) => {
+            if (q.type === "multiple_choice") {
+              const options = (q.options || [])
+                .map((o) => o.trim())
+                .filter((o) => o.length > 0);
+              return { ...q, options };
+            }
+            return { ...q, options: null };
+          });
+
+        for (const q of validQuestions) {
+          if (q.type === "multiple_choice" && (q.options || []).length < 2) {
+            setError("Multiple choice questions need at least 2 options.");
+            setIsSubmitting(false);
+            form.setLoading(false);
+            return;
+          }
+        }
 
         const res = await fetch("/api/waitlist", {
           method: "PATCH",
@@ -107,18 +179,25 @@ export default function OnboardingStep4a() {
         });
 
         if (!res.ok) {
-          throw new Error("Failed to save questions");
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.error || "Failed to save questions");
         }
 
         form.updateField("questions", validQuestions);
         router.push("/onboarding/5");
-      } catch {
+      } catch (err) {
         setIsSubmitting(false);
         form.setLoading(false);
+        setError(
+          err instanceof Error ? err.message : "Failed to save questions"
+        );
       }
     },
     [isSubmitting, form, questions, router, hasAtLeastOneQuestion]
   );
+
+  const tierBadgeLabel =
+    form.tier === "pro" ? "PRO — 5 questions max" : "FREE — 2 questions max";
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col">
@@ -134,7 +213,7 @@ export default function OnboardingStep4a() {
 
       <div className="mb-6">
         <span className="inline-flex items-center rounded-full border border-accent bg-accent/10 px-4 py-1.5 text-xs font-medium text-accent">
-          FREE — 2 questions max
+          {tierBadgeLabel}
         </span>
       </div>
 
@@ -162,12 +241,12 @@ export default function OnboardingStep4a() {
                       stroke="currentColor"
                       strokeWidth="1.5"
                       strokeLinecap="round"
-                      strokeLinejoin="round"
                     />
                   </svg>
                 </button>
               )}
             </div>
+
             <input
               type="text"
               placeholder='e.g. "What are you currently using?"'
@@ -176,6 +255,95 @@ export default function OnboardingStep4a() {
               disabled={isSubmitting}
               className="flex h-10 w-full rounded-[var(--input-radius)] border border-border bg-card px-[var(--input-padding-x)] py-[var(--input-padding-y)] text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
             />
+
+            <div
+              className="flex gap-2"
+              role="radiogroup"
+              aria-label={`Question ${index + 1} type`}
+            >
+              <button
+                type="button"
+                role="radio"
+                aria-checked={question.type === "free_text"}
+                onClick={() => handle_set_type(index, "free_text")}
+                disabled={isSubmitting}
+                className={`flex-1 rounded-[var(--input-radius)] border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                  question.type === "free_text"
+                    ? "border-accent bg-accent/10 text-accent"
+                    : "border-border bg-card text-muted-foreground hover:border-accent/40"
+                }`}
+              >
+                Free text
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={question.type === "multiple_choice"}
+                onClick={() => handle_set_type(index, "multiple_choice")}
+                disabled={isSubmitting}
+                className={`flex-1 rounded-[var(--input-radius)] border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                  question.type === "multiple_choice"
+                    ? "border-accent bg-accent/10 text-accent"
+                    : "border-border bg-card text-muted-foreground hover:border-accent/40"
+                }`}
+              >
+                Multiple choice
+              </button>
+            </div>
+
+            {question.type === "multiple_choice" && (
+              <div className="flex flex-col gap-2">
+                {(question.options || []).map((option, optionIndex) => (
+                  <div key={optionIndex} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder={`Option ${optionIndex + 1}`}
+                      value={option}
+                      onChange={(e) =>
+                        handle_update_option(index, optionIndex, e.target.value)
+                      }
+                      disabled={isSubmitting}
+                      aria-label={`Option ${optionIndex + 1} for question ${index + 1}`}
+                      className="flex h-10 w-full rounded-[var(--input-radius)] border border-border bg-card px-[var(--input-padding-x)] py-[var(--input-padding-y)] text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
+                    />
+                    {(question.options || []).length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => handle_remove_option(index, optionIndex)}
+                        disabled={isSubmitting}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-label={`Remove option ${optionIndex + 1}`}
+                      >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 14 14"
+                          fill="none"
+                        >
+                          <path
+                            d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => handle_add_option(index)}
+                  disabled={
+                    isSubmitting || (question.options || []).length >= 10
+                  }
+                  className="flex items-center justify-center gap-1.5 rounded-[var(--input-radius)] border border-dashed border-border py-2 text-xs font-medium text-muted-foreground transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  + Add option
+                </button>
+              </div>
+            )}
+
             <span className="text-xs text-muted-foreground">(optional)</span>
           </div>
         ))}

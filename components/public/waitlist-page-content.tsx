@@ -2,8 +2,10 @@ import { WaitlistTemplateContent } from "../share/waitlist-template-content";
 import { PoweredByFooter } from "../share/powered-by-footer";
 
 interface Question {
+  id: string;
   text: string;
-  required: boolean;
+  type: "free_text" | "multiple_choice";
+  options: string[] | null;
 }
 
 interface WaitlistPageContentProps {

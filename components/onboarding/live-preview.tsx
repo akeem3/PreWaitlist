@@ -15,8 +15,10 @@ interface MilestoneReward {
 }
 
 interface Question {
+  id?: string;
   text: string;
-  required: boolean;
+  type: "free_text" | "multiple_choice";
+  options?: string[] | null;
 }
 
 interface LivePreviewProps {
@@ -195,7 +197,7 @@ function PreviewQuestionForm({
   const questionSlots =
     questions && questions.length > 0
       ? questions
-      : [{ text: "", required: false }];
+      : [{ text: "", type: "free_text" as const, options: null }];
 
   return (
     <div className="flex flex-col gap-3 w-full max-w-md">
@@ -218,24 +220,54 @@ function PreviewQuestionForm({
       <div className={cn("flex flex-col", cardGap)}>
         {questionSlots.map((q, i) => (
           <div
-            key={i}
+            key={q.id || i}
             className={cn(
-              "flex justify-between items-center rounded-[var(--radius-md)]",
+              "flex flex-col gap-1.5 rounded-[var(--radius-md)]",
               cardBorder,
               "px-3.5 py-2.5",
               textSize,
               cardText
             )}
           >
-            <span>
-              {q.text
-                ? q.text.trim().endsWith("?")
-                  ? q.text.trim()
-                  : `${q.text.trim()}?`
-                : "Your question here"}
+            <span className="flex items-center justify-between gap-2">
+              <span>
+                {q.text
+                  ? q.text.trim().endsWith("?")
+                    ? q.text.trim()
+                    : `${q.text.trim()}?`
+                  : "What are you currently using?"}
+              </span>
+              <span className={cn("text-xs shrink-0", cardText)}>
+                (optional)
+              </span>
             </span>
-            {!q.required && (
-              <span className={cn("text-xs", cardText)}>(optional)</span>
+            {q.type === "multiple_choice" && q.options?.length ? (
+              <div className="flex flex-col gap-1">
+                {q.options.map((opt) => (
+                  <span
+                    key={opt}
+                    className={cn(
+                      "text-xs flex items-center gap-1.5",
+                      cardText
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "inline-block h-2.5 w-2.5 rounded-full border",
+                        cardBorder
+                      )}
+                    />
+                    {opt}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span
+                className={cn(
+                  "block h-8 rounded-[var(--input-radius)]",
+                  cardBorder
+                )}
+              />
             )}
           </div>
         ))}

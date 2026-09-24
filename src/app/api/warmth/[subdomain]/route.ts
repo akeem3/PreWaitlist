@@ -1,11 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 type Props = { params: Promise<{ subdomain: string }> };
 
 export async function GET(_request: NextRequest, { params }: Props) {
   const { subdomain } = await params;
   const supabase = await createClient();
+  // 14.0 AC8: no public SELECT on subscribers — admin path, explicit columns only
+  const admin = createAdminClient();
 
   const { data: waitlist } = await supabase
     .from("waitlists")
@@ -17,7 +20,7 @@ export async function GET(_request: NextRequest, { params }: Props) {
     return NextResponse.json({ error: "Waitlist not found" }, { status: 404 });
   }
 
-  const { data: subscribers } = await supabase
+  const { data: subscribers } = await admin
     .from("subscribers")
     .select("warmth_score")
     .eq("waitlist_id", waitlist.id);

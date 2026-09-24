@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // Simple in-memory rate limiter (60 req/min per IP)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -57,10 +58,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ count: 0, visible: false });
   }
 
-  // Count from subscribers table — returns 0 when table doesn't exist (Sprint 2)
+  // Count from subscribers via admin (no public SELECT after 14.0 RLS close)
   let count = 0;
   try {
-    const { count: subscriberCount } = await supabase
+    const admin = createAdminClient();
+    const { count: subscriberCount } = await admin
       .from("subscribers")
       .select("id", { count: "exact", head: true })
       .eq("waitlist_id", waitlist.id);

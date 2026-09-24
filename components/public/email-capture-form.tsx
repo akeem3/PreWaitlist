@@ -3,10 +3,13 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Spinner } from "../ui/spinner";
+import { getTierLimits, type Tier } from "../../src/lib/tier-gating";
 
 interface Question {
+  id: string;
   text: string;
-  required: boolean;
+  type: "free_text" | "multiple_choice";
+  options: string[] | null;
 }
 
 interface EmailCaptureFormProps {
@@ -22,11 +25,6 @@ interface EmailCaptureFormProps {
 }
 
 const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-
-const MAX_QUESTIONS: Record<string, number> = {
-  free: 2,
-  pro: 5,
-};
 
 export function EmailCaptureForm({
   waitlistId,
@@ -61,7 +59,7 @@ export function EmailCaptureForm({
   const visibleQuestions = qualificationEnabled
     ? questions
         .filter((q) => q.text.trim().length > 0)
-        .slice(0, MAX_QUESTIONS[tier] || 2)
+        .slice(0, getTierLimits(tier as Tier).maxQuestions)
     : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -220,29 +218,74 @@ export function EmailCaptureForm({
               )}
 
               <div className="flex flex-col gap-3">
-                {visibleQuestions.map((q, i) => (
-                  <div key={i} className="relative">
-                    <input
-                      type="text"
-                      placeholder={
-                        q.text.trim().endsWith("?")
-                          ? q.text.trim()
-                          : `${q.text.trim()}?`
-                      }
-                      value={answers[q.text] || ""}
-                      onChange={(e) =>
-                        setAnswers((prev) => ({
-                          ...prev,
-                          [q.text]: e.target.value,
-                        }))
-                      }
-                      disabled={loading}
-                      aria-label={q.text}
-                      className={`${inputHeight} w-full rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50 pr-16`}
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-status-warm pointer-events-none">
-                      (optional)
-                    </span>
+                {visibleQuestions.map((q) => (
+                  <div key={q.id} className="relative">
+                    {q.type === "multiple_choice" && q.options?.length ? (
+                      <fieldset className="rounded-[var(--input-radius)] border border-border bg-card px-3 py-2.5">
+                        <legend className="sr-only">{q.text}</legend>
+                        <p className="text-sm text-foreground mb-2">
+                          {q.text.trim().endsWith("?")
+                            ? q.text.trim()
+                            : `${q.text.trim()}?`}
+                          <span className="ml-1 text-muted-foreground">
+                            (optional)
+                          </span>
+                        </p>
+                        <div className="flex flex-col gap-1.5">
+                          {q.options.map((opt) => (
+                            <label
+                              key={opt}
+                              className="flex items-center gap-2 text-sm text-foreground cursor-pointer"
+                            >
+                              <input
+                                type="radio"
+                                name={`q-${q.id}`}
+                                value={opt}
+                                checked={answers[q.id] === opt}
+                                onChange={() =>
+                                  setAnswers((prev) => ({
+                                    ...prev,
+                                    [q.id]: opt,
+                                  }))
+                                }
+                                disabled={loading}
+                                className="accent-[var(--brand-color)]"
+                                style={
+                                  {
+                                    "--brand-color": brandColor,
+                                  } as React.CSSProperties
+                                }
+                              />
+                              {opt}
+                            </label>
+                          ))}
+                        </div>
+                      </fieldset>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          placeholder={
+                            q.text.trim().endsWith("?")
+                              ? q.text.trim()
+                              : `${q.text.trim()}?`
+                          }
+                          value={answers[q.id] || ""}
+                          onChange={(e) =>
+                            setAnswers((prev) => ({
+                              ...prev,
+                              [q.id]: e.target.value,
+                            }))
+                          }
+                          disabled={loading}
+                          aria-label={q.text}
+                          className={`${inputHeight} w-full rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50 pr-16`}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
+                          (optional)
+                        </span>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>

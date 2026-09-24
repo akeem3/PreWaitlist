@@ -1,5 +1,75 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getTierLimits, type Tier } from "@/lib/tier-gating";
+
+type IncomingQuestion = {
+  id?: string;
+  text: string;
+  type?: "free_text" | "multiple_choice";
+  options?: string[] | null;
+  required?: boolean; // legacy client shape — ignored (14.0 AC6)
+};
+
+type NormalizedQuestion = {
+  text: string;
+  type: "free_text" | "multiple_choice";
+  options: string[] | null;
+};
+
+/**
+ * 14.0 AC5: normalize + validate question payload.
+ * Returns error message (HTTP 400 body) or normalized rows.
+ */
+function normalizeQuestions(
+  questions: IncomingQuestion[]
+): { ok: true; rows: NormalizedQuestion[] } | { ok: false; error: string } {
+  const rows: NormalizedQuestion[] = [];
+
+  for (const q of questions) {
+    const text = typeof q.text === "string" ? q.text.trim() : "";
+    if (!text) {
+      return { ok: false, error: "Each question must have non-empty text" };
+    }
+
+    const type: "free_text" | "multiple_choice" =
+      q.type === "multiple_choice" ? "multiple_choice" : "free_text";
+
+    if (type === "multiple_choice") {
+      if (!Array.isArray(q.options)) {
+        return {
+          ok: false,
+          error: "Multiple choice questions require an options array",
+        };
+      }
+      const options = q.options
+        .map((o) => (typeof o === "string" ? o.trim() : ""))
+        .filter((o) => o.length > 0);
+      if (options.length < 2) {
+        return {
+          ok: false,
+          error:
+            "Multiple choice questions require at least 2 non-empty options",
+        };
+      }
+      rows.push({ text, type, options });
+    } else {
+      rows.push({ text, type, options: null });
+    }
+  }
+
+  return { ok: true, rows };
+}
+
+/**
+ * 14.0 AC4: reject questions.length above tier cap with 400.
+ */
+function checkQuestionCap(count: number, tier: string): string | null {
+  const limits = getTierLimits((tier === "pro" ? "pro" : "free") as Tier);
+  if (count > limits.maxQuestions) {
+    return `Too many questions. Free plan allows ${limits.maxQuestions} questions; upgrade to Pro for up to ${getTierLimits("pro").maxQuestions}.`;
+  }
+  return null;
+}
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -40,6 +110,20 @@ export async function POST(request: NextRequest) {
   }
 
   const tier = profile?.tier || "free";
+
+  // 14.0 AC4-AC5: server-side question cap + type/options validation
+  let normalizedQuestions: NormalizedQuestion[] | null = null;
+  if (Array.isArray(body.questions)) {
+    const capError = checkQuestionCap(body.questions.length, tier);
+    if (capError) {
+      return NextResponse.json({ error: capError }, { status: 400 });
+    }
+    const normalized = normalizeQuestions(body.questions as IncomingQuestion[]);
+    if (!normalized.ok) {
+      return NextResponse.json({ error: normalized.error }, { status: 400 });
+    }
+    normalizedQuestions = normalized.rows;
+  }
 
   // Tier enforcement: free = max 1 waitlist, Pro = unlimited
   const { count } = await supabase
@@ -114,17 +198,28 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Insert qualification_questions if provided
-  if (Array.isArray(body.questions) && body.questions.length > 0) {
-    const questionRows = body.questions.map(
-      (q: { text: string; required: boolean }, index: number) => ({
-        waitlist_id: waitlistId,
-        question_text: q.text,
-        question_type: "free_text" as const,
-        sort_order: index,
-      })
-    );
-    await supabase.from("qualification_questions").insert(questionRows);
+  // Insert qualification_questions if provided (14.0 AC5 — persist type + options)
+  if (Array.isArray(normalizedQuestions) && normalizedQuestions.length > 0) {
+    const questionRows = normalizedQuestions.map((q, index) => ({
+      waitlist_id: waitlistId,
+      question_text: q.text,
+      question_type: q.type,
+      options: q.options,
+      sort_order: index,
+    }));
+    const { error: questionsError } = await supabase
+      .from("qualification_questions")
+      .insert(questionRows);
+    if (questionsError) {
+      console.error(
+        "[API POST] Failed to insert qualification_questions:",
+        questionsError.message
+      );
+      return NextResponse.json(
+        { error: questionsError.message },
+        { status: 400 }
+      );
+    }
   }
 
   return NextResponse.json({ id: waitlistId }, { status: 201 });
@@ -152,16 +247,37 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  // Validate ownership
+  // Validate ownership (+ load tier for question cap in one query)
   const { data: existing } = await supabase
     .from("waitlists")
-    .select("id")
+    .select("id, founder_profiles!inner(tier)")
     .eq("id", waitlist_id)
     .eq("founder_id", user.id)
     .single();
 
   if (!existing) {
     return NextResponse.json({ error: "Waitlist not found" }, { status: 404 });
+  }
+
+  const founderProfiles = (
+    existing as unknown as { founder_profiles?: { tier: string }[] }
+  ).founder_profiles;
+  const founderTier =
+    (Array.isArray(founderProfiles) ? founderProfiles[0]?.tier : null) ||
+    "free";
+
+  // 14.0 AC4-AC5: server-side question cap + type/options validation (PATCH)
+  let normalizedQuestions: NormalizedQuestion[] | null = null;
+  if (Array.isArray(questions)) {
+    const capError = checkQuestionCap(questions.length, founderTier);
+    if (capError) {
+      return NextResponse.json({ error: capError }, { status: 400 });
+    }
+    const normalized = normalizeQuestions(questions as IncomingQuestion[]);
+    if (!normalized.ok) {
+      return NextResponse.json({ error: normalized.error }, { status: 400 });
+    }
+    normalizedQuestions = normalized.rows;
   }
 
   // Validate email customization fields
@@ -225,24 +341,31 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  // Upsert qualification_questions if provided
-  if (Array.isArray(questions)) {
+  // Upsert qualification_questions if provided (14.0 AC5)
+  if (Array.isArray(normalizedQuestions)) {
     // Delete existing questions for this waitlist
-    await supabase
+    const { error: deleteQuestionsError } = await supabase
       .from("qualification_questions")
       .delete()
       .eq("waitlist_id", waitlist_id);
 
-    // Insert new questions (all questions are free_text on public page)
-    if (questions.length > 0) {
-      const questionRows = questions.map(
-        (q: { text: string; required: boolean }, index: number) => ({
-          waitlist_id: waitlist_id,
-          question_text: q.text,
-          question_type: "free_text" as const,
-          sort_order: index,
-        })
+    if (deleteQuestionsError) {
+      console.error("Failed to delete questions:", deleteQuestionsError);
+      return NextResponse.json(
+        { error: deleteQuestionsError.message },
+        { status: 400 }
       );
+    }
+
+    // Insert new questions with type + options
+    if (normalizedQuestions.length > 0) {
+      const questionRows = normalizedQuestions.map((q, index) => ({
+        waitlist_id: waitlist_id,
+        question_text: q.text,
+        question_type: q.type,
+        options: q.options,
+        sort_order: index,
+      }));
 
       const { error: questionsError } = await supabase
         .from("qualification_questions")
@@ -376,7 +499,9 @@ export async function GET() {
       .order("tier_referrals", { ascending: true }),
     supabase
       .from("qualification_questions")
-      .select("waitlist_id, question_text, question_type, sort_order")
+      .select(
+        "waitlist_id, id, question_text, question_type, options, sort_order"
+      )
       .in("waitlist_id", waitlistIds)
       .order("sort_order", { ascending: true }),
   ]);
@@ -391,12 +516,31 @@ export async function GET() {
     });
   }
 
-  const questionsMap = new Map<string, { text: string; required: boolean }[]>();
-  for (const q of questionsResults.data || []) {
+  // 14.0 AC6: questions as { id, text, type, options } — no `required` synthesis
+  type QuestionRow = {
+    waitlist_id: string;
+    id: string;
+    question_text: string;
+    question_type: string;
+    options: string[] | null;
+  };
+  const questionsMap = new Map<
+    string,
+    {
+      id: string;
+      text: string;
+      type: "free_text" | "multiple_choice";
+      options: string[] | null;
+    }[]
+  >();
+  for (const q of (questionsResults.data || []) as QuestionRow[]) {
     if (!questionsMap.has(q.waitlist_id)) questionsMap.set(q.waitlist_id, []);
     questionsMap.get(q.waitlist_id)!.push({
+      id: q.id,
       text: q.question_text,
-      required: q.question_type === "free_text",
+      type:
+        q.question_type === "multiple_choice" ? "multiple_choice" : "free_text",
+      options: Array.isArray(q.options) ? q.options : null,
     });
   }
 

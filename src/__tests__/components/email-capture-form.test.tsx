@@ -35,6 +35,15 @@ const defaultProps = {
   qualificationEnabled: false,
 };
 
+function freeTextQuestion(text: string, id = "q-1") {
+  return {
+    id,
+    text,
+    type: "free_text" as const,
+    options: null,
+  };
+}
+
 describe("EmailCaptureForm", () => {
   it("renders email input with placeholder", () => {
     render(<EmailCaptureForm {...defaultProps} />);
@@ -54,7 +63,7 @@ describe("EmailCaptureForm", () => {
       <EmailCaptureForm
         {...defaultProps}
         qualificationEnabled={true}
-        questions={[{ text: "What brings you here?", required: false }]}
+        questions={[freeTextQuestion("What brings you here?")]}
       />
     );
 
@@ -73,7 +82,7 @@ describe("EmailCaptureForm", () => {
       <EmailCaptureForm
         {...defaultProps}
         qualificationEnabled={true}
-        questions={[{ text: "What brings you here?", required: false }]}
+        questions={[freeTextQuestion("What brings you here?")]}
       />
     );
 
@@ -164,14 +173,14 @@ describe("EmailCaptureForm", () => {
     });
   });
 
-  it("renders qualification questions as input fields", () => {
+  it("renders free-text questions as input fields", () => {
     render(
       <EmailCaptureForm
         {...defaultProps}
         qualificationEnabled={true}
         questions={[
-          { text: "What brings you here?", required: false },
-          { text: "How did you hear about us", required: false },
+          freeTextQuestion("What brings you here?", "q-1"),
+          freeTextQuestion("How did you hear about us", "q-2"),
         ]}
       />
     );
@@ -181,18 +190,38 @@ describe("EmailCaptureForm", () => {
     ).toBeDefined();
   });
 
+  it("renders multiple-choice questions as radio groups", () => {
+    render(
+      <EmailCaptureForm
+        {...defaultProps}
+        qualificationEnabled={true}
+        questions={[
+          {
+            id: "q-mc",
+            text: "Which plan?",
+            type: "multiple_choice",
+            options: ["Free", "Pro"],
+          },
+        ]}
+      />
+    );
+    expect(screen.getByRole("radio", { name: "Free" })).toBeDefined();
+    expect(screen.getByRole("radio", { name: "Pro" })).toBeDefined();
+    expect(screen.queryByPlaceholderText("Which plan?")).toBeNull();
+  });
+
   it("does not render questions when qualificationEnabled is false", () => {
     render(
       <EmailCaptureForm
         {...defaultProps}
         qualificationEnabled={false}
-        questions={[{ text: "What brings you here?", required: false }]}
+        questions={[freeTextQuestion("What brings you here?")]}
       />
     );
     expect(screen.queryByPlaceholderText("What brings you here?")).toBeNull();
   });
 
-  it("sends qual_answers in body when questions answered", async () => {
+  it("sends qual_answers keyed by question id when free-text answered", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 201,
       json: () => Promise.resolve({ id: "1", referral_code: "abc12345" }),
@@ -204,7 +233,7 @@ describe("EmailCaptureForm", () => {
       <EmailCaptureForm
         {...defaultProps}
         qualificationEnabled={true}
-        questions={[{ text: "What brings you here?", required: false }]}
+        questions={[freeTextQuestion("What brings you here?", "q-1")]}
       />
     );
 
@@ -221,8 +250,74 @@ describe("EmailCaptureForm", () => {
     await waitFor(() => {
       const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(callBody.qual_answers).toEqual({
-        "What brings you here?": "Friend recommendation",
+        "q-1": "Friend recommendation",
       });
+    });
+  });
+
+  it("sends MC answer keyed by question id when radio selected", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      status: 201,
+      json: () => Promise.resolve({ id: "1", referral_code: "abc12345" }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const user = userEvent.setup();
+    render(
+      <EmailCaptureForm
+        {...defaultProps}
+        qualificationEnabled={true}
+        questions={[
+          {
+            id: "q-mc",
+            text: "Which plan?",
+            type: "multiple_choice",
+            options: ["Free", "Pro"],
+          },
+        ]}
+      />
+    );
+
+    await user.type(
+      screen.getByPlaceholderText("Email address"),
+      "test@example.com"
+    );
+    await user.click(screen.getByRole("radio", { name: "Pro" }));
+    await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
+
+    await waitFor(() => {
+      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(callBody.qual_answers).toEqual({
+        "q-mc": "Pro",
+      });
+    });
+  });
+
+  it("omits empty optional free-text answers from submission", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      status: 201,
+      json: () => Promise.resolve({ id: "1", referral_code: "abc12345" }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const user = userEvent.setup();
+    render(
+      <EmailCaptureForm
+        {...defaultProps}
+        qualificationEnabled={true}
+        questions={[freeTextQuestion("What brings you here?", "q-1")]}
+      />
+    );
+
+    await user.type(
+      screen.getByPlaceholderText("Email address"),
+      "test@example.com"
+    );
+    await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
+
+    await waitFor(() => {
+      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(callBody.qual_answers).toBeUndefined();
     });
   });
 });

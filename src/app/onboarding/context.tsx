@@ -23,8 +23,10 @@ interface MilestoneReward {
 }
 
 interface Question {
+  id?: string;
   text: string;
-  required: boolean;
+  type: "free_text" | "multiple_choice";
+  options?: string[] | null;
 }
 
 export interface OnboardingFormState {

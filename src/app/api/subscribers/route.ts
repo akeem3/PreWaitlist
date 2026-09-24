@@ -427,6 +427,9 @@ Keep sharing to keep climbing!
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
+  // 14.0 AC8: no public SELECT (or anon insert) on subscribers after RLS close.
+  // Public signup path uses service-role client with explicit column lists.
+  const admin = createAdminClient();
 
   const body = await request.json();
   const {
@@ -459,7 +462,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 500 cap check — Free tier only
+  // 500 cap check — Free tier only (waitlists has public read)
   const { data: waitlistRow } = await supabase
     .from("waitlists")
     .select("subscriber_count, founder_profiles!inner ( tier )")
@@ -491,7 +494,7 @@ export async function POST(request: NextRequest) {
     typeof incomingRefCode === "string" &&
     incomingRefCode.trim()
   ) {
-    const { data: referrer } = await supabase
+    const { data: referrer } = await admin
       .from("subscribers")
       .select("id, waitlist_id")
       .eq("referral_code", incomingRefCode.trim())
@@ -518,22 +521,43 @@ export async function POST(request: NextRequest) {
   const position = 1;
   const referral_code = generateReferralCode();
 
+  // 14.1 AC11: validate qual_answers keys against waitlist question IDs — drop unknown keys
+  let sanitizedQualAnswers: Record<string, string> | null = null;
+  if (qual_answers && Object.keys(qual_answers).length > 0) {
+    const { data: questionRows } = await admin
+      .from("qualification_questions")
+      .select("id")
+      .eq("waitlist_id", waitlist_id);
+
+    const validIds = new Set(
+      (questionRows || []).map((q: { id: string }) => q.id)
+    );
+    sanitizedQualAnswers = Object.fromEntries(
+      Object.entries(qual_answers as Record<string, string>).filter(
+        ([key, value]) =>
+          validIds.has(key) &&
+          typeof value === "string" &&
+          value.trim().length > 0
+      )
+    );
+    if (Object.keys(sanitizedQualAnswers).length === 0) {
+      sanitizedQualAnswers = null;
+    }
+  }
+
   const baseInsert = {
     waitlist_id,
     email: trimmedEmail,
     referral_code,
     position,
     referrer_id: resolvedReferrerId,
-    qual_answers:
-      qual_answers && Object.keys(qual_answers).length > 0
-        ? qual_answers
-        : null,
+    qual_answers: sanitizedQualAnswers,
     consent_given_at: new Date().toISOString(),
     consent_ip_address: ipAddress,
   };
 
   // Try with display_name; fall back without it if column doesn't exist yet
-  let insertResult = await supabase
+  let insertResult = await admin
     .from("subscribers")
     .insert({ ...baseInsert, display_name: display_name?.trim() || null })
     .select("id, email, referral_code, position")
@@ -543,7 +567,7 @@ export async function POST(request: NextRequest) {
     insertResult.error?.code === "PGRST204" &&
     insertResult.error?.message?.includes("display_name")
   ) {
-    insertResult = await supabase
+    insertResult = await admin
       .from("subscribers")
       .insert(baseInsert)
       .select("id, email, referral_code, position")
@@ -573,14 +597,14 @@ export async function POST(request: NextRequest) {
   if (resolvedReferrerId) {
     // Prevent self-referral (safety net — client shouldn't send own referral_code)
     if (resolvedReferrerId === data.id) {
-      await supabase
+      await admin
         .from("subscribers")
         .update({ referrer_id: null })
         .eq("id", data.id);
       resolvedReferrerId = null;
     } else {
       // Count referrals and check milestones
-      const { count } = await supabase
+      const { count } = await admin
         .from("subscribers")
         .select("id", { count: "exact", head: true })
         .eq("referrer_id", resolvedReferrerId);
@@ -594,18 +618,16 @@ export async function POST(request: NextRequest) {
   }
 
   // AC5: Synchronous recalculate — must complete before response returns
-  const updates = await recalculatePositions(waitlist_id, supabase);
+  // SECURITY DEFINER RPC — works with any client; pass admin for consistency
+  const updates = await recalculatePositions(waitlist_id, admin);
   const subscriberUpdate = getPositionUpdate(updates, data.id);
   const correctedPosition = subscriberUpdate?.new_position ?? data.position;
 
   // Increment cached subscriber_count (atomic, fire-and-forget on error)
   try {
-    const { error: countErr } = await supabase.rpc(
-      "increment_subscriber_count",
-      {
-        p_waitlist_id: waitlist_id,
-      }
-    );
+    const { error: countErr } = await admin.rpc("increment_subscriber_count", {
+      p_waitlist_id: waitlist_id,
+    });
     if (countErr) {
       console.error(
         "[subscribers] increment_subscriber_count failed:",
@@ -721,7 +743,7 @@ export async function POST(request: NextRequest) {
         console.log(
           `Confirmation email sent to ${data.email} (id: ${emailResult.id})`
         );
-        await supabase.from("email_events").insert({
+        await adminSupabase.from("email_events").insert({
           subscriber_id: data.id,
           waitlist_id,
           event_type: "sent",
@@ -849,7 +871,7 @@ export async function POST(request: NextRequest) {
 
         // AC7: Log event to email_events
         if (emailResult.ok) {
-          await supabase.from("email_events").insert({
+          await adminSupabase.from("email_events").insert({
             subscriber_id: resolvedReferrerId,
             waitlist_id,
             event_type: "sent",

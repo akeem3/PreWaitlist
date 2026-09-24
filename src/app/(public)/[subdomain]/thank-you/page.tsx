@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { PoweredByFooter } from "../../../../../components/share/powered-by-footer";
@@ -19,9 +19,9 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
     notFound();
   }
 
-  const supabase = await createClient();
+  const admin = createAdminClient();
 
-  const { data: subscriber } = await supabase
+  const { data: subscriber } = await admin
     .from("subscribers")
     .select(
       `
@@ -56,7 +56,7 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
   const tier = founderProfile?.tier || "free";
 
   const { data: milestoneRewardsData } = waitlist.milestone_rewards_enabled
-    ? await supabase
+    ? await admin
         .from("milestone_rewards")
         .select("tier_referrals, reward_label")
         .eq("waitlist_id", waitlist.id)
@@ -75,7 +75,7 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
 
   let referrerEmail: string | null = null;
   if (subscriber.referrer_id) {
-    const { data: referrer } = await supabase
+    const { data: referrer } = await admin
       .from("subscribers")
       .select("email")
       .eq("id", subscriber.referrer_id)
@@ -89,7 +89,7 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
       referrerEmail.split("@")[0].slice(1)
     : null;
 
-  const { count: referralCount } = await supabase
+  const { count: referralCount } = await admin
     .from("subscribers")
     .select("id", { count: "exact", head: true })
     .eq("referrer_id", subscriber.id);

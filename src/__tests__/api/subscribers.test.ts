@@ -12,13 +12,13 @@ vi.mock("next/server", async () => {
   };
 });
 
-// Mock Supabase server client
+// Mock Supabase server client (waitlists cap check)
 const mockSupabase = createMockSupabaseClient();
 vi.mock("@/lib/supabase/server", () => ({
   createClient: () => Promise.resolve(mockSupabase),
 }));
 
-// Mock Supabase admin client (used in fire-and-forget IIFE)
+// Mock Supabase admin client — 14.0 uses admin for subscriber insert/read paths
 const mockAdminSupabase = createMockSupabaseClient();
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => mockAdminSupabase,
@@ -54,32 +54,38 @@ vi.mock("@/lib/bounces", () => ({
 
 import { POST } from "../../app/api/subscribers/route";
 
+function pushCreateSubscriber() {
+  // cap check on server client
+  mockSupabase.__queue.push({
+    data: {
+      subscriber_count: 10,
+      founder_profiles: { tier: "free" },
+    },
+    error: null,
+  });
+  // insert on admin client
+  mockAdminSupabase.__queue.push({
+    data: {
+      id: "sub-1",
+      email: "test@test.com",
+      referral_code: "abc12345",
+      position: 1,
+    },
+    error: null,
+  });
+}
+
 describe("POST /api/subscribers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSupabase.__queue.length = 0;
+    mockAdminSupabase.__queue.length = 0;
+    mockSupabase.__calls.length = 0;
+    mockAdminSupabase.__calls.length = 0;
   });
 
   it("creates subscriber with valid data", async () => {
-    // Cap check query returns waitlist with tier and count
-    mockSupabase.__queue.push({
-      data: {
-        subscriber_count: 10,
-        founder_profiles: { tier: "free" },
-      },
-      error: null,
-    });
-    // Insert returns subscriber
-    mockSupabase.__queue.push(
-      {
-        data: {
-          id: "sub-1",
-          email: "test@test.com",
-          referral_code: "abc12345",
-          position: 1,
-        },
-        error: null,
-      } // insert
-    );
+    pushCreateSubscriber();
 
     const request = new NextRequest("http://localhost/api/subscribers", {
       method: "POST",
@@ -122,7 +128,6 @@ describe("POST /api/subscribers", () => {
   });
 
   it("returns 409 on duplicate email", async () => {
-    // Cap check query
     mockSupabase.__queue.push({
       data: {
         subscriber_count: 10,
@@ -130,8 +135,7 @@ describe("POST /api/subscribers", () => {
       },
       error: null,
     });
-    // Insert fails with 23505 unique constraint violation
-    mockSupabase.__queue.push({
+    mockAdminSupabase.__queue.push({
       data: null,
       error: {
         message:
@@ -154,8 +158,7 @@ describe("POST /api/subscribers", () => {
     expect(response.status).toBe(409);
   });
 
-  it("stores qual_answers when provided", async () => {
-    // Cap check query
+  it("stores qual_answers when valid question_id keys provided", async () => {
     mockSupabase.__queue.push({
       data: {
         subscriber_count: 10,
@@ -163,7 +166,13 @@ describe("POST /api/subscribers", () => {
       },
       error: null,
     });
-    mockSupabase.__queue.push({
+    // questions lookup for AC11 validation
+    mockAdminSupabase.__queue.push({
+      data: [{ id: "q-1" }],
+      error: null,
+    });
+    // insert
+    mockAdminSupabase.__queue.push({
       data: {
         id: "sub-1",
         email: "test@test.com",
@@ -178,7 +187,7 @@ describe("POST /api/subscribers", () => {
       body: JSON.stringify({
         waitlist_id: "waitlist-1",
         email: "test@test.com",
-        qual_answers: { q1: "answer" },
+        qual_answers: { "q-1": "answer" },
       }),
     });
 
@@ -186,8 +195,7 @@ describe("POST /api/subscribers", () => {
     expect(response.status).toBe(201);
   });
 
-  it("generates 8-char referral code", async () => {
-    // Cap check query
+  it("drops unknown qual_answers keys (AC11)", async () => {
     mockSupabase.__queue.push({
       data: {
         subscriber_count: 10,
@@ -195,15 +203,45 @@ describe("POST /api/subscribers", () => {
       },
       error: null,
     });
-    mockSupabase.__queue.push({
+    mockAdminSupabase.__queue.push({
+      data: [{ id: "q-1" }],
+      error: null,
+    });
+    mockAdminSupabase.__queue.push({
       data: {
         id: "sub-1",
         email: "test@test.com",
-        referral_code: "abcdefgh",
+        referral_code: "abc",
         position: 1,
       },
       error: null,
     });
+
+    const request = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      body: JSON.stringify({
+        waitlist_id: "waitlist-1",
+        email: "test@test.com",
+        qual_answers: { "q-1": "keep", "text-key": "drop" },
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(201);
+
+    // Find insert call on admin client and verify sanitized keys
+    const insertCalls = mockAdminSupabase.__calls.filter(
+      (c) => c.method === "insert"
+    );
+    expect(insertCalls.length).toBeGreaterThan(0);
+    const payload = insertCalls[insertCalls.length - 1].args[0] as {
+      qual_answers: Record<string, string> | null;
+    };
+    expect(payload.qual_answers).toEqual({ "q-1": "keep" });
+  });
+
+  it("generates 8-char referral code", async () => {
+    pushCreateSubscriber();
 
     const request = new NextRequest("http://localhost/api/subscribers", {
       method: "POST",
@@ -219,23 +257,7 @@ describe("POST /api/subscribers", () => {
   });
 
   it("increments subscriber_count via RPC after successful insert", async () => {
-    // Cap check query
-    mockSupabase.__queue.push({
-      data: {
-        subscriber_count: 10,
-        founder_profiles: { tier: "free" },
-      },
-      error: null,
-    });
-    mockSupabase.__queue.push({
-      data: {
-        id: "sub-1",
-        email: "test@test.com",
-        referral_code: "abc12345",
-        position: 1,
-      },
-      error: null,
-    });
+    pushCreateSubscriber();
 
     const request = new NextRequest("http://localhost/api/subscribers", {
       method: "POST",
@@ -247,7 +269,7 @@ describe("POST /api/subscribers", () => {
 
     await POST(request);
 
-    expect(mockSupabase.rpc).toHaveBeenCalledWith(
+    expect(mockAdminSupabase.rpc).toHaveBeenCalledWith(
       "increment_subscriber_count",
       { p_waitlist_id: "waitlist-1" }
     );

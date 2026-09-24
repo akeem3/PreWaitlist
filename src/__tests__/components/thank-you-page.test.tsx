@@ -10,6 +10,11 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: () => Promise.resolve(mockSupabase),
 }));
 
+// Thank-you page reads subscribers via admin client (14.0 AC8)
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: () => mockSupabase,
+}));
+
 vi.mock("next/navigation", () => ({
   notFound: vi.fn(() => {
     throw new Error("NOT_FOUND");
