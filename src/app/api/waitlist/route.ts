@@ -11,6 +11,7 @@ type IncomingQuestion = {
 };
 
 type NormalizedQuestion = {
+  id?: string;
   text: string;
   type: "free_text" | "multiple_choice";
   options: string[] | null;
@@ -30,6 +31,8 @@ function normalizeQuestions(
     if (!text) {
       return { ok: false, error: "Each question must have non-empty text" };
     }
+
+    const id = typeof q.id === "string" && q.id.length > 0 ? q.id : undefined;
 
     const type: "free_text" | "multiple_choice" =
       q.type === "multiple_choice" ? "multiple_choice" : "free_text";
@@ -51,9 +54,9 @@ function normalizeQuestions(
             "Multiple choice questions require at least 2 non-empty options",
         };
       }
-      rows.push({ text, type, options });
+      rows.push({ id, text, type, options });
     } else {
-      rows.push({ text, type, options: null });
+      rows.push({ id, text, type, options: null });
     }
   }
 
@@ -341,40 +344,98 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  // Upsert qualification_questions if provided (14.0 AC5)
+  // Save qualification_questions if provided (14.0 AC5 validation;
+  // 14.2 AC5 id preservation — renames/edits keep existing question ids so
+  // subscriber qual_answers keys stay valid; only removed questions are
+  // deleted, leaving orphan answer keys that reporting ignores)
   if (Array.isArray(normalizedQuestions)) {
-    // Delete existing questions for this waitlist
-    const { error: deleteQuestionsError } = await supabase
-      .from("qualification_questions")
-      .delete()
-      .eq("waitlist_id", waitlist_id);
+    const { data: existingQuestionRows, error: existingQuestionsError } =
+      await supabase
+        .from("qualification_questions")
+        .select("id")
+        .eq("waitlist_id", waitlist_id);
 
-    if (deleteQuestionsError) {
-      console.error("Failed to delete questions:", deleteQuestionsError);
+    if (existingQuestionsError) {
+      console.error("Failed to load questions:", existingQuestionsError);
       return NextResponse.json(
-        { error: deleteQuestionsError.message },
+        { error: existingQuestionsError.message },
         { status: 400 }
       );
     }
 
-    // Insert new questions with type + options
-    if (normalizedQuestions.length > 0) {
-      const questionRows = normalizedQuestions.map((q, index) => ({
-        waitlist_id: waitlist_id,
+    const existingIds = new Set(
+      (existingQuestionRows || []).map((row) => row.id as string)
+    );
+    const keptIds = new Set<string>();
+    const rowsToUpdate: {
+      id: string;
+      waitlist_id: string;
+      question_text: string;
+      question_type: "free_text" | "multiple_choice";
+      options: string[] | null;
+      sort_order: number;
+    }[] = [];
+    const rowsToInsert: Omit<(typeof rowsToUpdate)[number], "id">[] = [];
+
+    normalizedQuestions.forEach((q, index) => {
+      const row = {
+        waitlist_id,
         question_text: q.text,
         question_type: q.type,
         options: q.options,
         sort_order: index,
-      }));
+      };
+      // Only reuse ids that already belong to this waitlist — never trust a
+      // foreign id (prevents cross-waitlist row hijack via upsert)
+      if (q.id && existingIds.has(q.id) && !keptIds.has(q.id)) {
+        keptIds.add(q.id);
+        rowsToUpdate.push({ id: q.id, ...row });
+      } else {
+        rowsToInsert.push(row);
+      }
+    });
 
-      const { error: questionsError } = await supabase
+    if (rowsToUpdate.length > 0) {
+      const { error: updateError } = await supabase
         .from("qualification_questions")
-        .insert(questionRows);
+        .upsert(rowsToUpdate, { onConflict: "id" });
 
-      if (questionsError) {
-        console.error("Failed to save questions:", questionsError);
+      if (updateError) {
+        console.error("Failed to update questions:", updateError);
         return NextResponse.json(
-          { error: questionsError.message },
+          { error: updateError.message },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (rowsToInsert.length > 0) {
+      const { error: insertError } = await supabase
+        .from("qualification_questions")
+        .insert(rowsToInsert);
+
+      if (insertError) {
+        console.error("Failed to save questions:", insertError);
+        return NextResponse.json(
+          { error: insertError.message },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Delete only questions the founder removed (after writes succeed)
+    const idsToDelete = [...existingIds].filter((id) => !keptIds.has(id));
+    if (idsToDelete.length > 0) {
+      const { error: deleteQuestionsError } = await supabase
+        .from("qualification_questions")
+        .delete()
+        .eq("waitlist_id", waitlist_id)
+        .in("id", idsToDelete);
+
+      if (deleteQuestionsError) {
+        console.error("Failed to delete questions:", deleteQuestionsError);
+        return NextResponse.json(
+          { error: deleteQuestionsError.message },
           { status: 400 }
         );
       }

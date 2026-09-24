@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
+vi.mock("next/link", () => ({
+  default: ({
+    children,
+    href,
+  }: {
+    children: React.ReactNode;
+    href: string;
+  }) => <a href={href}>{children}</a>,
+}));
+
 vi.mock("../../../components/dashboard/qualification-panel", () => ({
   default: ({
     subdomain,
@@ -44,5 +54,20 @@ describe("Dashboard Qualification Page", () => {
     render(<QualificationClient subdomain="acme" waitlistId="wl-123" />);
     const panel = screen.getByTestId("qualification-panel");
     expect(panel.getAttribute("data-waitlist-id")).toBe("wl-123");
+  });
+
+  it("renders Edit questions link to settings qualification tab", () => {
+    render(<QualificationClient subdomain="acme" waitlistId="wl-1" />);
+    const link = screen.getByRole("link", { name: "Edit questions" });
+    expect(link.getAttribute("href")).toBe(
+      "/dashboard/wl-1/settings?tab=qualification"
+    );
+  });
+
+  it("uses dashboard content width (max-w-6xl) (AC2)", () => {
+    const { container } = render(
+      <QualificationClient subdomain="acme" waitlistId="wl-1" />
+    );
+    expect(container.firstChild).toHaveClass("max-w-6xl");
   });
 });

@@ -4,10 +4,13 @@ import WaitlistSettingsClient from "./client";
 
 export default async function WaitlistSettingsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ waitlistId: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { waitlistId } = await params;
+  const { tab } = await searchParams;
   const supabase = await createClient();
 
   const {
@@ -43,6 +46,7 @@ export default async function WaitlistSettingsPage({
         ...waitlist,
         tier: profile?.tier ?? "free",
       }}
+      initialTab={tab}
     />
   );
 }

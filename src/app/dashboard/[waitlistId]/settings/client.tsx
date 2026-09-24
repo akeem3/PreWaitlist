@@ -7,6 +7,12 @@ import { Button } from "../../../../../components/ui/button";
 import { Input } from "../../../../../components/ui/input";
 import { LivePreview } from "../../../../../components/onboarding/live-preview";
 import { Breadcrumb } from "../../../../../components/dashboard/breadcrumb";
+import QuestionEditor, {
+  sanitizeQuestions,
+  validateQuestions,
+  type Question,
+} from "../../../../../components/onboarding/question-editor";
+import { useUpgradeModal } from "../../shell";
 
 interface WaitlistData {
   id: string;
@@ -26,10 +32,12 @@ interface WaitlistData {
 
 interface WaitlistSettingsClientProps {
   waitlist: WaitlistData;
+  initialTab?: string;
 }
 
 const TABS = [
   { id: "content", label: "Content" },
+  { id: "qualification", label: "Qualification" },
   { id: "email", label: "Email" },
   { id: "warmth", label: "Warmth" },
   { id: "advanced", label: "Advanced" },
@@ -37,8 +45,11 @@ const TABS = [
 
 export default function WaitlistSettingsClient({
   waitlist,
+  initialTab,
 }: WaitlistSettingsClientProps) {
-  const [activeTab, setActiveTab] = useState("content");
+  const [activeTab, setActiveTab] = useState(() =>
+    TABS.some((tab) => tab.id === initialTab) ? initialTab! : "content"
+  );
   const [headline, setHeadline] = useState(waitlist.headline ?? "");
   const [subheadline, setSubheadline] = useState(waitlist.subheadline ?? "");
   const [ctaText, setCtaText] = useState(waitlist.cta_text ?? "");
@@ -59,8 +70,17 @@ export default function WaitlistSettingsClient({
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmText, setConfirmText] = useState("");
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questionsLoading, setQuestionsLoading] = useState(true);
+  const [questionsSaving, setQuestionsSaving] = useState(false);
+  const [questionsSaved, setQuestionsSaved] = useState(false);
+  const [questionsError, setQuestionsError] = useState<string | null>(null);
+  const questionsSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
+  const triggerUpgrade = useUpgradeModal();
 
   const isFreeTier = waitlist.tier === "free";
 
@@ -87,8 +107,74 @@ export default function WaitlistSettingsClient({
   );
 
   useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/waitlist");
+        if (!res.ok) throw new Error("load failed");
+        const lists = await res.json();
+        const mine = Array.isArray(lists)
+          ? (lists as { id: string; questions?: Question[] }[]).find(
+              (w) => w.id === waitlist.id
+            )
+          : null;
+        if (!cancelled) setQuestions(mine?.questions ?? []);
+      } catch {
+        // leave empty — founder can still add questions
+      } finally {
+        if (!cancelled) setQuestionsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [waitlist.id]);
+
+  async function handleSaveQuestions() {
+    setQuestionsSaving(true);
+    setQuestionsSaved(false);
+    setQuestionsError(null);
+    try {
+      const validationError = validateQuestions(questions);
+      if (validationError) {
+        setQuestionsError(validationError);
+        return;
+      }
+      const sanitized = sanitizeQuestions(questions);
+      const res = await fetch("/api/waitlist", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          waitlist_id: waitlist.id,
+          questions: sanitized,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "Failed to save questions");
+      }
+      setQuestions(sanitized);
+      setQuestionsSaved(true);
+      if (questionsSaveTimeoutRef.current)
+        clearTimeout(questionsSaveTimeoutRef.current);
+      questionsSaveTimeoutRef.current = setTimeout(
+        () => setQuestionsSaved(false),
+        2000
+      );
+    } catch (err) {
+      setQuestionsError(
+        err instanceof Error ? err.message : "Failed to save questions"
+      );
+    } finally {
+      setQuestionsSaving(false);
+    }
+  }
+
+  useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      if (questionsSaveTimeoutRef.current)
+        clearTimeout(questionsSaveTimeoutRef.current);
     };
   }, []);
 
@@ -257,6 +343,61 @@ export default function WaitlistSettingsClient({
                 tier={waitlist.tier as "free" | "pro"}
               />
             </div>
+          </div>
+        )}
+
+        {activeTab === "qualification" && (
+          <div className="rounded-xl border border-border bg-card p-6">
+            <h2 className="mb-4 text-h4 font-medium text-foreground">
+              Qualification
+            </h2>
+            {questionsLoading ? (
+              <div className="space-y-3" aria-hidden="true">
+                <div className="h-6 w-32 animate-pulse rounded-full bg-muted" />
+                <div className="h-24 rounded-xl bg-muted" />
+                <div className="h-10 w-48 animate-pulse rounded-xl bg-muted" />
+              </div>
+            ) : (
+              <>
+                {questions.length === 0 && (
+                  <p className="mb-4 text-body-sm text-muted-foreground">
+                    No qualification questions configured.
+                  </p>
+                )}
+                <QuestionEditor
+                  questions={questions}
+                  onChange={(next) => {
+                    setQuestions(next);
+                    setQuestionsError(null);
+                  }}
+                  tier={waitlist.tier}
+                  onUpgrade={() => triggerUpgrade("qual_question")}
+                  disabled={questionsSaving}
+                />
+                {questionsError && (
+                  <p
+                    role="alert"
+                    className="mb-3 text-body-sm text-destructive"
+                  >
+                    {questionsError}
+                  </p>
+                )}
+                <div className="mt-6">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleSaveQuestions}
+                    disabled={questionsSaving}
+                  >
+                    {questionsSaving
+                      ? "Saving…"
+                      : questionsSaved
+                        ? "Saved!"
+                        : "Save changes"}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         )}
 

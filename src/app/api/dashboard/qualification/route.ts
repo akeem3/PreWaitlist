@@ -1,6 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+type QuestionRow = {
+  id: string;
+  question_text: string;
+  question_type: string;
+  options: string[] | null;
+};
+
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
 
@@ -35,12 +42,17 @@ export async function GET(request: NextRequest) {
 
   const { data: questions } = await supabase
     .from("qualification_questions")
-    .select("question_text")
+    .select("id, question_text, question_type, options")
     .eq("waitlist_id", waitlist.id)
     .order("sort_order", { ascending: true });
 
   if (!questions || questions.length === 0) {
-    return NextResponse.json({ questions: [] });
+    const empty = NextResponse.json({ questions: [], respondentTotal: 0 });
+    empty.headers.set(
+      "Cache-Control",
+      "s-maxage=30, stale-while-revalidate=60"
+    );
+    return empty;
   }
 
   const { data: subscribers } = await supabase
@@ -49,22 +61,56 @@ export async function GET(request: NextRequest) {
     .eq("waitlist_id", waitlist.id)
     .not("qual_answers", "is", null);
 
-  const result = questions.map((q) => {
+  const respondentIndexes = new Set<number>();
+
+  const result = (questions as QuestionRow[]).map((q) => {
     const answerCounts = new Map<string, number>();
-    for (const sub of subscribers || []) {
+    (subscribers || []).forEach((sub, index) => {
       const answers = sub.qual_answers as Record<string, string> | null;
-      if (answers && answers[q.question_text]) {
-        const val = answers[q.question_text];
-        answerCounts.set(val, (answerCounts.get(val) || 0) + 1);
+      // Aggregated by question_id key (14.0 migration remapped legacy
+      // text-keyed answers). Orphan keys from deleted questions never match.
+      const value = answers?.[q.id];
+      if (typeof value === "string" && value.length > 0) {
+        answerCounts.set(value, (answerCounts.get(value) || 0) + 1);
+        respondentIndexes.add(index);
       }
-    }
+    });
+
+    const respondentCount = Array.from(answerCounts.values()).reduce(
+      (sum, count) => sum + count,
+      0
+    );
+
     const answers = Array.from(answerCounts.entries())
-      .map(([value, count]) => ({ value, count }))
-      .sort((a, b) => b.count - a.count);
-    return { question: q.question_text, answers };
+      .map(([value, count]) => ({
+        value,
+        count,
+        percent:
+          respondentCount > 0 ? Math.round((count / respondentCount) * 100) : 0,
+      }))
+      .sort(
+        (a, b) =>
+          b.count - a.count ||
+          (a.value < b.value ? -1 : a.value > b.value ? 1 : 0)
+      );
+
+    return {
+      id: q.id,
+      text: q.question_text,
+      type:
+        q.question_type === "multiple_choice"
+          ? ("multiple_choice" as const)
+          : ("free_text" as const),
+      options: Array.isArray(q.options) ? q.options : null,
+      respondentCount,
+      answers,
+    };
   });
 
-  const response = NextResponse.json({ questions: result });
+  const response = NextResponse.json({
+    questions: result,
+    respondentTotal: respondentIndexes.size,
+  });
   response.headers.set(
     "Cache-Control",
     "s-maxage=30, stale-while-revalidate=60"
