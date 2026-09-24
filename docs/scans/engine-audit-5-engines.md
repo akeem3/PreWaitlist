@@ -4,19 +4,19 @@
 **Scope:** Qualification · Warmth · Leaderboard · Founder Updates · Broadcasting
 **Method:** Parallel deep scans of code, docs (PRD + stories + MEMORY), and tests. Read-only — no changes made.
 **Goal:** Understand how each engine currently works and whether it satisfies its worth and relevance to this app.
-**Update:** Qualification + Warmth + Leaderboard + Founder Updates sections re-verified via dedicated line-level rescans + web research (2026-09-24) — see §1, §2, §3, and §4.
+**Update:** Qualification + Warmth + Leaderboard + Founder Updates + Broadcasting sections re-verified via dedicated line-level rescans + web research (2026-09-24) — see §1, §2, §3, §4, and §5.
 
 ---
 
 ## Executive Summary
 
-| Engine          | Verdict                   | One-line reason                                                                                                                                                                                                                                         |
-| --------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Qualification   | ⚠️ **Partial (verified)** | Pipeline works; dashboard renders wrong chart type for free-text (100%-bars at n=1), no post-onboarding edit, no server cap, text-keyed answers, PII exposed — full detail §1                                                                           |
-| Warmth          | ⚠️ **Partial (verified)** | Display + unit-tested pure math work; **cron never scheduled** so scores never update in prod; batch referral miscount, decay uses all events (incl. sent/delivered), 2 dead signals, Story 11.2 badge never landed on subscriber list — full detail §2 |
-| Leaderboard     | ⚠️ **Partial (verified)** | Public ✅ (rank/mask/page/neighborhood); dashboard sort inverted (test locks bug), no pagination (12.3.1 status lie), skip-the-line boost dead, RLS/API leak, quality-score meaning split three ways — full detail §3                                   |
-| Founder Updates | ⚠️ **Partial (verified)** | Works ≤100 subs single-waitlist; >100 send fails silently (batch flatten), no unsub/bounce filter, multi-waitlist `.single()` broken, no visible unsubscribe link, zero API tests — full detail §4                                                      |
-| Broadcasting    | ❌ **Not functional**     | Client omits `waitlist_id` → **every send 400s**; no tests caught it                                                                                                                                                                                    |
+| Engine          | Verdict                          | One-line reason                                                                                                                                                                                                                                         |
+| --------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Qualification   | ⚠️ **Partial (verified)**        | Pipeline works; dashboard renders wrong chart type for free-text (100%-bars at n=1), no post-onboarding edit, no server cap, text-keyed answers, PII exposed — full detail §1                                                                           |
+| Warmth          | ⚠️ **Partial (verified)**        | Display + unit-tested pure math work; **cron never scheduled** so scores never update in prod; batch referral miscount, decay uses all events (incl. sent/delivered), 2 dead signals, Story 11.2 badge never landed on subscriber list — full detail §2 |
+| Leaderboard     | ⚠️ **Partial (verified)**        | Public ✅ (rank/mask/page/neighborhood); dashboard sort inverted (test locks bug), no pagination (12.3.1 status lie), skip-the-line boost dead, RLS/API leak, quality-score meaning split three ways — full detail §3                                   |
+| Founder Updates | ⚠️ **Partial (verified)**        | Works ≤100 subs single-waitlist; >100 send fails silently (batch flatten), no unsub/bounce filter, multi-waitlist `.single()` broken, no visible unsubscribe link, zero API tests — full detail §4                                                      |
+| Broadcasting    | ❌ **Not functional (verified)** | Client omits `waitlist_id` → **every send 400s**; segments `.single()` breaks multi-waitlist; count ≠ eligible; zero send-path tests — full detail §5                                                                                                   |
 
 **None of the five are fully production-ready as-is.** Broadcasting is hard-broken; Warmth doesn't run in prod; the other three work on the happy path with compliance/privacy and multi-waitlist gaps.
 
@@ -29,7 +29,7 @@
 | **Resend Batch cap 100 mishandled**                                                     | Updates (flattened array) vs Broadcast (correct — copy this pattern)                                                                                                                                                         |
 | **Zero/fake tests on critical send paths**                                              | Broadcast, Updates API, milestones, dashboard leaderboard sort                                                                                                                                                               |
 | **Story marked "done" but ACs unmet**                                                   | Leaderboard pagination (12.3.1); Updates — 12.1.4 AC2 API min, 12.1.10 AC5 flow tests, 7.6 AC2 brand color (§4.7); qualification — 12.3.2 AC2-AC5, 12.4.0 AC3, 9.7 AC4/AC11, 12.1.9 AC3, 4.5 AC2/AC5-AC7, 7.3 AC4-AC6 (§1.8) |
-| **Doc/MEMORY drift**                                                                    | Broadcast merge-tag claim, leaderboard file paths, sender chain                                                                                                                                                              |
+| **Doc/MEMORY drift**                                                                    | Broadcast merge-tag claim (12.3 AC5 + MEMORY vs custom HMAC/PRD L400), leaderboard file paths, sender chain, 12.4 AC6 default, 12.3/12.4/12.5/12.6 `status: ready` in `completed/` (§5.7)                                    |
 
 ---
 
@@ -813,78 +813,190 @@ Fails two realistic production scenarios — **lists >100** (batch limit bypasse
 
 ---
 
-## 5. Broadcasting — ❌ NOT FUNCTIONAL (critical bug)
+## 5. Broadcasting — ❌ NOT FUNCTIONAL (verified rescan, confidence 98%)
 
-### How it works (data flow)
+> **Status:** Re-verified 2026-09-24 with a dedicated line-level rescan (every claim re-read at source), full PRD + story AC cross-reference (REQ-7.1a.1, PRD L123/L171, Story 12.3/12.4/12.5/12.6/12.1.8/12.2.7), tests inventory, and web research (Resend Batch API limits, `{{{RESEND_UNSUBSCRIBE_URL}}}` + Audiences dependency, Gmail/Yahoo RFC 8058 one-click unsubscribe, deliverable-vs-total recipient-count UX, founder-authored HTML email sanitization). Supersedes the initial parallel-scan findings below.
+
+### 5.1 Claim-by-claim verification (initial scan → rescan)
+
+| #   | Claim                                                                               | Verdict                                          | Evidence                                                                                                                                                                                                                                                                                                                            |
+| --- | ----------------------------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Client omits `waitlist_id` → every send 400s                                        | ✅ **CONFIRMED**                                 | `client.tsx:24-26` destructure only `{ productName, senderName }` — `waitlistId` prop unused; body at `:77` = `{ subject, body, segment }`; API requires `waitlist_id` at `route.ts:35-42` → **400 on every send.** Story 12.3 T4 sketch also omitted `waitlist_id` (`story-12.3:102`) — bug inherited from story code.             |
+| 2   | Segments endpoint ignores `?wid=` + `.single()` → multi-waitlist 404                | ✅ **CONFIRMED**                                 | `segments/route.ts:15-19` `.single()` by `founder_id`, no query param, no `maybeSingle`. Page accepts `?wid=` (`page.tsx:32-42`) and sidebar always attaches it — segments route cannot see it. Same pattern as Updates multi-waitlist break (§4).                                                                                  |
+| 3   | Zero tests on broadcast send path                                                   | ✅ **CONFIRMED**                                 | Glob `src/__tests__/**/*broadcast*` = **0 files**. No client, route, or segments tests. Nearby coverage only: `tier-gating.test.ts` (8), `bounces.test.ts` (3), `unsubscribe.test.ts` (6) — none exercise send.                                                                                                                     |
+| 4   | All batches fail → still `ok:true` + `recipient_count:0` + insert                   | ✅ **CONFIRMED**                                 | `route.ts:142-159` logs `result.error`, continues; insert always runs; response always `{ ok: true, recipient_count: totalSent }` even when `totalSent === 0`. Insert `.error` unchecked. No try/catch around `resend.batch.send` — a throw (not `result.error`) 500s unhandled.                                                    |
+| 5   | `{{{RESEND_UNSUBSCRIBE_URL}}}` documented but never used                            | ✅ **CONFIRMED — docs wrong, code likely right** | Story 12.3 AC5 (`story-12.3:18`) + MEMORY:780 claim Resend merge tag. Code uses custom HMAC (`route.ts:115-136` + `email.ts:130-146` + RFC 8058 headers). PRD L398/400: **never use Resend Audiences** — merge tag requires Audiences. Custom HMAC is the correct architecture; amend Story 12.3 AC5 + MEMORY, not the code (§5.7). |
+| 6   | N+1 sequential bounce lookups                                                       | ✅ **CONFIRMED**                                 | `route.ts:88-92` `for…of` + `await isEmailBounced` per subscriber — one query each. Correct suppression, poor scale on large lists.                                                                                                                                                                                                 |
+| 7   | Segments API has no `requirePro`                                                    | ✅ **CONFIRMED**                                 | `segments/route.ts:4-23` auth-only. Free can read segment counts if they hit the endpoint (page/POST still gated).                                                                                                                                                                                                                  |
+| 8   | Segment counts include unsub/bounced → UI ≠ send-time eligible                      | ✅ **CONFIRMED**                                 | Counts = raw `COUNT(*)` by warmth (`segments/route.ts:25-40`); send filters `unsubscribed_at` + bounce (`route.ts:84-99`). Confirm dialog uses UI count (`client.tsx:66-68`) which can overstate recipients. Klaviyo-style "expected recipients" missing (§5.6).                                                                    |
+| 9   | Preview From fabricated `sarah.jones@…`                                             | ⚠️ **PARTIALLY OUTDATED**                        | Initial claim stale: 12.1.8 made local-part dynamic from `senderName` (`client.tsx:41-43`). Still wrong: hardcodes `@prewaitlist.com`, ignores `sending_domain`, never calls `resolveFromAddress()`; page doesn't select `sending_domain` (`page.tsx:36`). Story 12.1.8 AC3 was only half-met.                                      |
+| 10  | Success copy ≠ AC7; "delivered" overclaims                                          | ✅ **CONFIRMED**                                 | Code: `"Sent to {n}…"` + `"has been delivered"` (`client.tsx:108-113`). Story 12.3 AC7: `"Email sent to {N} subscribers."` Batch API accepts-then-queues; "delivered" ≠ inbox delivery (§5.6).                                                                                                                                      |
+| 11  | Story 12.6 AC4 `{sender_name}@{domain}` vs code `updates@{domain}`                  | ✅ **CONFIRMED (out of primary scope)**          | `email.ts:59-67` uses stream prefix `notifications`/`updates` — intentional stream separation (MEMORY:273). Contradicts 12.6 AC4 wording if that AC means local-part = sender_name. See §5.7.                                                                                                                                       |
+| 12  | 12.4 AC6 default cold vs 12.1.8 default all — docs unreconciled                     | ✅ **CONFIRMED**                                 | Code default `"all"` (`client.tsx:37`) = 12.1.8 AC1 (supersedes). Story files still disagree (`story-12.4:19` vs `story-12.1.8:14`). PRD L123 agrees with code ("all").                                                                                                                                                             |
+| 13  | `broadcasts` write-only — no history UI                                             | ✅ **CONFIRMED**                                 | Insert `route.ts:149-154`; zero `SELECT` on `broadcasts` in `src/`. Schema comment promises "dashboard activity feed" (`epic11-story7:26`). Insert result ignored.                                                                                                                                                                  |
+| 14  | Unsubscribe page test is fake                                                       | ✅ **CONFIRMED**                                 | `unsubscribe-page.test.tsx` renders literal JSX in the test file — never imports the route/page component. False confidence. Real coverage: token unit tests in `unsubscribe.test.ts` only.                                                                                                                                         |
+| 15  | Free hitting `/dashboard/broadcast` URL silently redirected                         | ✅ **CONFIRMED**                                 | `page.tsx:28-30` `redirect("/dashboard")` — no upgrade prompt. AC8 upgrade prompt only on sidebar lock click (`sidebar.tsx:307,314-325` → modal). Direct URL = silent bounce.                                                                                                                                                       |
+| 16  | No server-side idempotency / double-submit guard                                    | ✅ **CONFIRMED**                                 | Only client `sending` flag (`client.tsx:31,219`). No request idempotency key (Resend batch supports one — unused). Double-click after reset or second tab can re-send.                                                                                                                                                              |
+| 17  | (new) `generateUnsubscribeUrl` called twice per recipient                           | ✅ **NEW**                                       | Header path `route.ts:115` + again inside `buildBroadcastEmailFooter` (`email.ts:135`). Same token; wasteful. Throws if `UNSUBSCRIBE_SECRET` missing → 500 during map, before that chunk's send.                                                                                                                                    |
+| 18  | (new) Dead `subscriberCount` prop path                                              | ✅ **NEW**                                       | Page computes count (`page.tsx:48-51,60`); client interface declares it (`client.tsx:21`) but **never destructures or uses it** — segments API is sole count source. Dead plumbing.                                                                                                                                                 |
+| 19  | (new) No subject/body length caps; preview `dangerouslySetInnerHTML`                | ✅ **NEW**                                       | Client + API only `trim()` non-empty (`client.tsx:64,219`; `route.ts:44-49`). 12.1.8 Out of Scope explicitly deferred length validation. Preview HTML at `client.tsx:240-242` is founder-only (not recipient XSS) — needs sanitize, not wholesale escape (§5.6).                                                                    |
+| 20  | (new) Story status lies: 12.3/12.4/12.5 frontmatter `status: ready` in `completed/` | ✅ **NEW**                                       | `story-12.3:4`, `story-12.4:4`, `story-12.5:4` all `ready`; sprint-3-plan table marks 12.3/12.4 ✅ done. Inconsistent metadata.                                                                                                                                                                                                     |
+
+### 5.2 Data flow (verified)
 
 ```
 /dashboard/broadcast (page.tsx, server)
-  ├─ auth → tier gate (free → redirect /dashboard)
-  ├─ waitlist fetch (?wid= scoping) → subscriber count
-  └─ BroadcastClient
-       ├─ GET /api/dashboard/broadcast/segments → counts {all, hot_warm, cold}
-       ├─ segment pill selector (all | hot_warm | cold), default "all"
-       ├─ window.confirm → POST /api/dashboard/broadcast {subject, body, segment}
-       └─ success: "Sent to {N} [segment] subscribers"
+  ├─ auth → tier gate (free → redirect /dashboard, no upgrade prompt)   ← AC8 gap for direct URL
+  ├─ waitlist fetch (?wid= or maybeSingle) → subscriberCount
+  └─ BroadcastClient { waitlistId, productName, …, subscriberCount }    ← waitlistId UNUSED by client
+       ├─ GET /api/dashboard/broadcast/segments → {all, hot_warm, cold}
+       │     auth only (no requirePro); .single() ignores ?wid=; counts raw (no unsub/bounce)
+       ├─ segment pills default "all" (12.1.8 / PRD L123)
+       ├─ window.confirm(activeCount)                                    ← UI count ≠ eligible count
+       └─ POST /api/dashboard/broadcast {subject, body, segment}         ← NO waitlist_id → 400 EVERY TIME
 
 POST /api/dashboard/broadcast (route.ts)
-  ├─ auth → requirePro() → 403 if free
-  ├─ validate waitlist_id/subject/body        ← waitlist_id REQUIRED
-  ├─ waitlist fetch (founder scoped) → sender_name, sending_domain, business_address
-  ├─ subscribers filtered by warmth_score segment
-  ├─ filter out unsubscribed_at + isEmailBounced (admin client)
-  ├─ resolveFromAddress(..., "broadcast", sending_domain) → updates@
-  ├─ chunk eligible[] BATCH_SIZE=100 → resend.batch.send() per chunk
-  │    per email: HTML + buildBroadcastEmailFooter (address + HMAC unsubscribe)
-  │    + List-Unsubscribe / List-Unsubscribe-Post headers (RFC 8058)
-  └─ insert broadcasts {waitlist_id, subject, recipient_count, sent_at}
+  ├─ auth (401) → requirePro (403) → waitlist_id required (400) ← fails here from real client
+  ├─ subject/body trim non-empty (400); no max length
+  ├─ waitlist fetch (founder-scoped, .single) → sender_name, sending_domain, business_address
+  ├─ subscribers by segment (hot_warm | cold | all); unscored only in "all"
+  ├─ filter unsubscribed_at + isEmailBounced (admin) — sequential N+1
+  ├─ resolveFromAddress(..., "broadcast", sending_domain) → Name <updates@domain|prewaitlist.com>
+  ├─ chunk eligible BATCH_SIZE=100 → resend.batch.send() per chunk   ← correct (vs Updates flatten bug)
+  │    per email: raw ${emailBody} + footer (address + HMAC unsub)
+  │    + List-Unsubscribe + List-Unsubscribe-Post headers (RFC 8058)
+  │    generateUnsubscribeUrl called twice (header + footer)
+  ├─ batch result.error → console only; totalSent += only on success; always return ok:true
+  └─ insert broadcasts (result unchecked) → write-only history
 ```
 
-### What's implemented (works in code)
+### 5.3 What's implemented (works in code)
 
-| Area                                                                                                 | Evidence                                              |
-| ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| Compose UI: subject/HTML/preview/segment pills/confirm/success — token-compliant                     | `broadcast/client.tsx`                                |
-| Three-layer Pro gating (sidebar lock, page redirect, `requirePro` 403)                               | `sidebar.tsx:307`, `page.tsx:28-30`, `route.ts:29-32` |
-| Warmth segmentation: `hot_warm` / `cold` / `all`; unscored only in "all"                             | `route.ts:69-73`                                      |
-| Suppression: `unsubscribed_at` + `isEmailBounced` (admin client)                                     | `route.ts:84-99`                                      |
-| **Correct BATCH_SIZE=100 chunking** (send inside loop)                                               | `route.ts:111-147` — REQ-7.1a.1 compliant             |
-| Stream separation: broadcast → `updates@`, transactional → `notifications@`, custom `sending_domain` | `email.ts:60-67`                                      |
-| sender_name fallback chain: senderName → productName → headline → "PreWaitlist"                      | `email.ts:46-70` (12.5 AC6)                           |
-| CAN-SPAM: address footer + HMAC visible unsubscribe + RFC 8058 headers                               | `route.ts:114-137`                                    |
-| Unsubscribe lifecycle: one-click API, confirmation page, resubscribe                                 | `api/unsubscribe/route.ts`, `unsubscribe/page.tsx`    |
-| Bounce rules: hard permanent, soft 24h                                                               | `src/lib/bounces.ts` (3 tests)                        |
-| `broadcasts` insert + RLS owner-only                                                                 | `epic11-story7-sprint3-schema.sql:27-50`              |
-| Tier-gating utility tests + sidebar lock tests (8 + 2)                                               | `tier-gating.test.ts`, sidebar tests                  |
+| Area                                                                                                 | Evidence                                                      |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Compose UI: subject/HTML/preview/segment pills/confirm/success — token-compliant                     | `broadcast/client.tsx`                                        |
+| Three-layer Pro gating (sidebar lock+modal, page redirect, `requirePro` 403)                         | `sidebar.tsx:307,314-325`, `page.tsx:28-30`, `route.ts:29-32` |
+| Warmth segmentation: `hot_warm` / `cold` / `all`; unscored only in "all"; default `"all"`            | `route.ts:69-73`; `client.tsx:37` (PRD L123, 12.1.8)          |
+| Suppression at send time: `unsubscribed_at` + `isEmailBounced` (admin client)                        | `route.ts:84-99`                                              |
+| **Correct BATCH_SIZE=100 chunking** (send inside loop) — REQ-7.1a.1                                  | `route.ts:111-147`                                            |
+| Stream separation: broadcast → `updates@`, transactional → `notifications@`, custom `sending_domain` | `email.ts:59-67`                                              |
+| sender_name fallback chain: senderName → productName → headline → "PreWaitlist"                      | `email.ts:53-57` (12.5 AC6)                                   |
+| CAN-SPAM: address footer + **visible** HMAC unsubscribe + RFC 8058 List-Unsubscribe headers          | `route.ts:114-137`; `email.ts:130-146` (PRD L171)             |
+| Unsubscribe lifecycle: one-click API, confirmation page, resubscribe                                 | `api/unsubscribe/route.ts`, `unsubscribe/page.tsx`            |
+| Bounce rules: hard permanent, soft 24h                                                               | `src/lib/bounces.ts` (3 tests)                                |
+| `broadcasts` table + RLS owner-only                                                                  | `epic11-story7-sprint3-schema.sql:27-50`                      |
+| Tier-gating utility tests + sidebar lock → upgrade modal (`broadcast` trigger)                       | `tier-gating.test.ts`, `sidebar.tsx:314-325`                  |
+| Confirmation dialog before send (12.1.8 AC2, PRD L123)                                               | `client.tsx:66-69`                                            |
 
-### Broken / missing
+### 5.4 Broken / missing
 
-| #   | Sev | Issue                                                                                                                                                                                                          | Evidence                                                                |
-| --- | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| 1   | 🔴  | **Client never sends `waitlist_id`** — destructures only `{productName, senderName}`; body = `{subject, body, segment}`; API requires `waitlist_id` → **every send returns 400. Engine cannot send anything.** | `client.tsx:74-78` vs `route.ts:35-42`; `waitlistId` prop unused        |
-| 2   | 🔴  | Segments endpoint ignores `?wid=` + `.single()` → 404 / zero counts for multi-waitlist founders (sidebar always sends `?wid=`)                                                                                 | `segments/route.ts:15-19`                                               |
-| 3   | 🔴  | **Zero tests** on broadcast route/client/segments/email.ts — root-cause #1 shipped undetected                                                                                                                  | no test files                                                           |
-| 4   | 🟠  | Batch failure path: all batches fail → still inserts broadcast row + returns `ok:true, recipient_count:0`; insert error unchecked                                                                              | `route.ts:142-154`                                                      |
-| 5   | 🟠  | `{{{RESEND_UNSUBSCRIBE_URL}}}` documented (Story 12.3 AC5, MEMORY:865) but **never used** — custom HMAC used instead (arguably better; docs lie)                                                               | docs vs `route.ts:115-136`                                              |
-| 6   | 🟠  | N+1 sequential bounce lookups per recipient — perf cliff on large lists                                                                                                                                        | `route.ts:88-92`                                                        |
-| 7   | 🟡  | Segments API has no `requirePro` (Free can read counts)                                                                                                                                                        | `segments/route.ts`                                                     |
-| 8   | 🟡  | Segment counts include unsubscribed/bounced → UI count ≠ actual recipients                                                                                                                                     | `segments/route.ts:25-40`                                               |
-| 9   | 🟡  | Preview From-address fabricated (`sarah.jones@prewaitlist.com`), ignores `sending_domain`, doesn't match `resolveFromAddress()`                                                                                | `client.tsx:41-43`                                                      |
-| 10  | 🟡  | Success copy ≠ Story 12.3 AC7 wording; "delivered" overclaims (queue ≠ delivered)                                                                                                                              | `client.tsx:108-114`                                                    |
-| 11  | 🟡  | 12.6 AC4 says `{sender_name}@{domain}`; code uses `{updates                                                                                                                                                    | notifications}@{domain}` (better for stream separation, contradicts AC) | `email.ts:59-61` |
-| 12  | 🟡  | 12.4 AC6 (default cold) vs 12.1.8 (default all) — story docs unreconciled (code follows later fix)                                                                                                             | story files                                                             |
-| 13  | 🟡  | `broadcasts` written but never read — no history UI; insert result ignored                                                                                                                                     | `route.ts:149`                                                          |
-| 14  | 🟡  | Unsubscribe page test is a **fake** — renders literal markup, never imports the component                                                                                                                      | `unsubscribe-page.test.tsx`                                             |
-| 15  | 🟡  | Free user hitting `/dashboard/broadcast` URL directly silently redirected — no upgrade prompt                                                                                                                  | `page.tsx:28-30`                                                        |
-| 16  | 🟡  | No server-side idempotency on send (double-submit possible outside client flag)                                                                                                                                | `route.ts`                                                              |
+| #   | Sev | Issue                                                                                                                                                                             | Evidence                                              |
+| --- | --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| 1   | 🔴  | **Client never sends `waitlist_id`** — prop accepted but unused; API hard-requires it → **every send 400s. Engine cannot send anything.**                                         | `client.tsx:24-26,74-78` vs `route.ts:35-42`          |
+| 2   | 🔴  | Segments: no `?wid=` + `.single()` → 404/zero counts for multi-waitlist (sidebar always sends `?wid=`)                                                                            | `segments/route.ts:15-19`                             |
+| 3   | 🔴  | **Zero tests** on broadcast route/client/segments — root cause #1 shipped undetected                                                                                              | glob `**/*broadcast*` = 0                             |
+| 4   | 🟠  | Failure path lies: all batches fail → still `ok:true, recipient_count:0` + history row; insert error ignored; no try/catch around `batch.send` throw                              | `route.ts:140-159`                                    |
+| 5   | 🟠  | Story 12.3 AC5 + MEMORY claim `{{{RESEND_UNSUBSCRIBE_URL}}}` — not implemented; **code's custom HMAC is correct** under PRD "never Audiences"; docs must be amended, not code     | docs vs `route.ts:115-136`, PRD L398/400              |
+| 6   | 🟠  | Confirm count ≠ eligible count (segments omit unsub/bounce; send includes them) — founder may think they emailed N when fewer were eligible                                       | `segments/route.ts:25-40` vs `route.ts:84-99`         |
+| 7   | 🟠  | N+1 sequential bounce queries per recipient                                                                                                                                       | `route.ts:88-92`                                      |
+| 8   | 🟡  | Segments API no `requirePro` — Free can read counts                                                                                                                               | `segments/route.ts`                                   |
+| 9   | 🟡  | Preview From: local-part from senderName but domain hardcoded `@prewaitlist.com`; ignores `sending_domain`; not `resolveFromAddress()` format; page omits `sending_domain` select | `client.tsx:41-43`; `page.tsx:36`; `email.ts:46-70`   |
+| 10  | 🟡  | Success copy ≠ Story 12.3 AC7; "delivered" overclaims (accepted ≠ delivered)                                                                                                      | `client.tsx:108-113`                                  |
+| 11  | 🟡  | Story 12.6 AC4 local-part wording vs `updates@`/`notifications@` stream prefixes (intentional separation)                                                                         | `email.ts:59-67` vs 12.6 AC4                          |
+| 12  | 🟡  | 12.4 AC6 (default cold) vs 12.1.8 AC1 + code + PRD L123 (default all) — story docs unreconciled                                                                                   | story files + `client.tsx:37`                         |
+| 13  | 🟡  | `broadcasts` written, never read — no history UI; insert result ignored                                                                                                           | `route.ts:149`                                        |
+| 14  | 🟡  | Unsubscribe **page** test is fake (literal markup, no component import)                                                                                                           | `unsubscribe-page.test.tsx`                           |
+| 15  | 🟡  | Free direct URL → silent `redirect("/dashboard")` — no upgrade prompt (AC8 only on sidebar)                                                                                       | `page.tsx:28-30` vs `story-12.3:21`                   |
+| 16  | 🟡  | No server-side idempotency / Resend idempotency key — double-send possible                                                                                                        | `route.ts`                                            |
+| 17  | 🟡  | `generateUnsubscribeUrl` ×2 per recipient; throws → 500 if `UNSUBSCRIBE_SECRET` unset                                                                                             | `route.ts:115` + `email.ts:135`; `unsubscribe.ts:3-8` |
+| 18  | 🟡  | Dead `subscriberCount` prop (page fetches, client never uses)                                                                                                                     | `page.tsx:48-60`; `client.tsx:21,24-26`               |
+| 19  | 🟡  | No subject/body max length (explicitly Out of Scope in 12.1.8 — still a product gap before scale)                                                                                 | `client.tsx` / `route.ts`                             |
+| 20  | 🟡  | Stories 12.3/12.4/12.5 frontmatter `status: ready` while in `completed/` + sprint plan says done                                                                                  | story frontmatter                                     |
 
-**RLS:** no defects found — `broadcasts` owner-only; waitlist/subscriber reads owner-scoped; bounce/unsub via admin client intentionally.
+**RLS:** no defects — `broadcasts` owner-only; waitlist/subscriber reads owner-scoped on send path; bounce/unsub via admin client intentional.
 
-### Verdict
+**HTML body:** intentional raw interpolation (`placeholder: "HTML is supported"`) — do **not** wholesale-escape; sanitize scripts/iframes/event handlers for founder-authored HTML (§5.6).
 
-**NOT production-ready.** Architecture is sound and nearly all documented requirements are _coded_ (Batch-100 chunking, stream separation, CAN-SPAM, warmth segments, three-layer gating, bounce/unsub suppression). But **the client omitting `waitlist_id` means no broadcast can actually be sent**, the multi-waitlist segments 404 compounds it, and total absence of tests on the send path let it ship.
+### 5.5 Tests inventory
 
-**Minimum to green:** (a) send `waitlist_id` from client (prop already exists), (b) accept `?wid=` in segments route, (c) API tests covering happy path + 400/401/403 + segment filtering + chunking, (d) correct `{{{RESEND_UNSUBSCRIBE_URL}}}` claims in Story 12.3 + MEMORY, (e) fail loudly when all batches error.
+| Area                      | Tests                                                           | Gap                                         |
+| ------------------------- | --------------------------------------------------------------- | ------------------------------------------- |
+| Broadcast API route       | **0**                                                           | happy path, 400/401/403, segments, chunking |
+| Broadcast client          | **0**                                                           | waitlist_id payload, confirm, success/error |
+| Segments API              | **0**                                                           | wid, tier gate, counts vs eligible          |
+| `email.ts` resolve/footer | **0**                                                           | stream separation, address fallback         |
+| Tier gating               | 8 (`tier-gating.test.ts`)                                       | ✅ covers requirePro reason strings         |
+| Bounces                   | 3 (`bounces.test.ts`)                                           | ✅ rule matrix                              |
+| Unsubscribe tokens        | 6 (`unsubscribe.test.ts`)                                       | ✅ HMAC verify                              |
+| Unsubscribe **page**      | 3 (`unsubscribe-page.test.tsx`) — **fake**, no component import | false confidence                            |
+| Sidebar Broadcast lock    | present (sidebar tests)                                         | upgrade-modal trigger path                  |
+
+### 5.6 Web research (broadcast-specific)
+
+| Topic                                   | Finding                                                                                                                                                        | Implication for this codebase                                                                                                         |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Resend Batch API                        | Max **100 emails/request**; entire batch can fail if any address invalid; supports optional idempotency key.                                                   | Chunking ✅ correct; still need fail-loud on `result.error`; consider idempotency key (#16).                                          |
+| `{{{RESEND_UNSUBSCRIBE_URL}}}`          | Resend merge tag tied to **Audiences** contact records / marketing product.                                                                                    | Project standing decision **never use Audiences** (PRD L398/400) → custom HMAC is **correct**; Story 12.3 AC5 + MEMORY:780 are wrong. |
+| Gmail/Yahoo bulk senders (≥5k/day)      | RFC 8058 `List-Unsubscribe` + `List-Unsubscribe-Post` one-click required; enforcement tightened post-2025; visible unsubscribe in body expected by users/ISPs. | Broadcast already has headers **and** visible footer link — **meets** PRD L171. Updates path does **not** (§4).                       |
+| CAN-SPAM                                | Physical postal address + clear unsubscribe in every commercial email.                                                                                         | Address footer + HMAC link ✅ (broadcast).                                                                                            |
+| Competitor count UX (Klaviyo/Mailchimp) | UIs show **deliverable / non-suppressed** recipient expectation before send (unsub + bounce removed), not raw list size.                                       | Segments counts should subtract unsub/bounce → "Send to N" truthful (#6).                                                             |
+| Competitor sequences (KickoffLabs etc.) | Pre-launch tools emphasize full-list + segmented re-engagement; drip deferred — matches product vision.                                                        | Architecture fit OK.                                                                                                                  |
+| Founder-authored HTML                   | Sanitize dangerous nodes (script/iframe/on*); do not escape all markup (destroys intended HTML email feature).                                                 | Preview + send path: sanitize, not `escapeHtml` wholesale.                                                                            |
+| "Delivered" wording                     | ESPs distinguish accepted/queued vs delivered/bounced (webhook `delivered` event exists in Epic 11).                                                           | Success copy "has been delivered" overclaims before webhooks fire (#10).                                                              |
+
+### 5.7 PRD / story AC debt
+
+| Source             | Status                                                                                                                                                   |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PRD L123           | ✅ default "all" + confirmation dialog — matches code                                                                                                    |
+| PRD L171           | ✅ List-Unsubscribe RFC 8058 + visible link in every broadcast — matches code (headers + footer)                                                         |
+| PRD REQ-7.1a.1     | ✅ Batch Send API, not Audiences — matches code; implies AC5 merge-tag wording is wrong                                                                  |
+| PRD L398/400       | ✅ never Audiences — code correct; docs claiming Resend merge tag violate standing decision                                                              |
+| Story 12.3 AC1     | ✅ Pro active / Free locked (sidebar)                                                                                                                    |
+| Story 12.3 AC2     | ✅ compose screen (subject, HTML body, preview, send)                                                                                                    |
+| Story 12.3 AC3     | ✅ "Send to {N}" via segments (dynamic) — but N is unfiltered count                                                                                      |
+| Story 12.3 AC4     | ⚠️ Batch API wired but **client never reaches it** (missing waitlist_id)                                                                                 |
+| Story 12.3 AC5     | ❌ `{{{RESEND_UNSUBSCRIBE_URL}}}` **not used** — **amend AC** to custom HMAC + List-Unsubscribe headers (code + PRD correct)                             |
+| Story 12.3 AC6     | ✅ physical address footer                                                                                                                               |
+| Story 12.3 AC7     | ⚠️ confirmation exists; wording ≠ `"Email sent to {N} subscribers."`; "delivered" overclaim                                                              |
+| Story 12.3 AC8     | ⚠️ sidebar lock → upgrade modal ✅; **direct URL silent redirect** ❌                                                                                    |
+| Story 12.3 AC9     | ✅ insert into `broadcasts` (result unchecked; never read)                                                                                               |
+| Story 12.3 status  | ❌ frontmatter `ready` in `completed/`                                                                                                                   |
+| Story 12.4 AC1-AC5 | ✅ selector, counts, filter on warmth_score, confirmation includes segment name (client sets sentSegment)                                                |
+| Story 12.4 AC6     | ❌ default cold — **superseded** by 12.1.8 AC1 + PRD L123 default all; **amend or delete** 12.4 AC6                                                      |
+| Story 12.4 status  | ❌ frontmatter `ready` in `completed/`                                                                                                                   |
+| Story 12.5 AC3-AC6 | ✅ sender_name → resolveFromAddress fallback chain used on broadcast send path                                                                           |
+| Story 12.5 status  | ❌ frontmatter `ready` in `completed/`                                                                                                                   |
+| Story 12.1.8 AC1   | ✅ default "all"                                                                                                                                         |
+| Story 12.1.8 AC2   | ✅ confirmation dialog (wording matches story)                                                                                                           |
+| Story 12.1.8 AC3   | ⚠️ partial — dynamic local-part only; domain still hardcoded, no sending_domain, not resolveFromAddress format                                           |
+| Story 12.2.7       | ✅ unsubscribe mechanism shared with broadcast HMAC links                                                                                                |
+| Story 12.6         | ⚠️ status `ready` in `completed/`; AC4 local-part vs stream-prefix local-part needs wording reconcile (stream separation is the better product decision) |
+
+### 5.8 Verdict
+
+**NOT production-ready — hard-broken send path.**
+
+Architecture is sound and nearly all requirements are **coded**: correct Batch-100 chunking (unlike Updates), stream separation, CAN-SPAM footer + visible HMAC unsubscribe + RFC 8058 headers, warmth segments, three-layer Pro gating, send-time unsub/bounce suppression. But:
+
+1. **The client omits `waitlist_id` → every real send 400s.** No broadcast can go out.
+2. **Segments `.single()` + no `?wid=`** breaks counts for multi-waitlist founders.
+3. **Zero tests** on the send path let #1 ship.
+4. **Failure handling returns success** (`ok:true`, count 0) when every batch fails.
+5. **Docs lie about the unsubscribe mechanism** (Resend merge tag) in a direction that would _violate_ the standing "never Audiences" decision if "fixed" in code.
+
+**Minimum to green:** (a) client sends `waitlist_id` (prop already present), (b) segments accepts `?wid=` + `maybeSingle`, (c) API/client tests for happy path + 400/401/403 + segment filter + chunking + total-failure, (d) fail loudly when `totalSent === 0` or all batches error, (e) amend Story 12.3 AC5 → custom HMAC, delete/amend 12.4 AC6, fix MEMORY:780/865, (f) segments counts exclude unsub/bounce (or show "of N deliverable"), (g) correct preview domain via `resolveFromAddress` + `sending_domain`.
+
+### 5.9 Open questions before fix work
+
+1. Fix client only, or also pass `waitlist_id` explicitly from page→client as required prop validation?
+2. Segment counts: subtract unsub/bounce at query time, or show raw + "N will be skipped"?
+3. Total batch failure: 502 to client vs 200 with `{ ok:false, sent:0, errors:[…] }` — which error UX?
+4. Preview From: match `resolveFromAddress()` exactly (quoted display name + angle addr), or keep simplified form with correct domain?
+5. History UI for `broadcasts` — build now or defer (write-only table)?
+6. Idempotency: Resend idempotency key per request, or accept double-send risk for MVP?
+7. Subject/body max lengths — set limits with 12.1.8's deferred validation, or leave free-form?
+8. Free direct-URL: redirect as-is (current) or route through upgrade modal for AC8 completeness?
 
 ---
 
@@ -1010,17 +1122,29 @@ App-level queries scope correctly, but PostgREST bypasses every page-level mask.
 ### Broadcasting
 
 - `src/app/dashboard/broadcast/page.tsx` + `client.tsx` — compose (**missing `waitlist_id`**)
-- `src/app/api/dashboard/broadcast/route.ts` — send (correct chunking + suppression)
-- `src/app/api/dashboard/broadcast/segments/route.ts` — counts (no `wid`, no tier gate)
-- `src/lib/email.ts`, `src/lib/unsubscribe.ts`, `src/lib/bounces.ts`
+- `src/app/api/dashboard/broadcast/route.ts` — send (**correct** chunking + suppression; always `ok:true`; N+1 bounce; dual unsub gen)
+- `src/app/api/dashboard/broadcast/segments/route.ts` — counts (**no `wid`, `.single()`, no tier gate, no unsub/bounce filter**)
+- `src/lib/email.ts` — `resolveFromAddress`, `buildBroadcastEmailFooter` (HMAC + address)
+- `src/lib/unsubscribe.ts`, `src/lib/bounces.ts`
 - `src/app/api/unsubscribe/route.ts`, `src/app/unsubscribe/page.tsx`
-- Tests: tier-gating (8), sidebar lock, bounces (3), unsubscribe tokens (6) — **no send-path tests**
+- Tests: tier-gating (8), sidebar lock, bounces (3), unsubscribe tokens (6) — **no send-path tests**; `unsubscribe-page.test.tsx` fake
+
+### Broadcasting (verified — see §5)
+
+- `src/app/dashboard/broadcast/page.tsx` — Pro gate, `?wid=`, dead `subscriberCount` (**no `sending_domain` select**)
+- `src/app/dashboard/broadcast/client.tsx` — compose (**`waitlistId` unused → POST omits `waitlist_id` → 400**; preview domain hardcoded)
+- `src/app/api/dashboard/broadcast/route.ts` — send (chunking + suppression correct; fail path lies)
+- `src/app/api/dashboard/broadcast/segments/route.ts` — counts (`.single()`, no `wid`, no tier, unfiltered)
+- `src/lib/email.ts` (`resolveFromAddress`, `buildBroadcastEmailFooter`), `src/lib/unsubscribe.ts`, `src/lib/bounces.ts`, `src/lib/tier-gating.ts`
+- `components/dashboard/sidebar.tsx:307,314-325` — Free lock → upgrade modal (`broadcast` trigger)
+- Stories: `story-12.3`, `story-12.4`, `story-12.5`, `story-12.1.8`, `story-12.2.7` (+ PRD L123/L171/REQ-7.1a.1/L398-400)
+- Tests: **0 send-path**; tier-gating (8), bounces (3), unsubscribe tokens (6); fake page test
 
 ---
 
 ## Recommended Fix Priority
 
-1. **Broadcasting (hard-broken)** — send `waitlist_id` from client; segments `?wid=`; add send-path API tests; fail loudly on total batch failure.
+1. **Broadcasting (hard-broken)** — send `waitlist_id` from client; segments `?wid=` + exclude unsub/bounce from counts; fail loudly when total sent = 0; API/client tests (happy + 400/401/403 + segment + chunking + total failure); preview `resolveFromAddress` + `sending_domain`; **amend docs not code** for unsubscribe (Story 12.3 AC5 → custom HMAC, delete 12.4 AC6, fix MEMORY:780/865); fix story `status` frontmatter; optional: idempotency key, subject/body caps, `broadcasts` history read.
 2. **Warmth cron (silently dead) + scoring correctness** — add `vercel.json` `crons` entry for `/api/cron/warmth` (and confirm in Vercel dashboard); fix `batchRecalculateWarmth` page-scoped referral counts + add `.order("id")`; decay **engagement events only** (`clicked`, not `sent`/`delivered`) + fix day-59 → `>= 60`; decide Cold vs Unscored at 0; webhook + batch tests (11.6 AC1); segments `?wid=` + `requirePro`; settings helper copy; amend vision :150 and Story 11.1 AC2 dead signals.
 3. **Founder Updates (compliance + scale)** — chunked `batch.send` per 100 (copy broadcast pattern); apply `unsubscribed_at`/`isEmailBounced` filters; `waitlist_id` end-to-end; visible unsubscribe link in body; HTML-escape `${text}`; API tests (401/403/400 multi-waitlist/validation, success `sent_at`, fail path); amend Story 7.6 AC2 + 12.1.10 AC5 + stale statuses; surface send failure to founder (not just "Published!").
 4. **Leaderboard (correctness)** — fix dashboard sort double-inversion + fix the enshrining test; add pagination (or amend AC); fix skip-the-line clobber; close RLS `subscribers` column exposure.
@@ -1036,4 +1160,6 @@ Each engine fix set fits the existing prompt workflow:
 
 ---
 
-_Scan method: parallel read-only deep scans of code, PRD, story files, MEMORY, and tests. Qualification, Warmth, Leaderboard, and Founder Updates sections re-verified via dedicated line-level rescans + web research on 2026-09-24 — Founder Updates confidence 97% (Resend Batch 100-cap, CAN-SPAM visible unsubscribe, product-update email best practices, competitor suppression baselines, HTML injection). Warmth 96%. Qualification 97%, Leaderboard 95%. All claims reference file paths and line numbers as of commit `211085f` (dev/main). No code was modified during this audit._
+_Scan method updated: five engines all line-level verified 2026-09-24. Next: no code changes until founder directs fix work (suggest `investigate [broadcast waitlist_id bug]` or a fix epic)._
+
+_Scan method: parallel read-only deep scans of code, PRD, story files, MEMORY, and tests. Qualification, Warmth, Leaderboard, Founder Updates, and Broadcasting sections re-verified via dedicated line-level rescans + web research on 2026-09-24 — Broadcasting confidence 98% (client `waitlist_id` 400, segments multi-waitlist, Batch-100 correct, custom HMAC vs `{{{RESEND_UNSUBSCRIBE_URL}}}` + Audiences standing decision, RFC 8058, eligible-count UX). Founder Updates confidence 97% (Resend Batch 100-cap, CAN-SPAM visible unsubscribe, product-update email best practices, competitor suppression baselines, HTML injection). Warmth 96%. Qualification 97%, Leaderboard 95%. All claims reference file paths and line numbers as of commit `211085f` (dev/main). No code was modified during this audit._
