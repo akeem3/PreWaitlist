@@ -777,7 +777,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 - `src/lib/email.ts`: `resolveFromAddress(senderName, productName, headline, stream, sendingDomain?)` + `sendEmail()` (never throws, returns `{ ok, id?, error? }`)
 - `src/lib/positions.ts`: `recalculatePositions()` (RPC) + `getPositionUpdate()` — returns `PositionUpdate[]` with `spots_moved`
-- Resend Batch API: `resend.batch.send([...])`, max 100/batch, `{{{RESEND_UNSUBSCRIBE_URL}}}` merge tag for CAN-SPAM unsubscribe
+- Resend Batch API: `resend.batch.send([...])`, max 100/batch. Unsubscribe is **custom HMAC** (`generateUnsubscribeUrl`) + `List-Unsubscribe` / `List-Unsubscribe-Post` headers — **not** `{{{RESEND_UNSUBSCRIBE_URL}}}` (that merge tag requires Resend Audiences; PRD REQ-7.1a forbids Audiences). Corrected 2026-09-24 (Epic 17).
 - CAN-SPAM: requires unsubscribe mechanism + physical postal address in footer for broadcast emails
 - Sidebar (`components/dashboard/sidebar.tsx`): has `tier` prop (optional, defaults to "free"), Broadcast locked for free tier
 - Tier stored in `founder_profiles.tier` (text, default 'free', check: 'free','pro','growth')
@@ -862,7 +862,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 **Key architecture decisions (Stories 12.2.7–12.2.9):**
 
-- **Unsubscribe:** HMAC-SHA256 tokens (`subscriberId.hmac`) in URLs. `generateUnsubscribeUrl()` in `src/lib/unsubscribe.ts`. Broadcast emails use Resend's `{{{RESEND_UNSUBSCRIBE_URL}}}` merge tag (already built). Transactional emails use custom HMAC links via `buildEmailFooter()`.
+- **Unsubscribe:** HMAC-SHA256 tokens (`subscriberId.hmac`) in URLs. `generateUnsubscribeUrl()` in `src/lib/unsubscribe.ts`. **Broadcast + transactional** both use custom HMAC links (`buildBroadcastEmailFooter` / `buildEmailFooter`) — **not** Resend `{{{RESEND_UNSUBSCRIBE_URL}}}` (Audiences-only; never use Audiences per REQ-7.1a). Corrected 2026-09-24 (Epic 17).
 - **Send-time checks:** `isUnsubscribed()` + `isEmailBounced()` called before every email send (confirmation, moved-up). Uses `createAdminClient()` to bypass RLS in fire-and-forget IIFEs.
 - **Bounce classification:** `determineBounceType()` in webhook route — hard bounces (invalid address, domain not found) are permanent, soft bounces retry after 24h. Complaints treated as hard bounces.
 - **`bounced_emails.email_type`:** Always "transactional" for webhook captures. Broadcast emails are handled by Resend's built-in unsubscribe.
@@ -911,6 +911,36 @@ Design specs use hex values that don't always match the token system exactly. Ma
 | 13.6  | ✅ done | Epic 13 Tests — 23 new tests (billing, webhook, modal, cap, gating)     |
 
 **Branch:** `epic-13` (created from `dev`)
+
+## Epic 17 Progress (Broadcasting Engine Fix)
+
+**Status:** planning complete — **not implemented** (create-epic done 2026-09-24)
+
+| Story | Status   | Summary                                                                                                                                       |
+| ----- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 17.0  | ⬜ ready | API Response Honesty & Send Hygiene — length caps, fail-loud (no `ok:true` on 0 sent), idempotency keys, once-only unsub URL, batched bounces |
+| 17.1  | ⬜ ready | Segments API — `?wid=` + `.maybeSingle()`, `requirePro`, **eligible** counts (unsub + bounce excluded)                                        |
+| 17.2  | ⬜ ready | Broadcast Client — **include `waitlist_id`** (today every send 400s), segments `?wid=`, eligible UX, honest status                            |
+| 17.3  | ⬜ ready | Preview From via `resolveFromAddress(..., sending_domain)` — complete Story 12.1.8 AC3                                                        |
+| 17.4  | ⬜ ready | Free direct-URL upgrade path (AC8) + honest success copy (**COPY GAP B7** founder gate)                                                       |
+| 17.5  | ⬜ ready | HTML sanitize (DOMPurify/allow-list) — not wholesale escape; shared preview+send helper                                                       |
+| 17.6  | ⬜ ready | Tests — POST 401/403/400/404/chunk/fail, segments, client locks `waitlist_id`, sanitize; fix fake unsubscribe test                            |
+| 17.7  | ⬜ ready | Doc amendments — 12.3 AC5 HMAC not merge tag, 12.4 AC6 default all, statuses `done`, MEMORY, 12.6 AC4 stream wording                          |
+
+**Planning artifacts:**
+
+- `docs/epics/epic-17-broadcast-engine-fix.md` — epic doc + 8 embedded stories + standing decisions B1–B18
+- `docs/stories/story-17.0-broadcast-api-send-hygiene.md` through `story-17.7-doc-amendments-status-sync.md`
+
+**Execution order:** 17.0 + 17.1 + 17.3 + 17.5 parallel → 17.2 → 17.4 → 17.6 → 17.7. Branch `engine-fix-broadcast` from `dev`. **No SQL.**
+
+**Critical finding (audit §5):** `client.tsx` never sends `waitlist_id` → `POST /api/dashboard/broadcast` returns 400 on every send — **Broadcast is dead in production**. 17.2 AC1 is the one-line unblock.
+
+**Key decisions (B1–B18 summary):** eligible segment counts (Klaviyo expected-recipient pattern); total failure → non-2xx/`ok:false` never silent success; keep custom HMAC (amend docs not code); no Resend Audiences/Broadcasts product; history UI deferred; subject ≤200 / body ≤10_000; per-chunk Resend idempotency keys; bounce batch query not N+1; default segment `"all"`.
+
+**Open gates:** COPY GAP B7 (success copy); possible new dep DOMPurify (ask-first); check Epic 15.3 overlap on `segments/route.ts` before 17.1.
+
+**MEMORY corrections applied early (2026-09-24):** removed false `{{{RESEND_UNSUBSCRIBE_URL}}}` claims from Epic 12 architecture notes (lines ~780/865). Story 17.7 still owns story-file/AC status amendments.
 
 ## Next Steps
 
@@ -977,6 +1007,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 61. ~~Execute Epic 12.2 (12.2.0–12.2.13)~~ ✅ Done — all 14 stories complete
 62. ~~Execute Epic 12.3 (12.3.0–12.3.5)~~ ✅ Done — all 6 stories, shared layout, 317+ passing tests
 63. ~~Epic 13 — Billing & Feature Gating~~ ✅ Done (all 7 stories, 23 tests, merged to dev)
+64. ~~Epic 17 create-epic (Broadcasting Engine Fix)~~ ✅ Done (2026-09-24) — epic doc + 8 story files; **not implemented**; MEMORY merge-tag claims corrected early
 
 ## Decision + bug fix: "Powered by PreWaitlist" footer (2026-07)
 
