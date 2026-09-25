@@ -173,6 +173,37 @@ describe("batchRecalculateWarmth", () => {
     expect(writes).not.toContain(undefined);
   });
 
+  it("a referred signup from days ago resets decay so a 70-day-old subscriber stays hot (plan 4.7)", async () => {
+    mockAdminSupabase.__queue.push(
+      {
+        data: [subscriber("sub-stale", { created_at: daysAgo(70) })],
+        error: null,
+      },
+      emptyData,
+      {
+        data: [{ referrer_id: "sub-stale", created_at: daysAgo(5) }],
+        error: null,
+      }
+    );
+
+    const result = await batchRecalculateWarmth();
+
+    expect(result).toEqual({
+      processed: 1,
+      hot: 1,
+      warm: 0,
+      cold: 0,
+    });
+
+    const calls = mockAdminSupabase.__calls;
+    const hotWrite = calls.find(
+      (c) =>
+        c.method === "update" &&
+        (c.args[0] as { warmth_score?: string }).warmth_score === "hot"
+    );
+    expect(hotWrite).toBeDefined();
+  });
+
   it("pages through all subscribers exactly once and terminates (AC5)", async () => {
     const page1 = Array.from({ length: 500 }, (_, i) => subscriber(`p${i}`));
     const page2 = [subscriber("sub-last", { qual_answers: { q1: "a" } })];
