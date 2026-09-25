@@ -1,6 +1,6 @@
 # Story 15.2 — Resend Webhook Ingestion Hardening
 
-**Status:** ready
+**Status:** in-progress
 **Epic:** 15 — Warmth Engine Fix & Hardening
 **Depends on:** —
 **Design Refs:** — (API)
@@ -167,15 +167,21 @@ Route tests live in 15.5 (`webhook-resend.test.ts`).
 
 ## Implementation Status
 
-**Status: NOT IMPLEMENTED**
+**Status: IMPLEMENTED — pending founder SQL gate (AC5/AC6 full guarantee)**
 
-| AC                      | Status         | Evidence                           |
-| ----------------------- | -------------- | ---------------------------------- |
-| AC1 missing headers 401 | ❌             | Returns 400 at `:42`               |
-| AC2 invalid sig 401     | ❌             | Returns 400 at `:58`               |
-| AC3 unknown type 200    | ✅             | `:64-66`                           |
-| AC4 multi-waitlist      | ❌             | `.limit(1).single()` `:81-86`      |
-| AC5 unique index        | ❌             | No SQL file / no conflict handling |
-| AC6 bounce/complaint    | ✅ (structure) | Re-verify after multi-row loop     |
-| AC7 send metadata       | ❌             | `email.ts` has no metadata         |
-| AC8 Lint + build        | ⏳             | —                                  |
+| AC                      | Status     | Evidence                                                                                                                                                                                                                                                                                                                      |
+| ----------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AC1 missing headers 401 | ✅         | `route.ts:39-44` returns 401                                                                                                                                                                                                                                                                                                  |
+| AC2 invalid sig 401     | ✅         | `route.ts:57-59` returns 401                                                                                                                                                                                                                                                                                                  |
+| AC3 unknown type 200    | ✅         | `:64-66` unchanged (plus `:71-73` no-email, `:192` success)                                                                                                                                                                                                                                                                   |
+| AC4 multi-waitlist      | ✅         | `.limit(1).single()` replaced by match-list loop `route.ts:91-115`; send-time target read from `data.tags` (Resend's mechanism — no metadata field) with metadata fallback `:79-101`                                                                                                                                          |
+| AC5 unique index        | ⏳ founder | App pre-check + `23505` swallow `route.ts:120-151`; SQL at `sql-writeups/epic15-story2-email-events-svix-unique.sql` — **founder must run in Supabase SQL Editor**                                                                                                                                                            |
+| AC6 bounce/complaint    | ⏳ founder | Per-row side effects `route.ts:157-185` scoped to each resolved row. Same SQL widens `bounced_emails.email_type` CHECK — webhook writes `'transactional'` but original CHECK only allowed `('confirmation','broadcast')`, so **every bounce insert silently failed (23514) until now**                                        |
+| AC7 send metadata       | ✅         | `tags` on all 3 Resend send paths: `email.ts` sendParams (new `waitlistId` param), broadcast batch rows, updates batch rows; 4 transactional callers wired (`subscribers/route.ts` ×3, `milestones.ts`) — cap-warning gets `waitlistId` only (founder recipient, no subscriber). No path remains that "cannot" pass targeting |
+| AC8 Lint + build        | ✅         | `pnpm lint` 0 errors / 5 warnings (baseline), `pnpm build` exit 0, full suite 496 passed / 7 failed (= baseline)                                                                                                                                                                                                              |
+
+**Deviations (research-backed, story pre-authorized documenting actual shape):**
+
+- AC7 `metadata` → Resend has **no metadata field** (SDK 6.23.0 types + official docs); `tags: [{name, value}]` is the mechanism on both single and batch sends, echoed by webhook events as a `data.tags` key/value object. Implemented via tags throughout.
+- AC4 target path: tags present → query narrowed to `waitlist_id`/`subscriber_id` (+ email match); absent → insert for every matching row (AC4's sanctioned multi-insert fallback).
+- Files modified beyond the story's Files table: `src/app/api/subscribers/route.ts` + `src/lib/milestones.ts` (AC7 caller wiring — Files table listed primary send paths, AC7 requires callers to pass "when known").

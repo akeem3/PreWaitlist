@@ -134,6 +134,10 @@ export async function POST(req: NextRequest) {
           "List-Unsubscribe": `<${unsubscribeUrl}>`,
           "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
         },
+        tags: [
+          { name: "waitlist_id", value: waitlist.id },
+          { name: "subscriber_id", value: sub.id },
+        ],
       };
     });
 

@@ -39,7 +39,7 @@ A Free founder can create up to 2 questions (Pro: 5) as free-text or multiple-ch
 | 14.1 | Question Builder + Public Capture (MC + free-text) | 14.0       | done   |
 | 14.2 | Settings Question Editor (post-onboarding)         | 14.0, 14.1 | done   |
 | 14.3 | Qualification Dashboard Redesign                   | 14.0       | done   |
-| 14.4 | CSV Export, Tests, Cleanup & Doc Sync              | 14.0–14.3  | ready  |
+| 14.4 | CSV Export, Tests, Cleanup & Doc Sync              | 14.0–14.3  | done   |
 
 **Execution order:** 14.0 first (foundation — run SQL before deploy). Then 14.1 + 14.3 in parallel. Then 14.2 (reuses shared editor from 14.1). Then 14.4 last.
 
@@ -189,7 +189,7 @@ Stories must be executed in dependency order; 14.0's migration SQL is a hard gat
 
 ### Story 14.4 — CSV Export, Tests, Cleanup & Doc Sync
 
-**Status:** ready
+**Status:** done
 **Design Refs:** —
 **Story:** As a founder, I want qualification answers in CSV export and as a maintainer I want tests and docs that lock the fixed behavior in.
 
@@ -209,6 +209,8 @@ Stories must be executed in dependency order; 14.0's migration SQL is a hard gat
 
 **Dev Notes:**
 
+- **Status: implemented** (2026-09-25, uncommitted) — T1: `export/route.ts` gained `qual_answers` select + per-question columns (headers = `question_text`, values by `question_id`, missing = empty cell) with shared RFC 4180 `escapeCsvCell` applied to all cells; waitlist select now includes `subdomain` (filename fix). T2: new `question-cap.test.ts` (5) + `csv-export.test.ts` (5); panel (15) / aggregation (5) / email-capture id-key (3) verified existing; `dashboard-qualification-page.test.tsx` extended with 3 server-route tests for AC5. T3: dead `qualificationEnabled`/`questions` props + orphan `Question` interface removed from `waitlist-page-content.tsx` (caller updated, EmailCaptureForm props kept); `qual_answers` dropped from overview select + `Subscriber` interface + test fixtures; qualification page default waitlist now `created_at desc` + `limit(1)`. T4: PRD §7.4 `options jsonb` added; audit §1 gained fixed-in-Epic-14 pointer; story 7.3 AC6 gap note added; MEMORY + this doc synced.
+- **Prompt #3 audit fixes (2026-09-25):** subscriber detail (`dashboard/subscribers/[id]/page.tsx`) now resolves id-keyed `qual_answers` to `question_text` labels — missed consumer of the Epic 14 key remap (was rendering raw question ids); guarded by a new static test in `dashboard-subscriber-detail.test.tsx`. Qual-page redirect mock narrowed to `(path: string)` to remove the net-new TS2556 type error. Gates re-run: lint 0/5, clean build, suite 481/7 = exact baseline.
 - Zero CSV tests exist today — add `src/__tests__/api/csv-export.test.ts` (or project convention).
 - Vision line ~171 requires qual answers in export — cite in PR.
 - Copy for CSV: headers are data (question text), not UI copy — no COPY GAP.

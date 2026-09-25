@@ -18,9 +18,12 @@ interface MockQuery {
   update: ReturnType<typeof vi.fn>;
   delete: ReturnType<typeof vi.fn>;
   order: ReturnType<typeof vi.fn>;
+  range: ReturnType<typeof vi.fn>;
   eq: ReturnType<typeof vi.fn>;
   in: ReturnType<typeof vi.fn>;
   not: ReturnType<typeof vi.fn>;
+  is: ReturnType<typeof vi.fn>;
+  filter: ReturnType<typeof vi.fn>;
   limit: ReturnType<typeof vi.fn>;
   single: ReturnType<typeof vi.fn>;
   maybeSingle: ReturnType<typeof vi.fn>;
@@ -61,6 +64,10 @@ export function createMockSupabaseClient(responses: MockResponse[] = []) {
         calls.push({ method: "order", args });
         return chain;
       }),
+      range: vi.fn((...args: unknown[]) => {
+        calls.push({ method: "range", args });
+        return chain;
+      }),
       eq: vi.fn((...args: unknown[]) => {
         calls.push({ method: "eq", args });
         return chain;
@@ -71,6 +78,14 @@ export function createMockSupabaseClient(responses: MockResponse[] = []) {
       }),
       not: vi.fn((...args: unknown[]) => {
         calls.push({ method: "not", args });
+        return chain;
+      }),
+      is: vi.fn((...args: unknown[]) => {
+        calls.push({ method: "is", args });
+        return chain;
+      }),
+      filter: vi.fn((...args: unknown[]) => {
+        calls.push({ method: "filter", args });
         return chain;
       }),
       limit: vi.fn((...args: unknown[]) => {

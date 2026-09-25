@@ -1,6 +1,6 @@
 # Story 15.1 — Daily Cron Schedule (`vercel.json`)
 
-**Status:** ready
+**Status:** in-progress
 **Epic:** 15 — Warmth Engine Fix & Hardening
 **Depends on:** — (ships cleanly with 15.0 in the same release train)
 **Design Refs:** — (infrastructure)
@@ -109,12 +109,12 @@ No unit test required for a JSON config change; cron route tests are Story 15.5.
 
 ## Implementation Status
 
-**Status: NOT IMPLEMENTED**
+**Status: CODE DONE — manual gates pending deploy (AC3, AC4)**
 
-| AC                       | Status            | Evidence                   |
-| ------------------------ | ----------------- | -------------------------- |
-| AC1 vercel.json crons    | ❌ Not done       | No `crons` key yet         |
-| AC2 CRON_SECRET auth     | ✅ Code exists    | `api/cron/warmth/route.ts` |
-| AC3 Vercel shows cron    | ⏳ Pending deploy | —                          |
-| AC4 Manual invoke counts | ⏳ Pending deploy | —                          |
-| AC5 Lint + build         | ⏳ Pending        | —                          |
+| AC                       | Status            | Evidence                                                                                                                                                               |
+| ------------------------ | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AC1 vercel.json crons    | ✅ Done           | `vercel.json` — crons[0] = `/api/cron/warmth` @ `0 5 * * *`, `git.deploymentEnabled.dev` preserved, JSON-validated                                                     |
+| AC2 CRON_SECRET auth     | ✅ Done           | `route.ts:8-17` (500 unset / 401 bad bearer) + live dev probe → **HTTP 401** + `.env.local` present (64 chars); Vercel prod env parity = founder check (AC3 checklist) |
+| AC3 Vercel shows cron    | ⏳ Pending deploy | Requires deploy to `main` + founder Vercel dashboard access                                                                                                            |
+| AC4 Manual invoke counts | ⏳ Pending deploy | Requires authenticated curl on production after deploy                                                                                                                 |
+| AC5 Lint + build         | ✅ Done           | `pnpm lint` 0 errors (5 baseline warnings), `pnpm build` exit 0                                                                                                        |

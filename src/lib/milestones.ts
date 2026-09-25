@@ -162,6 +162,8 @@ export async function checkAndFulfillMilestones(
           productName: email.waitlist?.product_name,
           headline: email.waitlist?.headline,
           sendingDomain: email.waitlist?.sending_domain,
+          subscriberId,
+          waitlistId,
         });
       } catch (err) {
         console.error(

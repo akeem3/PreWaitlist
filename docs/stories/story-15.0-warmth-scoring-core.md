@@ -1,6 +1,6 @@
 # Story 15.0 — Warmth Scoring Core (signals, decay, tier, batch)
 
-**Status:** ready
+**Status:** done
 **Epic:** 15 — Warmth Engine Fix & Hardening
 **Depends on:** —
 **Design Refs:** — (algorithm + batch; no SVG)

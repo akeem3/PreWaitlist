@@ -19,7 +19,11 @@ export default async function QualificationPage({ searchParams }: PageProps) {
   if (wid) {
     wlQuery = wlQuery.eq("id", wid).eq("founder_id", user.id);
   } else {
-    wlQuery = wlQuery.eq("founder_id", user.id);
+    // 14.4 AC5: deterministic default — newest waitlist for the founder
+    wlQuery = wlQuery
+      .eq("founder_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1);
   }
   const { data: waitlist } = await wlQuery.maybeSingle();
   if (!waitlist) redirect("/onboarding/1");

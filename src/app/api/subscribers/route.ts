@@ -736,6 +736,8 @@ export async function POST(request: NextRequest) {
         headline: waitlist.headline,
         sendingDomain: waitlist.sending_domain,
         idempotencyKey: `confirmation-email/${data.id}`,
+        subscriberId: data.id,
+        waitlistId: waitlist_id,
       });
 
       // AC8: Log sent event to email_events
@@ -867,6 +869,8 @@ export async function POST(request: NextRequest) {
           headline: waitlist.headline,
           sendingDomain: waitlist.sending_domain,
           idempotencyKey: `moved-up/${resolvedReferrerId}/${subscriberUpdate.new_position}`,
+          subscriberId: resolvedReferrerId,
+          waitlistId: waitlist_id,
         });
 
         // AC7: Log event to email_events
@@ -952,6 +956,7 @@ export async function POST(request: NextRequest) {
         html,
         stream: "transactional",
         idempotencyKey: `cap-warning/${waitlist_id}`,
+        waitlistId: waitlist_id,
       });
     } catch (err) {
       console.error("Cap warning email IIFE failed:", err);

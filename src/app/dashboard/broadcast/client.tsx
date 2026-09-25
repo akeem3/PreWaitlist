@@ -22,6 +22,7 @@ interface BroadcastClientProps {
 }
 
 export default function BroadcastClient({
+  waitlistId,
   productName,
   senderName,
 }: BroadcastClientProps) {
@@ -44,14 +45,16 @@ export default function BroadcastClient({
 
   useEffect(() => {
     async function fetchCounts() {
-      const res = await fetch("/api/dashboard/broadcast/segments");
+      const res = await fetch(
+        `/api/dashboard/broadcast/segments?wid=${waitlistId}`
+      );
       if (res.ok) {
         const data = await res.json();
         setCounts(data);
       }
     }
     fetchCounts();
-  }, []);
+  }, [waitlistId]);
 
   const activeCount =
     segment === "all"

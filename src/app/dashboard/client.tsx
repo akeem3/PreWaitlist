@@ -59,7 +59,6 @@ interface Subscriber {
   created_at: string;
   warmth_score: string | null;
   quality_score: number | null;
-  qual_answers: Record<string, string> | null;
   is_bounced?: boolean;
   display_name?: string | null;
 }
@@ -167,12 +166,16 @@ export default function DashboardClient({
         if (data?.current) setStatsData(data);
       })
       .catch(() => {});
-    fetch(`/api/dashboard/warmth${widParam}`)
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.total !== undefined) setWarmthData(json);
-      })
-      .catch(() => {});
+    // AC2: never hit the warmth API without waitlist_id (it 400s). The page
+    // redirects founders with no waitlist, but guard the optional prop too.
+    if (waitlistId) {
+      fetch(`/api/dashboard/warmth${widParam}`)
+        .then((r) => r.json())
+        .then((json) => {
+          if (json.total !== undefined) setWarmthData(json);
+        })
+        .catch(() => {});
+    }
   };
 
   // Initial load
@@ -447,7 +450,7 @@ export default function DashboardClient({
                 <div className="mb-1 text-h3 text-foreground">
                   {warmthData ? (
                     <>
-                      <span className="text-status-hot">{warmthData.hot}</span>
+                      <span className="text-accent">{warmthData.hot}</span>
                       <span className="text-body-sm text-muted-foreground">
                         {" "}
                         /{" "}

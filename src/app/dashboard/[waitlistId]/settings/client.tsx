@@ -473,7 +473,7 @@ export default function WaitlistSettingsClient({
                   value={String(coldThreshold)}
                   onChange={(e) => setColdThreshold(Number(e.target.value))}
                   onBlur={() => saveField("cold_threshold", coldThreshold)}
-                  helperText="Subscribers below this score are marked cold. Range: 20–80."
+                  helperText="Warn me when this % or more of your list is Cold. Range: 20–80."
                 />
               </div>
             )}

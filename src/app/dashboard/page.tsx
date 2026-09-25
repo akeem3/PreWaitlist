@@ -52,9 +52,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const { data: subscribers } = await supabase
     .from("subscribers")
-    .select(
-      "id, email, position, referral_code, warmth_score, qual_answers, created_at"
-    )
+    .select("id, email, position, referral_code, warmth_score, created_at")
     .eq("waitlist_id", waitlist.id)
     .order("position", { ascending: true });
 

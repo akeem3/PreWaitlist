@@ -26,6 +26,8 @@ updated: 2026-08-17
 - AC8: The system shall pass `qual_answers` through to the subscriber record, stored in the `qual_answers` jsonb column.
 - AC9: Lint and build shall pass with zero errors.
 
+> **AC6 gap fixed in Epic 14 (story 14.4, 2026-09-25):** The audit (`docs/scans/engine-audit-5-engines.md` §1) flagged AC6 as unmet — answers were originally written with text keys. Epic 14 (14.0 AC11 / 14.1) now sanitizes `qual_answers` keys against configured question IDs server-side and drops unknown keys; no production path writes text-keyed answers anymore. Verified by `src/__tests__/api/subscribers.test.ts` ("drops unknown qual_answers keys").
+
 ## Tasks
 
 - T1 (AC1-AC3): Fetch and render questions as text inputs (free_text only)

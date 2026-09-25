@@ -105,8 +105,6 @@ export default async function PublicSubdomainPage({ params }: Props) {
       signupCounter={signupCount}
       signupCounterVisible={signupCounterVisible}
       milestoneRewards={milestoneRewards}
-      qualificationEnabled={waitlist.qualification_enabled}
-      questions={questions}
       emailCaptureForm={
         <Suspense>
           <EmailCaptureForm

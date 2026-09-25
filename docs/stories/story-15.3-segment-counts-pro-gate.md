@@ -1,6 +1,6 @@
 # Story 15.3 — Segment Counts, Pro Gate & Eligibility
 
-**Status:** ready
+**Status:** done
 **Epic:** 15 — Warmth Engine Fix & Hardening
 **Depends on:** — (uses `warmth_score` as stored; benefits from 15.0 for correct tiers)
 **Design Refs:** S5 Segment selector — `docs/design/sprint-3-design-specs.md` §S5
@@ -125,13 +125,13 @@ Tests: Story 15.5 `dashboard-segments.test.ts`.
 
 ## Implementation Status
 
-**Status: NOT IMPLEMENTED**
+**Status: DONE (2026-09-25)**
 
-| AC                      | Status       | Evidence                     |
-| ----------------------- | ------------ | ---------------------------- |
-| AC1 query param         | ❌           | `GET()` ignores searchParams |
-| AC2 maybeSingle + wid   | ❌           | `.single()` no wid           |
-| AC3 Free 403            | ❌           | No requirePro                |
-| AC4 unsub/bounce filter | ❌           | Counts include all           |
-| AC5 response shape      | ✅ (current) | `{ all, hot_warm, cold }`    |
-| AC6 Lint + build        | ⏳           | —                            |
+| AC                      | Status | Evidence                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AC1 query param         | ✅     | `segments/route.ts` reads `wid` ?? `waitlist_id`; client now fetches `?wid=${waitlistId}` (`broadcast/client.tsx` — prop existed at `:16`, was never destructured/fetched)                                                                                                                                                                                                              |
+| AC2 maybeSingle + wid   | ✅     | founder-scoped `.eq("founder_id", user.id)` + conditional `.eq("id", wid)` → `.maybeSingle()` → 404 on null (no more unscoped `.single()`)                                                                                                                                                                                                                                              |
+| AC3 Free 403            | ✅     | `requirePro(profile?.tier ?? "free", "Broadcast")` → `if (!tierCheck.allowed)` → 403 `{ error: tierCheck.reason }` — mirrors the real guard at `broadcast/route.ts:29-31` (story snippet's `if (tierCheck)` was always-true; `.error` doesn't exist). **Audit fix:** tier gate ordered _before_ the waitlist lookup so Free always gets 403 (never 404), matching broadcast route order |
+| AC4 unsub/bounce filter | ✅     | `.is("unsubscribed_at", null)` on all 3 counts; active bounce list mirrors `isEmailBounced()` (hard = always, soft = 24h) applied via `.not("email","in",…)` when ≤ `BOUNCE_FILTER_MAX` (200 — encoded-list URL safety); above threshold → unsub-only (fallback documented)                                                                                                             |
+| AC5 response shape      | ✅     | `{ all, hot_warm, cold }` unchanged (keys verified against client `counts` usage)                                                                                                                                                                                                                                                                                                       |
+| AC6 Lint + build        | ✅     | `pnpm lint` 0 errors / 5 warnings (baseline), `pnpm build` exit 0, full suite 496 passed / 7 failed (= baseline)                                                                                                                                                                                                                                                                        |

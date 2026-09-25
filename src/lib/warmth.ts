@@ -1,39 +1,67 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// AC2: Signal weights
+// 15.0 AC1: only real, implementable engagement signals
 const SIGNAL_WEIGHTS = {
   email_click: 5,
-  email_reply: 10,
   referral_signup: 15,
   qualification_completed: 8,
-  leaderboard_visit: 5,
 } as const;
 
-// AC3: Decay thresholds (days)
+// 15.0 AC3: 0–59 days free, 60–89 days −25, 90+ days forces 0 (clamped)
 const DECAY = {
-  no_penalty_max: 59,
-  penalty_max: 89,
+  no_penalty_days: 60,
   penalty_amount: 25,
-  reset_at: 90,
+  reset_days: 90,
 } as const;
 
 type EmailEvent = { event_type: string; created_at: string };
+
+type Tier = "hot" | "warm" | "cold" | null;
+
 /**
- * AC1: Calculate warmth score (0–100) from engagement signals.
- * AC4: Clamped to 0–100 range.
+ * 15.0 AC1/AC8: score 0–100 from click/referral/qual signals minus decay.
+ * `createdAt` seeds the decay clock when the subscriber has zero clicks (AC2).
  */
 export function calculateWarmthScore(
   events: EmailEvent[],
   referralCount: number,
-  hasQualAnswers: boolean
+  hasQualAnswers: boolean,
+  createdAt: string
 ): number {
+  return scoreSubscriber({
+    events,
+    referralCount,
+    hasQualAnswers,
+    createdAt,
+  }).score;
+}
+
+/**
+ * 15.0 AC4: score 0 with lifetime engagement → cold, never-engaged → null.
+ */
+export function assignTier(score: number, hadEngagement?: boolean): Tier {
+  if (score >= 70) return "hot";
+  if (score >= 40) return "warm";
+  if (score > 0) return "cold";
+  return hadEngagement ? "cold" : null;
+}
+
+/**
+ * 15.0 AC4: single helper so the batch computes score, engagement, and tier
+ * in one pass.
+ */
+export function scoreSubscriber(input: {
+  events: EmailEvent[];
+  referralCount: number;
+  hasQualAnswers: boolean;
+  createdAt: string;
+}): { score: number; hadEngagement: boolean; tier: Tier } {
+  const { events, referralCount, hasQualAnswers, createdAt } = input;
+
   let rawScore = 0;
 
   const clickCount = events.filter((e) => e.event_type === "clicked").length;
   rawScore += clickCount * SIGNAL_WEIGHTS.email_click;
-
-  const replyCount = events.filter((e) => e.event_type === "replied").length;
-  rawScore += replyCount * SIGNAL_WEIGHTS.email_reply;
 
   rawScore += referralCount * SIGNAL_WEIGHTS.referral_signup;
 
@@ -41,43 +69,39 @@ export function calculateWarmthScore(
     rawScore += SIGNAL_WEIGHTS.qualification_completed;
   }
 
-  // AC3: Time-based decay
-  const decayPenalty = calculateDecay(events);
+  const decayPenalty = calculateDecay(events, createdAt);
+  const score = Math.max(0, Math.min(100, rawScore - decayPenalty));
 
-  // AC4: Clamp to 0–100
-  return Math.max(0, Math.min(100, rawScore - decayPenalty));
+  const hadEngagement = clickCount > 0 || referralCount > 0 || hasQualAnswers;
+
+  return { score, hadEngagement, tier: assignTier(score, hadEngagement) };
 }
 
-function calculateDecay(events: EmailEvent[]): number {
-  if (events.length === 0) return 0;
+/**
+ * 15.0 AC2: decay clock reads only `clicked` events; subscribers with zero
+ * clicks fall back to `subscribers.created_at`. `sent`/`delivered`/`opened`
+ * never reset the clock.
+ */
+function calculateDecay(events: EmailEvent[], fallbackDate: string): number {
+  const clicks = events.filter((e) => e.event_type === "clicked");
+  const reference =
+    clicks.length > 0
+      ? clicks.reduce((latest, e) =>
+          new Date(e.created_at) > new Date(latest.created_at) ? e : latest
+        ).created_at
+      : fallbackDate;
 
-  const lastEvent = events.reduce((latest, e) =>
-    new Date(e.created_at) > new Date(latest.created_at) ? e : latest
+  const daysSince = Math.floor(
+    (Date.now() - new Date(reference).getTime()) / (1000 * 60 * 60 * 24)
   );
 
-  const daysSinceLastEvent = Math.floor(
-    (Date.now() - new Date(lastEvent.created_at).getTime()) /
-      (1000 * 60 * 60 * 24)
-  );
-
-  if (daysSinceLastEvent >= DECAY.reset_at) return 999;
-  if (daysSinceLastEvent >= DECAY.no_penalty_max) return DECAY.penalty_amount;
+  if (daysSince >= DECAY.reset_days) return 999;
+  if (daysSince >= DECAY.no_penalty_days) return DECAY.penalty_amount;
   return 0;
 }
 
 /**
- * AC5: Assign tier based on score.
- * AC6: Score 0 → null (Unscored in UI).
- */
-export function assignTier(score: number): "hot" | "warm" | "cold" | null {
-  if (score >= 70) return "hot";
-  if (score >= 40) return "warm";
-  if (score > 0) return "cold";
-  return null;
-}
-
-/**
- * AC8: Batch recalculate warmth scores for all subscribers across all waitlists.
+ * Batch recalculate warmth scores for all subscribers across all waitlists.
  * Uses admin client to bypass RLS.
  */
 export async function batchRecalculateWarmth(): Promise<{
@@ -98,20 +122,22 @@ export async function batchRecalculateWarmth(): Promise<{
   let unscored = 0;
 
   for (;;) {
+    // 15.0 AC5: stable ordering so pages never duplicate or skip rows
     const { data: subscribers, error } = await supabase
       .from("subscribers")
-      .select("id, waitlist_id, qual_answers, referrer_id")
+      .select("id, waitlist_id, qual_answers, referrer_id, created_at")
+      .order("id", { ascending: true })
       .range(offset, offset + PAGE_SIZE - 1);
 
     if (error) throw error;
     if (!subscribers || subscribers.length === 0) break;
 
-    const subscriberIds = subscribers.map((s) => s.id);
+    const pageIds = subscribers.map((s) => s.id);
 
     const { data: events } = await supabase
       .from("email_events")
       .select("subscriber_id, event_type, created_at")
-      .in("subscriber_id", subscriberIds);
+      .in("subscriber_id", pageIds);
 
     const eventsBySubscriber = new Map<string, EmailEvent[]>();
     for (const event of events || []) {
@@ -120,22 +146,17 @@ export async function batchRecalculateWarmth(): Promise<{
       eventsBySubscriber.set(event.subscriber_id, list);
     }
 
-    const referrerIds = [
-      ...new Set(
-        subscribers
-          .map((s) => s.referrer_id)
-          .filter((id): id is string => id !== null)
-      ),
-    ];
-
+    // 15.0 AC6: count referrals MADE BY page members (referrer_id in page
+    // ids), so a referrer on this page is credited even when the referred
+    // subscriber lives on another page.
     const referralCounts = new Map<string, number>();
-    if (referrerIds.length > 0) {
-      const { data: referrerRows } = await supabase
+    if (pageIds.length > 0) {
+      const { data: referralRows } = await supabase
         .from("subscribers")
         .select("referrer_id")
-        .in("referrer_id", referrerIds);
+        .in("referrer_id", pageIds);
 
-      for (const row of referrerRows || []) {
+      for (const row of referralRows || []) {
         if (row.referrer_id) {
           referralCounts.set(
             row.referrer_id,
@@ -155,8 +176,12 @@ export async function batchRecalculateWarmth(): Promise<{
         typeof sub.qual_answers === "object" &&
         Object.keys(sub.qual_answers).length > 0;
 
-      const score = calculateWarmthScore(subEvents, refCount, hasQual);
-      const tier = assignTier(score);
+      const { tier } = scoreSubscriber({
+        events: subEvents,
+        referralCount: refCount,
+        hasQualAnswers: hasQual,
+        createdAt: sub.created_at,
+      });
 
       updates.push({ id: sub.id, warmth_score: tier });
 
@@ -166,6 +191,7 @@ export async function batchRecalculateWarmth(): Promise<{
       else unscored++;
     }
 
+    // 15.0 AC7: write only the tier string
     if (updates.length > 0) {
       for (const update of updates) {
         await supabase

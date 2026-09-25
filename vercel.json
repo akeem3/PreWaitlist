@@ -3,5 +3,11 @@
     "deploymentEnabled": {
       "dev": false
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/warmth",
+      "schedule": "0 5 * * *"
+    }
+  ]
 }

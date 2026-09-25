@@ -143,6 +143,10 @@ export async function POST(request: NextRequest) {
           "List-Unsubscribe": `<${generateUnsubscribeUrl(sub.id)}>`,
           "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
         },
+        tags: [
+          { name: "waitlist_id", value: waitlist.id },
+          { name: "subscriber_id", value: sub.id },
+        ],
       }));
       batchEmails.push(...emails);
     }

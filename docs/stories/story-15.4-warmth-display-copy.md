@@ -1,6 +1,6 @@
 # Story 15.4 — Warmth Display, Copy & Read Path Fixes
 
-**Status:** ready
+**Status:** done
 **Epic:** 15 — Warmth Engine Fix & Hardening
 **Depends on:** — (display independent of 15.0; Cold counts more accurate after 15.0+15.1)
 **Design Refs:** S1 panel layout, S2 warning banner — `docs/design/sprint-3-design-specs.md` §S1–S2; badge colors — `docs/design/dashboard-design-guide.md`
@@ -165,20 +165,23 @@ pnpm test
 | `src/app/dashboard/[waitlistId]/settings/client.tsx` | Helper text after COPY approval |
 | `src/app/api/dashboard/warmth/route.ts`              | Head-count aggregation          |
 | `src/app/dashboard/client.tsx`                       | Optional Hot color              |
+| `src/app/dashboard/warmth/client.tsx`                | Optional Hot summary color (T6) |
 
 ## Implementation Status
 
-**Status: NOT IMPLEMENTED**
+**Status: IMPLEMENTED — all ACs green** (executed + verified 2026-09-25)
 
-| AC                         | Status          | Evidence                     |
-| -------------------------- | --------------- | ---------------------------- |
-| AC1 Hot bar accent         | ❌              | Still `bg-status-hot`        |
-| AC2 Banner fetch           | ❌              | Fallback without waitlist_id |
-| AC3 Last engagement clicks | ❌              | All event types              |
-| AC4 Settings helper        | ⛔ **COPY GAP** | Awaiting founder string      |
-| AC5 API head counts        | ❌              | Full row load                |
-| AC6 Optional stat color    | ❌              | `text-status-hot`            |
-| AC7 Free/Pro regression    | ✅ baseline     | Guard only                   |
-| AC8 Lint + build           | ⏳              | —                            |
+| AC                         | Status | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| -------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AC1 Hot bar accent         | ✅     | `warmth-panel.tsx` — both Hot bars now `color="bg-accent"` (free `:95`, pro `:127`); Warm/Cold/Unscored unchanged; zero `bg-status-hot` in `.tsx`                                                                                                                                                                                                                                                                                   |
+| AC2 Banner fetch           | ✅     | `warning-banner.tsx` rewritten — no `useState`/`useEffect`/`fetch` (grep-verified); renders from `warmthData` prop only. **Scope extension (founder-approved):** same no-`wid` fetch removed from `warmth-panel.tsx` internal fallback + dead pro skeleton removed. **Audit hardening (Prompt #3):** `dashboard/client.tsx` warmth fetch now guarded by `if (waitlistId)` — last remaining wid-less 400 path (optional prop) closed |
+| AC3 Last engagement clicks | ✅     | `warmth/page.tsx` — select adds `event_type`; `if (e.event_type !== "clicked") return;` before max `created_at`                                                                                                                                                                                                                                                                                                                     |
+| AC4 Settings helper        | ✅     | `settings/client.tsx:476` helperText = approved string; label/`min=20`/`max=80` unchanged                                                                                                                                                                                                                                                                                                                                           |
+| AC5 API head counts        | ✅     | `api/dashboard/warmth/route.ts` — 4× `select("id", { count: "exact", head: true })` via fresh-chain `countBuilder()`; 401/400/404/shape/cache kept                                                                                                                                                                                                                                                                                  |
+| AC6 Optional stat color    | ✅     | `dashboard/client.tsx:453` + `warmth/client.tsx:150` → `text-accent`; marketing `difference-section.tsx` intentionally untouched                                                                                                                                                                                                                                                                                                    |
+| AC7 Free/Pro regression    | ✅     | Free panel upgrade CTA + counts intact (tier-gating 3/3 pass); Pro gate `warmth/page.tsx:34-42` untouched                                                                                                                                                                                                                                                                                                                           |
+| AC8 Lint + build           | ✅     | lint 0 errors/5 warnings (baseline); tsc 63 = baseline, 0 in touched files; build exit 0; suite **496/7 = exact baseline**                                                                                                                                                                                                                                                                                                          |
 
-**COPY approval:** _pending_
+**COPY approval:** Founder approved verbatim — `Warn me when this % or more of your list is Cold. Range: 20–80.` (via scan decision, 2026-09-25).
+
+**Prompt #3 audit (2026-09-25):** 1 finding fixed — AC2 "no path returns 400" gap: `dashboard/client.tsx` could fetch warmth without `waitlist_id` when the optional `waitlistId` prop was absent (prod unreachable via page-level redirect, but the AC forbids the path). Guard added (`if (waitlistId)`). Re-gated after fix: lint 0/5, tsc 63 = baseline (0 touched), suite 520/7 of 527 (exact baseline failures), build exit 0. Evidence rows corrected: AC1 pro line `:127`, AC6 line `:453`.

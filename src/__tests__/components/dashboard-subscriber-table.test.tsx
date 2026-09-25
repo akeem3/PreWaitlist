@@ -70,7 +70,6 @@ const mockSubscribers = [
     created_at: "2026-08-20T10:00:00Z",
     warmth_score: null,
     quality_score: 71,
-    qual_answers: null,
   },
   {
     id: "2",
@@ -81,7 +80,6 @@ const mockSubscribers = [
     created_at: "2026-08-21T10:00:00Z",
     warmth_score: null,
     quality_score: null,
-    qual_answers: null,
   },
 ];
 

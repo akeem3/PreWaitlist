@@ -1,7 +1,3 @@
-"use client";
-
-import { useEffect, useState } from "react";
-
 interface WarmthData {
   hot: number;
   warm: number;
@@ -26,30 +22,13 @@ export default function WarningBanner({
   coldThreshold,
   warmthData,
 }: WarningBannerProps) {
-  const [fetchedData, setFetchedData] = useState<WarmthData | null>(null);
-
-  const activeData = warmthData ?? fetchedData;
-  const coldPercent = computeColdPercent(activeData);
+  // AC2: no fetch fallback — the old internal call omitted waitlist_id and
+  // always 400'd. The banner renders only from the warmthData prop.
+  const coldPercent = computeColdPercent(warmthData);
   const visible =
     coldPercent !== null &&
-    (activeData?.total ?? 0) >= 10 &&
+    (warmthData?.total ?? 0) >= 10 &&
     coldPercent >= coldThreshold;
-
-  useEffect(() => {
-    if (warmthData) return;
-    let cancelled = false;
-    fetch("/api/dashboard/warmth")
-      .then((res) => res.json())
-      .then((json) => {
-        if (!cancelled && json.total !== undefined) {
-          setFetchedData(json);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [warmthData]);
 
   if (!visible || coldPercent === null) return null;
 

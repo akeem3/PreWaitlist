@@ -84,6 +84,12 @@ describe("Subscriber Detail Page", () => {
     expect(content).toContain("qual_answers");
   });
 
+  it("resolves qualification answer labels from question ids", () => {
+    const content = fs.readFileSync(PAGE_PATH, "utf-8");
+    expect(content).toContain("questionLabels.get");
+    expect(content).toContain("question_text");
+  });
+
   it("formats created_at date as YYYY-MM-DD", () => {
     const content = fs.readFileSync(PAGE_PATH, "utf-8");
     expect(content).toContain('.split("T")[0]');

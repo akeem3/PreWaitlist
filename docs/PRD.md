@@ -458,6 +458,7 @@ create table public.qualification_questions (
   waitlist_id uuid not null references public.waitlists(id) on delete cascade,
   question_text text not null,
   question_type text not null check (question_type in ('multiple_choice','free_text')),
+  options jsonb, -- multiple-choice choices; null for free_text (added in Epic 14 / story 14.0 migration)
   sort_order smallint not null default 0
 );
 

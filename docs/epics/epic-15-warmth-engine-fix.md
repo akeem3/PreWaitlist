@@ -42,19 +42,19 @@ Repair the warmth tracking engine so production scores are **produced daily**, *
 
 ## Story Index
 
-| ID   | Title                                             | Depends on | Status |
-| ---- | ------------------------------------------------- | ---------- | ------ |
-| 15.0 | Warmth Scoring Core (signals, decay, tier, batch) | —          | ready  |
-| 15.1 | Daily Cron Schedule (`vercel.json`)               | —          | ready  |
-| 15.2 | Resend Webhook Ingestion Hardening                | —          | ready  |
-| 15.3 | Segment Counts, Pro Gate & Eligibility            | —          | ready  |
-| 15.4 | Warmth Display, Copy & Read Path Fixes            | —          | ready  |
-| 15.5 | Epic 15 Tests                                     | 15.0–15.4  | ready  |
-| 15.6 | Story, Vision, MEMORY & Audit Sync                | 15.0–15.5  | ready  |
+| ID   | Title                                             | Depends on | Status      |
+| ---- | ------------------------------------------------- | ---------- | ----------- |
+| 15.0 | Warmth Scoring Core (signals, decay, tier, batch) | —          | done        |
+| 15.1 | Daily Cron Schedule (`vercel.json`)               | —          | in-progress |
+| 15.2 | Resend Webhook Ingestion Hardening                | —          | in-progress |
+| 15.3 | Segment Counts, Pro Gate & Eligibility            | —          | done        |
+| 15.4 | Warmth Display, Copy & Read Path Fixes            | —          | done        |
+| 15.5 | Epic 15 Tests                                     | 15.0–15.4  | done        |
+| 15.6 | Story, Vision, MEMORY & Audit Sync                | 15.0–15.5  | ready       |
 
 **Execution order:** 15.0 first (scoring correctness everything else reads). Then **15.1 + 15.2 + 15.3 + 15.4 in parallel** (independent surfaces). Then 15.5 (tests), then 15.6 (docs). 15.1 can ship with 15.0 in the same release train so scores actually refresh after the core fix.
 
-Stories must be executed in dependency order where listed; status workflow: `ready` → `in-progress` → `done` (or `blocked`). Manual gates: Supabase unique-index SQL (15.2) and settings helper **COPY GAP** approval (15.4) block those stories’ completion criteria.
+Stories must be executed in dependency order where listed; status workflow: `ready` → `in-progress` → `done` (or `blocked`). Manual gates: Supabase unique-index SQL (15.2) blocks that story’s completion criteria. ~~Settings helper COPY GAP (15.4)~~ — resolved 2026-09-25: founder approved the proposed string verbatim.
 
 ---
 
@@ -195,7 +195,7 @@ User runs this in Supabase SQL Editor **before** relying on race-safe idempotenc
 
 ### Story 15.4 — Warmth Display, Copy & Read Path Fixes
 
-**Status:** ready
+**Status:** done
 **Design Refs:** S1 bar layout, S2 warning banner — `docs/design/sprint-3-design-specs.md` §S1–S2; badge colors — `dashboard-design-guide.md`
 **Story:** As a founder, I want warmth UI colors, last-engagement data, warning data plumbing, settings helper text, and the warmth summary API to match how scoring actually works.
 
@@ -230,7 +230,7 @@ User runs this in Supabase SQL Editor **before** relying on race-safe idempotenc
 
 ### Story 15.5 — Epic 15 Tests
 
-**Status:** ready
+**Status:** done
 **Design Refs:** —
 **Story:** As a developer, I want automated tests for the warmth pipeline so scoring, scheduling auth, webhook, segments, and panel cannot regress silently.
 

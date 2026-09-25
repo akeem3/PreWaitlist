@@ -33,25 +33,37 @@ export async function GET(request: NextRequest) {
   }
 
   // View-only: free tier sees warmth numbers on dashboard cards (decision 2026-09-22).
-  // Pro tier gates the full Warmth page and segment targeting, not this summary.
+  // Pro tier gates the Full Warmth page and segment targeting, not this summary.
 
-  const { data: subscribers } = await supabase
-    .from("subscribers")
-    .select("warmth_score")
-    .eq("waitlist_id", waitlist.id);
+  // AC5: head counts instead of loading every warmth_score row into JS.
+  // Supabase builders are thenable/single-use — one fresh chain per count.
+  const countBuilder = (score?: "hot" | "warm" | "cold") => {
+    const query = supabase
+      .from("subscribers")
+      .select("id", { count: "exact", head: true })
+      .eq("waitlist_id", waitlist.id);
+    return score ? query.eq("warmth_score", score) : query;
+  };
 
-  const scores = subscribers || [];
-  const hot = scores.filter((s) => s.warmth_score === "hot").length;
-  const warm = scores.filter((s) => s.warmth_score === "warm").length;
-  const cold = scores.filter((s) => s.warmth_score === "cold").length;
-  const unscored = scores.filter((s) => !s.warmth_score).length;
+  const [totalResult, hotResult, warmResult, coldResult] = await Promise.all([
+    countBuilder(),
+    countBuilder("hot"),
+    countBuilder("warm"),
+    countBuilder("cold"),
+  ]);
+
+  const total = totalResult.count ?? 0;
+  const hot = hotResult.count ?? 0;
+  const warm = warmResult.count ?? 0;
+  const cold = coldResult.count ?? 0;
+  const unscored = Math.max(0, total - hot - warm - cold);
 
   const response = NextResponse.json({
     hot,
     warm,
     cold,
     unscored,
-    total: scores.length,
+    total,
   });
   response.headers.set(
     "Cache-Control",

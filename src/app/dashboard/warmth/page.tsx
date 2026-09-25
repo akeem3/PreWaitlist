@@ -73,10 +73,11 @@ export default async function WarmthPage({ searchParams }: PageProps) {
   if (subscriberIds.length > 0) {
     const { data: events } = await supabase
       .from("email_events")
-      .select("subscriber_id, created_at")
+      .select("subscriber_id, event_type, created_at")
       .in("subscriber_id", subscriberIds);
 
     events?.forEach((e) => {
+      if (e.event_type !== "clicked") return;
       if (e.subscriber_id) {
         const existing = lastEngagement.get(e.subscriber_id);
         if (!existing || e.created_at > existing) {

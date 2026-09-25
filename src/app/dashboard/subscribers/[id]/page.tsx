@@ -48,6 +48,19 @@ export default async function SubscriberDetailPage({ params }: Props) {
 
   const qualAnswers = subscriber.qual_answers as Record<string, string> | null;
 
+  // 14.4 audit fix: qual_answers keys are question ids (Epic 14 remap) —
+  // resolve them to question_text for display; fall back to the raw key
+  // when the question was deleted after the answer was stored.
+  const waitlistRef = subscriber.waitlists as unknown as { id: string };
+  const { data: questions } = await supabase
+    .from("qualification_questions")
+    .select("id, question_text")
+    .eq("waitlist_id", waitlistRef.id)
+    .order("sort_order", { ascending: true });
+  const questionLabels = new Map<string, string>(
+    (questions || []).map((q) => [q.id, q.question_text])
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <main className="mx-auto max-w-3xl px-6 py-8">
@@ -128,7 +141,7 @@ export default async function SubscriberDetailPage({ params }: Props) {
               {Object.entries(qualAnswers).map(([question, answer]) => (
                 <div key={question}>
                   <dt className="text-caption text-muted-foreground">
-                    {question}
+                    {questionLabels.get(question) ?? question}
                   </dt>
                   <dd className="text-body-sm text-foreground">
                     {answer as string}

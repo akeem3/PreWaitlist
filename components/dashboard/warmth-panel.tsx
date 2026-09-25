@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Panel, { PanelHeader, panelChrome } from "./panel";
 import { cn } from "../lib/cn";
 
@@ -53,32 +52,10 @@ export default function WarmthPanel({
   warmthData: externalData,
   onUpgradeClick,
 }: WarmthPanelProps) {
-  const [internalData, setInternalData] = useState<WarmthData | null>(null);
-  const [internalLoading, setInternalLoading] = useState(true);
-
-  const data = externalData ?? internalData;
-  const loading = externalData ? false : internalLoading;
-
-  useEffect(() => {
-    if (externalData) return;
-    let cancelled = false;
-    fetch("/api/dashboard/warmth")
-      .then((res) => res.json())
-      .then((json) => {
-        if (!cancelled && json.total !== undefined) {
-          setInternalData(json);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setInternalData(null);
-      })
-      .finally(() => {
-        if (!cancelled) setInternalLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [externalData]);
+  // AC2: no internal fetch fallback — the old call omitted waitlist_id and
+  // always 400'd. Callers pass warmthData (dashboard always does); missing
+  // data renders zero-count / em-dash bars.
+  const data = externalData;
 
   if (tier === "free") {
     return (
@@ -115,7 +92,7 @@ export default function WarmthPanel({
             label="Hot"
             count={data?.hot ?? 0}
             total={data?.total ?? 0}
-            color="bg-status-hot"
+            color="bg-accent"
           />
           <WarmthBar
             label="Warm"
@@ -140,22 +117,6 @@ export default function WarmthPanel({
     );
   }
 
-  if (loading) {
-    return (
-      <Panel title="Warmth Distribution">
-        <div className="space-y-3">
-          {["Hot", "Warm", "Cold", "Unscored"].map((label) => (
-            <div key={label} className="flex items-center gap-3">
-              <div className="h-3 w-12 animate-pulse rounded bg-muted" />
-              <div className="h-2 flex-1 animate-pulse rounded-full bg-muted" />
-              <div className="h-3 w-10 animate-pulse rounded bg-muted" />
-            </div>
-          ))}
-        </div>
-      </Panel>
-    );
-  }
-
   return (
     <Panel title="Warmth Distribution">
       <div className="space-y-3">
@@ -163,7 +124,7 @@ export default function WarmthPanel({
           label="Hot"
           count={data?.hot ?? 0}
           total={data?.total ?? 0}
-          color="bg-status-hot"
+          color="bg-accent"
         />
         <WarmthBar
           label="Warm"

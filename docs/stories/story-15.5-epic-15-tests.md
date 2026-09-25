@@ -1,6 +1,6 @@
 # Story 15.5 — Epic 15 Tests
 
-**Status:** ready
+**Status:** done
 **Epic:** 15 — Warmth Engine Fix & Hardening
 **Depends on:** 15.0, 15.1, 15.2, 15.3, 15.4 (test the shipped behavior; unit tests for 15.0 may land earlier with that story)
 **Design Refs:** —
@@ -178,16 +178,21 @@ Record final test total in Implementation Status. Baseline known failures only �
 
 ## Implementation Status
 
-**Status: NOT IMPLEMENTED** (depends on 15.0–15.4)
+**Status: IMPLEMENTED — all ACs green** (executed + verified 2026-09-25)
 
-| AC                      | Status | Evidence                 |
-| ----------------------- | ------ | ------------------------ |
-| AC1 Unit decay/tier     | ❌     | Old suite only           |
-| AC2 Batch               | ❌     | No batch tests           |
-| AC3 Webhook             | ❌     | No webhook tests         |
-| AC4 Cron                | ❌     | No cron tests            |
-| AC5 Panel               | ❌     | No dedicated panel tests |
-| AC6 Segments            | ❌     | No segments tests        |
-| AC7 Banner              | ❌     | No banner tests          |
-| AC8 Lint/build/baseline | ⏳     | —                        |
-| AC9 Count increase      | ⏳     | —                        |
+| AC                      | Status | Evidence                                                                                                                                                                                                                                                                                                                |
+| ----------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AC1 Unit decay/tier     | ✅     | `warmth.test.ts` — 29 tests verified against all 11 AC1 items (multi-signal, clamps, sent/delivered-ignored, day 59/60, 90+, engaged-0→cold, never-engaged→null, zero-click decay, ×15, +8); complete since 15.0 — no additions needed                                                                                  |
+| AC2 Batch               | ✅     | `warmth-batch.test.ts` — 5 tests verified against AC2 (order("id") before range, `.in("referrer_id", pageIds)` direction, multi-page termination 501 processed, return counters); complete since 15.0                                                                                                                   |
+| AC3 Webhook             | ✅     | **New** `src/__tests__/api/webhook-resend.test.ts` — 7/7: missing headers 401, bad sig 401, valid click insert (`svix_id`, subscriber/waitlist, created_at), dup svix → 0 inserts, unknown type 200/no calls, unknown email 200/no insert, multi-waitlist → 2 inserts. `after()` runs sync; mock queue drains via flush |
+| AC4 Cron                | ✅     | **New** `src/__tests__/api/cron-warmth.test.ts` — 3/3: unset `CRON_SECRET` → 500 (+ batch not called), bad bearer → 401, valid bearer → 200 counts + batch called once                                                                                                                                                  |
+| AC5 Panel               | ✅     | **New** `src/__tests__/components/warmth-panel.test.tsx` — 5/5: Hot fill `bg-accent` + not `bg-status-hot`, Warm/Cold/Unscored classes, 0-total → 4 em-dashes, free badge text, free counts (AC7 guard)                                                                                                                 |
+| AC6 Segments            | ✅     | **New** `src/__tests__/api/dashboard-segments.test.ts` — 4/4: 401 no session, Free → 403 **before waitlist lookup** (locks audit fix), Pro+wid → founder/wid scoped counts + exact keys, `.is(unsubscribed_at,null)` ×3 on all counts                                                                                   |
+| AC7 Banner              | ✅     | **New** `src/__tests__/components/warning-banner.test.tsx` — 5/5: hidden total<10 at 100% cold, hidden 30%<40, visible 40%≥40 (S2 copy), fetch stub never called with data, render-null + no fetch without prop                                                                                                         |
+| AC8 Lint/build/baseline | ✅     | lint 0 errors / 5 warnings (baseline); tsc 63 = baseline, **0 in touched/new files**; build exit 0; full suite **520 passed / 7 failed of 527** — failures = exact baseline (dashboard-archive 4 + dashboard-subscriber-table 3), zero new                                                                              |
+| AC9 Count increase      | ✅     | 503 → **527** tests (+24: webhook 7, cron 3, panel 5, banner 5, segments 4). Also: shared mock helper extended with `.is`/`.filter` (needed by webhook + segments chains)                                                                                                                                               |
+
+**Notes:**
+
+- AC1/AC2 shipped with 15.0 (`warmth.test.ts` 29, `warmth-batch.test.ts` 5) — verified line-by-line against AC checklists this story; no gaps found.
+- Files table rows `warmth.test.ts` (Update) and `warmth-batch.test.ts` (Create) were **already satisfied by 15.0** — annotated here instead of re-doing them.

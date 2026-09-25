@@ -1,8 +1,10 @@
 # Story 14.4 — CSV Export, Tests, Cleanup & Doc Sync
 
-**Status:** ready
-**Epic:** 14 — Qualification Engine Fix & Hardening
+**Status:** done
+**Epic:** 14 — Qualification Engine Fix & Hardening**
 **Depends on:** 14.0, 14.1, 14.2, 14.3
+
+**Completed:** 2026-09-25 — all AC1–AC7 implemented and verified (uncommitted at time of move; gates in Phase 5 of execution). See epic doc Story 14.4 Dev Notes for the per-task implementation summary. **Prompt #3 audit (same day):** passed after 2 fixes — subscriber detail now resolves id-keyed answers to `question_text` labels (missed Epic 14 remap consumer, new static test), and the qual-page redirect mock lost a net-new TS2556 type error. Re-gates: lint 0/5, clean build, suite 481/7 = exact baseline.
 
 ## Story
 

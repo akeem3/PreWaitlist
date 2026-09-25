@@ -16,6 +16,7 @@ interface SendEmailParams {
   sendingDomain?: string | null;
   idempotencyKey?: string;
   subscriberId?: string;
+  waitlistId?: string;
   businessAddress?: string | null;
 }
 
@@ -169,6 +170,7 @@ export async function sendEmail(params: SendEmailParams): Promise<{
       subject: string;
       html: string;
       text?: string;
+      tags?: { name: string; value: string }[];
     } = {
       from,
       to: [params.to],
@@ -178,6 +180,20 @@ export async function sendEmail(params: SendEmailParams): Promise<{
 
     if (params.text) {
       sendParams.text = params.text;
+    }
+
+    // AC7 (Story 15.2): pass targeting metadata to Resend. Resend has no
+    // metadata field — tags are the mechanism, and webhook events echo them
+    // back as data.tags for per-waitlist subscriber attribution.
+    if (params.waitlistId || params.subscriberId) {
+      const tags: { name: string; value: string }[] = [];
+      if (params.waitlistId) {
+        tags.push({ name: "waitlist_id", value: params.waitlistId });
+      }
+      if (params.subscriberId) {
+        tags.push({ name: "subscriber_id", value: params.subscriberId });
+      }
+      sendParams.tags = tags;
     }
 
     const result = await resend.emails.send(

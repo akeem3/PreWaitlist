@@ -1,0 +1,11 @@
+
+> prewaitlist@0.1.0 dev C:\Users\User\Work Projects\Product US\wait-app
+> next dev
+
+▲ Next.js 16.2.12 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.29.160.1:3000
+- Environments: .env.local
+✓ Ready in 1670ms
+
+ ELIFECYCLE  Command failed with exit code 3221225786.

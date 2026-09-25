@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   if (!svixId || !svixTimestamp || !svixSignature) {
     return NextResponse.json(
       { error: "Missing svix headers" },
-      { status: 400 }
+      { status: 401 }
     );
   }
 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       webhookSecret: process.env.RESEND_WEBHOOK_SECRET!,
     }) as unknown as Record<string, unknown>;
   } catch {
-    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
   const eventType = event.type as string;
@@ -74,63 +74,115 @@ export async function POST(req: NextRequest) {
 
   const createdAt = (event.created_at as string) || new Date().toISOString();
 
+  // AC4/AC7: send-time targeting. Resend has no metadata field — tags are the
+  // mechanism, and webhook payloads expose them as a key/value object.
+  const tags = data?.tags as Record<string, string> | undefined;
+  const legacyMeta = data?.metadata as Record<string, string> | undefined;
+  const targetWaitlistId = tags?.waitlist_id ?? legacyMeta?.waitlist_id;
+  const targetSubscriberId = tags?.subscriber_id ?? legacyMeta?.subscriber_id;
+
   after(async () => {
     try {
       const supabase = createAdminClient();
 
-      const { data: subscriber } = await supabase
+      // AC4: resolve every matching subscriber row, or only the send-time
+      // target when tags are present. Never .limit(1).single() — that picks
+      // an arbitrary waitlist when the same email exists on multiple.
+      let matchQuery = supabase
         .from("subscribers")
         .select("id, waitlist_id")
-        .eq("email", email)
-        .limit(1)
-        .single();
+        .eq("email", email);
 
-      if (!subscriber) {
+      if (targetWaitlistId) {
+        matchQuery = matchQuery.eq("waitlist_id", targetWaitlistId);
+      }
+      if (targetSubscriberId) {
+        matchQuery = matchQuery.eq("id", targetSubscriberId);
+      }
+
+      const { data: matches, error: matchError } = await matchQuery;
+
+      if (matchError) {
+        console.error(
+          `Webhook: subscriber lookup failed: ${matchError.message}`
+        );
+        return;
+      }
+
+      if (!matches || matches.length === 0) {
         console.warn(`Webhook: subscriber not found for ${email}`);
         return;
       }
 
-      const { data: existing } = await supabase
-        .from("email_events")
-        .select("id")
-        .eq("waitlist_id", subscriber.waitlist_id)
-        .filter("event_data->>'svix_id'", "eq", svixId)
-        .limit(1);
+      for (const subscriber of matches) {
+        // AC5: cheap per-waitlist idempotency pre-check. The race window is
+        // closed by email_events_svix_uidx (sql-writeups) — see 23505 below.
+        const { data: existing } = await supabase
+          .from("email_events")
+          .select("id")
+          .eq("waitlist_id", subscriber.waitlist_id)
+          .filter("event_data->>'svix_id'", "eq", svixId)
+          .limit(1);
 
-      if (existing && existing.length > 0) {
-        return;
-      }
+        if (existing && existing.length > 0) {
+          continue;
+        }
 
-      await supabase.from("email_events").insert({
-        subscriber_id: subscriber.id,
-        waitlist_id: subscriber.waitlist_id,
-        event_type: mappedType,
-        event_data: { ...data, svix_id: svixId },
-        created_at: createdAt,
-      });
+        const { error: insertError } = await supabase
+          .from("email_events")
+          .insert({
+            subscriber_id: subscriber.id,
+            waitlist_id: subscriber.waitlist_id,
+            event_type: mappedType,
+            event_data: { ...data, svix_id: svixId },
+            created_at: createdAt,
+          });
 
-      console.log(
-        `Webhook: recorded ${mappedType} event for ${email} (svix: ${svixId})`
-      );
+        // AC5: unique-index race loser — the winning delivery already recorded
+        // this event (and ran its side effects). Ack and move on.
+        if (insertError) {
+          if (insertError.code === "23505") {
+            continue;
+          }
+          console.error(
+            `Webhook: email_events insert failed: ${insertError.message}`
+          );
+          continue;
+        }
 
-      if (mappedType === "bounced" || mappedType === "complained") {
-        const emailData = data as Record<string, unknown>;
-        const bounceType = determineBounceType(emailData);
+        console.log(
+          `Webhook: recorded ${mappedType} event for ${email} (svix: ${svixId})`
+        );
 
-        await supabase.from("bounced_emails").insert({
-          waitlist_id: subscriber.waitlist_id,
-          email,
-          email_type: "transactional",
-          bounce_type: bounceType,
-        });
-      }
+        // AC6: side effects scoped to each resolved subscriber's waitlist row
+        if (mappedType === "bounced" || mappedType === "complained") {
+          const bounceType = determineBounceType(
+            data as Record<string, unknown>
+          );
 
-      if (mappedType === "complained") {
-        await supabase
-          .from("subscribers")
-          .update({ unsubscribed_at: createdAt })
-          .eq("id", subscriber.id)
-          .is("unsubscribed_at", null);
+          const { error: bounceError } = await supabase
+            .from("bounced_emails")
+            .insert({
+              waitlist_id: subscriber.waitlist_id,
+              email,
+              email_type: "transactional",
+              bounce_type: bounceType,
+            });
+
+          if (bounceError) {
+            console.error(
+              `Webhook: bounced_emails insert failed: ${bounceError.message}`
+            );
+          }
+        }
+
+        if (mappedType === "complained") {
+          await supabase
+            .from("subscribers")
+            .update({ unsubscribed_at: createdAt })
+            .eq("id", subscriber.id)
+            .is("unsubscribed_at", null);
+        }
       }
     } catch (err) {
       console.error("Webhook after() callback failed:", err);
