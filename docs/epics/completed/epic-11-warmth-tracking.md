@@ -100,7 +100,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 - T1 (AC1): ✅ `POST /api/webhooks/resend` at `src/app/api/webhooks/resend/route.ts`.
 - T1 (AC2): ✅ Signature verification via the Resend SDK (`resend.webhooks.verify()`) with `RESEND_WEBHOOK_SECRET` — no `svix` npm package was ever needed (the original note assumed one).
 - T1: ✅ Raw body via `req.text()` — HMAC verification would break on re-serialized JSON.
-- T2 (AC3): ✅ Verified events stored in `email_events` with `event_data` jsonb (added Story 11.7). Stored types match the live 8-value CHECK; AC3's six-value list predates that migration.
+- T2 (AC3): ✅ Verified events stored in `email_events` with `event_data` jsonb (added Story 11.7). Stored `event_type` values = exactly AC3's six — the route's `EVENT_TYPE_MAP` collapses `email.failed` → `bounced` and `email.delivery_delayed` → `delivered`; the 8-value CHECK (Story 11.7 AC9) is headroom only.
 - T2 (AC4): ✅ `email_id` resolved to `subscriber_id` by email-address lookup.
 - T3 (AC5): ✅ Idempotency: svix message id persisted in `event_data.svix_id`; duplicate insert hits the 23505 unique-violation catch. DB-side guarantee = partial unique index in `epic15-story2-email-events-svix-unique.sql` — **manual gate: still to run**.
 - T3 (AC6/AC7): ✅ Fast 200 response; heavy recalculation deferred via `after()` (route:84); event `created_at` from payload used for sequencing. Multi-waitlist attribution fixed in Epic 15 Story 15.2.
@@ -279,7 +279,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 **Dev Notes:**
 
 - T1 (AC1): ✅ `src/__tests__/api/webhook-resend.test.ts` — 7 tests (lines 84, 99, 112, 147, 161, 171, 183) covering missing-header 401, signature-failure 401, valid-event storage, idempotent duplicate handling, event types, and the Epic 15 multi-waitlist attribution fix.
-- T2 (AC2): ✅ `src/__tests__/lib/warmth.test.ts` (19 tests) + `warmth-batch.test.ts` — multi-signal scores, clamping, tier thresholds (incl. engagement-aware Unscored vs Cold), decay windows + the `>= 60` boundary, zero-event handling, batch pagination.
+- T2 (AC2): ✅ `src/__tests__/lib/warmth.test.ts` (29 tests) + `warmth-batch.test.ts` (5) — multi-signal scores, clamping, tier thresholds (incl. engagement-aware Unscored vs Cold), decay windows + the `>= 60` boundary, zero-event handling, batch pagination.
 - T3 (AC3–AC4): ✅ Warmth badge + filter coverage ships in `src/__tests__/components/dashboard-warmth-page.test.tsx` (Story 15.5) — the originally planned `warmth-badge.test.tsx` / `warmth-filter.test.tsx` files were never created; canonical ACs updated accordingly.
 - T4 (AC5): ✅ `src/__tests__/components/dashboard-warmth-page.test.tsx` (distribution rendering + empty state) + `warning-banner.test.tsx` + `warmth-panel.test.tsx` (Story 15.5).
 - T5 (AC7): ✅ Suite total **527** (520 passing + 7 pre-existing failures: dashboard-archive 4, dashboard-subscriber-table 3) — far above the ≥250 target (original baseline 231).

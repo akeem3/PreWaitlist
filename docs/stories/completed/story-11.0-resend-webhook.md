@@ -37,7 +37,7 @@ Score calculation (Story 11.1), bulk event backfill, webhook retry logic (Resend
 > - Idempotency: application-level `event_data->>'svix_id'` pre-check **plus** a DB partial unique index `email_events_svix_uidx ON email_events (waitlist_id, (event_data ->> 'svix_id'))` from `docs/stories/sql-writeups/epic15-story2-email-events-svix-unique.sql` — the route catches `23505`. **Run that SQL before deploying Epic 15.**
 > - Multi-waitlist attribution (Story 15.2): one event row inserted per matching waitlist — the T2 `.single()` lookup was replaced; covered by `webhook-resend.test.ts:183`.
 > - Deferred processing uses `after()` from `next/server` (AC6).
-> - Stored event types match the live CHECK constraint exactly — all 8 (`sent`, `delivered`, `opened`, `clicked`, `bounced`, `complained`, `failed`, `delivery_delayed`), extended by Story 11.7 AC9 (`epic11-story7-sprint3-schema.sql:64`). AC3's six-value list predates that migration; `failed` / `delivery_delayed` are stored but never emitted by current tests.
+> - Stored event types = exactly AC3's six values. The `EVENT_TYPE_MAP` (route:28–29) collapses `email.failed` → `bounced` and `email.delivery_delayed` → `delivered`, so `failed` / `delivery_delayed` are never written as `event_type`. The DB CHECK (Story 11.7 AC9, `epic11-story7-sprint3-schema.sql:64`) allows 8 values — the two extras are headroom only; AC3's six-value list describes what is actually stored.
 
 ### T1: Create webhook route + Svix signature verification
 

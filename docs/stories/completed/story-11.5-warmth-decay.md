@@ -65,7 +65,7 @@ function calculateDecay(events: Array<{ created_at: string }> | null): number {
 }
 ```
 
-> **Superseded by Story 15.0 T2:** the shipped `calculateDecay` filters to `clicked` events only, uses the signup fallback, and checks `>= 60` / `>= 90` (the block above predates the day-59 boundary fix).
+> **Superseded by Story 15.0 T2:** the shipped `calculateDecay` filters to `clicked` events only and falls back to `subscribers.created_at` when there are no clicks (the block above decays from any event, including old sends).
 
 **Important:** `page_views` table is NOT populated. No code inserts into it. Decay reads engagement from `email_events` (`clicked` rows only, with signup fallback per Story 15.0) — never page views. Page-visit-based warmth scoring is deferred to v1.1 when the tracking middleware is built.
 

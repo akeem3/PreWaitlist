@@ -43,7 +43,7 @@ The panel no longer fetches. Story 12.1.8 moved data fetching to `src/app/dashbo
 
 ### T3: Remove blur/lock + empty state (AC5–AC6)
 
-`LockedOverlay`, blur, and the `tier` prop are removed — free tier sees visible counts + an "Upgrade to target segments" nudge (2026-09-22 decision). The `/dashboard/warmth` page stays Pro-gated (Story 12.3.3). Warning threshold lives in `components/dashboard/warning-banner.tsx` (value copied from settings; the free-page 400 fetch was removed by Story 15.4 AC2). Empty state: `{total > 0 ? count : "—"}` unchanged (AC5).
+`LockedOverlay` and blur are removed — free tier sees visible counts + an "Upgrade to target segments" nudge (2026-09-22 decision). The `tier` prop remains (default `"free"`) but only selects the presentation variant: free renders the panel as an upgrade-CTA button containing the same four bars (`warmth-panel.tsx:60-118`), Pro renders the plain panel (`:120-149`). The `/dashboard/warmth` page stays Pro-gated (Story 12.3.3). Warning threshold lives in `components/dashboard/warning-banner.tsx` (value copied from settings; the free-page 400 fetch was removed by Story 15.4 AC2). Empty state: `{total > 0 ? count : "—"}` unchanged (AC5).
 
 ### T4: Lint + build
 

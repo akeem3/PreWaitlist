@@ -44,7 +44,7 @@ This story's surface moved from the main subscriber table to `/dashboard/warmth`
 
 Badge uses `text-xs font-medium` (12px) — matches AC5.
 
-**Removed dead references:** the original plan pointed at `src/app/dashboard/client.tsx` lines 577–595 (badge) and 483–493 (filter). That warmth column/filter on the main dashboard subscriber table was never delivered, is out of scope for this story, and those line references no longer exist (the file is now ~549 lines).
+**Removed dead references:** the original plan pointed at `src/app/dashboard/client.tsx` lines 577–595 (badge) and 483–493 (filter). That warmth column/filter on the main dashboard subscriber table was never delivered, is out of scope for this story, and those line references no longer exist (the file is now 514 lines).
 
 ### T4: Lint + build
 
