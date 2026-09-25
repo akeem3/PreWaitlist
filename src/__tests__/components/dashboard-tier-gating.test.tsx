@@ -41,14 +41,14 @@ describe("Tier Gating — WarmthPanel", () => {
     render(
       <WarmthPanel
         tier="free"
-        warmthData={{ hot: 10, warm: 5, cold: 3, unscored: 2, total: 20 }}
+        warmthData={{ hot: 10, warm: 6, cold: 4, total: 20 }}
         onUpgradeClick={vi.fn()}
       />
     );
     expect(screen.getByText("Hot")).toBeDefined();
     expect(screen.getByText("Warm")).toBeDefined();
     expect(screen.getByText("Cold")).toBeDefined();
-    expect(screen.getByText("Unscored")).toBeDefined();
+    expect(screen.queryByText("Unscored")).toBeNull();
     expect(screen.getByText("10 (50%)")).toBeDefined();
     expect(screen.getByText("Upgrade to target segments")).toBeDefined();
   });
@@ -57,24 +57,24 @@ describe("Tier Gating — WarmthPanel", () => {
     render(
       <WarmthPanel
         tier="pro"
-        warmthData={{ hot: 10, warm: 5, cold: 3, unscored: 2, total: 20 }}
+        warmthData={{ hot: 10, warm: 6, cold: 4, total: 20 }}
       />
     );
     expect(screen.getByText("Hot")).toBeDefined();
     expect(screen.getByText("Warm")).toBeDefined();
     expect(screen.getByText("Cold")).toBeDefined();
-    expect(screen.getByText("Unscored")).toBeDefined();
+    expect(screen.queryByText("Unscored")).toBeNull();
     expect(screen.getByText("10 (50%)")).toBeDefined();
   });
 
-  it("shows em-dash when pro tier has zero subscribers", () => {
+  it("shows em-dash for all three bars when pro tier has zero subscribers", () => {
     render(
       <WarmthPanel
         tier="pro"
-        warmthData={{ hot: 0, warm: 0, cold: 0, unscored: 0, total: 0 }}
+        warmthData={{ hot: 0, warm: 0, cold: 0, total: 0 }}
       />
     );
     const dashes = screen.getAllByText("\u2014");
-    expect(dashes.length).toBe(4);
+    expect(dashes.length).toBe(3);
   });
 });

@@ -50,10 +50,9 @@ describe("GET /api/cron/warmth", () => {
     process.env.CRON_SECRET = "s3cret";
     mockBatch.mockResolvedValue({
       processed: 1,
-      hot: 0,
-      warm: 1,
+      hot: 1,
+      warm: 0,
       cold: 0,
-      unscored: 0,
     });
 
     const response = await GET(
@@ -63,10 +62,9 @@ describe("GET /api/cron/warmth", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
       processed: 1,
-      hot: 0,
-      warm: 1,
+      hot: 1,
+      warm: 0,
       cold: 0,
-      unscored: 0,
     });
     expect(mockBatch).toHaveBeenCalledTimes(1);
   });

@@ -4,13 +4,11 @@ import { render, screen } from "@testing-library/react";
 import WarningBanner from "../../../components/dashboard/warning-banner";
 
 function warmth(hot: number, cold: number) {
-  const total = 10;
   return {
     hot,
     warm: 0,
     cold,
-    unscored: total - hot - cold,
-    total,
+    total: hot + cold,
   };
 }
 
@@ -23,7 +21,7 @@ describe("WarningBanner", () => {
     const { container } = render(
       <WarningBanner
         coldThreshold={40}
-        warmthData={{ hot: 0, warm: 0, cold: 5, unscored: 0, total: 5 }}
+        warmthData={{ hot: 0, warm: 0, cold: 5, total: 5 }}
       />
     );
     expect(container.innerHTML).toBe("");

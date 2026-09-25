@@ -208,18 +208,17 @@ Each stat card shows exactly three things:
 ```
 
 - Search input: left side, `bg-card border-border rounded-lg`, placeholder "Search by email"
-- Warmth filter: right side, `<select>` dropdown — All / Hot / Warm / Cold / Unscored
+- Warmth filter: right side, `<select>` dropdown — All / Hot / Warm / Cold
 - CSV export button: rightmost, Pro tier only, secondary variant
 - Subscriber count: below search bar, above table
 
 ### Warmth Badge Colors
 
-| State    | Background | Text      | Token                         |
-| -------- | ---------- | --------- | ----------------------------- |
-| Hot      | `#FEE2E2`  | `#DC2626` | `bg-red-100 text-red-700`     |
-| Warm     | `#FEF3C7`  | `#D97706` | `bg-amber-100 text-amber-700` |
-| Cold     | `#DBEAFE`  | `#2563EB` | `bg-blue-100 text-blue-700`   |
-| Unscored | `#F3F4F6`  | `#6B7280` | `bg-gray-100 text-gray-500`   |
+| State | Background | Text      | Token                         |
+| ----- | ---------- | --------- | ----------------------------- |
+| Hot   | `#FEE2E2`  | `#DC2626` | `bg-red-100 text-red-700`     |
+| Warm  | `#FEF3C7`  | `#D97706` | `bg-amber-100 text-amber-700` |
+| Cold  | `#DBEAFE`  | `#2563EB` | `bg-blue-100 text-blue-700`   |
 
 Badge style: `rounded-full px-2 py-0.5 text-xs font-medium`
 
@@ -278,14 +277,13 @@ Badge style: `rounded-full px-2 py-0.5 text-xs font-medium`
 │  Hot     ████████████░░░░  12           │
 │  Warm    ████████████████████████  25   │
 │  Cold    ████░░░░░░░░░░░░░░░░░  8      │
-│  —       ██░░░░░░░░░░░░░░░░░░░  5      │
 │                                         │
 └─────────────────────────────────────────┘
 ```
 
-- 4 horizontal bars: Hot, Warm, Cold, Unscored
+- 3 horizontal bars: Hot, Warm, Cold
 - Bar width: proportional to total (count / total × 100%)
-- Bar colors: Hot = `bg-red-400`, Warm = `bg-amber-400`, Cold = `bg-blue-400`, Unscored = `bg-gray-300`
+- Bar colors: Hot = `bg-status-hot`, Warm = `bg-status-warm`, Cold = `bg-status-cold`
 - Locked state (Free tier): blur overlay (`backdrop-blur-sm bg-background/60`), lock icon, "Pro" pill badge
 - Empty state: em-dashes for all bars
 
@@ -314,13 +312,13 @@ Badge style: `rounded-full px-2 py-0.5 text-xs font-medium`
 
 ### Status Palette (Reserved for alerts/badges ONLY)
 
-| Status           | Background | Text      | Use                               |
-| ---------------- | ---------- | --------- | --------------------------------- |
-| Success/Hot      | `#FEE2E2`  | `#DC2626` | Hot warmth badge, positive trends |
-| Warning/Warm     | `#FEF3C7`  | `#D97706` | Warm warmth badge, caution        |
-| Info/Cold        | `#DBEAFE`  | `#2563EB` | Cold warmth badge, neutral        |
-| Neutral/Unscored | `#F3F4F6`  | `#6B7280` | Unscored badge, inactive          |
-| Error            | `#FEE2E2`  | `#DC2626` | Validation errors only            |
+| Status           | Background | Text      | Use                                                                   |
+| ---------------- | ---------- | --------- | --------------------------------------------------------------------- |
+| Success/Hot      | `#FEE2E2`  | `#DC2626` | Hot warmth badge, positive trends                                     |
+| Warning/Warm     | `#FEF3C7`  | `#D97706` | Warm warmth badge, caution                                            |
+| Info/Cold        | `#DBEAFE`  | `#2563EB` | Cold warmth badge, neutral                                            |
+| Neutral/Unscored | `#F3F4F6`  | `#6B7280` | Inactive elements, em-dash values (Unscored state removed 2026-09-25) |
+| Error            | `#FEE2E2`  | `#DC2626` | Validation errors only                                                |
 
 ### Color Rules
 

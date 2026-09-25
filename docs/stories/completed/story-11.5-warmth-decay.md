@@ -18,6 +18,8 @@ As a system, I want warmth scores to decay over time so that stale subscribers a
 - AC5: The decay shall be applied during the daily batch recalculation (Story 11.1), not on every read.
 - AC6: Lint and build shall pass with zero errors.
 
+> **Dev Notes (2026-09-25 — warmth restructure):** AC4 is superseded — with baseline 70, a subscriber with zero events starts at **score 70** (Hot) at signup and decays from there (60–89 days → 45; 90+ days → 0/Cold). "score = 0 regardless of signup date" no longer holds. Original AC text retained above for history. **[AMENDED 2026-09-25]**
+
 ## Tasks
 
 T1 (AC1-AC3) Implement decay logic in warmth calculation · T2 (AC4) Handle zero-event subscribers · T3 (AC5) Integrate with daily batch job · T4 (AC6) Lint + build
@@ -73,7 +75,7 @@ function calculateDecay(events: Array<{ created_at: string }> | null): number {
 
 Already handled in T1: `if (!events || events.length === 0) return 0;`
 
-Zero events → no decay penalty → score stays at 0 → tier = null (Unscored).
+Zero events → no decay penalty → score stays at baseline ~~0 → tier = null (Unscored)~~ **70 → tier `hot` (warmth restructure 2026-09-25)**.
 
 This matches AC4: "Subscribers with zero events shall have score = 0 regardless of signup date."
 

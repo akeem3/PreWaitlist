@@ -21,6 +21,8 @@ As a platform, I want broadcast sends to report truthfully, generate unsubscribe
 - AC7: Auth (401), `requirePro` (403), missing `waitlist_id` (400), missing waitlist / not owner (404), empty eligible set (400 existing) shall remain. No change to segment filter semantics (`all` | `hot_warm` | `cold`; unscored only in `all`).
 - AC8: Lint and build shall pass with zero errors.
 
+> **Dev Notes (2026-09-25 — warmth restructure):** AC7's segment-semantics clause "(unscored only in `all`)" is superseded — no Unscored tier exists; `all` simply means every subscriber, `hot_warm` = hot+warm, `cold` = cold. Original AC text retained above for history. **[AMENDED 2026-09-25]**
+
 ## Tasks
 
 - T1 (AC1) subject/body length caps

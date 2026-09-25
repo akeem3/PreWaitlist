@@ -20,7 +20,7 @@ const makeSubscribers = (count: number) =>
 describe("Dashboard Warmth Page", () => {
   const defaultProps = {
     subscribers: makeSubscribers(12),
-    summary: { hot: 3, warm: 3, cold: 3, unscored: 3, total: 12 },
+    summary: { hot: 4, warm: 5, cold: 3, total: 12 },
     tier: "pro",
   };
 
@@ -33,18 +33,15 @@ describe("Dashboard Warmth Page", () => {
     expect(screen.getByRole("heading", { name: "Warmth" })).toBeDefined();
   });
 
-  it("renders summary stats", () => {
+  it("renders three summary stats — no Unscored card (restructure)", () => {
     render(<WarmthClient {...defaultProps} />);
-    const threes = screen.getAllByText("3");
-    expect(threes.length).toBeGreaterThanOrEqual(4);
     const hotElements = screen.getAllByText("Hot");
     expect(hotElements.length).toBeGreaterThanOrEqual(1);
     const warmElements = screen.getAllByText("Warm");
     expect(warmElements.length).toBeGreaterThanOrEqual(1);
     const coldElements = screen.getAllByText("Cold");
     expect(coldElements.length).toBeGreaterThanOrEqual(1);
-    const unscoredElements = screen.getAllByText("Unscored");
-    expect(unscoredElements.length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText("Unscored")).toBeNull();
   });
 
   it("displays cold percentage", () => {
@@ -58,16 +55,18 @@ describe("Dashboard Warmth Page", () => {
     expect(screen.getByText("user9@example.com")).toBeDefined();
   });
 
-  it("renders warmth badges", () => {
+  it("renders warmth badges — legacy null scores display as Hot", () => {
     render(<WarmthClient {...defaultProps} />);
-    const badges = screen.getAllByText(/hot|warm|cold|unscored/i);
+    const badges = screen.getAllByText(/^(hot|warm|cold)$/i);
     expect(badges.length).toBeGreaterThan(0);
+    expect(screen.queryByText("Unscored")).toBeNull();
   });
 
-  it("shows filter dropdown", () => {
+  it("shows filter dropdown without an Unscored option", () => {
     render(<WarmthClient {...defaultProps} />);
     const select = screen.getByRole("combobox");
     expect(select).toBeDefined();
+    expect(screen.queryByText("Unscored")).toBeNull();
   });
 
   it("filters by tier", async () => {
@@ -91,7 +90,7 @@ describe("Dashboard Warmth Page", () => {
       <WarmthClient
         {...defaultProps}
         subscribers={[]}
-        summary={{ hot: 0, warm: 0, cold: 0, unscored: 0, total: 0 }}
+        summary={{ hot: 0, warm: 0, cold: 0, total: 0 }}
       />
     );
     expect(

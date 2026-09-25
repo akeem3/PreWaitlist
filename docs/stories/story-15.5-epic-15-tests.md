@@ -22,6 +22,8 @@ As a developer, I want automated tests for the warmth pipeline so scoring, sched
 - AC8: Lint and build shall pass with zero errors; full suite has **no new failures** beyond baseline (`dashboard-archive` 4 + `dashboard-subscriber-table` 3 + flaky `billing.test.ts` in full runs).
 - AC9: Net test count shall increase (webhook, cron, batch, segments, panel coverage did not exist).
 
+> **Dev Notes (2026-09-25 — warmth restructure):** AC1 and AC5 are superseded — "engaged score 0 → cold / never-engaged 0 → null" is gone (baseline 70; tier never null), and WarmthPanel tests cover three bars only (no Unscored class; Hot bar assertion uses `bg-status-hot` per the founder token revert). Original AC text retained above for history. **[AMENDED 2026-09-25]** Body sections below (test plans, mock payloads, verification lines) still show the pre-restructure model (`Unscored` classes, `unscored` fields, `bg-accent` Hot assertions) — treat them as historical; the restructure supersedes them.
+
 ## Tasks
 
 - T1 (AC1) Warmth unit test updates (if not done in 15.0)

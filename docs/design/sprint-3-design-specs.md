@@ -367,41 +367,42 @@ If send fails: inline error message below the send button.
 
 ```
 ┌─────────────────────────────────────────┐
-│  Warmth Distribution                    │  ← text-lg font-semibold
+│  Warmth Distribution         View all →  │  ← text-lg font-semibold; title = <Link to /dashboard/warmth?wid=…>, action aria-hidden
+│  42 subscribers                         │  ← meta line, accent count, shown only when total > 0
 │                                         │
-│  Hot      ████████████░░░░  12 (32%)    │  ← bg-status-hot
-│  Warm     ████████████████████████  25  │  ← bg-status-warm
-│  Cold     ████░░░░░░░░░░░░░░░░░  8     │  ← bg-status-cold
-│  —        ██░░░░░░░░░░░░░░░░░░░  5     │  ← bg-muted
+│  Hot      ████████████░░░░  12 (32%)    │  ← bg-status-hot / value text-status-hot
+│  Warm     ████████████████████████  25  │  ← bg-status-warm / value text-status-warm
+│  Cold     ████░░░░░░░░░░░░░░░░░  8     │  ← bg-status-cold / value text-status-cold
 │                                         │
 └─────────────────────────────────────────┘
 ```
 
 ### Elements
 
-| Element        | Detail                                                                       |
-| -------------- | ---------------------------------------------------------------------------- |
-| **Panel card** | `rounded-[var(--card-radius)] border border-border bg-card p-5`              |
-| **Heading**    | "Warmth Distribution" — `text-lg font-semibold text-foreground mb-4`         |
-| **Bar rows**   | Flex row: label (left), bar (flex-1), count + percentage (right)             |
-| **Bar track**  | `h-2 flex-1 overflow-hidden rounded-full bg-muted`                           |
-| **Bar fill**   | `h-full rounded-full {color}` — width = `Math.round((count / total) * 100)%` |
-| **Bar label**  | Left of bar — `text-xs font-medium text-foreground`, width `w-16`            |
-| **Bar value**  | Right of bar — `text-xs text-muted-foreground`, min-width `w-20`             |
+| Element        | Detail                                                                                                                              |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Panel card** | `rounded-[var(--card-radius)] border border-border bg-card p-5`                                                                     |
+| **Heading**    | "Warmth Distribution" — title is a `<Link>` (whole card clickable via `after:absolute after:inset-0` overlay)                       |
+| **Action**     | "View all →" — `aria-hidden` visual span (not focusable; title link carries the interaction)                                        |
+| **Meta line**  | `{n} subscriber(s)` — accent count in `<span class="text-accent">`, `text-body-sm text-muted-foreground`, hidden when `total === 0` |
+| **Bar rows**   | Flex row: label (left), bar (flex-1), count + percentage (right)                                                                    |
+| **Bar track**  | `h-2 flex-1 overflow-hidden rounded-full bg-muted`                                                                                  |
+| **Bar fill**   | `h-full rounded-full {color}` — width = `Math.round((count / total) * 100)%`                                                        |
+| **Bar label**  | Left of bar — `text-xs font-medium text-foreground`, width `w-16`                                                                   |
+| **Bar value**  | Right of bar — `text-xs`, status color (`text-status-*`) when `total > 0`, muted em-dash when `total === 0`, min-width `w-20`       |
 
 ### Bar Colors (Design System Tokens)
 
-| Tier     | Fill Color | Token                 | Tailwind         |
-| -------- | ---------- | --------------------- | ---------------- |
-| Hot      | `#D0492F`  | `--color-status-hot`  | `bg-status-hot`  |
-| Warm     | `#C7841A`  | `--color-status-warm` | `bg-status-warm` |
-| Cold     | `#3B6FA6`  | `--color-status-cold` | `bg-status-cold` |
-| Unscored | `#F0EDE8`  | `--color-muted`       | `bg-muted`       |
+| Tier | Fill Color | Token                 | Tailwind         |
+| ---- | ---------- | --------------------- | ---------------- |
+| Hot  | `#D0492F`  | `--color-status-hot`  | `bg-status-hot`  |
+| Warm | `#C7841A`  | `--color-status-warm` | `bg-status-warm` |
+| Cold | `#3B6FA6`  | `--color-status-cold` | `bg-status-cold` |
 
 ### Data Source
 
 **API:** `GET /api/dashboard/warmth`
-**Response:** `{ hot: number, warm: number, cold: number, unscored: number }`
+**Response:** `{ hot: number, warm: number, cold: number, total: number }`
 **Auth:** Required (founder only)
 **Fetch pattern:** Client-side `useState` + `useEffect` with cancellation flag
 
@@ -424,12 +425,11 @@ When `total === 0` (no subscribers):
 │  Hot      —                             │  ← em-dash, not "0"
 │  Warm     —                             │
 │  Cold     —                             │
-│  —        —                             │
 │                                         │
 └─────────────────────────────────────────┘
 ```
 
-All bars at 0% width. Labels show "—" instead of "0".
+All bars at 0% width. Labels show "—" instead of "0". Meta line hidden (no "{n} subscribers" row).
 
 ### Responsive
 
@@ -494,7 +494,7 @@ While loading: 4 rows of bar-track-shaped placeholders with `animate-pulse bg-mu
 
 ### Data Source
 
-- **coldCount, totalCount:** From `GET /api/dashboard/warmth` response (`{ hot, warm, cold, unscored }`)
+- **coldCount, totalCount:** From `GET /api/dashboard/warmth` response (`{ hot, warm, cold, total }`)
 - **coldThreshold:** From `waitlists.cold_threshold` column (integer, default 40)
 
 ### Position in Dashboard Layout
@@ -709,9 +709,9 @@ See **C3 — Broadcast Compose Shell** above for complete layout, elements, and 
 
 **Segment Counts:**
 
-Fetch from `GET /api/dashboard/warmth` — already returns `{ hot, warm, cold, unscored }`. Compute:
+Fetch from `GET /api/dashboard/warmth` — returns `{ hot, warm, cold, total }`. Compute:
 
-- `allCount = hot + warm + cold + unscored`
+- `allCount = hot + warm + cold` (= `total`)
 - `hotWarmCount = hot + warm`
 - `coldCount = cold`
 

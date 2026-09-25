@@ -195,6 +195,23 @@ export default function DashboardShell({
   }, [searchParams, waitlists]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  // Self-heal: if the URL points at a waitlist the (possibly stale, cached)
+  // layout payload doesn't include, re-run the server layout once so the
+  // fresh waitlists array arrives and the wid resolves. Ref-guarded so it
+  // fires at most once per unknown wid.
+  const widRefreshRef = useRef<string | null>(null);
+  useEffect(() => {
+    const wid = searchParams.get("wid");
+    if (
+      wid &&
+      !waitlists.some((w) => w.id === wid) &&
+      widRefreshRef.current !== wid
+    ) {
+      widRefreshRef.current = wid;
+      router.refresh();
+    }
+  }, [searchParams, waitlists, router]);
+
   // Global tier refresh: checkout return, post-checkout polling, cross-tab.
   useEffect(() => {
     const onCheckoutOpened = () => startTierPolling();

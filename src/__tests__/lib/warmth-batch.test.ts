@@ -65,12 +65,12 @@ describe("batchRecalculateWarmth", () => {
     expect(eventsIn).toBeDefined();
     expect(eventsIn?.args[1]).toEqual(["sub-a", "sub-b"]);
 
+    // Warmth restructure: fresh signups land at baseline 70 → hot
     expect(result).toEqual({
       processed: 2,
-      hot: 0,
+      hot: 2,
       warm: 0,
       cold: 0,
-      unscored: 2,
     });
   });
 
@@ -80,9 +80,9 @@ describe("batchRecalculateWarmth", () => {
       emptyData,
       {
         data: [
-          { referrer_id: "sub-a" },
-          { referrer_id: "sub-a" },
-          { referrer_id: "sub-a" },
+          { referrer_id: "sub-a", created_at: now() },
+          { referrer_id: "sub-a", created_at: now() },
+          { referrer_id: "sub-a", created_at: now() },
         ],
         error: null,
       }
@@ -97,19 +97,19 @@ describe("batchRecalculateWarmth", () => {
     expect(refIn).toBeDefined();
     expect(refIn?.args[1]).toEqual(["sub-a"]);
 
-    const warmWrite = calls.find(
+    const hotWrite = calls.find(
       (c) =>
         c.method === "update" &&
-        (c.args[0] as { warmth_score?: string }).warmth_score === "warm"
+        (c.args[0] as { warmth_score?: string }).warmth_score === "hot"
     );
-    expect(warmWrite).toBeDefined();
+    expect(hotWrite).toBeDefined();
 
+    // 70 + 3 referrals * 15 → clamped to 100 → hot
     expect(result).toEqual({
       processed: 1,
-      hot: 0,
-      warm: 1,
+      hot: 1,
+      warm: 0,
       cold: 0,
-      unscored: 0,
     });
   });
 
@@ -128,31 +128,26 @@ describe("batchRecalculateWarmth", () => {
     const calls = mockAdminSupabase.__calls;
     const update = calls.find((c) => c.method === "update");
     expect(update).toBeDefined();
-    expect(update?.args[0]).toEqual({ warmth_score: "cold" });
+    expect(update?.args[0]).toEqual({ warmth_score: "hot" });
     expect(Object.keys(update?.args[0] as object)).toEqual(["warmth_score"]);
 
     const eq = calls.find((c) => c.method === "eq");
     expect(eq?.args).toEqual(["id", "sub-c"]);
   });
 
-  it("counts hot/cold/unscored and writes null for never-engaged (AC7)", async () => {
+  it("classifies everyone — hot/warm/cold, never null (restructure)", async () => {
     const clicks = Array.from({ length: 15 }, () => ({
       subscriber_id: "sub-hot",
       event_type: "clicked",
       created_at: now(),
     }));
-    clicks.push({
-      subscriber_id: "sub-cold",
-      event_type: "clicked",
-      created_at: now(),
-    });
 
     mockAdminSupabase.__queue.push(
       {
         data: [
           subscriber("sub-hot"),
-          subscriber("sub-cold"),
-          subscriber("sub-uns", { created_at: daysAgo(100) }),
+          subscriber("sub-warm", { created_at: daysAgo(70) }),
+          subscriber("sub-cold", { created_at: daysAgo(100) }),
         ],
         error: null,
       },
@@ -165,17 +160,17 @@ describe("batchRecalculateWarmth", () => {
     expect(result).toEqual({
       processed: 3,
       hot: 1,
-      warm: 0,
+      warm: 1,
       cold: 1,
-      unscored: 1,
     });
 
-    const nullWrite = mockAdminSupabase.__calls.find(
-      (c) =>
-        c.method === "update" &&
-        (c.args[0] as { warmth_score?: string | null }).warmth_score === null
-    );
-    expect(nullWrite).toBeDefined();
+    const writes = mockAdminSupabase.__calls
+      .filter((c) => c.method === "update")
+      .map((c) => (c.args[0] as { warmth_score?: string | null }).warmth_score);
+
+    expect(writes.sort()).toEqual(["cold", "hot", "warm"]);
+    expect(writes).not.toContain(null);
+    expect(writes).not.toContain(undefined);
   });
 
   it("pages through all subscribers exactly once and terminates (AC5)", async () => {
@@ -196,10 +191,9 @@ describe("batchRecalculateWarmth", () => {
 
     expect(result).toEqual({
       processed: 501,
-      hot: 0,
+      hot: 501,
       warm: 0,
-      cold: 1,
-      unscored: 500,
+      cold: 0,
     });
 
     const calls = mockAdminSupabase.__calls;

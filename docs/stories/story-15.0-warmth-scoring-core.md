@@ -22,6 +22,8 @@ As a platform, I want warmth scores computed from only real engagement signals w
 - AC8: Clamp shall remain 0–100; qualitative +8 and referral ×15 multi-signal paths shall remain covered by tests.
 - AC9: Lint and build shall pass with zero errors.
 
+> **Dev Notes (2026-09-25 — warmth restructure):** AC4 and AC7 are superseded — `assignTier(score)` returns `hot|warm|cold` with no null branch (`hadEngagement` removed; baseline 70 makes never-engaged subscribers Hot, not Unscored), and the batch returns `{ processed, hot, warm, cold }` (no `unscored`). Original AC text retained above for history. **[AMENDED 2026-09-25]** Body sections below (code samples, test matrices, return-shape notes) still show the pre-restructure model (`Unscored`, `null` tiers, `hadEngagement`, `unscored` fields) — treat them as historical; the restructure supersedes them.
+
 ## Tasks
 
 - T1 (AC1) Remove dead signal weights and reply scoring

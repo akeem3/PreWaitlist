@@ -35,7 +35,7 @@ export default async function WarmthPage({ searchParams }: PageProps) {
     return (
       <WarmthClient
         subscribers={[]}
-        summary={{ hot: 0, warm: 0, cold: 0, unscored: 0, total: 0 }}
+        summary={{ hot: 0, warm: 0, cold: 0, total: 0 }}
         tier={tier}
       />
     );
@@ -49,13 +49,15 @@ export default async function WarmthPage({ searchParams }: PageProps) {
 
   const rows = subscribers || [];
 
-  // Batch referral count query
+  // Batch referral count query — latest referred signup also seeds the
+  // last-engagement display (decay clock counts any meaningful action)
   const subscriberIds = rows.map((s) => s.id);
   const referralCounts = new Map<string, number>();
+  const lastEngagement = new Map<string, string>();
   if (subscriberIds.length > 0) {
     const { data: referralRows } = await supabase
       .from("subscribers")
-      .select("referrer_id")
+      .select("referrer_id, created_at")
       .in("referrer_id", subscriberIds);
 
     referralRows?.forEach((r) => {
@@ -64,12 +66,15 @@ export default async function WarmthPage({ searchParams }: PageProps) {
           r.referrer_id,
           (referralCounts.get(r.referrer_id) || 0) + 1
         );
+        const existing = lastEngagement.get(r.referrer_id);
+        if (!existing || r.created_at > existing) {
+          lastEngagement.set(r.referrer_id, r.created_at);
+        }
       }
     });
   }
 
   // Batch last engagement query
-  const lastEngagement = new Map<string, string>();
   if (subscriberIds.length > 0) {
     const { data: events } = await supabase
       .from("email_events")
@@ -87,13 +92,13 @@ export default async function WarmthPage({ searchParams }: PageProps) {
     });
   }
 
-  // Compute warmth summary
-  const summary = { hot: 0, warm: 0, cold: 0, unscored: 0, total: rows.length };
+  // Compute warmth summary (legacy null warmth_score counts as hot until the
+  // NOT NULL migration lands)
+  const summary = { hot: 0, warm: 0, cold: 0, total: rows.length };
   rows.forEach((s) => {
-    if (s.warmth_score === "hot") summary.hot++;
-    else if (s.warmth_score === "warm") summary.warm++;
+    if (s.warmth_score === "warm") summary.warm++;
     else if (s.warmth_score === "cold") summary.cold++;
-    else summary.unscored++;
+    else summary.hot++;
   });
 
   const enriched = rows.map((s) => ({

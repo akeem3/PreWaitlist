@@ -152,7 +152,6 @@ export default function DashboardClient({
     hot: number;
     warm: number;
     cold: number;
-    unscored: number;
     total: number;
   } | null>(null);
   const router = useRouter();
@@ -475,9 +474,7 @@ export default function DashboardClient({
                 </div>
                 {warmthData && (
                   <div className="mt-1 text-xs text-muted-foreground">
-                    {warmthData.unscored > 0
-                      ? `${warmthData.unscored} unscored`
-                      : `${warmthData.total} total`}
+                    {`${warmthData.total} total`}
                   </div>
                 )}
               </>
@@ -528,6 +525,7 @@ export default function DashboardClient({
               <WarmthPanel
                 tier={tier}
                 warmthData={warmthData}
+                waitlistId={waitlistId}
                 onUpgradeClick={() => triggerUpgrade("warmth")}
               />
             </div>

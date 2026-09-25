@@ -18,6 +18,8 @@ As a founder, I want to see a warmth badge (Hot/Warm/Cold/Unscored) next to each
 - AC5: The warmth badge shall use caption-sized typography (`text-xs`, 12px, `font-medium`).
 - AC6: Lint and build shall pass with zero errors.
 
+> **Dev Notes (2026-09-25 — warmth restructure):** AC1, AC2, and AC3 are superseded — the Unscored tier was removed. Badges render only Hot/Warm/Cold (a null value defensively maps to Hot in `client.tsx`), the Unscored badge color row is gone, and the filter dropdown is now All/Hot/Warm/Cold. Original AC text retained above for history. **[AMENDED 2026-09-25]**
+
 ## Tasks
 
 T1 (AC1-AC2) Add warmth badge column with tier-specific colors · T2 (AC3-AC4) Add filter dropdown + client-side filtering · T3 (AC5) Typography compliance · T4 (AC6) Lint + build
@@ -38,7 +40,7 @@ This story's surface moved from the main subscriber table to `/dashboard/warmth`
 
 ### T2: Warmth filter (AC3, AC4)
 
-`filter` state + `useMemo` client-side filtering (`:70-87`), `<select>` with All/Hot/Warm/Cold/Unscored in the table header (`:188-199`).
+`filter` state + `useMemo` client-side filtering, `<select>` with All/Hot/Warm/Cold in the table header (~~All/Hot/Warm/Cold/Unscored~~ — Unscored option removed 2026-09-25).
 
 ### T3: Typography (AC5)
 
@@ -53,7 +55,7 @@ Badge uses `text-xs font-medium` (12px) — matches AC5.
 
 ## Verification
 
-1. Open `/dashboard/warmth` → verify badge colors: Hot = coral red (`bg-status-hot`), Warm = amber (white text), Cold = blue (white text), Unscored = grey
+1. Open `/dashboard/warmth` → verify badge colors: Hot = coral red (`bg-status-hot`), Warm = amber (white text), Cold = blue (white text) — ~~Unscored = grey~~ (no Unscored badge since 2026-09-25)
 2. Test filter dropdown: select "Hot" → only hot subscribers shown; "All" → all subscribers shown (client-side, no network request)
 3. Verify badge type is 12px (`text-xs`)
 4. Run `pnpm lint` and `pnpm build` — verify zero errors

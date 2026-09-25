@@ -21,6 +21,8 @@ As the founder, I want a dedicated warmth page showing detailed distribution and
 - AC8: The page shall reuse the Sidebar component and match the dashboard layout.
 - AC9: Lint and build shall pass with zero errors.
 
+> **Dev Notes (2026-09-25 — warmth restructure):** AC2 and AC5 are superseded — the summary row counts Hot/Warm/Cold only (no Unscored; cold % denominator = total), and the filter dropdown is All/Hot/Warm/Cold. Original AC text retained above for history. **[AMENDED 2026-09-25]**
+
 ## Tasks
 
 T1 (AC1-AC2) Create warmth page with summary stats · T2 (AC3-AC5) Subscriber warmth table with sort + filter · T3 (AC6) Pro tier gate · T4 (AC7) Empty state · T5 (AC8) Layout + sidebar · T6 (AC9) Lint + build
@@ -51,11 +53,11 @@ Warmth trend charts, real-time score updates, warmth decay visualization.
 
 - Accept `{ subscribers, warmthSummary, tier, waitlistName, logoUrl }` props
 - Render Sidebar + main content area
-- **Summary row:** 4 stat-like cards showing Hot/Warm/Cold/Unscored counts + cold percentage
+- **Summary row:** ~~4~~ **3** stat-like cards showing Hot/Warm/Cold counts + cold percentage (~~Unscored removed 2026-09-25~~)
 - **Subscriber table:** columns `[1fr_120px_140px_100px]` (Email, Warmth, Last Engagement, Referrals)
-  - Warmth column: badge with tier colors (Hot=green, Warm=amber, Cold=blue, Unscored=grey)
+  - Warmth column: badge with tier colors (~~Hot=green, Warm=amber, Cold=blue, Unscored=grey~~ shipped: Hot=`bg-status-hot`, Warm=`bg-status-warm`, Cold=`bg-status-cold`, white text — founder token revert 2026-09-25; no Unscored)
   - Sort by warmth tier and referrals (clickable headers)
-  - Filter dropdown: All, Hot, Warm, Cold, Unscored
+  - Filter dropdown: All, Hot, Warm, Cold (~~Unscored~~ removed 2026-09-25)
   - Pagination (10 per page)
 - **Tier gate:** If `tier === "free"`, render locked overlay (same pattern as `WarmthPanel`)
 - **Empty state:** "No subscribers yet..."
@@ -65,7 +67,7 @@ Warmth trend charts, real-time score updates, warmth decay visualization.
 - Hot: `bg-accent/10 text-accent`
 - Warm: `bg-warning/10 text-warning`
 - Cold: `bg-info/10 text-info`
-- Unscored: `bg-muted text-muted-foreground`
+- ~~Unscored: `bg-muted text-muted-foreground`~~ (no Unscored badge since 2026-09-25)
 
 ### T6: Lint + build
 

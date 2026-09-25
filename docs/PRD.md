@@ -487,7 +487,7 @@ create table public.subscribers (
   referrer_id uuid references public.subscribers(id) on delete set null,
   position integer not null,
   qual_answers jsonb,
-  warmth_score text check (warmth_score in ('hot', 'warm', 'cold')),
+  warmth_score text not null default 'hot' check (warmth_score in ('hot', 'warm', 'cold')),
   milestones_earned jsonb,
   milestones_notified jsonb,
   created_at timestamptz not null default now(),
@@ -591,7 +591,6 @@ Repeat the child-table pattern for milestone_rewards and founder_updates. This i
 | /api/subscribers/export     | Route Handler (GET)  | CSV export (Pro tier)                                                        |
 | /api/leaderboard/:subdomain | Route Handler (GET)  | Leaderboard data for public page                                             |
 | /api/updates                | Route Handler (POST) | Create founder update + dispatch email to subscribers                        |
-| /api/warmth/:subdomain      | Route Handler (GET)  | Warmth distribution counts (hot/warm/cold/unscored)                          |
 
 ### 7.6 Component Tree (high level)
 

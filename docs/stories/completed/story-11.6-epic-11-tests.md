@@ -19,6 +19,8 @@ As a developer, I want comprehensive tests for the warmth tracking engine so tha
 - AC6: Lint and build shall pass with zero errors.
 - AC7: Total test count for Sprint 3 shall be ≥250 (current: 527).
 
+> **Dev Notes (2026-09-25 — warmth restructure):** AC2 and AC3 are superseded — `Unscored` no longer exists as a tier, so no test asserts it (assignment always returns `hot|warm|cold`; null badge inputs map to Hot defensively). Updated suites: `src/__tests__/lib/warmth.test.ts`, `warmth-batch.test.ts`, `dashboard-warmth-page.test.tsx` (535 total tests, 528 pass / 7 pre-existing failures). Original AC text retained above for history. **[AMENDED 2026-09-25]**
+
 ## Tasks
 
 T1 (AC1) Webhook route tests · T2 (AC2) Warmth calculation unit tests · T3 (AC3-AC4) Warmth badge + filter component tests · T4 (AC5) Warmth panel component tests · T5 (AC6-AC7) Lint + build + count verification
@@ -74,7 +76,7 @@ Test cases:
 4. **Tier assignment thresholds:** score=70 → "hot", score=69 → "warm", score=39 → "cold", score=0 → null
 5. **Time decay at 60 days:** Last event 70 days ago → -25 penalty applied
 6. **Time decay at 90 days:** Last event 100 days ago → score resets to 0
-7. **Zero-event subscriber:** No events → score = 0, tier = null (Unscored)
+7. **Zero-event subscriber:** No events → score = ~~0, tier = null (Unscored)~~ **70, tier `hot` (baseline 70)**
 8. **No decay for recent activity:** Last event 10 days ago → no penalty
 
 ```typescript
@@ -103,13 +105,13 @@ Test cases:
 1. Renders "Hot" with green class when score="hot"
 2. Renders "Warm" with amber class when score="warm"
 3. Renders "Cold" with blue class when score="cold"
-4. Renders "Unscored" with grey class when score=null
+4. Renders ~~"Unscored" with grey class when score=null~~ Hot styling when badge input is null (defensive fallback)
 
 #### Warmth filter tests
 
 Test cases:
 
-1. Renders all 5 options (All, Hot, Warm, Cold, Unscored)
+1. Renders all ~~5~~ **4** options (All, Hot, Warm, Cold~~, Unscored~~)
 2. Selecting "Hot" calls onChange with "hot"
 3. Selecting "All" calls onChange with empty string or null
 4. Default value is "All"
@@ -123,8 +125,8 @@ Test cases:
 
 Test cases:
 
-1. **Real data:** Mock fetch returns `{ hot: 10, warm: 5, cold: 3, unscored: 2, total: 20 }` → renders 4 bars with correct counts
-2. **Empty state:** Mock fetch returns `{ hot: 0, warm: 0, cold: 0, unscored: 0, total: 0 }` → renders em-dashes
+1. **Real data:** Mock fetch returns `{ hot: 10, warm: 5, cold: 3, ~~unscored: 2,~~ total: 20 }` → renders ~~4~~ **3** bars with correct counts
+2. **Empty state:** Mock fetch returns `{ hot: 0, warm: 0, cold: 0, ~~unscored: 0,~~ total: 0 }` → renders em-dashes
 3. **Bar widths:** Hot bar width = 50% (10/20), Warm = 25% (5/20), etc.
 4. **No blur/lock:** Panel renders without blur overlay for any tier
 

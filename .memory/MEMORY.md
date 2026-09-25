@@ -530,7 +530,7 @@ Implementation order:
 | `components/dashboard/signup-chart.tsx`        | SignupChart             | ✅ Done — Recharts BarChart, 30d/All Time toggle, custom tooltip, horizontal scroll on mobile, skeleton loader                                                                                                                                                                                                                                              |
 | `components/dashboard/qualification-panel.tsx` | QualificationPanel      | ✅ Done — question distribution bars, empty states (no questions / no answers), skeleton loader                                                                                                                                                                                                                                                             |
 | `components/dashboard/top-referrers.tsx`       | TopReferrers            | ✅ Done — top 5 by quality score, anonymized emails, referral count badge, empty state CTA                                                                                                                                                                                                                                                                  |
-| `components/dashboard/warmth-panel.tsx`        | WarmthPanel             | ✅ Done — 4 warmth bars (Hot/Warm/Cold/Unscored), locked overlay for Free, real data fetch for Pro                                                                                                                                                                                                                                                          |     | `components/lib/cn.ts` | cn() | ✅ Done — clsx + tailwind-merge |
+| `components/dashboard/warmth-panel.tsx`        | WarmthPanel             | ✅ Done — 3 warmth bars (Hot/Warm/Cold), `"{n} subscribers"` meta (accent count, total>0 only), title `<Link>` whole-card overlay, `aria-hidden` "View all →", `waitlistId` prop, free = upgrade button; redesign 2026-09-25                                                                                                                                |     | `components/lib/cn.ts` | cn() | ✅ Done — clsx + tailwind-merge |
 
 ## Layout Structure
 
@@ -548,9 +548,8 @@ Implementation order:
 | `src/app/dashboard/updates/page.tsx`              | Founder updates compose page — textarea + publish                        |
 | `src/app/api/dashboard/chart/route.ts`            | GET (daily signup aggregation, 30d/all-time)                             |
 | `src/app/api/dashboard/qualification/route.ts`    | GET (qualification answer distribution per question)                     |
-| `src/app/api/dashboard/warmth/route.ts`           | GET (warmth score distribution: hot/warm/cold/unscored)                  |
+| `src/app/api/dashboard/warmth/route.ts`           | GET (warmth score distribution: hot/warm/cold + total — no `unscored`)   |
 | `src/app/api/dashboard/stats/route.ts`            | GET (total signups, referral %, today, warmth summary)                   |
-| `src/app/api/warmth/[subdomain]/route.ts`         | GET (public warmth distribution for subdomain)                           |
 
 ## Testing
 
@@ -752,7 +751,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 **Key architecture decisions (Epic 11):**
 
-- `src/lib/warmth.ts` — score calculation + tier assignment (hot ≥70, warm ≥40, cold >0, unscored = null)
+- `src/lib/warmth.ts` — score calculation + tier assignment (hot ≥70, warm ≥40, cold >0, unscored = null) **[tier rule superseded 2026-09-25: baseline 70, no null tier — see Warmth Model Restructure block]**
 - `src/lib/supabase/admin.ts` — service role client for webhook (bypasses RLS)
 - Webhook uses `req.text()` (NOT `req.json()`) — Svix HMAC breaks if body re-serialized
 - Cron endpoint protected by `CRON_SECRET` Bearer token
@@ -968,7 +967,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 - Dropped `email_reply` (+10) and `leaderboard_visit` (+5) warmth signals — Resend emits no reply event and `page_views` is never written. Scored signals: click +5, referral +15, qualification answers +8.
 - Decay uses **clicked-only** last engagement with `subscribers.created_at` fallback; windows 0–59 free / 60–89 −25 / 90+ → 0. Boundary is `daysSince >= 60` (day 59 not penalized).
-- Score 0 **with** lifetime engagement (clicks/referrals/qual) → **Cold**, never Unscored; Unscored only when never engaged (`assignTier(score, hadEngagement)`).
+- ~~Score 0 **with** lifetime engagement (clicks/referrals/qual) → **Cold**, never Unscored; Unscored only when never engaged (`assignTier(score, hadEngagement)`)~~ — **overturned 2026-09-25 by the warmth restructure** (below): Unscored removed entirely, `hadEngagement` deleted, everyone starts Hot.
 - Cron scheduled in `vercel.json`: `{ "path": "/api/cron/warmth", "schedule": "0 5 * * *" }` (UTC 05:00, Bearer `CRON_SECRET`) — Standing Decision 6.
 - Warmth badge + tier filter live on `/dashboard/warmth` only — no subscriber-table column (Story 11.2 surface corrected in 15.6).
 - Opens never enter the warmth score (Apple MPP) — product vision amended in 15.6 (`:130`, `:150`, `:211`, `:414`, `:477`).
@@ -981,7 +980,29 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - Settings `warning-threshold` helper is the **cold-% warning** (range 20–80), not a score cutoff.
 - Segments API needs `?wid=` **and** `requirePro` — tier gate runs before waitlist lookup (Free + bad wid → 403, not 404).
 - `/api/dashboard/warmth` returns 400 without `waitlist_id` — the dashboard client fetch is guarded by `if (waitlist_id)`.
-- Test baseline after 15.5: 527 total, 520 pass / 7 fixed failures (dashboard-archive 4, dashboard-subscriber-table 3).
+- Test baseline after restructure (2026-09-25): 535 total, 528 pass / 7 fixed failures (dashboard-archive 4, dashboard-subscriber-table 3) — was 527/520/7 before +8 restructure tests.
+
+## Warmth Model Restructure (2026-09-25) — Unscored Removed, Baseline 70
+
+**Plan:** `docs/dashboard-warmth-redesign-plan.md` (approved; Sections 0-5) · **Executed:** 2026-09-25 via Prompt #2, uncommitted, branch `dev`.
+
+**Decision (founder):** "the unscored functionality is to be removed and everyone starts from hot and they go cold based on activity."
+
+**Model:** `score = clamp(70 + clicks×5 + referrals×15 + qual×8 − decay, 0, 100)` · `Tier = "hot" | "warm" | "cold"` (never null) · baseline 70 = Hot at signup · decay windows unchanged (0–59 free / 60–89 −25 / 90+ → 0) · thresholds unchanged (≥70 Hot / ≥40 Warm) · recency clock = max(last click, latest referred signup, own signup) — **any meaningful action** resets decay.
+
+**Overturns:** Epic 15 Standing Decision 3 (engaged-zero → Cold / Unscored = never engaged) + ACs in Stories 11.1 (AC6/7), 11.2 (AC2/3), 11.3 (AC1/4), 12.3.3 (AC2/5), 15.0 (AC4/7), 15.1 (AC4), 15.4 (AC1/5), 15.5 (AC5), Epic 17 (AC3/7) — annotated in epic/story docs, not silently rewritten. Vision already said "three states" — aligns code back to vision (v4.3 bump).
+
+**Implementation:**
+
+- `src/lib/warmth.ts` — `BASELINE=70`; `assignTier(score)` no null; `scoreSubscriber` returns `{score, tier}` (dropped `hadEngagement`); `calculateDecay(events, referralActivityAt, fallbackDate)`; batch returns `{processed, hot, warm, cold}`, referral fetch `referrer_id, created_at`.
+- `POST /api/subscribers` — `baseInsert.warmth_score = "hot"` (R5).
+- `GET /api/dashboard/warmth` → `{hot, warm, cold, total}` (no `unscored`); cron passthrough.
+- **Deleted:** `src/app/api/warmth/[subdomain]/` + its test (R8 orphan).
+- UI: WarmthPanel redesign (3 bars, accent `"{n} subscribers"` meta ≤ total>0, title `<Link>` + `after:absolute` overlay, `aria-hidden` "View all →", `waitlistId` prop, value colors `text-status-*`); warning-banner/client/warmth-page/warmth-client drop `unscored`; null badge → Hot (defensive); warm page Last Engagement includes referral `created_at`.
+- **Switcher fix (same plan):** success CTA `<Link>` → `<a>` (Fix A); shell self-heal `router.refresh()` once per unknown `?wid` (Fix B).
+- **SQL gate (founder-run, safe any time — DEFAULT-first):** `docs/stories/sql-writeups/warmth-restructure-no-unscored.sql` (DEFAULT 'hot' → backfill NULL → NOT NULL).
+
+**Gates:** lint 0/5; targeted 79/79; full suite 535 = 528 pass / 7 fail (identical 7 verified pre-existing on clean HEAD via stash); clean build exit 0 (must delete `.next` first — stale `validator.ts` referenced the deleted route).
 
 ## Epic 17 Progress (Broadcasting Engine Fix)
 
@@ -1082,6 +1103,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 65. **Execute Epic 14.0 + 14.1 + Prompt #3 audit** ✅ Done (2026-09-24) — implemented, audited, 3 findings fixed (milestones/unsubscribe admin clients, email-capture dark tokens); gates green at baseline; committed (`ec42cf6`); founder must run `epic14-story0-qualification-schema.sql` before deploy
 66. ~~Execute Epic 14.2 + 14.3 + dashboard design redesign + brand accents~~ ✅ Done (2026-09-24) — commits `d3843f0`, `e51dcc6`, `25d99f1`; gates green (lint 0/5, build, suite 466/7 = baseline); epic + story docs synced to `done`; branch `dev` **not pushed**; next: 14.4 (CSV/tests/cleanup)
 67. **Execute Story 14.4 (CSV/tests/cleanup) + scan→execute prompts** ✅ Done (2026-09-25) — Prompt #1 scan + Prompt #2 execute; AC1–AC7 all implemented; new tests: `question-cap` (5), `csv-export` (5), qual-page server route (3); gates green (lint 0/5, clean build, suite **480 passed / 7 failed = exact baseline**); story moved to `completed/`; epic doc/PRD/audit/MEMORY synced; **uncommitted**, branch `dev` **not pushed**; next: `commit-push` when instructed
+68. **Execute `docs/dashboard-warmth-redesign-plan.md` (warmth restructure + card redesign + switcher fix)** ✅ Done (2026-09-25) — Prompt #2 execute of approved plan; Unscored removed (baseline 70 → Hot), WarmthPanel 3-bar redesign + title-link overlay, switcher Fix A/B, orphan `/api/warmth/[subdomain]` deleted, SQL file written; gates green (lint 0/5, targeted 79/79, suite **535 = 528 pass / 7 fail = verified baseline via stash**, clean build — delete `.next` first); docs synced (PRD, vision v4.3, design guide, sprint-3 spec, MEMORY, Epic 15/17/11/12.3 annotations); **uncommitted**, branch `dev` **not pushed**; founder gates open (3 SQL/cron items); next: manual verification + `commit-push` when instructed
 
 ## Decision + bug fix: "Powered by PreWaitlist" footer (2026-07)
 

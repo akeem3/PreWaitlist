@@ -21,6 +21,8 @@ As a founder, I want each subscriber to have an engagement score (0–100) so th
 - AC8: A daily cron job shall recalculate scores for all subscribers in all waitlists, scheduled in `vercel.json` as `{ "path": "/api/cron/warmth", "schedule": "0 5 * * *" }` (UTC daily 05:00, Story 15.1). This is a deliberate scope decision for MVP — real-time recalculation on every webhook event is v1.1.
 - AC9: Lint and build shall pass with zero errors.
 
+> **Dev Notes (2026-09-25 — warmth restructure):** AC6 and AC7 are superseded by the approved restructure (`docs/dashboard-warmth-redesign-plan.md`): every subscriber starts at **score 70 / tier `hot`** (baseline 70 replaces zero-signal 0/Unscored), tiers are always `hot|warm|cold` (never null — `hadEngagement` removed), and `subscribers.warmth_score` is now `text not null default 'hot'` (migration: `docs/stories/sql-writeups/warmth-restructure-no-unscored.sql`). AC5's "score = 0 with lifetime engagement" clause is moot — score 0 is simply Cold (< 40). Original AC text retained above for history. **[AMENDED 2026-09-25]**
+
 ## Tasks
 
 T1 (AC1-AC4) Score calculation function with signal weights + decay · T2 (AC5-AC7) Tier assignment + DB storage · T3 (AC8) Cron job / trigger for batch recalculation · T4 (AC9) Lint + build

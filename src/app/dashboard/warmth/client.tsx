@@ -15,7 +15,6 @@ interface WarmthSummary {
   hot: number;
   warm: number;
   cold: number;
-  unscored: number;
   total: number;
 }
 
@@ -27,7 +26,7 @@ interface WarmthClientProps {
 
 type SortField = "warmth_score" | "referral_count";
 type SortDir = "asc" | "desc";
-type FilterTier = "all" | "hot" | "warm" | "cold" | "unscored";
+type FilterTier = "all" | "hot" | "warm" | "cold";
 
 const WARMTH_ORDER: Record<string, number> = {
   hot: 0,
@@ -38,23 +37,19 @@ const WARMTH_ORDER: Record<string, number> = {
 const PAGE_SIZE = 10;
 
 function WarmthBadge({ tier }: { tier: string | null }) {
-  if (!tier) {
-    return (
-      <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-        Unscored
-      </span>
-    );
-  }
   const colors: Record<string, string> = {
     hot: "bg-status-hot text-white",
     warm: "bg-status-warm text-white",
     cold: "bg-status-cold text-white",
   };
+  // Warmth restructure: legacy null rows are treated as Hot (DB is NOT NULL
+  // after the migration, so this is only a pre-migration fallback).
+  const resolved = tier ?? "hot";
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${colors[tier] ?? "bg-muted text-muted-foreground"}`}
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${colors[resolved] ?? "bg-muted text-muted-foreground"}`}
     >
-      {tier}
+      {resolved}
     </span>
   );
 }
@@ -76,8 +71,8 @@ export default function WarmthClient({
     }
     return [...result].sort((a, b) => {
       if (sortField === "warmth_score") {
-        const aOrder = a.warmth_score ? (WARMTH_ORDER[a.warmth_score] ?? 3) : 3;
-        const bOrder = b.warmth_score ? (WARMTH_ORDER[b.warmth_score] ?? 3) : 3;
+        const aOrder = WARMTH_ORDER[a.warmth_score ?? "hot"] ?? 0;
+        const bOrder = WARMTH_ORDER[b.warmth_score ?? "hot"] ?? 0;
         return sortDir === "asc" ? aOrder - bOrder : bOrder - aOrder;
       }
       return sortDir === "asc"
@@ -109,8 +104,8 @@ export default function WarmthClient({
         <h1 className="mb-6 text-h2 text-foreground">Warmth</h1>
         <div className="relative rounded-[var(--card-radius)] border border-border bg-card p-8">
           <div className="space-y-4 opacity-50">
-            <div className="grid grid-cols-4 gap-4">
-              {["Hot", "Warm", "Cold", "Unscored"].map((label) => (
+            <div className="grid grid-cols-3 gap-4">
+              {["Hot", "Warm", "Cold"].map((label) => (
                 <div key={label} className="text-center">
                   <div className="text-3xl font-bold text-foreground">—</div>
                   <div className="text-xs text-muted-foreground">{label}</div>
@@ -145,16 +140,11 @@ export default function WarmthClient({
       ) : (
         <>
           {/* Summary row */}
-          <div className="mb-6 grid grid-cols-4 gap-4">
+          <div className="mb-6 grid grid-cols-3 gap-4">
             {[
               { label: "Hot", count: summary.hot, color: "text-status-hot" },
               { label: "Warm", count: summary.warm, color: "text-status-warm" },
               { label: "Cold", count: summary.cold, color: "text-status-cold" },
-              {
-                label: "Unscored",
-                count: summary.unscored,
-                color: "text-muted-foreground",
-              },
             ].map((item) => (
               <div
                 key={item.label}
@@ -196,7 +186,6 @@ export default function WarmthClient({
                 <option value="hot">Hot</option>
                 <option value="warm">Warm</option>
                 <option value="cold">Cold</option>
-                <option value="unscored">Unscored</option>
               </select>
               <span className="ml-auto text-xs text-muted-foreground">
                 {filtered.length} subscriber{filtered.length !== 1 ? "s" : ""}

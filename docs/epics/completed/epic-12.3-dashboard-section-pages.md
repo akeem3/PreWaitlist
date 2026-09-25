@@ -142,10 +142,10 @@ Work through these in order. Story 12.3.0 unlocks the sidebar nav items so subse
 **Acceptance Criteria (EARS):**
 
 - AC1: The page shall display at `/dashboard/warmth` with a "Warmth" heading.
-- AC2: The page shall show a summary row: total subscribers, count per tier (Hot/Warm/Cold/Unscored), and the cold percentage.
+- AC2: The page shall show a summary row: total subscribers, count per tier (~~Hot/Warm/Cold/Unscored~~ Hot/Warm/Cold), and the cold percentage. **[AMENDED 2026-09-25 — warmth restructure: Unscored removed]**
 - AC3: The page shall show a subscriber table with columns: Email, Warmth Tier (badge), Last Engagement (date or "Never"), Referrals.
 - AC4: The table shall be sortable by warmth tier and referral count.
-- AC5: The table shall include a warmth filter dropdown (All, Hot, Warm, Cold, Unscored) — same as the overview subscriber table.
+- AC5: The table shall include a warmth filter dropdown (~~All, Hot, Warm, Cold, Unscored~~ All, Hot, Warm, Cold) — same as the overview subscriber table. **[AMENDED 2026-09-25 — warmth restructure: Unscored removed]**
 - AC6: The page shall be gated to Pro tier only — Free users shall see a locked overlay with "Upgrade to Pro to view warmth details."
 - AC7: When the waitlist has zero subscribers, the page shall show: "No subscribers yet. Warmth data will appear once people join your waitlist."
 - AC8: The page shall reuse the Sidebar component and match the dashboard layout.
@@ -161,9 +161,9 @@ Work through these in order. Story 12.3.0 unlocks the sidebar nav items so subse
   - `src/app/dashboard/warmth/page.tsx` (server component)
   - `src/app/dashboard/warmth/client.tsx` (client component)
 - Server component: auth check + waitlist fetch, tier check (redirect Free users to `/dashboard`), subscribers with `warmth_score` and `created_at`, warmth distribution computation
-- Client component: summary row (total, Hot/Warm/Cold/Unscored counts, cold %), subscriber table with columns `[1fr_120px_140px_100px]` (Email, Warmth, Last Engagement, Referrals), filter dropdown, sort by warmth tier + referrals, pagination
+- Client component: summary row (total, ~~Hot/Warm/Cold/Unscored~~ Hot/Warm/Cold counts, cold %), subscriber table with columns (Email, Warmth, Last Engagement, Referrals), filter dropdown (All/Hot/Warm/Cold), sort by warmth tier + referrals, pagination
 - Tier gate: `tier === "free"` renders locked overlay with "Upgrade to Pro to view warmth details."
-- Badge colors (matching Story 11.2): Hot = `bg-accent/10 text-accent`, Warm = `bg-warning/10 text-warning`, Cold = `bg-info/10 text-info`, Unscored = `bg-muted text-muted-foreground`
+- Badge colors (matching Story 11.2 ~~as originally written~~ as amended 2026-09-25): Hot = `bg-status-hot text-white`, Warm = `bg-status-warm text-white`, Cold = `bg-status-cold text-white` (~~Unscored = `bg-muted text-muted-foreground`~~ Unscored removed — warmth restructure)
 - Empty state: "No subscribers yet. Warmth data will appear once people join your waitlist."
 - **Post-12.3.5:** Sidebar removed from client component — layout provides it via `DashboardShell`. Props simplified to `subscribers`, `warmthSummary`, `tier` only (removed `waitlistName`, `logoUrl`).
 

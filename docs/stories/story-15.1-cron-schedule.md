@@ -18,6 +18,8 @@ As a platform, I want the daily warmth recalculation cron scheduled in productio
 - AC4: A manual authenticated invoke of `/api/cron/warmth` on production shall return JSON with numeric `processed`, `hot`, `warm`, `cold`, `unscored`.
 - AC5: Lint and build shall pass with zero errors.
 
+> **Dev Notes (2026-09-25 — warmth restructure):** AC4 is superseded — the cron response is `{ processed, hot, warm, cold }` (no `unscored` field). Original AC text retained above for history. **[AMENDED 2026-09-25]** Body sections below (expected-response lines) still show the pre-restructure model (`unscored` field) — treat them as historical; the restructure supersedes them.
+
 ## Tasks
 
 - T1 (AC1) Add `crons` to `vercel.json`

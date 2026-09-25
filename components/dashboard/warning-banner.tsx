@@ -2,7 +2,6 @@ interface WarmthData {
   hot: number;
   warm: number;
   cold: number;
-  unscored: number;
   total: number;
 }
 

@@ -23,6 +23,8 @@ As a founder, I want warmth UI colors, last-engagement data, warning data plumbi
 - AC7: Free panel still shows counts + upgrade badge; `/dashboard/warmth` remains Pro-gated (regression guard).
 - AC8: Lint and build shall pass with zero errors.
 
+> **Dev Notes (2026-09-25 — warmth restructure):** AC1's `Unscored = bg-muted` clause is superseded — the panel renders three bars only (Hot/Warm/Cold); no Unscored bar exists. Original AC text retained above for history. **[AMENDED 2026-09-25]** Body sections below (color tables, JSON shapes, verification lines) still show the pre-restructure model (`Unscored` row, `unscored` fields) — treat them as historical; the restructure supersedes them.
+
 ## Tasks
 
 - T1 (AC1) Panel bar colors

@@ -56,13 +56,11 @@ export async function GET(request: NextRequest) {
   const hot = hotResult.count ?? 0;
   const warm = warmResult.count ?? 0;
   const cold = coldResult.count ?? 0;
-  const unscored = Math.max(0, total - hot - warm - cold);
 
   const response = NextResponse.json({
     hot,
     warm,
     cold,
-    unscored,
     total,
   });
   response.headers.set(

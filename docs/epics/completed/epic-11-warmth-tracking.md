@@ -19,7 +19,7 @@ Build the warmth scoring engine that calculates a 0–100 engagement score per s
 
 ## Definition of Done
 
-Every subscriber has a warmth score (0–100) that updates via daily batch recalculation. The dashboard subscriber list shows a warmth badge (Hot/Warm/Cold/Unscored) per row with a working filter. The warmth distribution panel shows real bar chart data. The dashboard warning state triggers when cold % exceeds a configurable threshold.
+Every subscriber has a warmth score (0–100) that updates via daily batch recalculation. The dashboard subscriber list shows a warmth badge (~~Hot/Warm/Cold/Unscored~~ Hot/Warm/Cold — Unscored removed 2026-09-25, warmth restructure) per row with a working filter. The warmth distribution panel shows real bar chart data. The dashboard warning state triggers when cold % exceeds a configurable threshold.
 
 ## Story Index
 
@@ -121,8 +121,8 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 - AC3: The score shall include time-based decay: no activity in 0–59 days = no penalty, no activity in 60–89 days = -25 points, no activity in 90+ days = score resets to 0.
 - AC4: The score shall be clamped to 0–100 range (never below 0, never above 100).
 - AC5: The system shall assign tiers based on score: Hot (70+), Warm (40–69), Cold (<40).
-- AC6: New subscribers with no engagement signals shall have score = 0 and tier = "Unscored".
-- AC7: The score shall be stored in the `subscribers.warmth_score` column (text, check: in hot/warm/cold, nullable).
+- AC6: ~~New subscribers with no engagement signals shall have score = 0 and tier = "Unscored".~~ **[AMENDED 2026-09-25 — warmth restructure:** baseline 70 — new subscribers start at score 70 / tier `hot`; tiers always `hot|warm|cold` (never null); "Unscored" removed**]**
+- AC7: ~~The score shall be stored in the `subscribers.warmth_score` column (text, check: in hot/warm/cold, nullable).~~ **[AMENDED 2026-09-25 — warmth restructure:** column is `text not null default 'hot'`; migration `docs/stories/sql-writeups/warmth-restructure-no-unscored.sql`**]**
 - AC8: A daily cron job shall recalculate scores for all subscribers in all waitlists. This is a deliberate scope decision for MVP — real-time recalculation on every webhook event is v1.1.
 - AC9: Lint and build shall pass with zero errors.
 
@@ -135,9 +135,9 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 - T1 (AC1–AC4): ✅ `src/lib/warmth.ts` — scored signals: email click +5, referral signup +15, qualification answers +8. The original weights in AC2 above are superseded: **reply (+10) and leaderboard visit (+5) were dropped** (Epic 15 Story 15.0) — Resend emits no reply event and `page_views` is never written. Canonical ACs: `story-11.1-warmth-calculation.md`.
 - T1 (Apple MPP): ✅ Opens are NOT a warmth signal — `docs/product-vision-mvp-waitlist-tool.md` amended in Story 15.6 (5 sites).
 - T1 (decay): ✅ Clicked-only last engagement with `subscribers.created_at` fallback; windows 0–59 free / 60–89 −25 / 90+ → 0. Boundary is `daysSince >= 60` (day 59 not penalized).
-- T2 (AC5/AC6): ✅ `assignTier(score, hadEngagement)` — Hot ≥70, Warm ≥40, Cold >0; score 0 **with** lifetime engagement → Cold; Unscored only when never engaged.
+- T2 (AC5/AC6): ~~✅ `assignTier(score, hadEngagement)` — Hot ≥70, Warm ≥40, Cold >0; score 0 **with** lifetime engagement → Cold; Unscored only when never engaged.~~ **[SUPERSEDED 2026-09-25 — warmth restructure:** AC6/AC7 amended: Unscored removed; `assignTier(score)` = Hot ≥70 / Warm ≥40 / Cold otherwise; `warmth_score` not null; fresh signup inserts `'hot'` (baseline 70). Plan: `docs/dashboard-warmth-redesign-plan.md` §4**]**
 - T3 (AC8): ✅ Daily batch at `src/app/api/cron/warmth/route.ts` (Bearer `CRON_SECRET`), scheduled `0 5 * * *` UTC in `vercel.json`. **Manual gate: verify the Vercel cron deployed.**
-- T3: `GET /api/dashboard/warmth` (44 lines) already returns `{hot, warm, cold, unscored, total}`.
+- T3: `GET /api/dashboard/warmth` ~~(44 lines) already returns `{hot, warm, cold, unscored, total}`~~ **[shape amended 2026-09-25: `{hot, warm, cold, total}` — no `unscored`]**.
 - Batch iteration is paginated (Story 15.0) — no full-table load for large waitlists.
 
 ---
@@ -146,13 +146,13 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 **Status:** done (warmth page only — see Dev Notes)
 **Design Refs:** `docs/design/sprint-3-design-specs.md` — S2
-**Story:** As a founder, I want to see a warmth badge (Hot/Warm/Cold/Unscored) next to each subscriber and filter by warmth tier so that I can identify engaged vs. disengaged subscribers.
+**Story:** As a founder, I want to see a warmth badge (~~Hot/Warm/Cold/Unscored~~ Hot/Warm/Cold — Unscored removed 2026-09-25) next to each subscriber and filter by warmth tier so that I can identify engaged vs. disengaged subscribers.
 
 **Acceptance Criteria (EARS):**
 
 - AC1: The subscriber table shall display a warmth badge column between Position and Referrals.
-- AC2: Hot subscribers shall show a green badge (`bg-accent/10 text-accent`), Warm = amber (`bg-yellow-100 text-yellow-800`), Cold = blue (`bg-blue-100 text-blue-800`), Unscored = grey (`bg-muted text-muted-foreground`).
-- AC3: The table header shall include a warmth filter dropdown: All, Hot, Warm, Cold, Unscored.
+- AC2: ~~Hot subscribers shall show a green badge (`bg-accent/10 text-accent`), Warm = amber (`bg-yellow-100 text-yellow-800`), Cold = blue (`bg-blue-100 text-blue-800`), Unscored = grey (`bg-muted text-muted-foreground`).~~ **[AMENDED 2026-09-25:** shipped badge = Hot `bg-status-hot text-white`, Warm `bg-status-warm text-white`, Cold `bg-status-cold text-white` (founder token revert); Unscored removed — see canonical `story-11.2-warmth-column-filter.md`**]**
+- AC3: The table header shall include a warmth filter dropdown: All, Hot, Warm, Cold, ~~Unscored~~. **[AMENDED 2026-09-25 — Unscored option removed]**
 - AC4: Filtering by warmth tier shall instantly filter the displayed rows without a server call.
 - AC5: The warmth badge shall use the design system's caption typography (12px, regular).
 - AC6: Lint and build shall pass with zero errors.
@@ -163,7 +163,8 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 **Dev Notes:**
 
-- T1–T4: ✅ Implemented — warmth badge + client-side tier filter live on `/dashboard/warmth` (`src/app/dashboard/warmth/client.tsx`): badge classes at :49–55 (Hot = `bg-accent/10 text-accent` green — fixes the original red-badge bug, Warm amber, Cold blue, Unscored grey), filter select at :188–199, row filtering via `useMemo` at :70–87.
+- T1–T4: ✅ Implemented — warmth badge + client-side tier filter live on `/dashboard/warmth` (`src/app/dashboard/warmth/client.tsx`): badge classes (~~Hot = `bg-accent/10 text-accent` green, Warm amber, Cold blue, Unscored grey~~ shipped = Hot/Warm/Cold `bg-status-* text-white` solid pills per founder token revert 2026-09-25), filter select (~~All/Hot/Warm/Cold/Unscored~~ All/Hot/Warm/Cold), row filtering via `useMemo`.
+- **[AMENDED 2026-09-25 — warmth restructure:** AC2 Unscored badge clause + AC3 Unscored filter option removed — 3 filter options (Hot/Warm/Cold) remain; legacy null badge renders Hot styling defensively**]**
 - **Scope correction (Story 15.6):** the badge/filter are NOT in the dashboard subscriber table (`src/app/dashboard/client.tsx`) — the original line references (84, 483–493, 577–595) were dead after Story 12.1.9. Canonical ACs rewritten in `story-11.2-warmth-column-filter.md`.
 - Story 15.4 follow-up: Hot badge/bar tones confirmed against design tokens (accent green).
 
@@ -177,10 +178,10 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 **Acceptance Criteria (EARS):**
 
-- AC1: The warmth distribution panel shall display four horizontal bars: Hot, Warm, Cold, Unscored.
+- AC1: The warmth distribution panel shall display ~~four~~ **three** horizontal bars: Hot, Warm, Cold, ~~Unscored~~. **[AMENDED 2026-09-25 — warmth restructure: Unscored bar removed]**
 - AC2: Each bar shall show the count of subscribers in that tier and the percentage of total.
 - AC3: The bars shall use the same color scheme as the warmth badges (green/amber/blue/grey).
-- AC4: The panel shall fetch data from `GET /api/dashboard/warmth` which returns `{ hot: number, warm: number, cold: number, unscored: number }`.
+- AC4: The panel shall fetch data from `GET /api/dashboard/warmth` which returns `{ hot: number, warm: number, cold: number, ~~unscored: number~~ total: number }`. **[AMENDED 2026-09-25 — shape is `{hot, warm, cold, total}`]**
 - AC5: When the waitlist has zero subscribers, the panel shall show em-dashes (not zeros).
 - AC6: The panel shall no longer be blurred or locked for any tier — warmth viewing is available to all founders.
 - AC7: Lint and build shall pass with zero errors.
@@ -191,8 +192,8 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 **Dev Notes:**
 
-- T1 (AC1–AC3): ✅ `components/dashboard/warmth-panel.tsx` renders four horizontal bars (Hot/Warm/Cold/Unscored) with counts + percentages; Hot = `bg-accent` (brand green), Warm/Cold/Unscored per design tokens — the original hardcoded `bg-red-500`/`bg-amber-500`/`bg-blue-500`/`bg-gray-400` bars are gone.
-- T2 (AC4): ✅ Data comes from the shared dashboard stats fetch with props passed into the panel (no independent fetch since Story 15.4); shape `{hot, warm, cold, unscored, total}` from `GET /api/dashboard/warmth`. The original `/api/warmth/${subdomain}` public fetch was removed.
+- T1 (AC1–AC3): ~~✅ `components/dashboard/warmth-panel.tsx` renders four horizontal bars (Hot/Warm/Cold/Unscored) with counts + percentages; Hot = `bg-accent` (brand green), Warm/Cold/Unscored per design tokens — the original hardcoded `bg-red-500`/`bg-amber-500`/`bg-blue-500`/`bg-gray-400` bars are gone.~~ **[SUPERSEDED 2026-09-25 — warmth restructure:** AC1 amended — panel renders **three** bars (Hot/Warm/Cold); AC3 colors = `bg-status-*` tokens (Standing Decision 8); new meta line `"{n} subscribers"` (total > 0) + title `<Link>` whole-card overlay**]**
+- T2 (AC4): ✅ Data comes from the shared dashboard stats fetch with props passed into the panel (no independent fetch since Story 15.4); ~~shape `{hot, warm, cold, unscored, total}` from `GET /api/dashboard/warmth`~~ **[shape amended 2026-09-25: `{hot, warm, cold, total}`]**. The original `/api/warmth/${subdomain}` public fetch was removed (route deleted 2026-09-25).
 - T3 (AC5): ✅ Zero-subscriber state shows em-dashes.
 - T3 (AC6): ✅ `LockedOverlay`/blur removed — panel visible to all tiers. Free-tier UX nudges added in Story 15.4 (upgrade badge, no lock). Pro gating of the separate warmth _page_ is Story 12.3.3.
 - Tests: `src/__tests__/components/dashboard-warmth-page.test.tsx` (Story 15.5) covers distribution rendering + empty state (canonical AC5 file mapping — the original `warmth-panel.test.tsx` suite also exists).
@@ -239,7 +240,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 - AC1: The score calculation shall apply time decay based on days since last engagement event (email click, email reply, referral).
 - AC2: Decay rules: 0–59 days = no penalty, 60–89 days = -25 points, 90+ days = score resets to 0.
 - AC3: "Last engagement" shall be determined by the most recent `email_events.created_at` for the subscriber.
-- AC4: Subscribers with zero events shall have score = 0 regardless of signup date.
+- AC4: ~~Subscribers with zero events shall have score = 0 regardless of signup date.~~ **[AMENDED 2026-09-25 — warmth restructure:** baseline 70 — zero-event subscribers start at score 70 (Hot) and decay from there (60–89 days → 45; 90+ days → 0/Cold)**]**
 - AC5: The decay shall be applied during the daily batch recalculation (Story 11.1), not on every read.
 - AC6: Lint and build shall pass with zero errors.
 
@@ -250,7 +251,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 **Dev Notes:**
 
 - T1 (AC1–AC3): ✅ Decay lives in `calculateWarmthScore()` (`src/lib/warmth.ts`) — applied after signal summing. Last engagement = most recent **clicked** event; fallback to `subscribers.created_at` when no clicks exist. The original AC1/AC3 wording (click/reply/referral, `email_events.created_at`) is superseded — reply events don't exist in Resend and `created_at` of _any_ event (incl. old sends) skewed staleness. Canonical ACs: `story-11.5-warmth-decay.md`.
-- T2 (AC4): ✅ Never-engaged subscribers → Unscored (not Cold); engaged-but-score-0 → Cold (Story 15.0 tier rule).
+- T2 (AC4): ~~✅ Never-engaged subscribers → Unscored (not Cold); engaged-but-score-0 → Cold (Story 15.0 tier rule).~~ **[SUPERSEDED 2026-09-25 — warmth restructure:** Unscored removed; everyone starts Hot (baseline 70); score 0 after decay → Cold**]**
 - T3 (AC5): ✅ Applied inside the daily batch (`/api/cron/warmth`, `0 5 * * *` UTC) — never on read. **Manual gate: verify Vercel cron deployed.**
 - Boundary: `daysSince >= 60` — the pre-15.0 `>= 59` off-by-one is fixed and covered by tests in `src/__tests__/lib/warmth.test.ts`.
 
@@ -265,8 +266,8 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 **Acceptance Criteria (EARS):**
 
 - AC1: The system shall have API route tests for `POST /api/webhooks/resend` covering: valid event storage, signature verification failure (401), idempotent handling (duplicate event), event type validation.
-- AC2: The system shall have unit tests for `calculateWarmthScore()` covering: score with multiple signals, score clamping (0–100), tier assignment (Hot/Warm/Cold/Unscored), time decay application, zero-event subscriber.
-- AC3: The system shall have component tests for the warmth badge rendering (Hot/Warm/Cold/Unscored variants).
+- AC2: The system shall have unit tests for `calculateWarmthScore()` covering: score with multiple signals, score clamping (0–100), tier assignment (~~Hot/Warm/Cold/Unscored~~ Hot/Warm/Cold only), time decay application, zero-event subscriber. **[AMENDED 2026-09-25 — Unscored removed; no test asserts it]**
+- AC3: The system shall have component tests for the warmth badge rendering (~~Hot/Warm/Cold/Unscored~~ Hot/Warm/Cold variants — Unscored removed 2026-09-25).
 - AC4: The system shall have component tests for the warmth filter dropdown (filter by each tier, filter reset).
 - AC5: The system shall have component tests for the warmth distribution panel (real data, empty state).
 - AC6: Lint and build shall pass with zero errors.
@@ -279,7 +280,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 **Dev Notes:**
 
 - T1 (AC1): ✅ `src/__tests__/api/webhook-resend.test.ts` — 7 tests (lines 84, 99, 112, 147, 161, 171, 183) covering missing-header 401, signature-failure 401, valid-event storage, idempotent duplicate handling, event types, and the Epic 15 multi-waitlist attribution fix.
-- T2 (AC2): ✅ `src/__tests__/lib/warmth.test.ts` (29 tests) + `warmth-batch.test.ts` (5) — multi-signal scores, clamping, tier thresholds (incl. engagement-aware Unscored vs Cold), decay windows + the `>= 60` boundary, zero-event handling, batch pagination.
+- T2 (AC2): ✅ `src/__tests__/lib/warmth.test.ts` + `warmth-batch.test.ts` — multi-signal scores, clamping, tier thresholds (~~incl. engagement-aware Unscored vs Cold~~ post-restructure: `assignTier(score)` never returns null), decay windows + the `>= 60` boundary, zero-event handling, batch pagination.
 - T3 (AC3–AC4): ✅ Warmth badge + filter coverage ships in `src/__tests__/components/dashboard-warmth-page.test.tsx` (Story 15.5) — the originally planned `warmth-badge.test.tsx` / `warmth-filter.test.tsx` files were never created; canonical ACs updated accordingly.
 - T4 (AC5): ✅ `src/__tests__/components/dashboard-warmth-page.test.tsx` (distribution rendering + empty state) + `warning-banner.test.tsx` + `warmth-panel.test.tsx` (Story 15.5).
 - T5 (AC7): ✅ Suite total **527** (520 passing + 7 pre-existing failures: dashboard-archive 4, dashboard-subscriber-table 3) — far above the ≥250 target (original baseline 231).

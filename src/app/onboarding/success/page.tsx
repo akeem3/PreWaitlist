@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useOnboardingForm } from "../context";
 import MetaPreview from "../../../../components/onboarding/meta-preview";
 
@@ -126,7 +125,7 @@ export default function OnboardingSuccess() {
       </div>
 
       {/* Dashboard link — prominent button */}
-      <Link
+      <a
         href={
           form.waitlistId ? `/dashboard?wid=${form.waitlistId}` : "/dashboard"
         }
@@ -148,7 +147,7 @@ export default function OnboardingSuccess() {
             strokeLinejoin="round"
           />
         </svg>
-      </Link>
+      </a>
     </div>
   );
 }

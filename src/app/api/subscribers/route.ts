@@ -552,6 +552,7 @@ export async function POST(request: NextRequest) {
     position,
     referrer_id: resolvedReferrerId,
     qual_answers: sanitizedQualAnswers,
+    warmth_score: "hot",
     consent_given_at: new Date().toISOString(),
     consent_ip_address: ipAddress,
   };

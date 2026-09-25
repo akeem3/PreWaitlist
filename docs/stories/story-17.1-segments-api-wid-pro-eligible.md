@@ -18,6 +18,8 @@ As a Pro founder with one or more waitlists, I want segment counts for the waitl
 - AC4: Response shape shall remain `{ all: number, hot_warm: number, cold: number }` (client dependency Story 17.2).
 - AC5: Lint and build shall pass with zero errors.
 
+> **Dev Notes (2026-09-25 — warmth restructure):** AC3's "`all` = all subscribers (including unscored)" clause is superseded — there is no unscored partition; `all` = all subscribers then eligibility-filtered. Original AC text retained above for history. **[AMENDED 2026-09-25]**
+
 ## Tasks
 
 - T1 (AC1) wid + maybeSingle / multi-waitlist 400
