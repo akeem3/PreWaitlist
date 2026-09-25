@@ -269,7 +269,7 @@ picking up a paying customer.
 
 - **Decay starts at 60 days (not 30):** Waitlist subscribers go quiet while waiting for launch — this is not disengagement. 30-day decay penalizes early adopters unfairly.
 - **Email opens NOT tracked as warmth signal:** Apple Mail Privacy Protection preloads pixels for ~40-50% of email clients, making open data unreliable. Clicks (+5) and referrals (+15) are the primary intent signals.
-- **Cold bar color = blue (not red):** Both Hot (green) and Cold (red) being red-family is confusing. Blue is more distinct.
+- **Cold bar color = blue (not red):** Both Hot (coral `#d0492f`) and Cold (red) being red-family is confusing. Blue is more distinct.
 - **Email infrastructure separation:** Transactional emails from `notifications@prewaitlist.com`, marketing from `updates@prewaitlist.com`. Protects deliverability if a broadcast triggers spam complaints.
 - **Confirmation email uses Emails API, not Batch API:** Batch is for bulk sends. Single transactional send uses `resend.emails.send()`.
 - **Paddle Billing uses `Paddle.Initialize()` (not `Paddle.Setup()`):** Classic vs Billing distinction. `customData` not `passthrough`. `subscription.canceled` (one L) not `cancelled`.
@@ -756,7 +756,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - `src/lib/supabase/admin.ts` — service role client for webhook (bypasses RLS)
 - Webhook uses `req.text()` (NOT `req.json()`) — Svix HMAC breaks if body re-serialized
 - Cron endpoint protected by `CRON_SECRET` Bearer token
-- Badge colors: green=hot (#d0492f → #22c55e), orange=warm (#c7841a), blue=cold (#3b6fa6)
+- Badge colors: hot = coral `#d0492f` (`--color-status-hot`), warm = amber `#c7841a`, cold = blue `#3b6fa6` — Hot was briefly green in the Epic 11/15 era but founder reverted 2026-09-25: **tokens in `globals.css` are the source of truth, Hot green is a bug**
 - `email_events.event_data` column added (jsonb, nullable) for full webhook payload storage
 
 ## Epic 12 Progress (Email System)
@@ -954,15 +954,15 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 **Status:** all stories implemented (15.6 = docs sync complete 2026-09-25). Uncommitted work on `dev`. **Manual gates open:** run `docs/stories/sql-writeups/epic15-story2-email-events-svix-unique.sql` in Supabase (Story 15.2) + verify Vercel cron deployed (Story 15.1). Push only on explicit `commit-push`.
 
-| Story | Status         | Summary                                                                                                                                                        |
-| ----- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 15.0  | ✅ done        | Warmth scoring core — signals click+5/referral+15/qual+8, clicked-only decay + signup fallback, day ≥60 boundary, force-Cold on engaged-zero, batch pagination |
-| 15.1  | 🟡 in-progress | Cron — `vercel.json` `0 5 * * *` UTC + `CRON_SECRET`; code done, prod deploy verification pending                                                              |
-| 15.2  | 🟡 in-progress | Webhook hardening — 401 on bad/missing headers, multi-waitlist attribution, svix unique index (SQL run pending)                                                |
-| 15.3  | ✅ done        | Segments API — `?wid=` + `.maybeSingle()`, `requirePro` before lookup, unsub-excluded eligible counts                                                          |
-| 15.4  | ✅ done        | Warmth display + copy — Hot bars `bg-accent`, warning banner props-only (no free fetch), cold-% settings copy, `if (waitlist_id)` client guard                 |
-| 15.5  | ✅ done        | Tests — 24 new (webhook-resend 7, cron-warmth 3, warmth-panel 5, warning-banner 5, dashboard-segments 4)                                                       |
-| 15.6  | ✅ done        | Docs/vision/memory sync — Epic 11 stories patched, vision opens claims amended, MEMORY block, audit §2.4/§2.9 annotated, epic-11 index flipped                 |
+| Story | Status         | Summary                                                                                                                                                                                                                          |
+| ----- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 15.0  | ✅ done        | Warmth scoring core — signals click+5/referral+15/qual+8, clicked-only decay + signup fallback, day ≥60 boundary, force-Cold on engaged-zero, batch pagination                                                                   |
+| 15.1  | 🟡 in-progress | Cron — `vercel.json` `0 5 * * *` UTC + `CRON_SECRET`; code done, prod deploy verification pending                                                                                                                                |
+| 15.2  | 🟡 in-progress | Webhook hardening — 401 on bad/missing headers, multi-waitlist attribution, svix unique index (SQL run pending)                                                                                                                  |
+| 15.3  | ✅ done        | Segments API — `?wid=` + `.maybeSingle()`, `requirePro` before lookup, unsub-excluded eligible counts                                                                                                                            |
+| 15.4  | ✅ done        | Warmth display + copy — Hot bars `bg-accent` (**founder reverted to `bg-status-hot` 2026-09-25** — tokens are source of truth), warning banner props-only (no free fetch), cold-% settings copy, `if (waitlist_id)` client guard |
+| 15.5  | ✅ done        | Tests — 24 new (webhook-resend 7, cron-warmth 3, warmth-panel 5, warning-banner 5, dashboard-segments 4)                                                                                                                         |
+| 15.6  | ✅ done        | Docs/vision/memory sync — Epic 11 stories patched, vision opens claims amended, MEMORY block, audit §2.4/§2.9 annotated, epic-11 index flipped                                                                                   |
 
 **Decisions (2026-09-25):**
 
@@ -972,6 +972,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - Cron scheduled in `vercel.json`: `{ "path": "/api/cron/warmth", "schedule": "0 5 * * *" }` (UTC 05:00, Bearer `CRON_SECRET`) — Standing Decision 6.
 - Warmth badge + tier filter live on `/dashboard/warmth` only — no subscriber-table column (Story 11.2 surface corrected in 15.6).
 - Opens never enter the warmth score (Apple MPP) — product vision amended in 15.6 (`:130`, `:150`, `:211`, `:414`, `:477`).
+- **Hot = `--color-status-hot` (coral `#d0492f`) everywhere — bar, badge, numbers (founder override 2026-09-25).** The Epic 15.4 "align Hot to `bg-accent` green" decision (Standing Decision 8) is overturned; `globals.css` tokens are the source of truth, never accent-green for Hot.
 
 **Gotchas:**
 

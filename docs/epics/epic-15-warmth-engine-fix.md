@@ -5,13 +5,13 @@
 
 ## Design References
 
-| Reference                                                                             | File                                                                      |
-| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| S1 — Warmth Distribution Panel (ASCII; Hot fill superseded — see Standing Decision 3) | `docs/design/sprint-3-design-specs.md` §S1                                |
-| S2 — Dashboard Warning Banner                                                         | `docs/design/sprint-3-design-specs.md` §S2                                |
-| Warmth badge colors / filter on warmth page                                           | `docs/design/dashboard-design-guide.md` (Warmth Badge Colors)             |
-| Warmth page summary + table (Pro)                                                     | `docs/design/sprint-3-design-specs.md` (warmth page notes) + Story 12.3.3 |
-| Settings Warmth tab (cold threshold field)                                            | `src/app/dashboard/[waitlistId]/settings/client.tsx` (no dedicated SVG)   |
+| Reference                                                                                                       | File                                                                      |
+| --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| S1 — Warmth Distribution Panel (ASCII; Hot fill `bg-status-hot` reinstated — see Standing Decision 8 amendment) | `docs/design/sprint-3-design-specs.md` §S1                                |
+| S2 — Dashboard Warning Banner                                                                                   | `docs/design/sprint-3-design-specs.md` §S2                                |
+| Warmth badge colors / filter on warmth page                                                                     | `docs/design/dashboard-design-guide.md` (Warmth Badge Colors)             |
+| Warmth page summary + table (Pro)                                                                               | `docs/design/sprint-3-design-specs.md` (warmth page notes) + Story 12.3.3 |
+| Settings Warmth tab (cold threshold field)                                                                      | `src/app/dashboard/[waitlistId]/settings/client.tsx` (no dedicated SVG)   |
 
 No high-fidelity Sprint 3 SVGs exist for warmth; Sprint 3 is markdown-spec driven. Colors use Design System v2.0 tokens from `src/app/globals.css`.
 
@@ -21,22 +21,22 @@ Repair the warmth tracking engine so production scores are **produced daily**, *
 
 ## Definition of Done
 
-`vercel.json` schedules `/api/cron/warmth` and the endpoint is verified in Vercel (manual invoke returns processed counts). Batch scoring orders pages stably and counts referrals correctly across pages. Decay uses last `clicked` (signup date fallback), days 0–59 free / 60–89 −25 / 90+ → 0; score 0 with lifetime engagement stores `warmth_score = 'cold'`; never-engaged stays null/Unscored. Dead reply/visit weights are gone from code and Story 11.1 AC2. Webhook returns 401 on bad signature/headers, attributes events without arbitrary `.limit(1)` single-waitlist pick, and is race-safe after the unique index migration. Segments honor `?wid=`, `requirePro`, and exclude unsubscribed (and bounced where feasible) so UI counts match deliverable send counts. Panel Hot bar uses accent green consistent with badges; WarningBanner has no broken no-`waitlist_id` fetch; warmth page Last Engagement uses clicks only; settings helper text matches cold-% semantics (**COPY GAP** — founder-approved string required). New tests cover webhook, cron, batch, panel, and segments; existing unit tests updated for new score/tier rules. Stories 11.1–11.6, vision opens lines, MEMORY, and audit §2 are amended. `pnpm lint`, `pnpm test`, and `pnpm build` pass with no new failures beyond the documented baseline.
+`vercel.json` schedules `/api/cron/warmth` and the endpoint is verified in Vercel (manual invoke returns processed counts). Batch scoring orders pages stably and counts referrals correctly across pages. Decay uses last `clicked` (signup date fallback), days 0–59 free / 60–89 −25 / 90+ → 0; score 0 with lifetime engagement stores `warmth_score = 'cold'`; never-engaged stays null/Unscored. Dead reply/visit weights are gone from code and Story 11.1 AC2. Webhook returns 401 on bad signature/headers, attributes events without arbitrary `.limit(1)` single-waitlist pick, and is race-safe after the unique index migration. Segments honor `?wid=`, `requirePro`, and exclude unsubscribed (and bounced where feasible) so UI counts match deliverable send counts. Panel Hot bar/badge/numbers all use `--color-status-hot` tokens (founder override 2026-09-25); WarningBanner has no broken no-`waitlist_id` fetch; warmth page Last Engagement uses clicks only; settings helper text matches cold-% semantics (**COPY GAP** — founder-approved string required). New tests cover webhook, cron, batch, panel, and segments; existing unit tests updated for new score/tier rules. Stories 11.1–11.6, vision opens lines, MEMORY, and audit §2 are amended. `pnpm lint`, `pnpm test`, and `pnpm build` pass with no new failures beyond the documented baseline.
 
-## Standing Decisions (locked 2026-09-24 — do not relitigate)
+## Standing Decisions (locked 2026-09-24 — do not relitigate; Decision 8 amended by founder 2026-09-25)
 
-| #   | Decision                                                                                                                                  | Rationale                                                                             |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| 1   | **Drop** `email_reply (+10)` and `leaderboard_visit (+5)` weights; rewrite Story 11.1 AC2 to click + referral + qual only                 | Resend has no reply webhook; `page_views` never written                               |
-| 2   | Story 11.2 badge + filter live on **`/dashboard/warmth` only** — rewrite ACs; do **not** restore a main-dashboard subscriber table        | Main dashboard has no subscriber table; surface already built on warmth page          |
-| 3   | **Decayed-to-zero (score 0 with lifetime engagement) → Cold**, not Unscored; Unscored = never engaged / null column                       | Fixes warning% and segment undercount of fully lapsed subscribers                     |
-| 4   | **Decay clock = last `clicked` only** (fallback: subscriber `created_at` if never clicked); `sent`/`delivered`/`opened` never reset decay | Matches Story 11.5 AC1 intent; MPP makes opens unreliable; outbound mail ≠ engagement |
-| 5   | **Keep Hot ≥ 70** (and Warm ≥ 40); no negative bounce/unsub signals in this epic                                                          | Calibrate after real cron data; negatives = v1.1                                      |
-| 6   | Schedule cron via **`vercel.json` `crons[]`** (`0 5 * * *` UTC default)                                                                   | Reviewable in repo; Vercel docs-supported path                                        |
-| 7   | Webhook invalid signature / missing headers → **401** (not 400)                                                                           | Aligns with Story 11.0 / 11.6 ACs                                                     |
-| 8   | Panel **Hot bar = `bg-accent`** (green), not `bg-status-hot`                                                                              | Story 11.3 AC3 (bars = badge colors) supersedes S1 ASCII `bg-status-hot` note         |
-| 9   | Free tier still sees panel **numbers** + upgrade nudge; `/dashboard/warmth` page remains **Pro-gated**                                    | 2026-09-22 + Story 12.3.3 AC6 — not reopened                                          |
-| 10  | Opens **never** enter warmth score (amend vision :150)                                                                                    | Apple MPP; code already correct                                                       |
+| #   | Decision                                                                                                                                  | Rationale                                                                                      |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| 1   | **Drop** `email_reply (+10)` and `leaderboard_visit (+5)` weights; rewrite Story 11.1 AC2 to click + referral + qual only                 | Resend has no reply webhook; `page_views` never written                                        |
+| 2   | Story 11.2 badge + filter live on **`/dashboard/warmth` only** — rewrite ACs; do **not** restore a main-dashboard subscriber table        | Main dashboard has no subscriber table; surface already built on warmth page                   |
+| 3   | **Decayed-to-zero (score 0 with lifetime engagement) → Cold**, not Unscored; Unscored = never engaged / null column                       | Fixes warning% and segment undercount of fully lapsed subscribers                              |
+| 4   | **Decay clock = last `clicked` only** (fallback: subscriber `created_at` if never clicked); `sent`/`delivered`/`opened` never reset decay | Matches Story 11.5 AC1 intent; MPP makes opens unreliable; outbound mail ≠ engagement          |
+| 5   | **Keep Hot ≥ 70** (and Warm ≥ 40); no negative bounce/unsub signals in this epic                                                          | Calibrate after real cron data; negatives = v1.1                                               |
+| 6   | Schedule cron via **`vercel.json` `crons[]`** (`0 5 * * *` UTC default)                                                                   | Reviewable in repo; Vercel docs-supported path                                                 |
+| 7   | Webhook invalid signature / missing headers → **401** (not 400)                                                                           | Aligns with Story 11.0 / 11.6 ACs                                                              |
+| 8   | Panel **Hot = `bg-status-hot`** everywhere (bar, badge, numbers) — founder override 2026-09-25 of the interim `bg-accent` alignment       | Tokens in `globals.css` are the source of truth (AGENTS.md); guide `:331` "Hot red everywhere" |
+| 9   | Free tier still sees panel **numbers** + upgrade nudge; `/dashboard/warmth` page remains **Pro-gated**                                    | 2026-09-22 + Story 12.3.3 AC6 — not reopened                                                   |
+| 10  | Opens **never** enter warmth score (amend vision :150)                                                                                    | Apple MPP; code already correct                                                                |
 
 **Copy rule:** Agent never invents user-facing copy. Strings marked **COPY GAP** require founder approval before shipping.
 
@@ -201,7 +201,7 @@ User runs this in Supabase SQL Editor **before** relying on race-safe idempotenc
 
 **Acceptance Criteria (EARS):**
 
-- AC1: Warmth panel Hot bar fill shall be **`bg-accent`** (green, consistent with Hot badge `bg-accent/10 text-accent`); Warm stays `bg-status-warm`; Cold stays `bg-status-cold`; Unscored stays `bg-muted` (Standing Decision 8 — S1’s `bg-status-hot` ASCII is superseded).
+- AC1: Warmth panel Hot bar fill shall be **`bg-status-hot`** (`--color-status-hot` #d0492f — founder override 2026-09-25; tokens are source of truth, Standing Decision 8 amended); Warm stays `bg-status-warm`; Cold stays `bg-status-cold`; Unscored stays `bg-muted`.
 - AC2: WarningBanner shall **not** fetch `/api/dashboard/warmth` without `waitlist_id`; either require the `warmthData` prop (dashboard already passes it) and remove the broken fallback, or pass `waitlist_id` when fetching. No path shall call the API in a way that returns 400.
 - AC3: `/dashboard/warmth` Last Engagement column shall use the most recent **`clicked`** event timestamp only (not any `email_events` including `sent`/`delivered`).
 - AC4: Settings warmth helper text shall describe the **cold percentage warning threshold**, not a per-subscriber score cutoff. **COPY GAP** — proposed string for founder approval:  
@@ -218,7 +218,7 @@ User runs this in Supabase SQL Editor **before** relying on race-safe idempotenc
 
 **Dev Notes:**
 
-- **T1:** `warmth-panel.tsx:113` and `:167` — replace `bg-status-hot` → `bg-accent`. Do not hardcode hex.
+- **T1:** `warmth-panel.tsx` — Hot bars = `bg-status-hot` (founder override 2026-09-25; the interim `bg-accent` target was overturned). Do not hardcode hex.
 - **T2:** `warning-banner.tsx:38-52` — remove effect fetch **or** require `warmthData` in props interface; `dashboard/client.tsx:483-486` already supplies data. Keep visibility rules: total ≥ 10 and cold% ≥ threshold (`:33-36`).
 - **T3:** `warmth/page.tsx:74-84` — filter `event_type === "clicked"` when building `lastEngagement` map.
 - **T4:** `settings/client.tsx:335` — replace helperText only after founder approves COPY GAP string (or supplies replacement). Wrong current string documented in audit §2 claim 15.
@@ -240,7 +240,7 @@ User runs this in Supabase SQL Editor **before** relying on race-safe idempotenc
 - AC2: Batch tests shall cover: stable `.order("id")` used; referral counts via `.in("referrer_id", pageIds)` (cross-page referrer credited); multi-page loop terminates; return counters.
 - AC3: API tests for `POST /api/webhooks/resend` shall cover: missing headers → **401**; invalid signature → **401**; valid click stores event with correct subscriber/waitlist; duplicate svix id → single row; unknown event type → 200 no insert; unknown email → 200 no fail; multi-waitlist metadata or multi-insert behavior.
 - AC4: API tests for `GET /api/cron/warmth` shall cover: missing `CRON_SECRET` → 500; bad bearer → 401; valid bearer invokes batch (mocked) → 200 counts JSON.
-- AC5: Component tests for WarmthPanel shall cover: Hot bar class includes `bg-accent`; Warm/Cold/Unscored classes; empty state em-dashes; free tier upgrade badge text.
+- AC5: Component tests for WarmthPanel shall cover: Hot bar class includes `bg-status-hot` (and not `bg-accent`); Warm/Cold/Unscored classes; empty state em-dashes; free tier upgrade badge text.
 - AC6: API tests for segments shall cover: missing/unauth → 401; Free → 403; Pro + `wid` → scoped counts; unsubscribed excluded from counts.
 - AC7: WarningBanner tests shall cover: hidden below threshold; hidden when total < 10; visible when rules met; no request to warmth API without `waitlist_id` (or no request when prop provided).
 - AC8: Lint and build shall pass with zero errors; total suite has **no new failures** beyond baseline (`dashboard-archive` 4 + `dashboard-subscriber-table` 3 + known flaky `billing.test.ts` in full runs).

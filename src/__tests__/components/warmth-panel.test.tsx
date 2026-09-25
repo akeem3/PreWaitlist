@@ -14,12 +14,12 @@ function barFill(label: string): HTMLElement | null {
 }
 
 describe("WarmthPanel", () => {
-  it("renders Hot bar with bg-accent (not bg-status-hot)", () => {
+  it("renders Hot bar with bg-status-hot (design token, not accent green)", () => {
     render(<WarmthPanel tier="pro" warmthData={data} />);
     const fill = barFill("Hot");
     expect(fill).not.toBeNull();
-    expect(fill?.className).toContain("bg-accent");
-    expect(fill?.className).not.toContain("bg-status-hot");
+    expect(fill?.className).toContain("bg-status-hot");
+    expect(fill?.className).not.toContain("bg-accent");
   });
 
   it("renders Warm/Cold/Unscored status classes", () => {

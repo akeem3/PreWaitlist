@@ -92,7 +92,7 @@ export default function WarmthPanel({
             label="Hot"
             count={data?.hot ?? 0}
             total={data?.total ?? 0}
-            color="bg-accent"
+            color="bg-status-hot"
           />
           <WarmthBar
             label="Warm"
@@ -124,7 +124,7 @@ export default function WarmthPanel({
           label="Hot"
           count={data?.hot ?? 0}
           total={data?.total ?? 0}
-          color="bg-accent"
+          color="bg-status-hot"
         />
         <WarmthBar
           label="Warm"

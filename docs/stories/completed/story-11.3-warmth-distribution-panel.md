@@ -13,7 +13,7 @@ As a founder, I want the warmth distribution panel to show real data so that I c
 
 - AC1: The warmth distribution panel shall display four horizontal bars: Hot, Warm, Cold, Unscored.
 - AC2: Each bar shall show the count of subscribers in that tier and the percentage of total.
-- AC3: The bars shall use design-token colors: Hot = `bg-accent` (brand green — aligned with the Hot badge by Story 15.4 AC1), Warm = `bg-status-warm`, Cold = `bg-status-cold`, Unscored = `bg-muted`.
+- AC3: The bars shall use design-token colors: Hot = `bg-status-hot` (`--color-status-hot` #d0492f; founder override 2026-09-25 — tokens in `globals.css` are source of truth), Warm = `bg-status-warm`, Cold = `bg-status-cold`, Unscored = `bg-muted`.
 - AC4: The panel shall receive `{ hot, warm, cold, unscored, total }` from the dashboard's single authenticated `GET /api/dashboard/warmth?waitlist_id=…` fetch (Story 12.1.8; the panel does not fetch independently since Story 15.4).
 - AC5: When the waitlist has zero subscribers, the panel shall show em-dashes (not zeros).
 - AC6: The panel shall render unblurred and unlocked for all tiers (free tier sees visible counts plus an upgrade-CTA card — 2026-09-22 decision, Story 15.4); the `/dashboard/warmth` page itself remains Pro-gated per Story 12.3.3.
@@ -35,7 +35,7 @@ All 3 blocking issues resolved. Shipped behavior differs from the original plan 
 
 ### T1: Bar colors (AC1–AC3)
 
-Shipped in `components/dashboard/warmth-panel.tsx`: Hot = `bg-accent` (Story 15.4 AC1 aligned the Hot bar with the Hot badge — superseding the `bg-status-hot` plan), Warm = `bg-status-warm`, Cold = `bg-status-cold`, Unscored = `bg-muted`.
+Shipped in `components/dashboard/warmth-panel.tsx`: Hot = `bg-status-hot` (founder override 2026-09-25 reinstated the `bg-status-hot` token over the Story 15.4 `bg-accent` alignment), Warm = `bg-status-warm`, Cold = `bg-status-cold`, Unscored = `bg-muted`.
 
 ### T2: Data flow (AC4)
 
@@ -52,7 +52,7 @@ The panel no longer fetches. Story 12.1.8 moved data fetching to `src/app/dashbo
 
 ## Verification
 
-1. Bar colors: Hot = accent green, Warm = amber, Cold = blue, Unscored = grey
+1. Bar colors: Hot = coral red (`bg-status-hot`), Warm = amber, Cold = blue, Unscored = grey
 2. Dashboard network tab → single `/api/dashboard/warmth?waitlist_id=…` request; the panel itself makes no fetch
 3. Free tier: no blur, no `LockedOverlay` — counts visible + upgrade nudge
 4. `/dashboard/warmth` reachable on Pro, gated on Free (Story 12.3.3)

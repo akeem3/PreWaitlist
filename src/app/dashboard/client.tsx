@@ -450,7 +450,7 @@ export default function DashboardClient({
                 <div className="mb-1 text-h3 text-foreground">
                   {warmthData ? (
                     <>
-                      <span className="text-accent">{warmthData.hot}</span>
+                      <span className="text-status-hot">{warmthData.hot}</span>
                       <span className="text-body-sm text-muted-foreground">
                         {" "}
                         /{" "}

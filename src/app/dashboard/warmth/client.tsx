@@ -46,7 +46,7 @@ function WarmthBadge({ tier }: { tier: string | null }) {
     );
   }
   const colors: Record<string, string> = {
-    hot: "bg-accent/10 text-accent",
+    hot: "bg-status-hot text-white",
     warm: "bg-status-warm text-white",
     cold: "bg-status-cold text-white",
   };
@@ -147,7 +147,7 @@ export default function WarmthClient({
           {/* Summary row */}
           <div className="mb-6 grid grid-cols-4 gap-4">
             {[
-              { label: "Hot", count: summary.hot, color: "text-accent" },
+              { label: "Hot", count: summary.hot, color: "text-status-hot" },
               { label: "Warm", count: summary.warm, color: "text-status-warm" },
               { label: "Cold", count: summary.cold, color: "text-status-cold" },
               {

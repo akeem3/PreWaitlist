@@ -12,7 +12,7 @@ As a founder, I want to see a warmth badge (Hot/Warm/Cold/Unscored) next to each
 ## Acceptance Criteria (EARS)
 
 - AC1: The `/dashboard/warmth` page (Story 12.3.3 surface) shall display a warmth badge for each subscriber: Hot, Warm, Cold, or Unscored.
-- AC2: Badge colors as rendered by `WarmthBadge` (`src/app/dashboard/warmth/client.tsx:49-55`): Hot = `bg-accent/10 text-accent`, Warm = `bg-status-warm text-white`, Cold = `bg-status-cold text-white`, Unscored = `bg-muted text-muted-foreground`.
+- AC2: Badge colors as rendered by `WarmthBadge` (`src/app/dashboard/warmth/client.tsx:49-55`): Hot = `bg-status-hot text-white` (`--color-status-hot` #d0492f — founder override 2026-09-25, tokens are source of truth), Warm = `bg-status-warm text-white`, Cold = `bg-status-cold text-white`, Unscored = `bg-muted text-muted-foreground`.
 - AC3: The `/dashboard/warmth` page shall include a warmth filter dropdown: All, Hot, Warm, Cold, Unscored (`client.tsx:188-199`).
 - AC4: Filtering by warmth tier on `/dashboard/warmth` shall instantly filter the displayed rows client-side without a server call (`useMemo`, `client.tsx:70-87`).
 - AC5: The warmth badge shall use caption-sized typography (`text-xs`, 12px, `font-medium`).
@@ -53,7 +53,7 @@ Badge uses `text-xs font-medium` (12px) — matches AC5.
 
 ## Verification
 
-1. Open `/dashboard/warmth` → verify badge colors: Hot = accent green, Warm = amber (white text), Cold = blue (white text), Unscored = grey
+1. Open `/dashboard/warmth` → verify badge colors: Hot = coral red (`bg-status-hot`), Warm = amber (white text), Cold = blue (white text), Unscored = grey
 2. Test filter dropdown: select "Hot" → only hot subscribers shown; "All" → all subscribers shown (client-side, no network request)
 3. Verify badge type is 12px (`text-xs`)
 4. Run `pnpm lint` and `pnpm build` — verify zero errors
