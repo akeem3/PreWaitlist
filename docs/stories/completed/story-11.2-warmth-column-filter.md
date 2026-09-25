@@ -1,7 +1,7 @@
 # Story 11.2 — Warmth Column + Filter in Subscriber List
 
 **Epic:** 11 — Warmth Tracking Engine
-**Status:** done (color bugs — see Dev Notes)
+**Status:** done (warmth page only — see Dev Notes)
 **Depends on:** 11.1
 **Design Refs:** `docs/design/sprint-3-design-specs.md` — S2
 
@@ -11,11 +11,11 @@ As a founder, I want to see a warmth badge (Hot/Warm/Cold/Unscored) next to each
 
 ## Acceptance Criteria (EARS)
 
-- AC1: The subscriber table shall display a warmth badge column between Position and Referrals.
-- AC2: Hot subscribers shall show a green badge (`bg-accent/10 text-accent`), Warm = amber (`bg-yellow-100 text-yellow-800`), Cold = blue (`bg-blue-100 text-blue-800`), Unscored = grey (`bg-muted text-muted-foreground`).
-- AC3: The table header shall include a warmth filter dropdown: All, Hot, Warm, Cold, Unscored.
-- AC4: Filtering by warmth tier shall instantly filter the displayed rows without a server call.
-- AC5: The warmth badge shall use the design system's caption typography (12px, regular).
+- AC1: The `/dashboard/warmth` page (Story 12.3.3 surface) shall display a warmth badge for each subscriber: Hot, Warm, Cold, or Unscored.
+- AC2: Badge colors as rendered by `WarmthBadge` (`src/app/dashboard/warmth/client.tsx:49-55`): Hot = `bg-accent/10 text-accent`, Warm = `bg-status-warm text-white`, Cold = `bg-status-cold text-white`, Unscored = `bg-muted text-muted-foreground`.
+- AC3: The `/dashboard/warmth` page shall include a warmth filter dropdown: All, Hot, Warm, Cold, Unscored (`client.tsx:188-199`).
+- AC4: Filtering by warmth tier on `/dashboard/warmth` shall instantly filter the displayed rows client-side without a server call (`useMemo`, `client.tsx:70-87`).
+- AC5: The warmth badge shall use caption-sized typography (`text-xs`, 12px, `font-medium`).
 - AC6: Lint and build shall pass with zero errors.
 
 ## Tasks
@@ -28,70 +28,32 @@ T1 (AC1-AC2) Add warmth badge column with tier-specific colors · T2 (AC3-AC4) A
 
 ## Implementation Details
 
-### Status: Partially Implemented — Color Bugs
+### Status: Implemented (surface = `/dashboard/warmth`)
 
-The warmth column, badge, filter dropdown, client-side filtering, and sorting all exist in `src/app/dashboard/client.tsx`. However, there are color bugs that need fixing.
+This story's surface moved from the main subscriber table to `/dashboard/warmth` (Story 12.3.3). Everything shipped in `src/app/dashboard/warmth/client.tsx`:
 
-### T1: Fix warmth badge colors
+### T1: Warmth badge (AC1, AC2)
 
-- File: `src/app/dashboard/client.tsx` (lines 577-595)
+`WarmthBadge` at `client.tsx:49-55` — exact tier classes per AC2, rounded-full pill.
 
-**Current (wrong):**
+### T2: Warmth filter (AC3, AC4)
 
-```typescript
-// Hot uses red — AC specifies green
-<span className={`... ${score === "hot" ? "bg-red-100 text-red-700" : ""}`}>
-```
+`filter` state + `useMemo` client-side filtering (`:70-87`), `<select>` with All/Hot/Warm/Cold/Unscored in the table header (`:188-199`).
 
-**Required (correct):**
+### T3: Typography (AC5)
 
-```typescript
-// Hot = green (accent)
-<span className={`... ${score === "hot" ? "bg-accent/10 text-accent" : ""}`}>
-// Warm = amber
-<span className={`... ${score === "warm" ? "bg-yellow-100 text-yellow-800" : ""}`}>
-// Cold = blue
-<span className={`... ${score === "cold" ? "bg-blue-100 text-blue-800" : ""}`}>
-// Unscored = grey
-<span className={`... ${!score ? "bg-muted text-muted-foreground" : ""}`}>
-```
+Badge uses `text-xs font-medium` (12px) — matches AC5.
 
-Design tokens exist in `globals.css` lines 33-35:
-
-```css
---color-status-hot: #d0492f;
---color-status-warm: #c7841a;
---color-status-cold: #3b6fa6;
-```
-
-The AC uses Tailwind utility classes (`bg-accent/10 text-accent`), not the `status-*` tokens. Follow the AC.
-
-### T2: Verify filter dropdown
-
-- File: `src/app/dashboard/client.tsx` (lines 483-493)
-- Already implemented: `<select>` with All, Hot, Warm, Cold, Unscored options
-- Client-side filtering via `useMemo` (lines 140-146)
-- **No changes needed for AC3-AC4**
-
-### T3: Verify typography
-
-- File: `src/app/dashboard/client.tsx` (lines 580/591)
-- Already uses `text-xs` class (12px) — matches AC5 caption typography
-- **No changes needed for AC5**
+**Removed dead references:** the original plan pointed at `src/app/dashboard/client.tsx` lines 577–595 (badge) and 483–493 (filter). That warmth column/filter on the main dashboard subscriber table was never delivered, is out of scope for this story, and those line references no longer exist (the file is now ~549 lines).
 
 ### T4: Lint + build
 
 - Run `pnpm lint` and `pnpm build`
-- Fix any errors from color changes
+- Fix any errors
 
 ## Verification
 
-1. Fix the Hot badge color from `bg-red-100 text-red-700` to `bg-accent/10 text-accent`
-2. Open dashboard → subscriber table → verify warmth column shows correct colors:
-   - Hot: green badge
-   - Warm: amber badge
-   - Cold: blue badge
-   - Unscored: grey badge
-3. Test filter dropdown: select "Hot" → verify only hot subscribers shown
-4. Test filter dropdown: select "All" → verify all subscribers shown
-5. Run `pnpm lint` and `pnpm build` — verify zero errors
+1. Open `/dashboard/warmth` → verify badge colors: Hot = accent green, Warm = amber (white text), Cold = blue (white text), Unscored = grey
+2. Test filter dropdown: select "Hot" → only hot subscribers shown; "All" → all subscribers shown (client-side, no network request)
+3. Verify badge type is 12px (`text-xs`)
+4. Run `pnpm lint` and `pnpm build` — verify zero errors

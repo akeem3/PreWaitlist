@@ -1,7 +1,7 @@
 # Story 11.0 — Resend Webhook Endpoint
 
 **Epic:** 11 — Warmth Tracking Engine
-**Status:** ready
+**Status:** done
 **Depends on:** 11.7
 **Design Refs:** None (backend API route)
 
@@ -29,6 +29,15 @@ T1 (AC1-AC2) Create webhook route + Svix signature verification · T2 (AC3-AC4) 
 Score calculation (Story 11.1), bulk event backfill, webhook retry logic (Resend handles retries for 72h).
 
 ## Implementation Details
+
+> **Status (Epic 15):** Implemented — `src/app/api/webhooks/resend/route.ts` (hardened by Stories 15.0/15.2). Shipped deltas vs this plan:
+>
+> - Verification via Resend SDK `resend.webhooks.verify()` (Option A) on the raw `req.text()` body — the `svix` npm package was never added.
+> - Missing svix headers → **401** (route:39–42); failed signature → **401** (route:58). The pre-fix 400-vs-401 drift from audit §2.4 finding 20 is corrected.
+> - Idempotency: application-level `event_data->>'svix_id'` pre-check **plus** a DB partial unique index `email_events_svix_uidx ON email_events (waitlist_id, (event_data ->> 'svix_id'))` from `docs/stories/sql-writeups/epic15-story2-email-events-svix-unique.sql` — the route catches `23505`. **Run that SQL before deploying Epic 15.**
+> - Multi-waitlist attribution (Story 15.2): one event row inserted per matching waitlist — the T2 `.single()` lookup was replaced; covered by `webhook-resend.test.ts:183`.
+> - Deferred processing uses `after()` from `next/server` (AC6).
+> - Stored event types match the live CHECK constraint exactly — all 8 (`sent`, `delivered`, `opened`, `clicked`, `bounced`, `complained`, `failed`, `delivery_delayed`), extended by Story 11.7 AC9 (`epic11-story7-sprint3-schema.sql:64`). AC3's six-value list predates that migration; `failed` / `delivery_delayed` are stored but never emitted by current tests.
 
 ### T1: Create webhook route + Svix signature verification
 
@@ -159,12 +168,12 @@ Use `created_at` from the webhook payload (not `now()`). Events may arrive late 
 
 ## Verification
 
-1. Install svix: `npm install svix` (if using Option B)
-2. Add `RESEND_WEBHOOK_SECRET` to `.env.local`
-3. Create the route file
-4. In Resend Dashboard → Webhooks → add endpoint `https://{domain}/api/webhooks/resend`
-5. Send a test email → verify webhook fires
-6. Check `email_events` table for new row
-7. Send the same webhook again → verify no duplicate row (idempotency)
-8. Verify response is 200 and returns within 5 seconds
+1. No `svix` install — verification uses the Resend SDK (`resend.webhooks.verify`) on the raw `req.text()` body
+2. `RESEND_WEBHOOK_SECRET` set in `.env.local`; endpoint registered in Resend (`https://waitlist-build.vercel.app/api/webhooks/resend`)
+3. Run `docs/stories/sql-writeups/epic15-story2-email-events-svix-unique.sql` in Supabase (DB-level idempotency, Story 15.2)
+4. Send a test email → verify webhook fires
+5. Check `email_events` for a new row (`event_type`, `subscriber_id`, `waitlist_id`, `event_data.svix_id`)
+6. Replay the same webhook → no duplicate row (pre-check or `23505` catch, HTTP 200)
+7. Request without/with bad svix headers → HTTP 401
+8. Verify response is 200 and returns within 5 seconds (`after()` defers processing)
 9. Run `pnpm lint` and `pnpm build` — verify zero errors

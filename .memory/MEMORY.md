@@ -950,6 +950,38 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - Resolved during 14.4 (2026-09-25): `src/app/api/subscribers/[id]/route.ts` PATCH display_name already uses `createAdminClient()` (line 76, with 14.0 AC8 comment) — no anon-SELECT gap; earlier flag was stale.
 - Known deferred: Pro-at-cap shows upgrade button (no AC forbids); audit items outside Epic 14 (REQ-6.10.3 placeholder copy, 12.1.9 AC3 aggregation full-table load, 9.6/9.7 AC24 expandable row, dashboard **overview** default waitlist still oldest-first — see audit §1 pointer).
 
+## Epic 15 Progress (Warmth Engine Fix & Hardening)
+
+**Status:** all stories implemented (15.6 = docs sync complete 2026-09-25). Uncommitted work on `dev`. **Manual gates open:** run `docs/stories/sql-writeups/epic15-story2-email-events-svix-unique.sql` in Supabase (Story 15.2) + verify Vercel cron deployed (Story 15.1). Push only on explicit `commit-push`.
+
+| Story | Status         | Summary                                                                                                                                                        |
+| ----- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 15.0  | ✅ done        | Warmth scoring core — signals click+5/referral+15/qual+8, clicked-only decay + signup fallback, day ≥60 boundary, force-Cold on engaged-zero, batch pagination |
+| 15.1  | 🟡 in-progress | Cron — `vercel.json` `0 5 * * *` UTC + `CRON_SECRET`; code done, prod deploy verification pending                                                              |
+| 15.2  | 🟡 in-progress | Webhook hardening — 401 on bad/missing headers, multi-waitlist attribution, svix unique index (SQL run pending)                                                |
+| 15.3  | ✅ done        | Segments API — `?wid=` + `.maybeSingle()`, `requirePro` before lookup, unsub-excluded eligible counts                                                          |
+| 15.4  | ✅ done        | Warmth display + copy — Hot bars `bg-accent`, warning banner props-only (no free fetch), cold-% settings copy, `if (waitlist_id)` client guard                 |
+| 15.5  | ✅ done        | Tests — 24 new (webhook-resend 7, cron-warmth 3, warmth-panel 5, warning-banner 5, dashboard-segments 4)                                                       |
+| 15.6  | ✅ done        | Docs/vision/memory sync — Epic 11 stories patched, vision opens claims amended, MEMORY block, audit §2.4/§2.9 annotated, epic-11 index flipped                 |
+
+**Decisions (2026-09-25):**
+
+- Dropped `email_reply` (+10) and `leaderboard_visit` (+5) warmth signals — Resend emits no reply event and `page_views` is never written. Scored signals: click +5, referral +15, qualification answers +8.
+- Decay uses **clicked-only** last engagement with `subscribers.created_at` fallback; windows 0–59 free / 60–89 −25 / 90+ → 0. Boundary is `daysSince >= 60` (day 59 not penalized).
+- Score 0 **with** lifetime engagement (clicks/referrals/qual) → **Cold**, never Unscored; Unscored only when never engaged (`assignTier(score, hadEngagement)`).
+- Cron scheduled in `vercel.json`: `{ "path": "/api/cron/warmth", "schedule": "0 5 * * *" }` (UTC 05:00, Bearer `CRON_SECRET`) — Standing Decision 6.
+- Warmth badge + tier filter live on `/dashboard/warmth` only — no subscriber-table column (Story 11.2 surface corrected in 15.6).
+- Opens never enter the warmth score (Apple MPP) — product vision amended in 15.6 (`:130`, `:150`, `:211`, `:414`, `:477`).
+
+**Gotchas:**
+
+- Referral batch counting: `.in("referrer_id", pageIds)` counts referrals **made by** the page's members, not referrers **of** them (cross-page credit).
+- Day boundary: `daysSince >= 60` — use `>= 60`, never `>= 59` (the pre-15.0 bug).
+- Settings `warning-threshold` helper is the **cold-% warning** (range 20–80), not a score cutoff.
+- Segments API needs `?wid=` **and** `requirePro` — tier gate runs before waitlist lookup (Free + bad wid → 403, not 404).
+- `/api/dashboard/warmth` returns 400 without `waitlist_id` — the dashboard client fetch is guarded by `if (waitlist_id)`.
+- Test baseline after 15.5: 527 total, 520 pass / 7 fixed failures (dashboard-archive 4, dashboard-subscriber-table 3).
+
 ## Epic 17 Progress (Broadcasting Engine Fix)
 
 **Status:** planning complete — **not implemented** (create-epic done 2026-09-24)

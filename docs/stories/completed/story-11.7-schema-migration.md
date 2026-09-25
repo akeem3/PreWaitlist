@@ -1,7 +1,7 @@
 # Story 11.7 — Schema Migration — Sprint 3 Columns
 
 **Epic:** 11 — Warmth Tracking Engine
-**Status:** ready
+**Status:** done
 **Depends on:** —
 **Design Refs:** None (database-only change)
 

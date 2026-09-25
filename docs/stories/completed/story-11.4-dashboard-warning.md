@@ -1,7 +1,7 @@
 # Story 11.4 — Dashboard Warning State
 
 **Epic:** 11 — Warmth Tracking Engine
-**Status:** ready
+**Status:** done
 **Depends on:** 11.1
 **Design Refs:** `docs/design/sprint-3-design-specs.md` — S7, `docs/design/dashboard-design-guide.md`
 

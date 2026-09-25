@@ -50,7 +50,7 @@ Repair the warmth tracking engine so production scores are **produced daily**, *
 | 15.3 | Segment Counts, Pro Gate & Eligibility            | —          | done        |
 | 15.4 | Warmth Display, Copy & Read Path Fixes            | —          | done        |
 | 15.5 | Epic 15 Tests                                     | 15.0–15.4  | done        |
-| 15.6 | Story, Vision, MEMORY & Audit Sync                | 15.0–15.5  | ready       |
+| 15.6 | Story, Vision, MEMORY & Audit Sync                | 15.0–15.5  | done        |
 
 **Execution order:** 15.0 first (scoring correctness everything else reads). Then **15.1 + 15.2 + 15.3 + 15.4 in parallel** (independent surfaces). Then 15.5 (tests), then 15.6 (docs). 15.1 can ship with 15.0 in the same release train so scores actually refresh after the core fix.
 
@@ -269,7 +269,7 @@ User runs this in Supabase SQL Editor **before** relying on race-safe idempotenc
 
 ### Story 15.6 — Story, Vision, MEMORY & Audit Sync
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (documentation only)
 **Story:** As a team, I want Epic 11 stories, product vision, MEMORY, and the five-engine audit to state the researched truth so future agents do not rebuild dead signals or re-open closed decisions.
 

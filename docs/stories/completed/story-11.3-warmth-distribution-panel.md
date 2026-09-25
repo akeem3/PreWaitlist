@@ -1,7 +1,7 @@
 # Story 11.3 — Warmth Distribution Panel (Real Data)
 
 **Epic:** 11 — Warmth Tracking Engine
-**Status:** ready (3 blocking issues — see Dev Notes)
+**Status:** done
 **Depends on:** 11.1
 **Design Refs:** `docs/design/sprint-3-design-specs.md` — S3, `docs/design/dashboard-design-guide.md`
 
@@ -13,10 +13,10 @@ As a founder, I want the warmth distribution panel to show real data so that I c
 
 - AC1: The warmth distribution panel shall display four horizontal bars: Hot, Warm, Cold, Unscored.
 - AC2: Each bar shall show the count of subscribers in that tier and the percentage of total.
-- AC3: The bars shall use the same color scheme as the warmth badges (green/amber/blue/grey).
-- AC4: The panel shall fetch data from `GET /api/dashboard/warmth` which returns `{ hot: number, warm: number, cold: number, unscored: number }`.
+- AC3: The bars shall use design-token colors: Hot = `bg-accent` (brand green — aligned with the Hot badge by Story 15.4 AC1), Warm = `bg-status-warm`, Cold = `bg-status-cold`, Unscored = `bg-muted`.
+- AC4: The panel shall receive `{ hot, warm, cold, unscored, total }` from the dashboard's single authenticated `GET /api/dashboard/warmth?waitlist_id=…` fetch (Story 12.1.8; the panel does not fetch independently since Story 15.4).
 - AC5: When the waitlist has zero subscribers, the panel shall show em-dashes (not zeros).
-- AC6: The panel shall no longer be blurred or locked for any tier — warmth viewing is available to all founders.
+- AC6: The panel shall render unblurred and unlocked for all tiers (free tier sees visible counts plus an upgrade-CTA card — 2026-09-22 decision, Story 15.4); the `/dashboard/warmth` page itself remains Pro-gated per Story 12.3.3.
 - AC7: Lint and build shall pass with zero errors.
 
 ## Tasks
@@ -29,92 +29,21 @@ Warmth trend charts (v1.1), real-time score updates (daily batch in Story 11.1).
 
 ## Implementation Details
 
-### Status: Partially Implemented — 3 Blocking Issues
+### Status: Implemented (hardened through Story 15.4)
 
-The `WarmthPanel` component at `components/dashboard/warmth-panel.tsx` (148 lines) has real bar rendering but 3 blocking issues must be fixed.
+All 3 blocking issues resolved. Shipped behavior differs from the original plan in three places — noted under each task.
 
-### Current Props Interface (lines 13-16)
+### T1: Bar colors (AC1–AC3)
 
-```typescript
-interface WarmthPanelProps {
-  tier: string; // Must be removed — warmth visible to all tiers
-  subdomain: string; // Must be removed — using authenticated endpoint
-}
-```
+Shipped in `components/dashboard/warmth-panel.tsx`: Hot = `bg-accent` (Story 15.4 AC1 aligned the Hot bar with the Hot badge — superseding the `bg-status-hot` plan), Warm = `bg-status-warm`, Cold = `bg-status-cold`, Unscored = `bg-muted`.
 
-### T1: Fix bar colors to use design tokens
+### T2: Data flow (AC4)
 
-- File: `components/dashboard/warmth-panel.tsx` (lines 122, 128, 134, 140)
+The panel no longer fetches. Story 12.1.8 moved data fetching to `src/app/dashboard/client.tsx` — one authenticated `GET /api/dashboard/warmth?waitlist_id=…` (guarded by `if (waitlist_id)` since the 15.4 audit) → `warmthData` passed as a prop. The endpoint (`src/app/api/dashboard/warmth/route.ts`) returns `{ hot, warm, cold, unscored, total }` as head counts (Story 15.4 AC5). The public `/api/warmth/[subdomain]` route referenced in the original plan is orphaned (audit §2.5).
 
-**Current (wrong — hardcoded colors):**
+### T3: Remove blur/lock + empty state (AC5–AC6)
 
-```typescript
-<WarmthBar label="Hot" count={hot} total={total} color="bg-red-500" />
-<WarmthBar label="Warm" count={warm} total={total} color="bg-amber-500" />
-<WarmthBar label="Cold" count={cold} total={total} color="bg-blue-500" />
-<WarmthBar label="Unscored" count={unscored} total={total} color="bg-gray-400" />
-```
-
-**Required (correct — design tokens from globals.css):**
-
-```typescript
-<WarmthBar label="Hot" count={hot} total={total} color="bg-status-hot" />
-<WarmthBar label="Warm" count={warm} total={total} color="bg-status-warm" />
-<WarmthBar label="Cold" count={cold} total={total} color="bg-status-cold" />
-<WarmthBar label="Unscored" count={unscored} total={total} color="bg-muted" />
-```
-
-Design tokens in `globals.css` lines 33-35:
-
-- `--color-status-hot: #d0492f` → use as `bg-status-hot`
-- `--color-status-warm: #c7841a` → use as `bg-status-warm`
-- `--color-status-cold: #3b6fa6` → use as `bg-status-cold`
-
-### T2: Swap API endpoint from public to authenticated
-
-- File: `components/dashboard/warmth-panel.tsx` (line 91)
-
-**Current (wrong — public endpoint):**
-
-```typescript
-const res = await fetch(`/api/warmth/${subdomain}`);
-```
-
-**Required (correct — authenticated endpoint):**
-
-```typescript
-const res = await fetch("/api/dashboard/warmth");
-```
-
-The correct endpoint exists at `src/app/api/dashboard/warmth/route.ts` (44 lines). It:
-
-- Authenticates via `supabase.auth.getUser()`
-- Returns `{ hot, warm, cold, unscored, total }` — same shape
-
-**Also remove `subdomain` from props and fetch call.**
-
-### T3: Remove blur/lock + fix empty state
-
-- File: `components/dashboard/warmth-panel.tsx`
-
-#### Remove blur/lock (AC6)
-
-Current code (lines 18-51): `LockedOverlay` component exists.
-Current code (line 116): `isFree ? "pointer-events-none blur-[2px]" : ""`
-Current code (line 144): `{isFree && <LockedOverlay />}`
-
-**Actions:**
-
-1. Delete `LockedOverlay` component (lines 18-51)
-2. Remove the `isFree` conditional blur from line 116
-3. Remove the `{isFree && <LockedOverlay />}` render from line 144
-4. Remove the `tier` prop from the interface and all usages
-
-#### Empty state (AC5)
-
-Current code (line 70): `{total > 0 ? count : "—"}` — already correct (em-dash when total=0).
-
-**Verify:** When total = 0, all bars show em-dash. No changes needed.
+`LockedOverlay`, blur, and the `tier` prop are removed — free tier sees visible counts + an "Upgrade to target segments" nudge (2026-09-22 decision). The `/dashboard/warmth` page stays Pro-gated (Story 12.3.3). Warning threshold lives in `components/dashboard/warning-banner.tsx` (value copied from settings; the free-page 400 fetch was removed by Story 15.4 AC2). Empty state: `{total > 0 ? count : "—"}` unchanged (AC5).
 
 ### T4: Lint + build
 
@@ -123,11 +52,9 @@ Current code (line 70): `{total > 0 ? count : "—"}` — already correct (em-da
 
 ## Verification
 
-1. Fix bar colors: Hot=green, Warm=amber, Cold=blue, Unscored=grey
-2. Swap API endpoint to `/api/dashboard/warmth`
-3. Remove `LockedOverlay` component and all blur/lock logic
-4. Remove `tier` and `subdomain` from props interface
-5. Open dashboard → warmth panel → verify real data loads (not placeholder)
-6. Verify no blur overlay on free tier
-7. Test with 0 subscribers → verify em-dashes (not zeros)
-8. Run `pnpm lint` and `pnpm build` — verify zero errors
+1. Bar colors: Hot = accent green, Warm = amber, Cold = blue, Unscored = grey
+2. Dashboard network tab → single `/api/dashboard/warmth?waitlist_id=…` request; the panel itself makes no fetch
+3. Free tier: no blur, no `LockedOverlay` — counts visible + upgrade nudge
+4. `/dashboard/warmth` reachable on Pro, gated on Free (Story 12.3.3)
+5. Test with 0 subscribers → em-dashes (not zeros)
+6. Run `pnpm lint` and `pnpm build` — verify zero errors

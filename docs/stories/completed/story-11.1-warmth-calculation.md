@@ -1,7 +1,7 @@
 # Story 11.1 — Warmth Score Calculation Engine
 
 **Epic:** 11 — Warmth Tracking Engine
-**Status:** ready
+**Status:** done
 **Depends on:** 11.0
 **Design Refs:** None (algorithm + backend logic)
 
@@ -12,13 +12,13 @@ As a founder, I want each subscriber to have an engagement score (0–100) so th
 ## Acceptance Criteria (EARS)
 
 - AC1: The system shall calculate a warmth score (0–100) for each subscriber based on engagement signals.
-- AC2: The score shall be calculated from the following signals with these point values: email click (+5), email reply (+10), referral signup (+15), qualification answers completed (+8), leaderboard page visit (+5).
-- AC3: The score shall include time-based decay: no activity in 0–59 days = no penalty, no activity in 60–89 days = -25 points, no activity in 90+ days = score resets to 0.
+- AC2: The score shall be calculated from the following signals with these point values: email click (+5), referral signup (+15), qualification answers completed (+8). Story 15.0 AC1 removed email reply (+10) and leaderboard page visit (+5) — Resend emits no reply event and `page_views` is never populated.
+- AC3: The score shall include time-based decay measured from the last engagement — the most recent `clicked` event, falling back to subscriber signup when there are no clicks: days 0–59 = no penalty (penalty applies at `daysSince >= 60`), days 60–89 = −25 points, days 90+ = score forced to 0. (Story 15.0 AC2–AC3.)
 - AC4: The score shall be clamped to 0–100 range (never below 0, never above 100).
-- AC5: The system shall assign tiers based on score: Hot (70+), Warm (40–69), Cold (<40).
-- AC6: New subscribers with no engagement signals shall have score = 0 and tier = "Unscored".
+- AC5: The system shall assign tiers based on score: Hot (≥ 70), Warm (40–69), Cold (score > 0, or score = 0 with lifetime engagement — clicks, referrals, or qualification answers present). (Story 15.0 AC4.)
+- AC6: New subscribers with no engagement signals shall have score = 0 and tier = "Unscored". Conversely, subscribers with lifetime engagement whose score decays to 0 shall be tier = "Cold", never "Unscored". (Story 15.0 AC4.)
 - AC7: The score shall be stored in the `subscribers.warmth_score` column (text, check: in hot/warm/cold, nullable).
-- AC8: A daily cron job shall recalculate scores for all subscribers in all waitlists. This is a deliberate scope decision for MVP — real-time recalculation on every webhook event is v1.1.
+- AC8: A daily cron job shall recalculate scores for all subscribers in all waitlists, scheduled in `vercel.json` as `{ "path": "/api/cron/warmth", "schedule": "0 5 * * *" }` (UTC daily 05:00, Story 15.1). This is a deliberate scope decision for MVP — real-time recalculation on every webhook event is v1.1.
 - AC9: Lint and build shall pass with zero errors.
 
 ## Tasks
@@ -31,6 +31,8 @@ Real-time score updates on every event (daily batch is sufficient for MVP), warm
 
 ## Implementation Details
 
+> **Status (Epic 15):** The ACs above are authoritative. The code below is the original Epic 11 spec — signal weights (T1), decay reference/boundary (T1), tier-at-zero (T2), and cron mechanism (T3) are superseded by Stories 15.0/15.1 as implemented in `src/lib/warmth.ts` and `vercel.json`.
+
 ### T1: Score calculation function
 
 - **New file:** `src/lib/warmth.ts`
@@ -38,7 +40,7 @@ Real-time score updates on every event (daily batch is sufficient for MVP), warm
 ```typescript
 import { SupabaseClient } from "@supabase/supabase-js";
 
-// AC2: Signal weights
+// AC2: Signal weights — SUPERSEDED by Story 15.0 (shipped: email_click 5, referral_signup 15, qualification_completed 8; email_reply and leaderboard_visit removed)
 const SIGNAL_WEIGHTS = {
   email_click: 5,
   email_reply: 10,
@@ -47,7 +49,7 @@ const SIGNAL_WEIGHTS = {
   leaderboard_visit: 5,
 } as const;
 
-// AC3: Decay thresholds (days)
+// AC3: Decay thresholds (days) — SUPERSEDED by Story 15.0 (shipped uses daysSince >= 60 for -25, >= 90 for reset; day 59 not penalized; clicked-only reference)
 const DECAY = {
   no_penalty_max: 59, // 0-59 days = no penalty
   penalty_max: 89, // 60-89 days = -25
@@ -138,14 +140,14 @@ function calculateDecay(events: Array<{ created_at: string }> | null): number {
 
 **Apple MPP caveat:** Email opens are NOT included. Apple Mail Privacy Protection preloads pixels for ~40-50% of email clients, making open data unreliable. Clicks (+5) and referrals (+15) are the primary intent signals.
 
-**Effective score range:** Theoretical max is ~53 points (referral + qual + click + leaderboard). Most active subscribers will score 15-40. The 0-100 scale provides headroom for future signals.
+**Effective score range:** Theoretical max is ~53 points (referral + qual + click). Most active subscribers will score 15-40. The 0-100 scale provides headroom for future signals.
 
 ### T2: Tier assignment + DB storage
 
 - File: `src/lib/warmth.ts` (same file)
 
 ```typescript
-// AC5: Tier thresholds
+// AC5: Tier thresholds — SUPERSEDED by Story 15.0 (shipped: assignTier(score, hadEngagement) returns "cold" when hadEngagement && score === 0)
 export function assignTier(score: number): "hot" | "warm" | "cold" | null {
   if (score >= 70) return "hot";
   if (score >= 40) return "warm";
@@ -174,6 +176,8 @@ export async function updateWarmthScore(
 **Note:** The `warmth_score` column stores the tier string ("hot", "warm", "cold"), NOT the numeric score. The numeric score is transient — recalculated in batch.
 
 ### T3: Cron job / batch recalculation
+
+> **Superseded (Story 15.1):** shipped as `GET /api/cron/warmth` (Bearer `CRON_SECRET`), scheduled in `vercel.json` as `{ "path": "/api/cron/warmth", "schedule": "0 5 * * *" }`. Options A/B below were never built.
 
 - **Option A (recommended):** Supabase Edge Function with pg_cron
 - **Option B:** API route triggered by external cron (e.g., Vercel Cron, cron-job.org)
@@ -204,7 +208,7 @@ export async function GET() {
 
 1. Create `src/lib/warmth.ts`
 2. Unit test the calculation: subscriber with 3 clicks + 1 referral = score 30 (15 + 15), tier = "cold"
-3. Test decay: subscriber with last event 70 days ago → -25 penalty
+3. Test decay: subscriber whose last click was 70 days ago → -25 penalty
 4. Test clamp: subscriber with many events → score caps at 100
 5. Test zero events → score = 0, tier = null
 6. Create the cron route
