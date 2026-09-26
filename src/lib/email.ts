@@ -86,6 +86,20 @@ export async function isUnsubscribed(
 }
 
 /**
+ * Escape a string for safe interpolation into HTML email markup.
+ * Founder-authored update text is untrusted input — always escape before
+ * embedding it in the HTML body. The plain-text payload keeps the raw string.
+ */
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
  * Build the email footer with physical address only (no unsubscribe link for transactional emails).
  */
 export function buildEmailFooter(businessAddress?: string | null): string {

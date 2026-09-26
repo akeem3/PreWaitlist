@@ -1004,6 +1004,30 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 **Gates:** lint 0/5; targeted 79/79; full suite 535 = 528 pass / 7 fail (identical 7 verified pre-existing on clean HEAD via stash); clean build exit 0 (must delete `.next` first — stale `validator.ts` referenced the deleted route).
 
+## Epic 16 Progress (Leaderboard & Founder Updates Engine Fix)
+
+**Status:** in-progress — 16.0 done, 8 stories remaining. Branch `engine-fix-leaderboard-updates` (from `dev`).
+
+| Story | Status   | Summary                                                                                                                                                                                                                                                                                                                                                  |
+| ----- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 16.0  | ✅ done  | Updates API Send Path Hardening — optional `waitlist_id` (400 on 2+ without), server min-10, unsub/bounce suppression, `escapeHtml` in `email.ts`, per-recipient `buildBroadcastEmailFooter`, chunked `batch.send` ≤100 inside loop, 201 `{ id, emailSent, emailError }`, `sent_at` iff ≥1 chunk sent, full post-insert phase wrapped (no orphan insert) |
+| 16.1  | ⬜ ready | Updates Client Publish Flow + Honest Status (COPY GAP U6 gate)                                                                                                                                                                                                                                                                                           |
+| 16.2  | ⬜ ready | LatestUpdateCard Dark Template                                                                                                                                                                                                                                                                                                                           |
+| 16.3  | ⬜ ready | Founder Updates Tests (zero API update tests exist today)                                                                                                                                                                                                                                                                                                |
+| 16.4  | ⬜ ready | Dashboard Leaderboard Sort Fix (test at `dashboard-leaderboard-page.test.tsx:99-112` certifies the bug)                                                                                                                                                                                                                                                  |
+| 16.5  | ⬜ ready | Dashboard Leaderboard Pagination (PAGE_SIZE=10)                                                                                                                                                                                                                                                                                                          |
+| 16.6  | ⬜ ready | position_boost Schema Migration (**founder-run SQL** before 16.7)                                                                                                                                                                                                                                                                                        |
+| 16.7  | ⬜ ready | Skip-the-Line Durable Position Boost                                                                                                                                                                                                                                                                                                                     |
+| 16.8  | ⬜ ready | Cleanup, Label & Doc Amendments (orphan leaderboard API delete, Share % COPY GAP, doc fixes)                                                                                                                                                                                                                                                             |
+
+**16.0 implementation notes:**
+
+- `src/app/api/updates/route.ts` rewritten: array waitlist fetch (`.eq("founder_id")` always + optional `.eq("id")`), `<10` → 400, select `id, email, unsubscribed_at` + `createAdminClient()`/`isEmailBounced` loop (mirrors `broadcast/route.ts:84-92`), `safeText = escapeHtml(text)` in HTML (raw `text` kept for plain-text payload), per-subscriber footer built inside `batch.map` (broadcast pattern), `resend.batch.send` once per ≤100 chunk **inside** loop (flatten bug removed), inner try wraps map+send (footer/`generateUnsubscribeUrl` throw caught — missing `UNSUBSCRIBE_SECRET` can't orphan insert), outer try wraps eligibility→send→`sent_at`.
+- `src/lib/email.ts` + `escapeHtml` (`& < > " '`, `&`-first). `buildEmailFooter` still used by milestones/subscribers routes — not orphaned.
+- Response: `emailSent` true iff ≥1 chunk succeeded; `emailError` null when sent, else last error (zero-eligible → "No eligible recipients"). `emailError` strings are API-level — **U6 COPY GAP gate applies in 16.1** if surfaced.
+- `tags` (`waitlist_id`/`subscriber_id`) preserved on every payload — warmth webhook attribution (15.2).
+- Gates: lint 0 errors/5 pre-existing warnings; `pnpm build` success. No tests added (16.3 owns). Client still sends `{ body }` only — multi-waitlist fix usable only after 16.1 (same release train).
+
 ## Epic 17 Progress (Broadcasting Engine Fix)
 
 **Status:** planning complete — **not implemented** (create-epic done 2026-09-24)

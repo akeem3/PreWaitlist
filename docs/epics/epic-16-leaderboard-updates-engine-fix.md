@@ -47,7 +47,7 @@ Dashboard leaderboard first-click on Referrals/Share% sorts descending with ↓ 
 
 | ID   | Title                                       | Depends on                   | Status |
 | ---- | ------------------------------------------- | ---------------------------- | ------ |
-| 16.0 | Updates API Send Path Hardening             | —                            | ready  |
+| 16.0 | Updates API Send Path Hardening             | —                            | done   |
 | 16.1 | Updates Client Publish Flow + Honest Status | 16.0                         | ready  |
 | 16.2 | LatestUpdateCard Dark Template              | —                            | ready  |
 | 16.3 | Founder Updates Tests                       | 16.0, 16.1, 16.2             | ready  |
@@ -65,7 +65,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 16.0 — Updates API Send Path Hardening
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (API only; no SVG)
 **Story:** As a platform, I want founder update emails to send safely at any list size, only to eligible recipients, with escaped HTML and a visible unsubscribe mechanism, and to report send outcome truthfully — so multi-waitlist founders can publish and lists >100 no longer fail silently.
 
