@@ -1,6 +1,6 @@
 # Story 16.0 — Updates API Send Path Hardening
 
-**Status:** ready
+**Status:** done
 **Epic:** 16 — Leaderboard & Founder Updates Engine Fix
 **Depends on:** —
 **Design Refs:** — (API only; no SVG)
