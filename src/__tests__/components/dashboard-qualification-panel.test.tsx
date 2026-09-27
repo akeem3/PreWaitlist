@@ -260,7 +260,7 @@ describe("QualificationPanel", () => {
     expect(link.getAttribute("href")).toBe("/dashboard/qualification?wid=wl-9");
   });
 
-  it("overview variant shows at most two questions", async () => {
+  it("overview variant shows every question (3rd+ no longer hidden)", async () => {
     mockFetchWith({
       questions: [
         question,
@@ -278,7 +278,136 @@ describe("QualificationPanel", () => {
     );
     await screen.findByText("How did you hear about us?");
     expect(screen.getByText("Second question?")).toBeDefined();
-    expect(screen.queryByText("Third question?")).toBeNull();
+    expect(screen.getByText("Third question?")).toBeDefined();
+  });
+
+  it("overview with 3+ questions switches to a bounded container grid", async () => {
+    mockFetchWith({
+      questions: [
+        question,
+        { ...question, id: "q2", text: "Second question?" },
+        { ...question, id: "q3", text: "Third question?" },
+      ],
+      respondentTotal: 6,
+    });
+    const { container } = render(
+      <QualificationPanel
+        subdomain="acme"
+        waitlistId="wl-1"
+        variant="overview"
+      />
+    );
+    await screen.findByText("How did you hear about us?");
+
+    const grid = container.querySelector("[class*='grid-cols-3']");
+    expect(grid).not.toBeNull();
+    expect(grid?.className).toContain("grid-cols-1");
+    expect(grid?.className).toContain("@min-[300px]:grid-cols-2");
+    // no stacked divider in grid mode
+    expect(grid?.querySelector(".border-t")).toBeNull();
+    // container query is scoped to the panel body
+    expect(container.querySelector("[class~='@container']")).not.toBeNull();
+
+    // grid cells clamp the question text with full text in a tooltip
+    const q3 = screen.getByText("Third question?");
+    expect(q3.className).toContain("line-clamp-1");
+    expect(q3.getAttribute("title")).toBe("Third question?");
+  });
+
+  it("overview with 1-2 questions stays in the stacked layout (unchanged)", async () => {
+    mockFetchWith({
+      questions: [
+        question,
+        { ...question, id: "q2", text: "Second question?" },
+      ],
+      respondentTotal: 4,
+    });
+    const { container } = render(
+      <QualificationPanel
+        subdomain="acme"
+        waitlistId="wl-1"
+        variant="overview"
+      />
+    );
+    await screen.findByText("How did you hear about us?");
+
+    const stack = container.querySelector(".space-y-4");
+    expect(stack).not.toBeNull();
+    expect(container.querySelector("[class*='grid-cols-3']")).toBeNull();
+    // divider between stacked questions preserved
+    expect(stack?.querySelector(".border-t")).not.toBeNull();
+    // no clamp/tooltip in stacked mode
+    const q2 = screen.getByText("Second question?");
+    expect(q2.className).not.toContain("line-clamp-1");
+    expect(q2.getAttribute("title")).toBeNull();
+  });
+
+  it("overview caps answers at top 2 when 3-4 questions (silent, grid mode)", async () => {
+    mockFetchWith({
+      questions: [
+        question,
+        { ...question, id: "q2", text: "Second question?" },
+        {
+          id: "q3",
+          text: "What do you expect?",
+          type: "free_text" as const,
+          options: null,
+          respondentCount: 4,
+          answers: [
+            { value: "Alpha answer", count: 2, percent: 50 },
+            { value: "Beta answer", count: 1, percent: 25 },
+            { value: "Gamma answer", count: 1, percent: 25 },
+          ],
+        },
+      ],
+      respondentTotal: 8,
+    });
+    render(
+      <QualificationPanel
+        subdomain="acme"
+        waitlistId="wl-1"
+        variant="overview"
+      />
+    );
+    await screen.findByText("What do you expect?");
+    expect(screen.getByText("Alpha answer")).toBeDefined();
+    expect(screen.getByText("Beta answer")).toBeDefined();
+    expect(screen.queryByText("Gamma answer")).toBeNull();
+  });
+
+  it("overview caps answers at top 1 when 5 questions", async () => {
+    mockFetchWith({
+      questions: [
+        {
+          id: "q1",
+          text: "What do you expect?",
+          type: "free_text" as const,
+          options: null,
+          respondentCount: 3,
+          answers: [
+            { value: "Alpha answer", count: 2, percent: 67 },
+            { value: "Beta answer", count: 1, percent: 33 },
+          ],
+        },
+        { ...question, id: "q2", text: "Second question?" },
+        { ...question, id: "q3", text: "Third question?" },
+        { ...question, id: "q4", text: "Fourth question?" },
+        { ...question, id: "q5", text: "Fifth question?" },
+      ],
+      respondentTotal: 9,
+    });
+    render(
+      <QualificationPanel
+        subdomain="acme"
+        waitlistId="wl-1"
+        variant="overview"
+      />
+    );
+    await screen.findByText("What do you expect?");
+    expect(screen.getByText("Alpha answer")).toBeDefined();
+    expect(screen.queryByText("Beta answer")).toBeNull();
+    // all five questions still visible
+    expect(screen.getByText("Fifth question?")).toBeDefined();
   });
 
   it("renders ordinal badges with accent tint (brand color)", async () => {

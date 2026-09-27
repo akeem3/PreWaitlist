@@ -61,10 +61,18 @@ function EmptyState() {
   );
 }
 
-function QuestionViz({ question }: { question: QuestionData }) {
-  const { answers, respondentCount, type } = question;
+function QuestionViz({
+  question,
+  answerCap,
+}: {
+  question: QuestionData;
+  answerCap?: number;
+}) {
+  const { answers: allAnswers, respondentCount, type } = question;
+  const answers =
+    answerCap != null ? allAnswers.slice(0, answerCap) : allAnswers;
 
-  if (answers.length === 0) {
+  if (allAnswers.length === 0) {
     return <p className="text-xs text-muted-foreground">No responses yet</p>;
   }
 
@@ -119,13 +127,23 @@ function QuestionViz({ question }: { question: QuestionData }) {
 function QuestionContent({
   question,
   index,
+  compact = false,
+  answerCap,
 }: {
   question: QuestionData;
   index: number;
+  compact?: boolean;
+  answerCap?: number;
 }) {
   return (
     <>
-      <div className="mb-2 flex items-center justify-between gap-2">
+      <div
+        className={
+          compact
+            ? "mb-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1"
+            : "mb-2 flex items-center justify-between gap-2"
+        }
+      >
         <span className="flex min-w-0 items-center gap-2">
           <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/10 text-xs font-medium text-accent">
             {index + 1}
@@ -136,10 +154,17 @@ function QuestionContent({
           {respondentLabel(question.respondentCount)}
         </span>
       </div>
-      <p className="mb-3 text-sm font-medium text-foreground">
+      <p
+        className={
+          compact
+            ? "mb-3 line-clamp-1 text-sm font-medium text-foreground"
+            : "mb-3 text-sm font-medium text-foreground"
+        }
+        title={compact ? question.text : undefined}
+      >
         {question.text}
       </p>
-      <QuestionViz question={question} />
+      <QuestionViz question={question} answerCap={answerCap} />
     </>
   );
 }
@@ -237,19 +262,42 @@ function PanelBody({
   );
 
   if (variant === "overview") {
-    const shown = questions.slice(0, 2);
+    // 1-2 questions: stacked (pixel-identical to the original teaser).
+    // 3+: bounded container-query grid so the card never outgrows the
+    // 2-question height — 1 col <300px, 2 cols >=300px, 3 cols >=440px.
+    // Answer cap keeps cells bounded (silent per decision): top 2, top 1 at
+    // 5 questions so a 2-col/3-row layout still fits the height budget.
+    const isGrid = questions.length >= 3;
+    const answerCap = questions.length >= 5 ? 1 : 2;
     return (
       <Panel title="Qualification Breakdown" action={viewAllLink}>
         {meta}
-        <div className="space-y-4">
-          {shown.map((q, index) => (
-            <div
-              key={q.id}
-              className={index > 0 ? "border-t border-border pt-4" : undefined}
-            >
-              <QuestionContent question={q} index={index} />
-            </div>
-          ))}
+        <div className="@container">
+          <div
+            className={
+              isGrid
+                ? "grid grid-cols-1 gap-4 @min-[300px]:grid-cols-2 @min-[440px]:grid-cols-3"
+                : "space-y-4"
+            }
+          >
+            {questions.map((q, index) => (
+              <div
+                key={q.id}
+                className={
+                  !isGrid && index > 0
+                    ? "border-t border-border pt-4"
+                    : undefined
+                }
+              >
+                <QuestionContent
+                  question={q}
+                  index={index}
+                  compact={isGrid}
+                  answerCap={isGrid ? answerCap : undefined}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </Panel>
     );
