@@ -112,4 +112,15 @@ describe("WarmthPanel", () => {
     expect(screen.getByText("3 (30%)")).toBeDefined();
     expect(screen.getByText("10 subscribers")).toBeDefined();
   });
+
+  it("renders intensity icons for each tier (aria-hidden, token-colored)", () => {
+    const { container } = render(<WarmthPanel tier="pro" warmthData={data} />);
+    const icons = container.querySelectorAll<SVGSVGElement>(
+      'svg[aria-hidden="true"]'
+    );
+    expect(icons).toHaveLength(3);
+    expect(icons[0].getAttribute("class")).toContain("text-status-hot");
+    expect(icons[1].getAttribute("class")).toContain("text-status-warm");
+    expect(icons[2].getAttribute("class")).toContain("text-status-cold");
+  });
 });
