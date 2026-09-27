@@ -216,7 +216,7 @@ Each stat card shows exactly three things:
 
 | State | Background | Text      | Token                         |
 | ----- | ---------- | --------- | ----------------------------- |
-| Hot   | `#FEE2E2`  | `#DC2626` | `bg-red-100 text-red-700`     |
+| Hot   | `#0F7A5E`  | `#FFFFFF` | `bg-status-hot text-white`    |
 | Warm  | `#FEF3C7`  | `#D97706` | `bg-amber-100 text-amber-700` |
 | Cold  | `#DBEAFE`  | `#2563EB` | `bg-blue-100 text-blue-700`   |
 
@@ -314,7 +314,7 @@ Badge style: `rounded-full px-2 py-0.5 text-xs font-medium`
 
 | Status           | Background | Text      | Use                                                                   |
 | ---------------- | ---------- | --------- | --------------------------------------------------------------------- |
-| Success/Hot      | `#FEE2E2`  | `#DC2626` | Hot warmth badge, positive trends                                     |
+| Success/Hot      | `#0F7A5E`  | `#FFFFFF` | Hot warmth badge, positive trends                                     |
 | Warning/Warm     | `#FEF3C7`  | `#D97706` | Warm warmth badge, caution                                            |
 | Info/Cold        | `#DBEAFE`  | `#2563EB` | Cold warmth badge, neutral                                            |
 | Neutral/Unscored | `#F3F4F6`  | `#6B7280` | Inactive elements, em-dash values (Unscored state removed 2026-09-25) |
@@ -326,7 +326,7 @@ Badge style: `rounded-full px-2 py-0.5 text-xs font-medium`
 2. **Reserve saturated color for status/alerts and the functional uses in rules 3–4** — green, red, amber are functional, not decorative
 3. **Use the accent color sparingly** — CTAs and text links, active nav item, chart bars, positive stat deltas, ordinal badges (question numbers). Nothing decorative.
 4. **Text colors:** `text-foreground` and `text-muted-foreground` by default; `text-accent` only for the rule-3 links/deltas/badges; `text-destructive` only for negative deltas and errors; status colors only for badges
-5. **Consistency:** If "Hot" is red in the warmth panel, it's red everywhere — never reassign
+5. **Consistency:** If "Hot" is green in the warmth panel, it's green everywhere — never reassign (founder decision 2026-09-27: green reads as "going good"; coral/red read as danger/error)
 
 ---
 

@@ -12,14 +12,14 @@ As a founder, I want warmth UI colors, last-engagement data, warning data plumbi
 
 ## Acceptance Criteria (EARS)
 
-- AC1: Warmth panel Hot bar fill shall be **`bg-status-hot`** (`--color-status-hot` #d0492f — founder override 2026-09-25: tokens in `globals.css` are the source of truth; supersedes the earlier `bg-accent` decision); Warm = `bg-status-warm`; Cold = `bg-status-cold`; Unscored = `bg-muted`.
+- AC1: Warmth panel Hot bar fill shall be **`bg-status-hot`** (`--color-status-hot` ~~#d0492f~~ **#0f7a5e — [AMENDED 2026-09-27:** founder flipped token value back to green (coral read as danger/error); tokens in `globals.css` remain the source of truth; 2026-09-25 override reversed at value level**]**; Warm = `bg-status-warm`; Cold = `bg-status-cold`; Unscored = `bg-muted`.
 - AC2: WarningBanner shall never call `/api/dashboard/warmth` without `waitlist_id` — remove broken fallback or pass `waitlist_id`; no path returns 400 from that mistake.
 - AC3: `/dashboard/warmth` Last Engagement shall use the most recent **`clicked`** event only (not `sent`/`delivered`/`opened`).
 - AC4: Settings warmth helper text shall describe the **cold percentage warning threshold**, not a score cutoff. **COPY GAP** — proposed for founder approval:  
   `Warn me when this % or more of your list is Cold. Range: 20–80.`  
   Do not ship an unapproved alternate string. Label stays `Cold threshold (%)`; min 20, max 80, default 40 unchanged.
 - AC5: `GET /api/dashboard/warmth` shall compute counts without loading all `warmth_score` rows into JS when feasible (4× `count: "exact", head: true` + total); keep auth, owner check, required `waitlist_id`, 30s cache.
-- AC6: Overview Hot number (dashboard stat card + `/dashboard/warmth` summary) shall use **`text-status-hot`** — no accent-green Hot anywhere (founder override 2026-09-25 supersedes the earlier optional `text-accent` allowance).
+- AC6: Overview Hot number (dashboard stat card + `/dashboard/warmth` summary) shall use **`text-status-hot`** — never the `text-accent` class (founder override 2026-09-25 supersedes the earlier optional `text-accent` allowance). **[AMENDED 2026-09-27:** the `text-status-hot` **token value is green** `#0f7a5e` again — "no accent-green Hot" applied to the class, not the hue; hue is green per founder**]**.
 - AC7: Free panel still shows counts + upgrade badge; `/dashboard/warmth` remains Pro-gated (regression guard).
 - AC8: Lint and build shall pass with zero errors.
 
@@ -55,7 +55,7 @@ As a founder, I want warmth UI colors, last-engagement data, warning data plumbi
 
 Badge: hot `bg-status-hot text-white`, warm/cold `bg-status-*` (`warmth/client.tsx:48-52`) — all three tiers now use status tokens.
 
-**Design conflict (resolved 2026-09-25):** S1 ASCII table lists Hot fill `#D0492F` / `bg-status-hot`. Epic Standing Decision 8 had superseded that row with `bg-accent`; the founder overrode it on 2026-09-25 — tokens in `globals.css` are the source of truth (AGENTS.md), and the design guide (`dashboard-design-guide.md:331`) requires "Hot red everywhere". Hot = `bg-status-hot` on bar, badge, and numbers. Do not hardcode hex.
+**Design conflict (resolved 2026-09-25):** S1 ASCII table lists Hot fill ~~`#D0492F`~~ `#0F7A5E` **[2026-09-27]** / `bg-status-hot`. Epic Standing Decision 8 had superseded that row with `bg-accent`; the founder overrode it on 2026-09-25 — tokens in `globals.css` are the source of truth (AGENTS.md), and the design guide (`dashboard-design-guide.md:329`) requires "Hot **green** everywhere" **[2026-09-27 — was "Hot red everywhere"]**. Hot = `bg-status-hot` on bar, badge, and numbers. Do not hardcode hex.
 
 ### T2 — WarningBanner (`components/dashboard/warning-banner.tsx`)
 
@@ -188,4 +188,4 @@ pnpm test
 
 **Prompt #3 audit (2026-09-25):** 1 finding fixed — AC2 "no path returns 400" gap: `dashboard/client.tsx` could fetch warmth without `waitlist_id` when the optional `waitlistId` prop was absent (prod unreachable via page-level redirect, but the AC forbids the path). Guard added (`if (waitlistId)`). Re-gated after fix: lint 0/5, tsc 63 = baseline (0 touched), suite 520/7 of 527 (exact baseline failures), build exit 0. Evidence rows corrected: AC1 pro line `:127`, AC6 line `:453`.
 
-**Founder color override (2026-09-25):** Founder flagged "why is hot green?" — tokens in `globals.css` (`--color-status-hot: #d0492f`, `--color-status-warm: #c7841a`, `--color-status-cold: #3b6fa6`) are the source of truth. AC1 + AC6 amended; Standing Decision 8 overturned. Hot reverted to `bg-status-hot` on bar (`warmth-panel.tsx:95/:127`), badge (`warmth/client.tsx:49` → `bg-status-hot text-white`), stat number (`dashboard/client.tsx:453` → `text-status-hot`), and summary (`warmth/client.tsx:150`). Test flipped: `warmth-panel.test.tsx` now requires `bg-status-hot` and rejects `bg-accent`. Gates: lint 0 errors, targeted 32/32 pass.
+**Founder color override (2026-09-25):** Founder flagged "why is hot green?" — tokens in `globals.css` (`--color-status-hot: #d0492f`, `--color-status-warm: #c7841a`, `--color-status-cold: #3b6fa6`) are the source of truth. AC1 + AC6 amended; Standing Decision 8 overturned. Hot reverted to `bg-status-hot` on bar (`warmth-panel.tsx:95/:127`), badge (`warmth/client.tsx:49` → `bg-status-hot text-white`), stat number (`dashboard/client.tsx:453` → `text-status-hot`), and summary (`warmth/client.tsx:150`). Test flipped: `warmth-panel.test.tsx` now requires `bg-status-hot` and rejects `bg-accent`. Gates: lint 0 errors, targeted 32/32 pass. **[AMENDED 2026-09-27:** founder reversed again — `--color-status-hot: #0f7a5e` (green) in `globals.css`; coral lasted 2 days ("read as danger/error instead of going good"). Same classes everywhere, token value flipped; test title updated, assertions unchanged.**]**

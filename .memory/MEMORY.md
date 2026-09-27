@@ -269,7 +269,7 @@ picking up a paying customer.
 
 - **Decay starts at 60 days (not 30):** Waitlist subscribers go quiet while waiting for launch — this is not disengagement. 30-day decay penalizes early adopters unfairly.
 - **Email opens NOT tracked as warmth signal:** Apple Mail Privacy Protection preloads pixels for ~40-50% of email clients, making open data unreliable. Clicks (+5) and referrals (+15) are the primary intent signals.
-- **Cold bar color = blue (not red):** Both Hot (coral `#d0492f`) and Cold (red) being red-family is confusing. Blue is more distinct.
+- **Cold bar color = blue (not red):** Both Hot (coral `#d0492f` at the time) and Cold (red) being red-family is confusing. Blue is more distinct. **[AMENDED 2026-09-27:** Hot is now green `#0F7A5E`, so Hot/Cold are fully distinct anyway.**]**
 - **Email infrastructure separation:** Transactional emails from `notifications@prewaitlist.com`, marketing from `updates@prewaitlist.com`. Protects deliverability if a broadcast triggers spam complaints.
 - **Confirmation email uses Emails API, not Batch API:** Batch is for bulk sends. Single transactional send uses `resend.emails.send()`.
 - **Paddle Billing uses `Paddle.Initialize()` (not `Paddle.Setup()`):** Classic vs Billing distinction. `customData` not `passthrough`. `subscription.canceled` (one L) not `cancelled`.
@@ -755,7 +755,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - `src/lib/supabase/admin.ts` — service role client for webhook (bypasses RLS)
 - Webhook uses `req.text()` (NOT `req.json()`) — Svix HMAC breaks if body re-serialized
 - Cron endpoint protected by `CRON_SECRET` Bearer token
-- Badge colors: hot = coral `#d0492f` (`--color-status-hot`), warm = amber `#c7841a`, cold = blue `#3b6fa6` — Hot was briefly green in the Epic 11/15 era but founder reverted 2026-09-25: **tokens in `globals.css` are the source of truth, Hot green is a bug**
+- Badge colors: hot = green `#0f7a5e` (`--color-status-hot`), warm = amber `#c7841a`, cold = blue `#3b6fa6` — **[AMENDED 2026-09-27:** founder flipped Hot back to green — coral read as danger/error instead of "going good". History: green (Epic 11/15 era) → coral 2026-09-25 → **green 2026-09-27**. Tokens in `globals.css` remain the source of truth.**]**
 - `email_events.event_data` column added (jsonb, nullable) for full webhook payload storage
 
 ## Epic 12 Progress (Email System)
@@ -971,7 +971,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - Cron scheduled in `vercel.json`: `{ "path": "/api/cron/warmth", "schedule": "0 5 * * *" }` (UTC 05:00, Bearer `CRON_SECRET`) — Standing Decision 6.
 - Warmth badge + tier filter live on `/dashboard/warmth` only — no subscriber-table column (Story 11.2 surface corrected in 15.6).
 - Opens never enter the warmth score (Apple MPP) — product vision amended in 15.6 (`:130`, `:150`, `:211`, `:414`, `:477`).
-- **Hot = `--color-status-hot` (coral `#d0492f`) everywhere — bar, badge, numbers (founder override 2026-09-25).** The Epic 15.4 "align Hot to `bg-accent` green" decision (Standing Decision 8) is overturned; `globals.css` tokens are the source of truth, never accent-green for Hot.
+- ~~**Hot = `--color-status-hot` (coral `#d0492f`) everywhere — bar, badge, numbers (founder override 2026-09-25).** The Epic 15.4 "align Hot to `bg-accent` green" decision (Standing Decision 8) is overturned; `globals.css` tokens are the source of truth, never accent-green for Hot.~~ **[AMENDED 2026-09-27:** founder decision — Hot is green again: `--color-status-hot: #0f7a5e` (same green as accent/success), flipped in `globals.css` so every `status-hot` surface (bar, badge, numbers, marketing) follows. Coral `#d0492f` lasted 2 days — it read as danger/error instead of "going good". Classes stay `bg-status-hot`/`text-status-hot` (token value change, not `bg-accent`); tokens remain the source of truth.**]**
 
 **Gotchas:**
 

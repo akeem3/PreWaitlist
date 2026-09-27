@@ -30,7 +30,7 @@ function barFill(label: string): HTMLElement | null {
 }
 
 describe("WarmthPanel", () => {
-  it("renders Hot bar with bg-status-hot (design token, not accent green)", () => {
+  it("renders Hot bar with bg-status-hot design token", () => {
     render(<WarmthPanel tier="pro" warmthData={data} />);
     const fill = barFill("Hot");
     expect(fill).not.toBeNull();

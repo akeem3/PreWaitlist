@@ -20,7 +20,7 @@
 | `--color-accent`           | `#0F7A5E` | `bg-accent`, `text-accent`           | CTAs, active states     |
 | `--color-accent-hover`     | `#0D6B52` | `hover:bg-accent-hover`              | Button hover            |
 | `--color-destructive`      | `#DC2626` | `text-destructive`                   | Errors                  |
-| `--color-status-hot`       | `#D0492F` | `bg-status-hot`, `text-status-hot`   | Hot warmth              |
+| `--color-status-hot`       | `#0F7A5E` | `bg-status-hot`, `text-status-hot`   | Hot warmth              |
 | `--color-status-warm`      | `#C7841A` | `bg-status-warm`, `text-status-warm` | Warm warmth             |
 | `--color-status-cold`      | `#3B6FA6` | `bg-status-cold`, `text-status-cold` | Cold warmth             |
 | `--color-warning`          | `#D97706` | `bg-warning`                         | Warning states          |
@@ -395,7 +395,7 @@ If send fails: inline error message below the send button.
 
 | Tier | Fill Color | Token                 | Tailwind         |
 | ---- | ---------- | --------------------- | ---------------- |
-| Hot  | `#D0492F`  | `--color-status-hot`  | `bg-status-hot`  |
+| Hot  | `#0F7A5E`  | `--color-status-hot`  | `bg-status-hot`  |
 | Warm | `#C7841A`  | `--color-status-warm` | `bg-status-warm` |
 | Cold | `#3B6FA6`  | `--color-status-cold` | `bg-status-cold` |
 
