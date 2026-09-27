@@ -113,10 +113,16 @@ export default function WaitlistSettingsClient({
         const res = await fetch("/api/waitlist");
         if (!res.ok) throw new Error("load failed");
         const lists = await res.json();
+        // GET /api/waitlist keys each item `waitlistId` (see route.ts response
+        // shape); `id` kept as fallback for older cached shapes.
         const mine = Array.isArray(lists)
-          ? (lists as { id: string; questions?: Question[] }[]).find(
-              (w) => w.id === waitlist.id
-            )
+          ? (
+              lists as {
+                waitlistId?: string;
+                id?: string;
+                questions?: Question[];
+              }[]
+            ).find((w) => (w.waitlistId ?? w.id) === waitlist.id)
           : null;
         if (!cancelled) setQuestions(mine?.questions ?? []);
       } catch {
