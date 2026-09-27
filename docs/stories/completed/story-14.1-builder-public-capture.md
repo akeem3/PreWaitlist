@@ -1,6 +1,6 @@
 # Story 14.1 — Question Builder + Public Capture (MC + free-text)
 
-**Status:** ready
+**Status:** done
 **Epic:** 14 — Qualification Engine Fix & Hardening
 **Depends on:** 14.0
 

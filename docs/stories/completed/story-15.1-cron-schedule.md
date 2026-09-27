@@ -1,6 +1,6 @@
 # Story 15.1 — Daily Cron Schedule (`vercel.json`)
 
-**Status:** in-progress
+**Status:** done
 **Epic:** 15 — Warmth Engine Fix & Hardening
 **Depends on:** — (ships cleanly with 15.0 in the same release train)
 **Design Refs:** — (infrastructure)
@@ -111,12 +111,12 @@ No unit test required for a JSON config change; cron route tests are Story 15.5.
 
 ## Implementation Status
 
-**Status: CODE DONE — manual gates pending deploy (AC3, AC4)**
+**Status: DONE — all ACs verified (2026-09-27)**
 
-| AC                       | Status            | Evidence                                                                                                                                                               |
-| ------------------------ | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| AC1 vercel.json crons    | ✅ Done           | `vercel.json` — crons[0] = `/api/cron/warmth` @ `0 5 * * *`, `git.deploymentEnabled.dev` preserved, JSON-validated                                                     |
-| AC2 CRON_SECRET auth     | ✅ Done           | `route.ts:8-17` (500 unset / 401 bad bearer) + live dev probe → **HTTP 401** + `.env.local` present (64 chars); Vercel prod env parity = founder check (AC3 checklist) |
-| AC3 Vercel shows cron    | ⏳ Pending deploy | Requires deploy to `main` + founder Vercel dashboard access                                                                                                            |
-| AC4 Manual invoke counts | ⏳ Pending deploy | Requires authenticated curl on production after deploy                                                                                                                 |
-| AC5 Lint + build         | ✅ Done           | `pnpm lint` 0 errors (5 baseline warnings), `pnpm build` exit 0                                                                                                        |
+| AC                       | Status  | Evidence                                                                                                                                                                                                              |
+| ------------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AC1 vercel.json crons    | ✅ Done | `vercel.json` — crons[0] = `/api/cron/warmth` @ `0 5 * * *`, `git.deploymentEnabled.dev` preserved, JSON-validated; committed on `origin/main` (`c617e02`)                                                            |
+| AC2 CRON_SECRET auth     | ✅ Done | `route.ts:8-17` (500 unset / 401 bad bearer) + live prod probes 2026-09-27: **401** without bearer, **200** with `Bearer ${CRON_SECRET}` → also proves Vercel prod env parity (secret set, values match `.env.local`) |
+| AC3 Vercel shows cron    | ✅ Done | Founder confirmed 2026-09-27: Vercel → Project → Cron Jobs shows `/api/cron/warmth` daily 05:00 UTC                                                                                                                   |
+| AC4 Manual invoke counts | ✅ Done | Authenticated prod invoke 2026-09-27 → `HTTP 200 {"processed":9,"hot":9,"warm":0,"cold":0}` — amended shape (no `unscored`), numeric fields verified                                                                  |
+| AC5 Lint + build         | ✅ Done | `pnpm lint` 0 errors (5 baseline warnings), `pnpm build` exit 0; cron-route tests `cron-warmth.test.ts` 3/3 pass                                                                                                      |

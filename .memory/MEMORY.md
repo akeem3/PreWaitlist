@@ -104,7 +104,7 @@
 ### Resend (Story 0.4)
 
 - **Status:** Account created, API key in .env.local. Client module at `src/lib/resend.ts`. Domain `prewaitlist.com` verified. Batch API: `resend.batch.send([...])`, max 100/batch. Sender: `updates@prewaitlist.com`.
-- **Webhook:** `RESEND_WEBHOOK_SECRET` added to .env.local (2026-09-13). Endpoint: `https://waitlist-build.vercel.app/api/webhooks/resend`. Events: sent, delivered, opened, clicked, bounced, complained.
+- **Webhook:** `RESEND_WEBHOOK_SECRET` added to .env.local (2026-09-13). Endpoint recorded as `https://waitlist-build.vercel.app/api/webhooks/resend` — **DEAD as of 2026-09-27** (Vercel `DEPLOYMENT_NOT_FOUND`, HTTP 404). Correct endpoint, live-verified 2026-09-27: `https://www.prewaitlist.com/api/webhooks/resend` (apex `prewaitlist.com` 308-redirects to www — use www directly). **Resend Dashboard webhook URL update = founder step (instructions given 2026-09-27).** Events: sent, delivered, opened, clicked, bounced, complained. Restricted API key cannot list webhooks via API.
 - **CRON_SECRET:** Added to .env.local (2026-09-13). Used for `/api/cron/warmth` endpoint auth.
 
 ### Paddle (Story 0.5)
@@ -925,7 +925,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 **Qualification design additions (2026-09-24, commits `e51dcc6` + `25d99f1`) — documented in epic/story Dev Notes:** shared `components/dashboard/panel.tsx` shell (`Panel`/`PanelHeader`/`panelChrome`) unified the overview zones (signup chart, warmth, top referrers, qualification teaser); qualification panel gained `variant="page" | "overview"` — page = meta line `N respondents · M questions` + 2-column question-card grid, overview = titled **"Qualification Breakdown"** + max-2 teaser + "View all →" **[AMENDED 2026-09-27:** max-2 teaser replaced — overview shows all questions; 1–2 stacked unchanged, 3+ in a bounded `@container` grid (1-col <300px / 2-col ≥300px / 3-col ≥440px) with `line-clamp-1` tooltips and silent answer caps (top 2, top 1 at 5Q) to hold the 2-question card height. Decisions D1–D4 (3-across / silent cap / stack on narrow / cap grid-mode only).**]**; non-empty `<h1>Overview</h1>` on overview; **brand accents** (accent green `#0F7A5E`, founder decision: white cards + smart accents): ordinal badges `bg-accent/10 text-accent`, accent "View all" links (teaser + TopReferrers), solid-accent "Edit questions" CTA, stat-delta tones (up `text-accent` / down `text-destructive` / flat muted), respondent counts ("N respondents" meta line + per-card) `text-accent`. `dashboard-design-guide.md` §9 Color Rules #2–#4 amended to sanction these; white-card rule unchanged. Founder copy approved verbatim: "Overview", "Qualification Breakdown", "N respondents · M questions" pattern.
 
-**Artifacts:** `docs/epics/epic-14-qualification-engine-fix.md`, `docs/stories/story-14.0-*` through `story-14.4-*`, `docs/stories/sql-writeups/epic14-story0-qualification-schema.sql`
+**Artifacts:** `docs/epics/completed/epic-14-qualification-engine-fix.md`, `docs/stories/completed/story-14.0-*` through `story-14.4-*`, `docs/stories/sql-writeups/epic14-story0-qualification-schema.sql`
 
 **Deploy gate:** founder must run `epic14-story0-qualification-schema.sql` in Supabase SQL Editor BEFORE deploying (adds `options jsonb`, remaps answers, drops `required`? — no, CHECK kept / no `required` col existed; drops public SELECT policy on subscribers, revokes anon SELECT, grants authenticated SELECT).
 
@@ -951,17 +951,17 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 ## Epic 15 Progress (Warmth Engine Fix & Hardening)
 
-**Status:** all stories implemented (15.6 = docs sync complete 2026-09-25). Uncommitted work on `dev`. **Manual gates open:** run `docs/stories/sql-writeups/epic15-story2-email-events-svix-unique.sql` in Supabase (Story 15.2) + verify Vercel cron deployed (Story 15.1). Push only on explicit `commit-push`.
+**Status:** ✅ ALL 6 STORIES DONE — manual gates closed with live verification 2026-09-27. Epic + story files marked `done` and moved to `completed/`. Code committed on `dev`/`main` (`c617e02` cron, `e2aeeb5` restructure, webhook hardening). Gates closed: **15.1** — founder confirmed Vercel → Cron Jobs shows `/api/cron/warmth` (AC3) + authenticated prod invoke `200 {"processed":9,"hot":9,"warm":0,"cold":0}` (AC4); **15.2** — SQL gate proven live (duplicate insert → `409/23505 email_events_svix_uidx`; `email_type='transactional'` accepted → FK `23503`, not CHECK `23514`); all webhook prod probes 401/401/200. Probes left zero residue.
 
-| Story | Status         | Summary                                                                                                                                                                                                                          |
-| ----- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 15.0  | ✅ done        | Warmth scoring core — signals click+5/referral+15/qual+8, clicked-only decay + signup fallback, day ≥60 boundary, force-Cold on engaged-zero, batch pagination                                                                   |
-| 15.1  | 🟡 in-progress | Cron — `vercel.json` `0 5 * * *` UTC + `CRON_SECRET`; code done, prod deploy verification pending                                                                                                                                |
-| 15.2  | 🟡 in-progress | Webhook hardening — 401 on bad/missing headers, multi-waitlist attribution, svix unique index (SQL run pending)                                                                                                                  |
-| 15.3  | ✅ done        | Segments API — `?wid=` + `.maybeSingle()`, `requirePro` before lookup, unsub-excluded eligible counts                                                                                                                            |
-| 15.4  | ✅ done        | Warmth display + copy — Hot bars `bg-accent` (**founder reverted to `bg-status-hot` 2026-09-25** — tokens are source of truth), warning banner props-only (no free fetch), cold-% settings copy, `if (waitlist_id)` client guard |
-| 15.5  | ✅ done        | Tests — 24 new (webhook-resend 7, cron-warmth 3, warmth-panel 5, warning-banner 5, dashboard-segments 4)                                                                                                                         |
-| 15.6  | ✅ done        | Docs/vision/memory sync — Epic 11 stories patched, vision opens claims amended, MEMORY block, audit §2.4/§2.9 annotated, epic-11 index flipped                                                                                   |
+| Story | Status  | Summary                                                                                                                                                                                                                          |
+| ----- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 15.0  | ✅ done | Warmth scoring core — signals click+5/referral+15/qual+8, clicked-only decay + signup fallback, day ≥60 boundary, force-Cold on engaged-zero, batch pagination                                                                   |
+| 15.1  | ✅ done | Cron — `vercel.json` `0 5 * * *` UTC + `CRON_SECRET`; **verified 2026-09-27**: Vercel Cron Jobs confirmed (founder) + prod invoke `200 {processed:9,...}`                                                                        |
+| 15.2  | ✅ done | Webhook hardening — 401/401/200 live-probed on prod; svix unique index + `bounced_emails` CHECK widen **proven live 2026-09-27** (23505 / 23503 discrimination)                                                                  |
+| 15.3  | ✅ done | Segments API — `?wid=` + `.maybeSingle()`, `requirePro` before lookup, unsub-excluded eligible counts                                                                                                                            |
+| 15.4  | ✅ done | Warmth display + copy — Hot bars `bg-accent` (**founder reverted to `bg-status-hot` 2026-09-25** — tokens are source of truth), warning banner props-only (no free fetch), cold-% settings copy, `if (waitlist_id)` client guard |
+| 15.5  | ✅ done | Tests — 24 new (webhook-resend 7, cron-warmth 3, warmth-panel 5, warning-banner 5, dashboard-segments 4)                                                                                                                         |
+| 15.6  | ✅ done | Docs/vision/memory sync — Epic 11 stories patched, vision opens claims amended, MEMORY block, audit §2.4/§2.9 annotated, epic-11 index flipped                                                                                   |
 
 **Decisions (2026-09-25):**
 

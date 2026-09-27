@@ -1,6 +1,6 @@
 # Epic 15 — Warmth Engine Fix & Hardening
 
-**Status:** ready
+**Status:** done
 **Amended 2026-09-25:** Warmth model restructure (Unscored removed, baseline 70 = Hot at signup, any-action recency clock) supersedes Standing Decision 3 and the marked ACs below. Annotations only — original AC text preserved. Plan: `docs/dashboard-warmth-redesign-plan.md` §4.
 **Source:** [Five-Engine Audit §2 Warmth](../scans/engine-audit-5-engines.md#2-warmth--%EF%B8%8F-partial-verified-rescan-confidence-96), [PRD §2 Sprint 3](../PRD.md), [MVP Vision Module 3 — Warmth Tracking](../product-vision-mvp-waitlist-tool.md#module-3--warmth-tracking), [Story 11.0–11.7](completed/story-11.0-resend-webhook.md), [Story 12.3.3](completed/story-12.3.3-dashboard-warmth.md), Vercel Cron docs, Resend Webhook event types
 
@@ -43,15 +43,15 @@ Repair the warmth tracking engine so production scores are **produced daily**, *
 
 ## Story Index
 
-| ID   | Title                                             | Depends on | Status      |
-| ---- | ------------------------------------------------- | ---------- | ----------- |
-| 15.0 | Warmth Scoring Core (signals, decay, tier, batch) | —          | done        |
-| 15.1 | Daily Cron Schedule (`vercel.json`)               | —          | in-progress |
-| 15.2 | Resend Webhook Ingestion Hardening                | —          | in-progress |
-| 15.3 | Segment Counts, Pro Gate & Eligibility            | —          | done        |
-| 15.4 | Warmth Display, Copy & Read Path Fixes            | —          | done        |
-| 15.5 | Epic 15 Tests                                     | 15.0–15.4  | done        |
-| 15.6 | Story, Vision, MEMORY & Audit Sync                | 15.0–15.5  | done        |
+| ID   | Title                                             | Depends on | Status |
+| ---- | ------------------------------------------------- | ---------- | ------ |
+| 15.0 | Warmth Scoring Core (signals, decay, tier, batch) | —          | done   |
+| 15.1 | Daily Cron Schedule (`vercel.json`)               | —          | done   |
+| 15.2 | Resend Webhook Ingestion Hardening                | —          | done   |
+| 15.3 | Segment Counts, Pro Gate & Eligibility            | —          | done   |
+| 15.4 | Warmth Display, Copy & Read Path Fixes            | —          | done   |
+| 15.5 | Epic 15 Tests                                     | 15.0–15.4  | done   |
+| 15.6 | Story, Vision, MEMORY & Audit Sync                | 15.0–15.5  | done   |
 
 **Execution order:** 15.0 first (scoring correctness everything else reads). Then **15.1 + 15.2 + 15.3 + 15.4 in parallel** (independent surfaces). Then 15.5 (tests), then 15.6 (docs). 15.1 can ship with 15.0 in the same release train so scores actually refresh after the core fix.
 
@@ -61,7 +61,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 15.0 — Warmth Scoring Core (signals, decay, tier, batch)
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (algorithm + batch; no SVG)
 **Story:** As a platform, I want warmth scores computed from only real engagement signals with correct decay and referral counts so that Hot/Warm/Cold in production reflect who actually engaged.
 
@@ -95,7 +95,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 15.1 — Daily Cron Schedule (`vercel.json`)
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (infrastructure)
 **Story:** As a platform, I want the daily warmth recalculation cron scheduled in production so that scores refresh without manual runs.
 
@@ -126,7 +126,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 15.2 — Resend Webhook Ingestion Hardening
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (API)
 **Story:** As a platform, I want Resend webhooks to fail closed with correct status codes, attribute events to the right waitlist subscriber, and never double-insert so warmth inputs stay trustworthy.
 
@@ -167,7 +167,7 @@ User runs this in Supabase SQL Editor **before** relying on race-safe idempotenc
 
 ### Story 15.3 — Segment Counts, Pro Gate & Eligibility
 
-**Status:** ready
+**Status:** done
 **Design Refs:** S5 Segment selector — `docs/design/sprint-3-design-specs.md` §S5
 **Story:** As a Pro founder, I want broadcast segment counts scoped to the active waitlist, gated to Pro, and aligned with who can actually receive email so that the compose UI matches the send.
 

@@ -1,6 +1,6 @@
 # Story 14.0 — Schema, Answer-Key Migration, Server Caps, Privacy
 
-**Status:** ready
+**Status:** done
 **Epic:** 14 — Qualification Engine Fix & Hardening
 **Depends on:** —
 

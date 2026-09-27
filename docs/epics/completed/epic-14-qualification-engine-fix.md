@@ -1,6 +1,6 @@
 # Epic 14 — Qualification Engine Fix & Hardening
 
-**Status:** in-progress
+**Status:** done
 **Source:** [PRD §6.9 Step 4 Decision](../PRD.md#64-onboarding-step-4-qualification-decision-f-b1-qual-decision-variant), [PRD §6.10 Step 4a Configure Questions](../PRD.md#65-onboarding-step-4a-configure-qualification-questions-f-b1), [PRD §7.4 Data Model](../PRD.md#74-data-model--implementation-grade), [Five-Engine Audit §1](../scans/engine-audit-5-engines.md#1-qualification--%EF%B8%8F-partial-verified-rescan-confidence-97)
 
 ## Design References

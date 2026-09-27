@@ -1,6 +1,6 @@
 # Story 15.2 — Resend Webhook Ingestion Hardening
 
-**Status:** in-progress
+**Status:** done
 **Epic:** 15 — Warmth Engine Fix & Hardening
 **Depends on:** —
 **Design Refs:** — (API)
@@ -167,18 +167,20 @@ Route tests live in 15.5 (`webhook-resend.test.ts`).
 
 ## Implementation Status
 
-**Status: IMPLEMENTED — pending founder SQL gate (AC5/AC6 full guarantee)**
+**Status: DONE — all ACs verified, SQL gate proven live (2026-09-27)**
 
-| AC                      | Status     | Evidence                                                                                                                                                                                                                                                                                                                      |
-| ----------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| AC1 missing headers 401 | ✅         | `route.ts:39-44` returns 401                                                                                                                                                                                                                                                                                                  |
-| AC2 invalid sig 401     | ✅         | `route.ts:57-59` returns 401                                                                                                                                                                                                                                                                                                  |
-| AC3 unknown type 200    | ✅         | `:64-66` unchanged (plus `:71-73` no-email, `:192` success)                                                                                                                                                                                                                                                                   |
-| AC4 multi-waitlist      | ✅         | `.limit(1).single()` replaced by match-list loop `route.ts:91-115`; send-time target read from `data.tags` (Resend's mechanism — no metadata field) with metadata fallback `:79-101`                                                                                                                                          |
-| AC5 unique index        | ⏳ founder | App pre-check + `23505` swallow `route.ts:120-151`; SQL at `sql-writeups/epic15-story2-email-events-svix-unique.sql` — **founder must run in Supabase SQL Editor**                                                                                                                                                            |
-| AC6 bounce/complaint    | ⏳ founder | Per-row side effects `route.ts:157-185` scoped to each resolved row. Same SQL widens `bounced_emails.email_type` CHECK — webhook writes `'transactional'` but original CHECK only allowed `('confirmation','broadcast')`, so **every bounce insert silently failed (23514) until now**                                        |
-| AC7 send metadata       | ✅         | `tags` on all 3 Resend send paths: `email.ts` sendParams (new `waitlistId` param), broadcast batch rows, updates batch rows; 4 transactional callers wired (`subscribers/route.ts` ×3, `milestones.ts`) — cap-warning gets `waitlistId` only (founder recipient, no subscriber). No path remains that "cannot" pass targeting |
-| AC8 Lint + build        | ✅         | `pnpm lint` 0 errors / 5 warnings (baseline), `pnpm build` exit 0, full suite 496 passed / 7 failed (= baseline)                                                                                                                                                                                                              |
+| AC                      | Status | Evidence                                                                                                                                                                                                                                                                                                                      |
+| ----------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AC1 missing headers 401 | ✅     | `route.ts:39-44` returns 401 + **live prod probe 2026-09-27**: POST no svix headers → `401 {"error":"Missing svix headers"}`                                                                                                                                                                                                  |
+| AC2 invalid sig 401     | ✅     | `route.ts:57-59` returns 401 + **live prod probe 2026-09-27**: POST garbage `svix-signature` → `401 {"error":"Invalid signature"}`                                                                                                                                                                                            |
+| AC3 unknown type 200    | ✅     | `:64-66` unchanged (plus `:71-73` no-email, `:192` success) + **live prod probe 2026-09-27**: Svix-signed unsupported event → `200 {"received":true}` (HMAC self-check passed before send)                                                                                                                                    |
+| AC4 multi-waitlist      | ✅     | `.limit(1).single()` replaced by match-list loop `route.ts:91-115`; send-time target read from `data.tags` (Resend's mechanism — no metadata field) with metadata fallback `:79-101`; `webhook-resend.test.ts` 7/7 pass                                                                                                       |
+| AC5 unique index        | ✅     | App pre-check + `23505` swallow `route.ts:120-151`; **index proven live 2026-09-27**: duplicate REST insert (same `waitlist_id` + `event_data.svix_id`) → `409 / 23505 ... violates unique constraint "email_events_svix_uidx"`; probe row deleted, zero residue                                                              |
+| AC6 bounce/complaint    | ✅     | Per-row side effects `route.ts:157-185` scoped to each resolved row; **CHECK widen proven live 2026-09-27**: discriminating insert with `email_type='transactional'` + nonexistent waitlist → `409 / 23503` (FK) **not** `23514` (CHECK) → constraint accepts `'transactional'`; no row created, zero residue                 |
+| AC7 send metadata       | ✅     | `tags` on all 3 Resend send paths: `email.ts` sendParams (new `waitlistId` param), broadcast batch rows, updates batch rows; 4 transactional callers wired (`subscribers/route.ts` ×3, `milestones.ts`) — cap-warning gets `waitlistId` only (founder recipient, no subscriber). No path remains that "cannot" pass targeting |
+| AC8 Lint + build        | ✅     | `pnpm lint` 0 errors / 5 warnings (baseline), `pnpm build` exit 0, full suite at baseline (538 pass / 7 known fails)                                                                                                                                                                                                          |
+
+**SQL gate closed:** `epic15-story2-email-events-svix-unique.sql` demonstrably executed in production Supabase — both statements verified behaviorally (unique index rejects duplicates; DO-block CHECK widen accepts `'transactional'`), 2026-09-27.
 
 **Deviations (research-backed, story pre-authorized documenting actual shape):**
 
