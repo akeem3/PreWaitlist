@@ -115,7 +115,7 @@ const cold = eligible.filter((s) => s.warmth_score === "cold").length;
 return NextResponse.json({ all, hot_warm, cold });
 ```
 
-Partitions unchanged; `all` includes unscored then eligibility-filtered. Matches send path in 17.0 (Standing Decision B3). Klaviyo benchmark: show **deliverable** estimate before send.
+Partitions unchanged; `all` includes ~~unscored then eligibility-filtered~~ **[AMENDED 2026-09-25 - warmth restructure:** no Unscored state exists; `all` = every eligible subscriber**]**. Matches send path in 17.0 (Standing Decision B3). Klaviyo benchmark: show **deliverable** estimate before send.
 
 **Shared helper:** if 17.0 and 17.1 land same PR and drift is a risk, extract `src/lib/broadcast-eligibility.ts` with `getEligibleEmails(supabase, waitlistId)` used by both; otherwise two-line filter + cross-comment (avoid over-abstracting mid-epic).
 
