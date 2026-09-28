@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import LeaderboardClient from "../../app/dashboard/leaderboard/client";
@@ -56,6 +56,9 @@ describe("Dashboard Leaderboard Client", () => {
   it("shows empty state", () => {
     render(<LeaderboardClient {...defaultProps} rows={[]} totalCount={0} />);
     expect(screen.getByText(/No subscribers yet/)).toBeDefined();
+    expect(screen.getByText("Showing 0\u20130 of 0 subscribers")).toBeDefined();
+    expect(screen.queryByRole("button", { name: /Previous/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Next/ })).toBeNull();
   });
 
   it("displays quality scores with percentage", () => {
@@ -229,7 +232,9 @@ describe("Dashboard Leaderboard Client", () => {
     await user.click(clearBtn);
 
     expect(searchInput).toHaveValue("");
-    expect(screen.getByText("15 subscribers")).toBeDefined();
+    expect(
+      screen.getByText("Showing 1\u201310 of 15 subscribers")
+    ).toBeDefined();
   });
 
   it("shows no results message when search has no matches", async () => {
@@ -298,5 +303,144 @@ describe("Dashboard Leaderboard Client", () => {
     );
     const emDashes = screen.getAllByText("\u2014");
     expect(emDashes.length).toBeGreaterThan(0);
+  });
+
+  it("shows only the first 10 rows and range counter for 25 rows", () => {
+    render(<LeaderboardClient rows={makeRows(25)} totalCount={25} />);
+    expect(screen.getAllByTestId("link").length).toBe(10);
+    expect(
+      screen.getByText("Showing 1\u201310 of 25 subscribers")
+    ).toBeDefined();
+  });
+
+  it("advances to the next page and updates the range counter", async () => {
+    const user = userEvent.setup();
+    render(<LeaderboardClient rows={makeRows(25)} totalCount={25} />);
+
+    await user.click(screen.getByRole("button", { name: /Next/ }));
+
+    expect(
+      screen.getByText("Showing 11\u201320 of 25 subscribers")
+    ).toBeDefined();
+    expect(screen.queryByText("user0@example.com")).toBeNull();
+    expect(screen.getByText("user10@example.com")).toBeDefined();
+    expect(screen.getAllByTestId("link").length).toBe(10);
+  });
+
+  it("disables Previous on first page and Next on last page", async () => {
+    const user = userEvent.setup();
+    render(<LeaderboardClient rows={makeRows(25)} totalCount={25} />);
+
+    expect(screen.getByRole("button", { name: /Previous/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Next/ })).not.toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: /Next/ }));
+    await user.click(screen.getByRole("button", { name: /Next/ }));
+
+    expect(
+      screen.getByText("Showing 21\u201325 of 25 subscribers")
+    ).toBeDefined();
+    expect(screen.getAllByTestId("link").length).toBe(5);
+    expect(screen.getByRole("button", { name: /Next/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Previous/ })).not.toBeDisabled();
+  });
+
+  it("hides pagination controls when there is one page or fewer", () => {
+    render(<LeaderboardClient rows={makeRows(3)} totalCount={3} />);
+    expect(screen.queryByRole("button", { name: /Previous/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Next/ })).toBeNull();
+    expect(screen.getByText("Showing 1\u20133 of 3 subscribers")).toBeDefined();
+  });
+
+  it("hides pagination controls when search narrows to one page", async () => {
+    const user = userEvent.setup();
+    render(<LeaderboardClient rows={makeRows(25)} totalCount={25} />);
+    expect(screen.getByRole("button", { name: /Next/ })).toBeDefined();
+
+    await user.type(screen.getByPlaceholderText("Search by email..."), "user0");
+
+    expect(screen.queryByRole("button", { name: /Previous/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Next/ })).toBeNull();
+    expect(screen.getByText("1 result")).toBeDefined();
+  });
+
+  it("resets to first page when sort changes", async () => {
+    const user = userEvent.setup();
+    render(<LeaderboardClient rows={makeRows(25)} totalCount={25} />);
+
+    await user.click(screen.getByRole("button", { name: /Next/ }));
+    expect(
+      screen.getByText("Showing 11\u201320 of 25 subscribers")
+    ).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: /Referrals/ }));
+    expect(
+      screen.getByText("Showing 1\u201310 of 25 subscribers")
+    ).toBeDefined();
+  });
+
+  it("resets to first page when search changes", async () => {
+    const user = userEvent.setup();
+    render(<LeaderboardClient rows={makeRows(25)} totalCount={25} />);
+
+    // Page 2 of unfiltered list
+    await user.click(screen.getByRole("button", { name: /Next/ }));
+    expect(
+      screen.getByText("Showing 11\u201320 of 25 subscribers")
+    ).toBeDefined();
+
+    // Type a search: page resets to 0 (filter shows count footer)
+    await user.type(screen.getByPlaceholderText("Search by email..."), "user");
+    expect(screen.getByText("25 results")).toBeDefined();
+
+    // Move to page 2 within filtered results (count footer, no range shown)
+    await user.click(screen.getByRole("button", { name: /Next/ }));
+    expect(screen.getByText("25 results")).toBeDefined();
+
+    // Clear search via × → back to unfiltered first page
+    await user.click(screen.getByRole("button", { name: "" }));
+    expect(
+      screen.getByText("Showing 1\u201310 of 25 subscribers")
+    ).toBeDefined();
+  });
+
+  it("keeps canonical server rank across pages (not page-relative index)", async () => {
+    const user = userEvent.setup();
+    render(<LeaderboardClient rows={makeRows(25)} totalCount={25} />);
+
+    await user.click(screen.getByRole("button", { name: /Next/ }));
+
+    // First row of page 2 must show server rank 11, not page-relative 1
+    const row = screen.getByText("user10@example.com").closest("div");
+    expect(row).not.toBeNull();
+    expect(within(row as HTMLElement).getByText("11")).toBeDefined();
+    expect(within(row as HTMLElement).queryByText("1")).toBeNull();
+  });
+
+  it("moves immediately on Previous after rows shrink below the current page", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <LeaderboardClient rows={makeRows(25)} totalCount={25} />
+    );
+
+    // Page index 2 (rows 21–25) of 25
+    await user.click(screen.getByRole("button", { name: /Next/ }));
+    await user.click(screen.getByRole("button", { name: /Next/ }));
+    expect(
+      screen.getByText("Showing 21\u201325 of 25 subscribers")
+    ).toBeDefined();
+
+    // rows prop shrinks (e.g. auto-refresh) → page clamps to index 1 (11–15)
+    rerender(<LeaderboardClient rows={makeRows(15)} totalCount={15} />);
+    expect(
+      screen.getByText("Showing 11\u201315 of 15 subscribers")
+    ).toBeDefined();
+
+    // First Previous click must land on page 1 (1–10), not stall on 11–15
+    await user.click(screen.getByRole("button", { name: /Previous/ }));
+    expect(
+      screen.getByText("Showing 1\u201310 of 15 subscribers")
+    ).toBeDefined();
+    expect(screen.getByRole("button", { name: /Previous/ })).toBeDisabled();
   });
 });

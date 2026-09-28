@@ -65,9 +65,10 @@ function formatMilestone(row: Row) {
   return `${row.milestone_earned_count}/${row.milestone_total}`;
 }
 
+const PAGE_SIZE = 10;
+
 export default function LeaderboardClient({
   rows,
-  totalCount,
   waitlistId,
 }: {
   rows: Row[];
@@ -77,6 +78,7 @@ export default function LeaderboardClient({
   const [sortKey, setSortKey] = useState<SortKey>("rank");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
 
   const sorted = useMemo(() => {
     const filtered = search
@@ -122,7 +124,15 @@ export default function LeaderboardClient({
     });
   }, [rows, sortKey, sortDir, search]);
 
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
+  const safePage = Math.min(page, Math.max(totalPages - 1, 0));
+  const start = safePage * PAGE_SIZE;
+  const visible = sorted.slice(start, start + PAGE_SIZE);
+  const rangeStart = sorted.length === 0 ? 0 : start + 1;
+  const rangeEnd = Math.min(start + PAGE_SIZE, sorted.length);
+
   function handleSort(key: SortKey) {
+    setPage(0);
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
@@ -187,13 +197,19 @@ export default function LeaderboardClient({
             type="text"
             placeholder="Search by email..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(0);
+            }}
             className="w-full bg-transparent text-body-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
           {search && (
             <button
               type="button"
-              onClick={() => setSearch("")}
+              onClick={() => {
+                setSearch("");
+                setPage(0);
+              }}
               className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
             >
               <svg
@@ -271,14 +287,14 @@ export default function LeaderboardClient({
           </div>
         ) : (
           <div>
-            {sorted.map((row, i) => {
+            {visible.map((row, i) => {
               const displayName =
                 row.display_name?.trim() || row.email.split("@")[0];
               return (
                 <div
                   key={row.id}
                   className={`grid grid-cols-[48px_1fr_1fr_100px_100px_120px_120px] items-center gap-4 px-5 py-3 transition-colors hover:bg-muted/30 ${
-                    i < sorted.length - 1 ? "border-b border-border/50" : ""
+                    i < visible.length - 1 ? "border-b border-border/50" : ""
                   }`}
                 >
                   <span className="text-center text-body-sm text-muted-foreground">
@@ -314,10 +330,32 @@ export default function LeaderboardClient({
         )}
 
         {/* Footer */}
-        <div className="border-t border-border px-5 py-3 text-xs text-muted-foreground">
-          {search
-            ? `${sorted.length} result${sorted.length !== 1 ? "s" : ""}`
-            : `${totalCount} subscriber${totalCount !== 1 ? "s" : ""}`}
+        <div className="flex items-center justify-between border-t border-border px-5 py-3 text-xs text-muted-foreground">
+          <span>
+            {search
+              ? `${sorted.length} result${sorted.length !== 1 ? "s" : ""}`
+              : `Showing ${rangeStart}\u2013${rangeEnd} of ${sorted.length} subscriber${sorted.length !== 1 ? "s" : ""}`}
+          </span>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                disabled={safePage === 0}
+                onClick={() => setPage(Math.max(0, safePage - 1))}
+                className="font-medium text-accent transition-colors hover:text-accent/80 disabled:pointer-events-none disabled:text-muted-foreground"
+              >
+                ← Previous
+              </button>
+              <button
+                type="button"
+                disabled={safePage >= totalPages - 1}
+                onClick={() => setPage(Math.min(safePage + 1, totalPages - 1))}
+                className="font-medium text-accent transition-colors hover:text-accent/80 disabled:pointer-events-none disabled:text-muted-foreground"
+              >
+                Next →
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
