@@ -1,6 +1,6 @@
 # Story 17.7 — Doc Amendments & Status Sync
 
-**Status:** ready
+**Status:** done
 **Epic:** 17 — Broadcasting Engine Fix
 **Depends on:** 17.0–17.6
 **Design Refs:** — (documentation only)
@@ -37,7 +37,7 @@ As a founder/maintainer, I want story docs and MEMORY to match the broadcast arc
 
 ## Dev Notes
 
-**Alignment check (2026-09-28, Prompt #6): partial — AC3 done early: `MEMORY.md:779`/`:864` already corrected to custom HMAC + "Corrected 2026-09-24 (Epic 17)" (note at `:1059` reserves story-file amendments for this story). Not started: AC1 (`story-12.3…md:18` AC5 still `{{{RESEND_UNSUBSCRIBE_URL}}}`, also `:282`/`:329`); AC2 (`story-12.4…md:19` AC6 still "Cold only … default selection", also `:40`/`:196`/`:212`); AC4 (12.3/12.4/12.5/12.6 frontmatter all still `**Status:** ready`); AC5/AC6 no annotations. Residual stale merge-tag docs beyond the table: `docs/epics/sprint-3-plan.md:485`, `docs/design/sprint-3-design-specs.md:573`, `docs/epics/completed/epic-12-email-system.md:147,162`. Status remains `ready`.**
+**Completed (2026-09-28, Prompt #2 execute):** all ACs done. AC3 was already complete early (MEMORY merge-tag fixes, `:779`/`:864`). AC1 → 12.3 AC5 rewritten to custom HMAC + AC7/AC8 annotated (+ impl details `:122`/`:282`/`:329`/`:355`). AC2 → 12.4 AC6 default `"all"` (+ `:40`/`:196`/`:212`). AC4 → 12.3/12.4/12.5/12.6 frontmatter `done`; sprint-3-plan table already ✅. AC5 → 12.1.8 AC3 annotated complete after 17.3. AC6 → 12.6 AC4 stream-local-part wording (+ duplicate in `sprint-3-plan.md:571`). AC7 → audit §5 Executive Summary + Minimum-to-green annotated "addressed by Epic 17". AC3 extras → Epic 17 gotchas + status table in MEMORY, all 17.x story/epic statuses flipped `done`. Residual merge-tag docs beyond the table also corrected: `docs/epics/sprint-3-plan.md:485`, `docs/design/sprint-3-design-specs.md:573`, `docs/epics/completed/epic-12-email-system.md:147,162`. Remaining `RESEND_UNSUBSCRIBE_URL` mentions live only in audit history sections (preserved by design — annotate, don't rewrite).
 
 ### Files to amend
 
@@ -83,16 +83,16 @@ Edit **forward** only — do not rewrite audit history sections. Add “Fixed by
 
 **Read-through checklist:**
 
-- [ ] 12.3 AC5 = HMAC, not merge tag
-- [ ] 12.3 AC7/AC8 aligned with 17.4
-- [ ] 12.4 AC6 = default `"all"` or removed
-- [ ] MEMORY merge-tag claims corrected
-- [ ] MEMORY Epic 17 gotcha added
-- [ ] 12.3/12.4/12.5/12.6 `status: done`
-- [ ] 12.6 AC4 stream-prefix wording
-- [ ] 12.1.8 AC3 marked complete
-- [ ] Optional audit annotate
-- [ ] No PRD REQ-7.1a rewrite (already correct)
+- [x] 12.3 AC5 = HMAC, not merge tag
+- [x] 12.3 AC7/AC8 aligned with 17.4
+- [x] 12.4 AC6 = default `"all"` or removed
+- [x] MEMORY merge-tag claims corrected
+- [x] MEMORY Epic 17 gotcha added
+- [x] 12.3/12.4/12.5/12.6 `status: done`
+- [x] 12.6 AC4 stream-prefix wording
+- [x] 12.1.8 AC3 marked complete
+- [x] Optional audit annotate
+- [x] No PRD REQ-7.1a rewrite (already correct)
 
 ### Implementation order inside story
 

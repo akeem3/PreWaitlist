@@ -482,7 +482,7 @@ Every new subscriber receives a confirmation email with their position and refer
 - AC2: Clicking Broadcast shall open a compose screen with: subject line input, HTML body textarea, preview button, send button.
 - AC3: The compose screen shall show the subscriber count ("Send to {N} subscribers").
 - AC4: Clicking "Send" shall send the email via Resend's Broadcast API to all subscribers of the waitlist.
-- AC5: The broadcast shall include an unsubscribe mechanism (`{{{RESEND_UNSUBSCRIBE_URL}}}` merge tag) for CAN-SPAM compliance.
+- AC5: The broadcast shall include an unsubscribe mechanism — **custom HMAC URL** (`generateUnsubscribeUrl`) + `List-Unsubscribe(-Post)` headers, **not** the `{{{RESEND_UNSUBSCRIBE_URL}}}` merge tag (Audiences-only; forbidden by REQ-7.1a). **[AMENDED 2026-09-28 — Story 17.7]**
 - AC6: The broadcast shall include a physical mailing address in the footer (CAN-SPAM requirement).
 - AC7: After sending, the system shall show a confirmation: "Email sent to {N} subscribers."
 - AC8: Free founders shall see an upgrade prompt when clicking Broadcast ("Upgrade to Pro to send broadcasts").
@@ -568,7 +568,7 @@ Every new subscriber receives a confirmation email with their position and refer
 - AC1: Transactional emails (confirmation, moved-up, milestone) shall be sent from `notifications@prewaitlist.com`.
 - AC2: Marketing emails (broadcasts) shall be sent from `updates@prewaitlist.com`.
 - AC3: The `from` address resolution shall check: (1) founder's custom sender name + verified domain, (2) fallback to default prewaitlist.com addresses.
-- AC4: When a founder verifies their own domain (Story 12.5), transactional emails shall use `{sender_name}@{verified_domain}` and broadcasts shall use `{sender_name}@{verified_domain}`.
+- AC4: When a founder verifies their own domain (Story 13.5), emails shall use the verified domain with the **stream local-part** — transactional `notifications@{verified_domain}`, broadcasts `updates@{verified_domain}` — with the founder's `{sender_name}` as the **display name**, never as the local-part. **[AMENDED 2026-09-28 — Story 17.7 AC6, matches story-12.6 AC4]**
 - AC5: The email sending utility (`src/lib/email.ts`, created in Story 12.0) shall accept a `stream` parameter ("transactional" | "broadcast") to resolve the correct `from` address.
 - AC6: Lint and build shall pass with zero errors.
 

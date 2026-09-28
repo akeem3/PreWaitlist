@@ -10,6 +10,14 @@ function getSecret(): string {
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://prewaitlist.com";
 
+// Story 17.0 AC4 (B14) fail-fast pre-flight: returns true when the secret
+// needed by generateUnsubscribeUrl is configured, without generating a URL
+// (so the send path never calls generateUnsubscribeUrl twice for one
+// subscriber just to probe configuration).
+export function hasUnsubscribeSecret(): boolean {
+  return !!process.env.UNSUBSCRIBE_SECRET;
+}
+
 export function generateUnsubscribeToken(subscriberId: string): string {
   const hmac = crypto
     .createHmac("sha256", getSecret())

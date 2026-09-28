@@ -1,6 +1,6 @@
 # Story 17.4 — Free Direct-URL Upgrade + Honest Success Copy
 
-**Status:** ready
+**Status:** done
 **Epic:** 17 — Broadcasting Engine Fix
 **Depends on:** 17.0, 17.2
 **Design Refs:** Upgrade modal trigger #4 (`docs/design/sprint-3-design-specs.md` §S9); success card `client.tsx:103-121`; Story 12.3 AC7/AC8

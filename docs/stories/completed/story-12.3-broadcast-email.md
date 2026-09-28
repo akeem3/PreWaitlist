@@ -1,7 +1,7 @@
 # Story 12.3 — Broadcast Email (Pro)
 
+**Status:** done
 **Epic:** 12 — Email System
-**Status:** ready
 **Depends on:** 11.1, 11.7
 **Design Refs:** None (dashboard UI, no high-fidelity SVG)
 
@@ -15,10 +15,10 @@ As a Pro founder, I want to compose and send a broadcast email to all my subscri
 - AC2: Clicking Broadcast shall open a compose screen with: subject line input, HTML body textarea, preview button, send button.
 - AC3: The compose screen shall show the subscriber count ("Send to {N} subscribers").
 - AC4: Clicking "Send" shall send the email via Resend's Batch API to all subscribers of the waitlist.
-- AC5: The broadcast shall include an unsubscribe mechanism (`{{{RESEND_UNSUBSCRIBE_URL}}}` merge tag) for CAN-SPAM compliance.
+- AC5: The broadcast shall include an unsubscribe mechanism for CAN-SPAM compliance — **custom HMAC unsubscribe URL** (`generateUnsubscribeUrl`) plus `List-Unsubscribe` / `List-Unsubscribe-Post` headers, **not** the `{{{RESEND_UNSUBSCRIBE_URL}}}` merge tag (that tag requires Resend Audiences; Standing Decision B5 / PRD REQ-7.1a forbids Audiences). **[AMENDED 2026-09-28 — Story 17.7 AC1]**
 - AC6: The broadcast shall include a physical mailing address in the footer (CAN-SPAM requirement).
-- AC7: After sending, the system shall show a confirmation: "Email sent to {N} subscribers."
-- AC8: Free founders shall see an upgrade prompt when clicking Broadcast ("Upgrade to Pro to send broadcasts").
+- AC7: After sending, the system shall show a confirmation: "Email sent to {N} subscribers." **[ANNOTATED 2026-09-28 — Story 17.7: shipped success copy is "Sent to {N} subscribers." with interim B7 string "Your broadcast has been sent."; API is honest — non-2xx / `ok:false` renders the error list, never a success string (Story 17.4 / B4). Final copy pending founder approval (COPY GAP B7).]**
+- AC8: Free founders shall see an upgrade prompt when clicking Broadcast ("Upgrade to Pro to send broadcasts"). **[ANNOTATED 2026-09-28 — Story 17.7: Free direct-URL visit to `/dashboard/broadcast` shows the Story 17.4 upgrade path page (not a dead end); the locked-sidebar trigger behavior is unchanged.]**
 - AC9: The broadcast shall be stored in the `broadcasts` table (created in Story 11.7).
 - AC10: Lint and build shall pass with zero errors.
 
@@ -119,7 +119,7 @@ export default function BroadcastPage() {
         <Card className="w-full max-w-lg">
           <CardContent className="pt-6 text-center">
             <p className="text-h3 text-foreground mb-2">
-              Email sent to {sentCount} subscribers
+              Email sent to {sentCount} subscribers {/* STALE SAMPLE — shipped copy: "Sent to {N} subscribers." (17.4; B7 pending) */}
             </p>
             <p className="text-body text-muted-foreground mb-6">
               Your broadcast has been delivered.
@@ -279,7 +279,8 @@ export async function POST(req: NextRequest) {
         ${mailingAddress}
       </p>
       <p style="font-size: 12px; color: #6b6459; margin: 0;">
-        <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color: #6b6459;">Unsubscribe</a>
+        <!-- AMENDED: per-recipient HMAC link via buildBroadcastEmailFooter — NOT the Resend merge tag -->
+        <a href="${unsubscribeUrl}" style="color: #6b6459;">Unsubscribe</a>
       </p>
     </div>
   `;
@@ -326,9 +327,9 @@ export async function POST(req: NextRequest) {
 
 **CAN-SPAM compliance notes:**
 
-- **Unsubscribe:** `{{{RESEND_UNSUBSCRIBE_URL}}}` is a Resend merge tag — Resend auto-replaces with a per-recipient unsubscribe link. Required for Gmail/Yahoo deliverability (5,000+ daily sends).
+- **Unsubscribe:** **custom HMAC URL** — `generateUnsubscribeUrl(subscriberId)` produces `…/unsubscribe?token={subscriberId}.{hmac}`, embedded per-recipient by `buildBroadcastEmailFooter` alongside `List-Unsubscribe` / `List-Unsubscribe-Post` headers (RFC 8058 one-click). **Not** the `{{{RESEND_UNSUBSCRIBE_URL}}}` merge tag — that requires Resend Audiences, which Standing Decision B5 / PRD REQ-7.1a forbids. **[AMENDED 2026-09-28 — Story 17.7 AC1]**
 - **Physical address:** Required by CAN-SPAM Act. Use a real address for production. Placeholder for MVP.
-- **List-Unsubscribe header:** Verify Resend auto-adds RFC 8058 one-click unsubscribe header for Batch API sends. Required for Gmail/Yahoo.
+- **List-Unsubscribe header:** Set explicitly per payload (`List-Unsubscribe` + `List-Unsubscribe-Post`) — do not rely on Resend auto-adding it for Batch API sends. Required for Gmail/Yahoo. **[AMENDED 2026-09-28 — Story 17.7 AC1]**
 
 ### T5: Send confirmation + broadcast storage
 
@@ -351,7 +352,7 @@ export async function POST(req: NextRequest) {
 7. Verify subscriber count displays ("Send to {N} subscribers")
 8. Type a subject and body → click Preview → verify preview shows the email
 9. Click Send → verify email is sent to all subscribers
-10. Verify confirmation shows "Email sent to {N} subscribers"
+10. Verify confirmation shows success treatment — shipped copy "Sent to {N} subscribers." (original "Email sent to {N} subscribers" superseded by Story 17.4; final copy pending COPY GAP B7)
 11. Verify `broadcasts` table has a new row with correct subject and recipient_count
 12. Verify subscribers received the email with unsubscribe link and physical address
 13. Run `pnpm lint` and `pnpm build` — verify zero errors

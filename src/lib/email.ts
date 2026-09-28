@@ -1,8 +1,12 @@
 import { resend } from "@/lib/resend";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { generateUnsubscribeUrl } from "@/lib/unsubscribe";
+import { resolveFromAddress, type Stream } from "@/lib/from-address";
 
-type Stream = "transactional" | "broadcast";
+// Re-export for existing server-side importers (Story 17.3 moved the
+// implementation to the isomorphic `from-address` module so Client
+// Components can share it without pulling in `resend`).
+export { resolveFromAddress };
 
 interface SendEmailParams {
   to: string;
@@ -34,41 +38,8 @@ export function interpolateEmail(
   });
 }
 
-const DEFAULT_SENDER_NAME = "PreWaitlist";
 const DEFAULT_ADDRESS =
   "PreWaitlist Inc., 548 Market St, Suite 35000, San Francisco, CA 94104";
-
-/**
- * AC1-AC4: Resolve the from-address based on stream, sender name, and verified domain.
- *
- * Resolution chain: senderName → productName → headline → "PreWaitlist"
- * Domain: verified custom domain (if set) | notifications@ (transactional) | updates@ (broadcast)
- */
-export function resolveFromAddress(
-  senderName: string | null | undefined,
-  productName: string | null | undefined,
-  headline: string | null | undefined,
-  stream: Stream,
-  sendingDomain?: string | null
-): string {
-  const name =
-    senderName?.trim() ||
-    productName?.trim() ||
-    headline?.trim() ||
-    DEFAULT_SENDER_NAME;
-
-  if (sendingDomain) {
-    const prefix = stream === "transactional" ? "notifications" : "updates";
-    return `${name} <${prefix}@${sendingDomain}>`;
-  }
-
-  const email =
-    stream === "transactional"
-      ? "notifications@prewaitlist.com"
-      : "updates@prewaitlist.com";
-
-  return `${name} <${email}>`;
-}
 
 /**
  * Check if a subscriber has unsubscribed.
@@ -148,6 +119,28 @@ export function buildBroadcastEmailFooter(
 ): string {
   const address = businessAddress?.trim() || DEFAULT_ADDRESS;
   const unsubscribeUrl = generateUnsubscribeUrl(subscriberId);
+
+  return `
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
+    <p style="font-size: 12px; color: #9ca3af; margin: 0 0 8px; text-align: center;">
+      ${address}
+    </p>
+    <p style="font-size: 12px; color: #9ca3af; margin: 0; text-align: center;">
+      <a href="${unsubscribeUrl}" style="color: #9ca3af; text-decoration: underline;">Unsubscribe</a>
+    </p>
+  `;
+}
+
+/**
+ * Build the email footer with a pre-built unsubscribe URL (for broadcast
+ * send path — Story 17.0 AC4: generate the URL once per recipient and reuse
+ * it for both the List-Unsubscribe header and the body footer).
+ */
+export function buildBroadcastEmailFooterWithUrl(
+  unsubscribeUrl: string,
+  businessAddress?: string | null
+): string {
+  const address = businessAddress?.trim() || DEFAULT_ADDRESS;
 
   return `
     <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;" />

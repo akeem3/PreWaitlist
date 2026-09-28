@@ -1,47 +1,49 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() }),
+// Story 17.6 AC5: replace the literal-markup fake with a real component
+// import. The invalid-token path (no token) is pure JSX — no server calls —
+// so the real Server Component is testable directly. The valid-token path
+// requires admin-client + HMAC mocks (follow-up if needed).
+vi.mock("next/link", () => ({
+  default: ({
+    children,
+    href,
+    className,
+  }: {
+    children: React.ReactNode;
+    href: string;
+    className?: string;
+  }) => (
+    <a href={href} className={className}>
+      {children}
+    </a>
+  ),
 }));
 
-describe("Unsubscribe Page", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+import UnsubscribePage from "../../app/unsubscribe/page";
 
-  it("renders confirmation message with waitlist name", () => {
-    render(
-      <main>
-        <h1>Unsubscribed</h1>
-        <p>You have been unsubscribed from Test Waitlist emails.</p>
-      </main>
-    );
-    expect(screen.getByText("Unsubscribed")).toBeDefined();
-    expect(
-      screen.getByText(/You have been unsubscribed from Test Waitlist/)
-    ).toBeDefined();
-  });
-
-  it("renders resubscribe link", () => {
-    render(
-      <main>
-        <p>You have been unsubscribed from Test emails.</p>
-        <span>Resubscribe</span>
-      </main>
-    );
-    expect(screen.getByText("Resubscribe")).toBeDefined();
-  });
-
-  it("renders invalid link message", () => {
-    render(
-      <main>
-        <p>This unsubscribe link is invalid or has expired.</p>
-        <span>Go to homepage</span>
-      </main>
-    );
+describe("Unsubscribe Page (real component)", () => {
+  it("renders invalid-link message when no token is provided", async () => {
+    const element = await UnsubscribePage({
+      searchParams: Promise.resolve({}),
+    });
+    render(element);
+    expect(screen.getByText("Invalid link")).toBeTruthy();
     expect(
       screen.getByText("This unsubscribe link is invalid or has expired.")
-    ).toBeDefined();
+    ).toBeTruthy();
+    expect(screen.getByText("Go to homepage")).toBeTruthy();
+  });
+
+  it("renders invalid-link message for an unverifiable token", async () => {
+    const element = await UnsubscribePage({
+      searchParams: Promise.resolve({ token: "garbage-token" }),
+    });
+    render(element);
+    expect(screen.getByText("Invalid link")).toBeTruthy();
+    expect(
+      screen.getByText("This unsubscribe link is invalid or has expired.")
+    ).toBeTruthy();
   });
 });

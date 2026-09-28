@@ -1,6 +1,6 @@
 # Story 17.2 — Broadcast Client: waitlist_id + eligible UX
 
-**Status:** ready
+**Status:** done
 **Epic:** 17 — Broadcasting Engine Fix
 **Depends on:** 17.1
 **Design Refs:** C3 compose form (`docs/design/sprint-3-design-specs.md` §C3); segment pills already in `client.tsx` (keep pill UI, not C3’s `<select>` — pills are current implementation + Story 12.4 AC1)

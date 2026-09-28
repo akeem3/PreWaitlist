@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../../lib/supabase/server";
 import BroadcastClient from "./client";
+import BroadcastFreeGate from "./free-gate";
 
 interface PageProps {
   searchParams: Promise<{ wid?: string }>;
@@ -25,15 +26,21 @@ export default async function BroadcastPage({ searchParams }: PageProps) {
 
   const tier = profile?.tier ?? "free";
 
+  // Story 17.4 AC2 (Standing Decision B11): Free founders hitting this URL
+  // directly get the upgrade path (modal open, trigger "broadcast" — same as
+  // the sidebar lock path), not a silent redirect. Unauthenticated still
+  // redirects to /signin above (AC1).
   if (tier !== "pro") {
-    redirect("/dashboard");
+    return <BroadcastFreeGate />;
   }
 
   const { wid } = await searchParams;
 
   let wlQuery = supabase
     .from("waitlists")
-    .select("id, product_name, headline, subdomain, sender_name");
+    .select(
+      "id, product_name, headline, subdomain, sender_name, sending_domain"
+    );
   if (wid) {
     wlQuery = wlQuery.eq("id", wid).eq("founder_id", user.id);
   } else {
@@ -45,11 +52,6 @@ export default async function BroadcastPage({ searchParams }: PageProps) {
     redirect("/onboarding/1");
   }
 
-  const { count: subscriberCount } = await supabase
-    .from("subscribers")
-    .select("id", { count: "exact", head: true })
-    .eq("waitlist_id", waitlist.id);
-
   return (
     <BroadcastClient
       waitlistId={waitlist.id}
@@ -57,7 +59,7 @@ export default async function BroadcastPage({ searchParams }: PageProps) {
       headline={waitlist.headline}
       subdomain={waitlist.subdomain}
       senderName={waitlist.sender_name}
-      subscriberCount={subscriberCount ?? 0}
+      sendingDomain={waitlist.sending_domain ?? null}
     />
   );
 }

@@ -17,18 +17,23 @@ function makeRequest(
 
 const USER = { id: "user-1", email: "founder@test.com" };
 
-function primeProCounts(counts: {
-  all: number;
-  hotWarm: number;
-  cold: number;
-}) {
+function sub(
+  email: string,
+  warmth_score: string,
+  unsubscribed_at: string | null = null
+) {
+  return { email, warmth_score, unsubscribed_at };
+}
+
+function primeProSubscribers(
+  subscribers: ReturnType<typeof sub>[],
+  bounced: { email: string; bounce_type: string; created_at: string }[] = []
+) {
   mockSupabase.__queue.push(
     { data: { tier: "pro" }, error: null },
     { data: { id: "wl-9" }, error: null },
-    { data: [], error: null },
-    { data: null, error: null, count: counts.all },
-    { data: null, error: null, count: counts.hotWarm },
-    { data: null, error: null, count: counts.cold }
+    { data: subscribers, error: null },
+    { data: bounced, error: null }
   );
 }
 
@@ -75,7 +80,13 @@ describe("GET /api/dashboard/broadcast/segments", () => {
   });
 
   it("returns scoped counts with all|hot_warm|cold keys for Pro + wid", async () => {
-    primeProCounts({ all: 5, hotWarm: 4, cold: 1 });
+    primeProSubscribers([
+      sub("a@t.com", "hot"),
+      sub("b@t.com", "warm"),
+      sub("c@t.com", "warm"),
+      sub("d@t.com", "warm"),
+      sub("e@t.com", "cold"),
+    ]);
 
     const response = await GET(
       makeRequest("http://localhost/api/dashboard/broadcast/segments?wid=wl-9")
@@ -100,26 +111,71 @@ describe("GET /api/dashboard/broadcast/segments", () => {
     const subscriberScoped = mockSupabase.__calls.filter(
       (c) => c.method === "eq" && c.args[0] === "waitlist_id"
     );
-    expect(subscriberScoped.length).toBeGreaterThanOrEqual(3);
+    expect(subscriberScoped.length).toBeGreaterThanOrEqual(2);
     expect(subscriberScoped.every((c) => c.args[1] === "wl-9")).toBe(true);
   });
 
   it("excludes unsubscribed subscribers from all three counts", async () => {
-    primeProCounts({ all: 9, hotWarm: 6, cold: 3 });
+    primeProSubscribers([
+      sub("a@t.com", "hot"),
+      sub("b@t.com", "warm"),
+      sub("c@t.com", "cold"),
+      sub("u1@t.com", "hot", "2026-01-01"),
+      sub("u2@t.com", "warm", "2026-01-02"),
+      sub("u3@t.com", "cold", "2026-01-03"),
+    ]);
 
     const response = await GET(
       makeRequest("http://localhost/api/dashboard/broadcast/segments?wid=wl-9")
     );
 
     expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body).toEqual({ all: 3, hot_warm: 2, cold: 1 });
+  });
 
-    const unsubFilters = mockSupabase.__calls.filter(
-      (c) =>
-        c.method === "is" &&
-        c.args[0] === "unsubscribed_at" &&
-        c.args[1] === null
+  it("excludes hard-bounced emails from all three counts", async () => {
+    primeProSubscribers(
+      [sub("a@t.com", "hot"), sub("b@t.com", "warm"), sub("c@t.com", "cold")],
+      [
+        {
+          email: "b@t.com",
+          bounce_type: "hard",
+          created_at: new Date().toISOString(),
+        },
+      ]
     );
-    // One .is() per eligibleCount() chain — all, hot_warm, cold.
-    expect(unsubFilters).toHaveLength(3);
+
+    const response = await GET(
+      makeRequest("http://localhost/api/dashboard/broadcast/segments?wid=wl-9")
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body).toEqual({ all: 2, hot_warm: 1, cold: 1 });
+  });
+
+  it("returns 404 for unknown wid and 400 for multi-waitlist without wid", async () => {
+    // Unknown wid → 404 (profile + null waitlist).
+    mockSupabase.__queue.push(
+      { data: { tier: "pro" }, error: null },
+      { data: null, error: null }
+    );
+    const notFound = await GET(
+      makeRequest(
+        "http://localhost/api/dashboard/broadcast/segments?wid=does-not-exist"
+      )
+    );
+    expect(notFound.status).toBe(404);
+
+    // Multi-waitlist without wid → 400 (profile + 2-row array).
+    mockSupabase.__queue.push(
+      { data: { tier: "pro" }, error: null },
+      { data: [{ id: "wl-1" }, { id: "wl-2" }], error: null }
+    );
+    const ambiguous = await GET(makeRequest());
+    expect(ambiguous.status).toBe(400);
+    const ambiguousBody = await ambiguous.json();
+    expect(ambiguousBody.error).toBeTruthy();
   });
 });

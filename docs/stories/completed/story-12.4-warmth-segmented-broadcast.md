@@ -1,7 +1,7 @@
 # Story 12.4 — Warmth-Segmented Broadcast (Pro)
 
 **Epic:** 12 — Email System
-**Status:** ready
+**Status:** done
 **Depends on:** 11.1, 12.3
 **Design Refs:** None (extends Story 12.3 compose screen)
 
@@ -16,7 +16,7 @@ As a Pro founder, I want to send a broadcast to a specific warmth segment (Hot+W
 - AC3: Selecting a segment shall filter the recipient list before sending.
 - AC4: The send confirmation shall show the segment name and count ("Sent to 54 cold subscribers").
 - AC5: The segment filter shall use the `warmth_score` column on subscribers.
-- AC6: The "Cold only" segment shall be the default selection (primary use case: re-engagement before launch week).
+- AC6: The **"All subscribers"** segment shall be the default selection. **[AMENDED 2026-09-28 — Story 17.7 AC2: original "Cold only" default conflicted with Standing Decision B17, PRD L123, and Story 12.1.8 AC1 (default `"all"`); "all" is the safe default — no founder accidentally targets only cold subscribers.]**
 - AC7: Lint and build shall pass with zero errors.
 
 ## Tasks
@@ -37,7 +37,7 @@ Add a segment selector above the subscriber count. The selector shows three opti
 
 ```typescript
 // New state
-const [segment, setSegment] = useState<"all" | "hot_warm" | "cold">("cold"); // AC6: Default to cold
+const [segment, setSegment] = useState<"all" | "hot_warm" | "cold">("all"); // AMENDED: default "all" (B17 / 12.1.8 AC1) — was "cold"
 
 // Fetch segment counts on mount
 useEffect(() => {
@@ -193,7 +193,7 @@ const { data: subscribers } = await query;
 - `eq("warmth_score", "cold")` — Cold segment
 - No filter — All subscribers (includes unscored/null)
 
-**AC6:** Default selection is "Cold only" — the primary use case for targeted re-engagement before launch week.
+**AC6:** Default selection is "All subscribers" — amended by Story 17.7 (was "Cold only"; conflicts with B17 / 12.1.8 AC1 / PRD L123).
 
 **Edge case:** Subscribers with `warmth_score = null` (unscored) are included in "All" but excluded from both "Hot + Warm" and "Cold" segments. This is correct — unscored subscribers have no engagement data yet.
 
@@ -209,7 +209,7 @@ const { data: subscribers } = await query;
 3. Modify `src/app/api/dashboard/broadcast/route.ts` — add segment parameter
 4. As Pro founder, navigate to Broadcast compose screen
 5. Verify segment selector shows three options with correct counts
-6. Verify "Cold" is selected by default
+6. Verify "All" is selected by default (Story 17.7 — was "Cold")
 7. Change to "All" → verify subscriber count updates to total
 8. Change to "Hot + Warm" → verify count shows only hot + warm subscribers
 9. Change to "Cold" → verify count shows only cold subscribers

@@ -562,16 +562,16 @@ Insert between stat cards row and chart:
 
 ### Text (Verbatim)
 
-| Element           | Text                                                          |
-| ----------------- | ------------------------------------------------------------- |
-| **Subject**       | `You're #{position} in line for {product_name}`               |
-| **Heading**       | `You're on the list!`                                         |
-| **Body line 1**   | `You're #{position} in line for {product_name}.`              |
-| **Body line 2**   | `Share your unique link to move up:`                          |
-| **CTA button**    | `Copy your link`                                              |
-| **Footer line 1** | `You received this because you signed up for {product_name}.` |
-| **Footer line 2** | `Unsubscribe` (link to `{{{RESEND_UNSUBSCRIBE_URL}}}`)        |
-| **Footer line 3** | `{physical_address}` (CAN-SPAM requirement)                   |
+| Element           | Text                                                                                                                                         |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Subject**       | `You're #{position} in line for {product_name}`                                                                                              |
+| **Heading**       | `You're on the list!`                                                                                                                        |
+| **Body line 1**   | `You're #{position} in line for {product_name}.`                                                                                             |
+| **Body line 2**   | `Share your unique link to move up:`                                                                                                         |
+| **CTA button**    | `Copy your link`                                                                                                                             |
+| **Footer line 1** | `You received this because you signed up for {product_name}.`                                                                                |
+| **Footer line 2** | `Unsubscribe` (custom HMAC link via `generateUnsubscribeUrl` — **not** `{{{RESEND_UNSUBSCRIBE_URL}}}`) **[AMENDED 2026-09-28 — Story 17.7]** |
+| **Footer line 3** | `{physical_address}` (CAN-SPAM requirement)                                                                                                  |
 
 ### HTML Template Rules
 

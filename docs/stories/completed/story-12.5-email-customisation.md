@@ -1,7 +1,7 @@
 # Story 12.5 — Email Customisation (Pro)
 
 **Epic:** 12 — Email System
-**Status:** ready
+**Status:** done
 **Depends on:** 12.0
 **Design Refs:** None (Settings page UI)
 

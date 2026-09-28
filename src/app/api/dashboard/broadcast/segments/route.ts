@@ -2,11 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requirePro } from "@/lib/tier-gating";
 
-// Bound the not-in list so the encoded query string stays within proxy
-// header limits. Above this, counts fall back to unsub-only filtering
-// (documented in the story's Implementation Status).
-const BOUNCE_FILTER_MAX = 200;
-
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
 
@@ -31,77 +26,83 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: tierCheck.reason }, { status: 403 });
   }
 
-  // AC1: accept the active waitlist id (client sends `wid`; `waitlist_id`
-  // also accepted).
+  // Story 17.1 AC1: accept the active waitlist id (client sends `wid`;
+  // `waitlist_id` also accepted). Always founder-scoped. NOTE on the
+  // .maybeSingle() null trap: null means "zero OR ambiguous", never assume
+  // "not found" — so the no-wid path fetches an array and branches on
+  // length explicitly (0 → 404, 2+ → 400). The wid path filters by PK `id`,
+  // so at most one row can match and .maybeSingle() is safe there.
   const { searchParams } = new URL(request.url);
   const wid = searchParams.get("wid") ?? searchParams.get("waitlist_id");
 
-  // AC2: always founder-scoped, narrowed by the provided id. .maybeSingle()
-  // returns null instead of erroring — multi-waitlist founders with an id
-  // are handled, and a non-owned id falls through to 404.
-  let waitlistQuery = supabase
-    .from("waitlists")
-    .select("id")
-    .eq("founder_id", user.id);
-
+  let waitlistId: string;
   if (wid) {
-    waitlistQuery = waitlistQuery.eq("id", wid);
+    const { data: waitlist } = await supabase
+      .from("waitlists")
+      .select("id")
+      .eq("founder_id", user.id)
+      .eq("id", wid)
+      .maybeSingle();
+
+    if (!waitlist) {
+      return NextResponse.json({ error: "No waitlist found" }, { status: 404 });
+    }
+    waitlistId = waitlist.id;
+  } else {
+    const { data: rows } = await supabase
+      .from("waitlists")
+      .select("id")
+      .eq("founder_id", user.id);
+
+    if (!rows || rows.length === 0) {
+      return NextResponse.json({ error: "No waitlist found" }, { status: 404 });
+    }
+    if (rows.length > 1) {
+      return NextResponse.json(
+        { error: "wid is required when multiple waitlists exist" },
+        { status: 400 }
+      );
+    }
+    waitlistId = rows[0].id;
   }
 
-  const { data: waitlist } = await waitlistQuery.maybeSingle();
+  // Story 17.1 AC3 (B3): counts must equal send-time eligible recipients —
+  // identical rules to POST broadcast (Story 17.0 AC5): unsubscribed_at IS
+  // NULL and email not in active bounced set. Computed in memory (no
+  // not-in URL-length cap, no quoting pitfalls) to match the send path.
+  // Mirrors isEmailBounced() semantics: hard bounces suppress forever,
+  // soft bounces only within 24h.
+  const { data: subscribers } = await supabase
+    .from("subscribers")
+    .select("email, warmth_score, unsubscribed_at")
+    .eq("waitlist_id", waitlistId);
 
-  if (!waitlist) {
-    return NextResponse.json({ error: "No waitlist found" }, { status: 404 });
-  }
-
-  // AC4: counts should approximate send-time eligible recipients. Mirror
-  // isEmailBounced() semantics: hard bounces suppress forever, soft bounces
-  // only within 24h (older soft rows linger until the send path lazily
-  // deletes them).
   const { data: bouncedRows } = await supabase
     .from("bounced_emails")
     .select("email, bounce_type, created_at")
-    .eq("waitlist_id", waitlist.id);
+    .eq("waitlist_id", waitlistId);
 
   const softCutoff = Date.now() - 24 * 60 * 60 * 1000;
-  const activeBounced = [
-    ...new Set(
-      (bouncedRows ?? [])
-        .filter(
-          (row) =>
-            row.bounce_type === "hard" ||
-            new Date(row.created_at).getTime() > softCutoff
-        )
-        .map((row) => row.email)
-    ),
-  ];
-  const excludeBounced =
-    activeBounced.length > 0 && activeBounced.length <= BOUNCE_FILTER_MAX;
+  const bouncedSet = new Set(
+    (bouncedRows ?? [])
+      .filter(
+        (row) =>
+          row.bounce_type === "hard" ||
+          new Date(row.created_at).getTime() > softCutoff
+      )
+      .map((row) => row.email)
+  );
 
-  const eligibleCount = () => {
-    let query = supabase
-      .from("subscribers")
-      .select("id", { count: "exact", head: true })
-      .eq("waitlist_id", waitlist.id)
-      .is("unsubscribed_at", null);
+  const eligible = (subscribers ?? []).filter(
+    (s) => !s.unsubscribed_at && !bouncedSet.has(s.email)
+  );
 
-    if (excludeBounced) {
-      query = query.not("email", "in", `(${activeBounced.join(",")})`);
-    }
+  const all = eligible.length;
+  const hot_warm = eligible.filter(
+    (s) => s.warmth_score === "hot" || s.warmth_score === "warm"
+  ).length;
+  const cold = eligible.filter((s) => s.warmth_score === "cold").length;
 
-    return query;
-  };
-
-  const [allResult, hotWarmResult, coldResult] = await Promise.all([
-    eligibleCount(),
-    eligibleCount().in("warmth_score", ["hot", "warm"]),
-    eligibleCount().eq("warmth_score", "cold"),
-  ]);
-
-  // AC5: shape unchanged — broadcast client reads exactly these keys.
-  return NextResponse.json({
-    all: allResult.count ?? 0,
-    hot_warm: hotWarmResult.count ?? 0,
-    cold: coldResult.count ?? 0,
-  });
+  // AC4: shape unchanged — broadcast client reads exactly these keys.
+  return NextResponse.json({ all, hot_warm, cold });
 }

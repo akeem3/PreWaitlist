@@ -1,6 +1,6 @@
 # Story 17.5 — Broadcast HTML Sanitization
 
-**Status:** ready
+**Status:** done
 **Epic:** 17 — Broadcasting Engine Fix
 **Depends on:** —
 **Design Refs:** — (security/hygiene; preview + send body)

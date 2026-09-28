@@ -13,7 +13,7 @@ As a founder, I want the broadcast page to default to "all" subscribers and show
 
 - AC1: The broadcast segment selector shall default to "all" (currently defaults to "cold" at line 37 of `broadcast/client.tsx`).
 - AC2: A confirmation dialog shall appear before sending a broadcast: "Send this email to {count} subscribers? This cannot be undone."
-- AC3: The broadcast preview shall use the actual sender name (currently hardcoded `updates@prewaitlist.com` at line 226 of `broadcast/client.tsx`).
+- AC3: The broadcast preview shall use the actual sender name (currently hardcoded `updates@prewaitlist.com` at line 226 of `broadcast/client.tsx`). **[COMPLETE — Story 17.3 (2026-09-28): preview From now resolved via `resolveFromAddress(senderName, productName, headline, "broadcast", sendingDomain)`. Marked met per Story 17.7 AC5.]**
 - AC4: The WarningBanner and WarmthPanel shall share warmth data via a single fetch instead of both calling `/api/dashboard/warmth` independently.
 - AC5: Lint and build shall pass with zero errors.
 

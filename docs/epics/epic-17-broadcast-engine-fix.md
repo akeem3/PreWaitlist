@@ -1,6 +1,6 @@
 # Epic 17 — Broadcasting Engine Fix
 
-**Status:** ready
+**Status:** done
 **Source:** [Five-Engine Audit §5 Broadcasting](../scans/engine-audit-5-engines.md#5-broadcasting--%EF%B8%8F-not-functional-verified-rescan-confidence-98), [PRD L123 Broadcast defaults](../PRD.md), [PRD L171 Unsubscribe mechanism](../PRD.md), [PRD REQ-7.1a.1–4 Never Audiences](../PRD.md), [MVP Vision Module 3 warmth-segmented broadcast](../product-vision-mvp-waitlist-tool.md), [Story 12.3](../stories/completed/story-12.3-broadcast-email.md), [Story 12.4](../stories/completed/story-12.4-warmth-segmented-broadcast.md), [Story 12.5](../stories/completed/story-12.5-email-customisation.md), [Story 12.6](../stories/completed/story-12.6-email-infrastructure-separation.md), [Story 12.1.8](../stories/completed/story-12.1.8-broadcast-duplicate-fixes.md), [Story 12.2.7 unsubscribe](../stories/completed/story-12.2.7-unsubscribe-mechanism.md), Resend Batch API + Idempotency docs, Klaviyo expected-recipient count UX, DOMPurify / HTML email sanitization research
 
 ## Design References
@@ -52,14 +52,14 @@ A Pro founder with one or many waitlists opens `/dashboard/broadcast?wid=…`, s
 
 | ID   | Title                                         | Depends on                   | Status |
 | ---- | --------------------------------------------- | ---------------------------- | ------ |
-| 17.0 | Broadcast API Response Honesty & Send Hygiene | —                            | ready  |
-| 17.1 | Segments API: wid, Pro gate, eligible counts  | —                            | ready  |
-| 17.2 | Broadcast Client: waitlist_id + eligible UX   | 17.1                         | ready  |
-| 17.3 | Preview From Address + sending_domain         | —                            | ready  |
-| 17.4 | Free Direct-URL Upgrade + Honest Success Copy | 17.0, 17.2                   | ready  |
-| 17.5 | Broadcast HTML Sanitization                   | —                            | ready  |
-| 17.6 | Broadcast Tests                               | 17.0, 17.1, 17.2, 17.3, 17.5 | ready  |
-| 17.7 | Doc Amendments & Status Sync                  | 17.0–17.6                    | ready  |
+| 17.0 | Broadcast API Response Honesty & Send Hygiene | —                            | done   |
+| 17.1 | Segments API: wid, Pro gate, eligible counts  | —                            | done   |
+| 17.2 | Broadcast Client: waitlist_id + eligible UX   | 17.1                         | done   |
+| 17.3 | Preview From Address + sending_domain         | —                            | done   |
+| 17.4 | Free Direct-URL Upgrade + Honest Success Copy | 17.0, 17.2                   | done   |
+| 17.5 | Broadcast HTML Sanitization                   | —                            | done   |
+| 17.6 | Broadcast Tests                               | 17.0, 17.1, 17.2, 17.3, 17.5 | done   |
+| 17.7 | Doc Amendments & Status Sync                  | 17.0–17.6                    | done   |
 
 **Execution order:** **17.0 + 17.1 + 17.3 + 17.5 in parallel** (independent files/surfaces). Then **17.2** (client waits for eligible-count contract from 17.1; can ship waitlist_id payload earlier if needed). Then **17.4** (needs API honest status + client success path). Then **17.6** (tests after code). Then **17.7** (docs last). Manual gates: founder approves **COPY GAP** strings (B7) before 17.4 UI ships; no SQL migrations required for this epic (`broadcasts` table already exists).
 
@@ -69,7 +69,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 17.0 — Broadcast API Response Honesty & Send Hygiene
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (API only; no SVG)
 **Story:** As a platform, I want broadcast sends to report truthfully, generate unsubscribe URLs once, batch-check bounces, enforce length caps, and use per-chunk idempotency keys — so partial/total failures never look like success and double-sends are prevented.
 
@@ -102,7 +102,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 17.1 — Segments API: wid, Pro gate, eligible counts
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (API only; no SVG)
 **Story:** As a Pro founder with one or more waitlists, I want segment counts for the waitlist I’m editing to match who will actually receive email — so the confirm dialog and pills are truthful.
 
@@ -133,7 +133,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 17.2 — Broadcast Client: waitlist_id + eligible UX
 
-**Status:** ready
+**Status:** done
 **Design Refs:** C3 compose form; segment pills already in `client.tsx` (keep pill UI, not C3’s `<select>` — pills are current implementation + 12.4 AC1)
 **Story:** As a Pro founder, I want the compose form to target the correct waitlist and show deliverable counts — so my send actually goes out and the confirm number matches reality.
 
@@ -165,7 +165,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 17.3 — Preview From Address + sending_domain
 
-**Status:** ready
+**Status:** done
 **Design Refs:** C3 compose preview / current preview block `client.tsx:227-248`
 **Story:** As a founder, I want the preview From line to match what recipients will see — including my verified sending domain — so I trust the compose screen.
 
@@ -192,7 +192,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 17.4 — Free Direct-URL Upgrade + Honest Success Copy
 
-**Status:** ready
+**Status:** done
 **Design Refs:** Upgrade modal trigger #4 (`sprint-3-design-specs.md` §S9); success card `client.tsx:103-121`
 **Story:** As a founder, I want a clear upgrade path if I land on Broadcast while Free, and success copy that doesn’t overclaim delivery — so gating and trust match Story 12.3 AC7/AC8.
 
@@ -219,7 +219,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 17.5 — Broadcast HTML Sanitization
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (security/hygiene; preview + send body)
 **Story:** As a platform, I want founder-authored HTML bodies sanitized of scripts and event handlers before preview and send — so HTML remains supported without XSS or broken markup injection.
 
@@ -246,7 +246,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 17.6 — Broadcast Tests
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (tests)
 **Story:** As a platform, I want automated coverage of the broadcast send path so the `waitlist_id` class of bug cannot ship again.
 
@@ -273,7 +273,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 17.7 — Doc Amendments & Status Sync
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (documentation only)
 **Story:** As a founder/maintainer, I want story docs and MEMORY to match the broadcast architecture we actually ship — so future agents don’t “fix” code back onto Resend Audiences merge tags.
 
@@ -296,7 +296,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 - **Files:** `docs/stories/completed/story-12.3-broadcast-email.md`, `story-12.4-...`, `story-12.5-...`, `story-12.6-...`, `story-12.1.8-...`, `.memory/MEMORY.md`, optionally `docs/scans/engine-audit-5-engines.md`.
 - Edit **forward** only: do not rewrite history sections of audit; add “Fixed by Epic 17” notes if touching audit.
-- MEMORY: correct the two merge-tag bullets; add a short Epic 17 gotcha: “Client must send `waitlist_id`; segments need `?wid=` + eligible counts.” **Status: partially done early (audited 2026-09-28) — AC3 ✅ complete: `MEMORY.md:779`/`:864` already corrected to custom HMAC + "Corrected 2026-09-24 (Epic 17)", note at `:1059` reserves story-file amendments for 17.7. Remaining: AC1 ❌ `story-12.3-broadcast-email.md:18` AC5 still `{{{RESEND_UNSUBSCRIBE_URL}}}` (+ `:282`, `:329`); AC2 ❌ `story-12.4…md:19` AC6 still "Cold only … default selection" (+ `:40`, `:196`, `:212`); AC4 ❌ 12.3/12.4/12.5/12.6 frontmatter all still `**Status:** ready` (only 12.1.8 is `done`); AC5/AC6 ❌ no annotations. Residual stale merge-tag docs outside 17.7's listed files: `sprint-3-plan.md:485`, `sprint-3-design-specs.md:573`, `epic-12-email-system.md:147,162`.**
+- MEMORY: correct the two merge-tag bullets; add a short Epic 17 gotcha: “Client must send `waitlist_id`; segments need `?wid=` + eligible counts.” **Status: ✅ complete (2026-09-28, Story 17.7) — MEMORY merge-tag bullets corrected (`:779`/`:864`), Epic 17 gotchas added; story-file ACs amended (12.3 AC5→HMAC, 12.4 AC6→default `"all"`), statuses 12.3/12.4/12.5/12.6 → `done`, 12.6 AC4 + 12.1.8 AC3 annotated, audit §5 annotated, residual merge-tag docs fixed (`sprint-3-plan.md:485`, `sprint-3-design-specs.md:573`, `epic-12-email-system.md:147,162`).**
 
 ---
 

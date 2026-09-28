@@ -1,6 +1,6 @@
 # Story 17.1 — Segments API: wid, Pro gate, eligible counts
 
-**Status:** ready
+**Status:** done
 **Epic:** 17 — Broadcasting Engine Fix
 **Depends on:** —
 **Design Refs:** — (API only; no SVG)

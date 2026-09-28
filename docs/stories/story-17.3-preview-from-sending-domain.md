@@ -1,6 +1,6 @@
 # Story 17.3 — Preview From Address + sending_domain
 
-**Status:** ready
+**Status:** done
 **Epic:** 17 — Broadcasting Engine Fix
 **Depends on:** —
 **Design Refs:** C3 compose preview / current preview block `client.tsx:227-248`; `docs/design/sprint-3-design-specs.md` §C3

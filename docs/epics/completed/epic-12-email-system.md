@@ -144,7 +144,7 @@ Every new subscriber receives a confirmation email with their position and refer
 - AC2: Clicking Broadcast shall open a compose screen with: subject line input, HTML body textarea, preview button, send button.
 - AC3: The compose screen shall show the subscriber count ("Send to {N} subscribers").
 - AC4: Clicking "Send" shall send the email via Resend's Batch API to all subscribers of the waitlist.
-- AC5: The broadcast shall include an unsubscribe mechanism (`{{{RESEND_UNSUBSCRIBE_URL}}}` merge tag) for CAN-SPAM compliance.
+- AC5: The broadcast shall include an unsubscribe mechanism — **custom HMAC URL** (`generateUnsubscribeUrl`) + `List-Unsubscribe(-Post)` headers, **not** the `{{{RESEND_UNSUBSCRIBE_URL}}}` merge tag (Audiences-only; forbidden by REQ-7.1a). **[AMENDED 2026-09-28 — Story 17.7]**
 - AC6: The broadcast shall include a physical mailing address in the footer (CAN-SPAM requirement).
 - AC7: After sending, the system shall show a confirmation: "Email sent to {N} subscribers."
 - AC8: Free founders shall see an upgrade prompt when clicking Broadcast ("Upgrade to Pro to send broadcasts").
@@ -159,7 +159,7 @@ Every new subscriber receives a confirmation email with their position and refer
 - T1: Create `src/app/dashboard/broadcast/page.tsx` (client component). The "Broadcast" nav item already exists in the sidebar (line 179 of `components/dashboard/sidebar.tsx`) — currently has `locked: true`. Change to: locked when tier === "free", unlocked when tier === "pro".
 - T2: Fetch subscriber count from `waitlists.subscriber_count` (cached counter from Story 11.7) — avoid `COUNT(*)`.
 - T3: Resend Batch API: `resend.batch.send([...])` with max 100 per batch. For larger lists, chunk into batches of 100. Each email is a separate object in the array: `{ from, to, subject, html }`.
-- T3: **CAN-SPAM compliance:** Physical address in footer (use PreWaitlist's registered address or a placeholder for MVP). Unsubscribe: add `{{{RESEND_UNSUBSCRIBE_URL}}}` merge tag in the HTML body — Resend auto-replaces with a per-recipient unsubscribe link.
+- T3: **CAN-SPAM compliance:** Physical address in footer (use PreWaitlist's registered address or a placeholder for MVP). Unsubscribe: per-recipient custom HMAC link via `generateUnsubscribeUrl` in the HTML body footer (`buildBroadcastEmailFooter`) + `List-Unsubscribe` / `List-Unsubscribe-Post` headers — **not** the `{{{RESEND_UNSUBSCRIBE_URL}}}` merge tag (that requires Resend Audiences, forbidden by REQ-7.1a). **[AMENDED 2026-09-28 — Story 17.7]**
 - T3: **Marketing stream:** Broadcast emails use `updates@prewaitlist.com` (separate from transactional `notifications@prewaitlist.com`). This is the email infrastructure separation from Story 12.6 — if 12.6 isn't done yet, hardcode the marketing from address.
 - T3: Store broadcast history in the `broadcasts` table (created in Story 11.7): `{ id, waitlist_id, subject, sent_at, recipient_count, created_at }`.
 - T5: Free tier check: `if (tier === 'free') { show upgrade modal; return; }`. The upgrade modal is Story 13.1 — for now, show a simple "Upgrade to Pro to send broadcasts" message.

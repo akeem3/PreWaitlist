@@ -11,6 +11,17 @@ import {
   CardHeader,
   CardTitle,
 } from "../../../../components/ui/card";
+import {
+  BROADCAST_BODY_MAX,
+  BROADCAST_SUBJECT_MAX,
+} from "@/lib/broadcast-limits";
+import { resolveFromAddress } from "@/lib/from-address";
+import { sanitizeEmailHtml } from "@/lib/sanitize";
+
+// COPY GAP B7 — interim honest wording ("sent", not "delivered"): Batch API
+// accept/queue is not inbox delivery; real delivery is the Epic 11
+// `delivered` webhook. Founder approval required before treating as final.
+const SUCCESS_SUB_COPY = "Your broadcast has been sent.";
 
 interface BroadcastClientProps {
   waitlistId: string;
@@ -18,13 +29,15 @@ interface BroadcastClientProps {
   headline: string | null;
   subdomain: string;
   senderName: string | null;
-  subscriberCount: number;
+  sendingDomain: string | null;
 }
 
 export default function BroadcastClient({
   waitlistId,
   productName,
+  headline,
   senderName,
+  sendingDomain,
 }: BroadcastClientProps) {
   const router = useRouter();
   const [subject, setSubject] = useState("");
@@ -39,9 +52,16 @@ export default function BroadcastClient({
   const [counts, setCounts] = useState({ all: 0, hot_warm: 0, cold: 0 });
 
   const displayName = senderName || productName || "PreWaitlist";
-  const senderDisplay = senderName
-    ? `${senderName.toLowerCase().replace(/\s+/g, ".")}@prewaitlist.com`
-    : "updates@prewaitlist.com";
+  // Story 17.3 AC2-AC3: preview From must equal the send path's `from`
+  // (route.ts calls the same helper) — including the verified sending
+  // domain. Never hand-build the local-part.
+  const previewFrom = resolveFromAddress(
+    senderName,
+    productName,
+    headline,
+    "broadcast",
+    sendingDomain
+  );
 
   useEffect(() => {
     async function fetchCounts() {
@@ -63,8 +83,16 @@ export default function BroadcastClient({
         ? counts.hot_warm
         : counts.cold;
 
+  // Story 17.2 AC5: client-side caps mirror the server 400 (trimmed
+  // lengths, shared constants from Story 17.0).
+  const subjectLength = subject.trim().length;
+  const bodyLength = body.trim().length;
+  const overCaps =
+    subjectLength > BROADCAST_SUBJECT_MAX || bodyLength > BROADCAST_BODY_MAX;
+  const canSend = subjectLength > 0 && bodyLength > 0 && !overCaps;
+
   const handleSend = async () => {
-    if (!subject.trim() || !body.trim()) return;
+    if (!canSend) return;
 
     const confirmed = window.confirm(
       `Send this email to ${activeCount} subscriber${activeCount !== 1 ? "s" : ""}? This cannot be undone.`
@@ -77,18 +105,32 @@ export default function BroadcastClient({
       const res = await fetch("/api/dashboard/broadcast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject, body, segment }),
+        body: JSON.stringify({
+          subject,
+          body,
+          segment,
+          waitlist_id: waitlistId, // Story 17.2 AC1 (Standing Decision B1)
+        }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        setError(data.error || "Failed to send broadcast");
+        setError(
+          data?.errors?.[0] || data?.error || "Failed to send broadcast"
+        );
+        return;
+      }
+
+      if (data?.ok === false) {
+        setError(
+          data?.errors?.[0] || data?.error || "Failed to send broadcast"
+        );
         return;
       }
 
       setSent(true);
-      setSentCount(data.recipient_count);
+      setSentCount(data?.recipient_count ?? 0);
       setSentSegment(
         segment === "all"
           ? ""
@@ -113,7 +155,7 @@ export default function BroadcastClient({
               {sentSegment} subscriber{sentCount !== 1 ? "s" : ""}
             </p>
             <p className="text-body text-muted-foreground mb-6">
-              Your broadcast has been delivered.
+              {SUCCESS_SUB_COPY}
             </p>
             <Button onClick={() => router.push("/dashboard")}>
               Back to Dashboard
@@ -217,10 +259,7 @@ export default function BroadcastClient({
             >
               {showPreview ? "Hide Preview" : "Preview"}
             </Button>
-            <Button
-              onClick={handleSend}
-              disabled={sending || !subject.trim() || !body.trim()}
-            >
+            <Button onClick={handleSend} disabled={sending || !canSend}>
               {sending
                 ? "Sending..."
                 : `Send to ${activeCount} subscriber${activeCount !== 1 ? "s" : ""}`}
@@ -234,7 +273,7 @@ export default function BroadcastClient({
               </p>
               <div className="border-b border-border pb-2 mb-2">
                 <p className="text-body-sm font-semibold text-foreground">
-                  From: {displayName} &lt;{senderDisplay}&gt;
+                  From: {previewFrom}
                 </p>
                 <p className="text-body-sm font-semibold text-foreground">
                   Subject: {subject}
@@ -242,7 +281,7 @@ export default function BroadcastClient({
               </div>
               <div
                 className="prose prose-sm max-w-none text-foreground"
-                dangerouslySetInnerHTML={{ __html: body }}
+                dangerouslySetInnerHTML={{ __html: sanitizeEmailHtml(body) }}
               />
               <hr className="border-border my-4" />
               <p className="text-caption text-muted-foreground">

@@ -1030,18 +1030,24 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 ## Epic 17 Progress (Broadcasting Engine Fix)
 
-**Status:** planning complete — **not implemented** (create-epic done 2026-09-24)
+**Status:** all 8 stories done (17.0–17.7) — implemented + audited 2026-09-28. **Uncommitted** on `dev`, awaiting `commit-push`.
 
-| Story | Status   | Summary                                                                                                                                       |
-| ----- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| 17.0  | ⬜ ready | API Response Honesty & Send Hygiene — length caps, fail-loud (no `ok:true` on 0 sent), idempotency keys, once-only unsub URL, batched bounces |
-| 17.1  | ⬜ ready | Segments API — `?wid=` + `.maybeSingle()`, `requirePro`, **eligible** counts (unsub + bounce excluded)                                        |
-| 17.2  | ⬜ ready | Broadcast Client — **include `waitlist_id`** (today every send 400s), segments `?wid=`, eligible UX, honest status                            |
-| 17.3  | ⬜ ready | Preview From via `resolveFromAddress(..., sending_domain)` — complete Story 12.1.8 AC3                                                        |
-| 17.4  | ⬜ ready | Free direct-URL upgrade path (AC8) + honest success copy (**COPY GAP B7** founder gate)                                                       |
-| 17.5  | ⬜ ready | HTML sanitize (DOMPurify/allow-list) — not wholesale escape; shared preview+send helper                                                       |
-| 17.6  | ⬜ ready | Tests — POST 401/403/400/404/chunk/fail, segments, client locks `waitlist_id`, sanitize; fix fake unsubscribe test                            |
-| 17.7  | ⬜ ready | Doc amendments — 12.3 AC5 HMAC not merge tag, 12.4 AC6 default all, statuses `done`, MEMORY, 12.6 AC4 stream wording                          |
+| Story | Status  | Summary                                                                                                                                       |
+| ----- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 17.0  | ✅ done | API Response Honesty & Send Hygiene — length caps, fail-loud (no `ok:true` on 0 sent), idempotency keys, once-only unsub URL, batched bounces |
+| 17.1  | ✅ done | Segments API — `?wid=` + `.maybeSingle()`, `requirePro`, **eligible** counts (unsub + bounce excluded)                                        |
+| 17.2  | ✅ done | Broadcast Client — **include `waitlist_id`** (the production-killer bug), segments `?wid=`, eligible UX, honest status                        |
+| 17.3  | ✅ done | Preview From via `resolveFromAddress(..., sending_domain)` — completes Story 12.1.8 AC3                                                       |
+| 17.4  | ✅ done | Free direct-URL upgrade path (AC8) + honest success copy (**COPY GAP B7** still open — interim string shipped behind marker)                  |
+| 17.5  | ✅ done | HTML sanitize — isomorphic allow-list `src/lib/sanitize.ts` (no DOMPurify dep — ask-first gate avoided by hand-rolled allow-list)             |
+| 17.6  | ✅ done | Tests — POST (17), segments (8), client (8) incl. `waitlist_id` B1 lock; fake unsubscribe test replaced with real component import            |
+| 17.7  | ✅ done | Doc amendments — 12.3 AC5 HMAC not merge tag, 12.4 AC6 default all, statuses `done`, MEMORY, 12.6 AC4 stream wording                          |
+
+**Gotchas (Epic 17):**
+
+- **`client.tsx` once omitted `waitlist_id` → every production broadcast 400'd silently.** Regression locked by `broadcast-client.test.tsx` (asserts POST body includes `waitlist_id`) + `broadcast.test.ts` (accepts it). Any future send-path client change must keep that test green.
+- **Never `{{{RESEND_UNSUBSCRIBE_URL}}}`** — merge tag requires Resend Audiences (forbidden by REQ-7.1a). Custom HMAC `generateUnsubscribeUrl` + `List-Unsubscribe(-Post)` headers only. Docs amended in 17.7; code was already correct.
+- **Sanitize is hand-rolled allow-list** (`src/lib/sanitize.ts`, shared preview+send) — not DOMPurify; no new dependency. Client components must not import `@/lib/email` or route files (throws without `RESEND_API_KEY` at module load).
 
 **Planning artifacts:**
 
@@ -1054,9 +1060,9 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 **Key decisions (B1–B18 summary):** eligible segment counts (Klaviyo expected-recipient pattern); total failure → non-2xx/`ok:false` never silent success; keep custom HMAC (amend docs not code); no Resend Audiences/Broadcasts product; history UI deferred; subject ≤200 / body ≤10_000; per-chunk Resend idempotency keys; bounce batch query not N+1; default segment `"all"`.
 
-**Open gates:** COPY GAP B7 (success copy); possible new dep DOMPurify (ask-first); check Epic 15.3 overlap on `segments/route.ts` before 17.1.
+**Open gates:** COPY GAP B7 (success copy — founder approval); Epic 16 SQL gate (`epic16-story6-position-boost.sql` before deploying 16.7).
 
-**MEMORY corrections applied early (2026-09-24):** removed false `{{{RESEND_UNSUBSCRIBE_URL}}}` claims from Epic 12 architecture notes (lines ~780/865). Story 17.7 still owns story-file/AC status amendments.
+**MEMORY corrections applied:** merge-tag claims removed from Epic 12 architecture notes (2026-09-24); story-file AC amendments done by 17.7 (2026-09-28).
 
 ## Next Steps
 

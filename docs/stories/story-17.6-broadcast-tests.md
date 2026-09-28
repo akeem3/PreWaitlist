@@ -1,6 +1,6 @@
 # Story 17.6 — Broadcast Tests
 
-**Status:** ready
+**Status:** done
 **Epic:** 17 — Broadcasting Engine Fix
 **Depends on:** 17.0, 17.1, 17.2, 17.3, 17.5
 **Design Refs:** — (tests)

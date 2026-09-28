@@ -1,6 +1,6 @@
 # Story 17.0 — Broadcast API Response Honesty & Send Hygiene
 
-**Status:** ready
+**Status:** done
 **Epic:** 17 — Broadcasting Engine Fix
 **Depends on:** —
 **Design Refs:** — (API only; no SVG)
