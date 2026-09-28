@@ -34,6 +34,8 @@ As a platform, I want founder-authored HTML bodies sanitized of scripts and even
 
 ## Dev Notes
 
+**Alignment check (2026-09-28, Prompt #6): not started — no `sanitizeEmailHtml` / `src/lib/sanitize.ts` anywhere; `dompurify` not in `package.json`; send path interpolates raw `${emailBody}` (`route.ts:121-126`); preview renders raw body (`client.tsx:243-246`). Repo "sanitize" hits are qualification-only (`sanitizeQuestions`, `sanitizedQualAnswers`) — unrelated. Status remains `ready`.**
+
 ### Files
 
 | File                                       | Line(s)  | Issue                                 |

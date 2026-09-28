@@ -36,6 +36,8 @@ As a subscriber who earned a "skip the line" reward, I want my front-of-queue po
 
 ## Dev Notes
 
+**Alignment check (2026-09-28, Prompt #6): not started — `src/lib/milestones.ts:134` still `positionUpdate = { position: 1 }`; type at `:103` has no boost field; subscriber select at `:81` lacks `position_boost`; `src/__tests__/lib/milestones.test.ts` does not exist (AC5 unmet). Blocked-by-16.6 status: 16.6 SQL also not written. Status remains `ready`.**
+
 ### T1 — set flag (`src/lib/milestones.ts`)
 
 Current (L133-148):

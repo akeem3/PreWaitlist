@@ -91,7 +91,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 **Dev Notes:**
 
 - **Primary file:** `src/app/api/dashboard/broadcast/route.ts`.
-- **Current defects:** L44-49 empty-only validation; L88-92 N+1 `isEmailBounced`; L115 + `email.ts:135` double `generateUnsubscribeUrl`; L140-147 batch without idempotency; L142-159 always `ok:true` + unchecked insert.
+- **Current defects:** L44-49 empty-only validation; L88-92 N+1 `isEmailBounced`; L115 + `email.ts:135` double `generateUnsubscribeUrl`; L140-147 batch without idempotency; L142-159 always `ok:true` + unchecked insert. **Status: all defects still live (verified 2026-09-28): empty-only validation `:44-49`; N+1 bounce loop `:88-92`; double unsubscribe gen `route.ts:115` + `email.ts:150`; `resend.batch.send(emails)` with no idempotency option `:144`; always `200 { ok:true, recipient_count: totalSent }` even at 0 `:160-163`; `broadcasts` insert result never read `:153-158`; no 200/10000 caps anywhere (`BROADCAST_SUBJECT_MAX`/`BROADCAST_BODY_MAX` constants do not exist in repo). Story 17.0 not started.**
 - **Resend SDK:** `resend.batch.send(emails, { idempotencyKey })` or options object — verify against installed `resend` package version; fall back to `Idempotency-Key` header pattern from docs if SDK option name differs.
 - **Bounce batch:** select `email` from `bounced_emails` where `waitlist_id = waitlist.id` then `Set.has(sub.email)`; reuse pattern if Epic 16 Updates story created a shared helper — otherwise local to this route first, extract only if both need it post-merge.
 - **Length constants:** export `BROADCAST_SUBJECT_MAX = 200`, `BROADCAST_BODY_MAX = 10000` from route or `src/lib/email.ts` so client can import the same caps (client enforcement in 17.2).
@@ -120,7 +120,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 **Dev Notes:**
 
-- **Primary file:** `src/app/api/dashboard/broadcast/segments/route.ts` (currently L4-47: auth only, `.single()` L15-19, raw counts L25-40).
+- **Primary file:** `src/app/api/dashboard/broadcast/segments/route.ts` (currently L4-47: auth only, `.single()` L15-19, raw counts L25-40). **Status: ~80% pre-implemented by Epic 15.3 (commit `c617e02`, audited 2026-09-28) — `?wid=` accepted `:36-37`, `.maybeSingle()` `:51`, `requirePro` 403 before lookup `:21-32`, eligible counts with `.is("unsubscribed_at", null)` `:86`, response `{ all, hot_warm, cold }` `:102-106`. Story 17.1 produced no changes; remaining gaps: (a) multi-waitlist with no `wid` → `.maybeSingle()` returns null → **404** `:53-55` instead of AC1-required **400**; (b) bounce exclusion silently capped — `BOUNCE_FILTER_MAX = 200` `:8`, >200 active bounces drops exclusion (`:5-7` comment); (c) no bounce-exclusion test in `dashboard-segments.test.ts` (4 tests from 15.3, bounced fixture empty).**
 - **Page already has `?wid=`** (`page.tsx:32-42`) and sidebar attaches it — **client must pass `wid` when fetching** (implemented in 17.2).
 - **Eligible count implementation options:**
   1. Fetch subscriber emails for waitlist (or per-segment ids), batch-fetch bounced emails, filter in memory — mirrors send path.
@@ -155,7 +155,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 **Dev Notes:**
 
 - **Primary file:** `src/app/dashboard/broadcast/client.tsx`.
-- **Current defects:** destructure only `{ productName, senderName }` L24-26; body L77 no `waitlist_id`; counts fetch L45-54 no `wid`; confirm L66-68 uses `activeCount`.
+- **Current defects:** destructure only `{ productName, senderName }` L24-26; body L77 no `waitlist_id`; counts fetch L45-54 no `wid`; confirm L66-68 uses `activeCount`. **Status: partially pre-built by Epic 15.3 work (audited 2026-09-28) — segments fetch DOES use `?wid=` (`:48-50`), default segment `"all"` ✓ (`:38`), all labels use eligible `activeCount` (`:59-71`, `:165-168`, `:226`). CRITICAL AC1 STILL MISSING: POST body `JSON.stringify({ subject, body, segment })` `:80` — `waitlistId` prop `:16` is read only for segments fetch, never sent → server 400 at `route.ts:37-42` on every send; engine dead. Also unmet: AC5 no length caps (`:67`, `:222` non-empty only), AC7 `subscriberCount` prop still in interface `:21` + passed `page.tsx:60`, AC6 no `{ ok:false }`-on-2xx handling (`:85-88` checks `res.ok` only).**
 - **Minimal critical fix:** L24-26 add `waitlistId`, L77 add `waitlist_id: waitlistId`, L47 `fetch(\`...segments?wid=${waitlistId}\`)`.
 - Keep pill UI (not native select) — C3 ASCII is older; Story 12.4 AC1 shipped pills.
 - `sending` flag remains (L31, L219) — idempotency key on API is the server half of B9.
@@ -183,7 +183,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 **Dev Notes:**
 
-- **Files:** `src/app/dashboard/broadcast/page.tsx` (select L36, props L53-61), `src/app/dashboard/broadcast/client.tsx` (L41-43, L234).
+- **Files:** `src/app/dashboard/broadcast/page.tsx` (select L36, props L53-61), `src/app/dashboard/broadcast/client.tsx` (L41-43, L234). **Status: not started (audited 2026-09-28) — `page.tsx:36` select is `"id, product_name, headline, subdomain, sender_name"` (no `sending_domain`); client builds hand-rolled `senderDisplay = senderName ? ${senderName.toLowerCase().replace(/\s+/g,".")}@prewaitlist.com : "updates@prewaitlist.com"` (`client.tsx:41-44`) used in preview From line `:236-238`; no `resolveFromAddress` import in client. Story 12.1.8 AC3 therefore still only half-met.**
 - **Reuse:** `resolveFromAddress` already exported from `src/lib/email.ts:46-70` and already used on send path — preview must not diverge.
 - Page currently omits `sending_domain` from select — add it; do not fetch again client-side.
 - `headline` is already passed as prop (`page.tsx:57`) but unused by client — helper needs it for fallback chain; destructure it in 17.3.
@@ -211,7 +211,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 **Dev Notes:**
 
-- **Files:** `src/app/dashboard/broadcast/page.tsx` L28-30 (silent redirect), `client.tsx` success L103-121, possibly client mount effect to open modal if page chooses interstitial vs client-side redirect replacement.
+- **Files:** `src/app/dashboard/broadcast/page.tsx` L28-30 (silent redirect), `client.tsx` success L103-121, possibly client mount effect to open modal if page chooses interstitial vs client-side redirect replacement. **Status: not started (audited 2026-09-28) — `page.tsx:28-30` still silent `if (tier !== "pro") redirect("/dashboard")` with no explanation/upgrade path; success copy still "Your broadcast has been delivered." (`client.tsx:116`) — delivery overclaim (AC3) live; COPY GAP B7 still open.**
 - **Pattern:** page cannot open modal directly (server component). Options: (a) client-side gate — page renders a FreeGate client child that calls `setUpgradeModal` via Dashboard context / `onUpgradeClick`; (b) redirect to `/dashboard?upgrade=broadcast` and let shell open modal (pattern used for cap upgrade `?upgrade=cap`). Prefer **(b)** if context wiring from broadcast page is awkward — check `DashboardContext` / shell upgrade listeners before choosing; document choice in PR.
 - COPY GAP strings live in 17.4 until founder signs off.
 
@@ -237,7 +237,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 **Dev Notes:**
 
-- **Files:** `src/app/api/dashboard/broadcast/route.ts` L123; `src/app/dashboard/broadcast/client.tsx` L240-242; new helper under `src/lib/`.
+- **Files:** `src/app/api/dashboard/broadcast/route.ts` L123; `src/app/dashboard/broadcast/client.tsx` L240-242; new helper under `src/lib/`. **Status: not started (audited 2026-09-28) — no `sanitizeEmailHtml` / `src/lib/sanitize.ts` anywhere; `dompurify` not in `package.json`; send path interpolates raw `${emailBody}` (`route.ts:121-126`); preview renders raw `dangerouslySetInnerHTML={{ __html: body }}` (`client.tsx:243-246`). (Repo "sanitize" hits are qualification-only: `sanitizeQuestions`, `sanitizedQualAnswers` — unrelated.)**
 - **Research:** DOMPurify is the standard; ensure server-side import works in Next route (happy-dom for client tests; isomorphic-dompurify if dual env). Prefer **one** helper imported by both if bundler allows; else duplicate thin wrappers around same config.
 - Do not forbid all HTML — allow-list approach must keep typical email tags (`p, br, a, strong, em, ul, ol, li, h1-h6, img, table` subset as needed).
 - Coordinate merge with 17.3 (same preview region).
@@ -267,7 +267,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 - **Follow existing patterns:** `src/__tests__/api/*`, `src/__tests__/components/*`; mock `next/server` `NextRequest`; mock `@/lib/resend` `batch.send`; mock supabase like other API tests; `after: vi.fn((fn) => fn())` if needed (Epic 13 gotcha).
 - **Critical assertion:** client test must fail if `waitlist_id` is removed from body — that is the regression lock for audit §5 claim 1.
-- Glob target: `src/__tests__/api/broadcast*.test.ts`, `src/__tests__/api/broadcast-segments.test.ts`, `src/__tests__/components/broadcast-client.test.tsx`, `src/__tests__/lib/sanitize-email.test.ts`.
+- Glob target: `src/__tests__/api/broadcast*.test.ts`, `src/__tests__/api/broadcast-segments.test.ts`, `src/__tests__/components/broadcast-client.test.tsx`, `src/__tests__/lib/sanitize-email.test.ts`. **Status: not started (audited 2026-09-28) — none of the four glob targets exist; the only broadcast-adjacent suite is Epic 15.3's `src/__tests__/api/dashboard-segments.test.ts` (4 tests: 401, 403-free, `?wid=` shape, unsub exclusion — covers part of AC2, no bounce/multi-waitlist-400 cases); AC5 fake `src/__tests__/components/unsubscribe-page.test.tsx` still renders literal markup with no component import (`:14-41`).**
 
 ---
 
@@ -296,7 +296,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 - **Files:** `docs/stories/completed/story-12.3-broadcast-email.md`, `story-12.4-...`, `story-12.5-...`, `story-12.6-...`, `story-12.1.8-...`, `.memory/MEMORY.md`, optionally `docs/scans/engine-audit-5-engines.md`.
 - Edit **forward** only: do not rewrite history sections of audit; add “Fixed by Epic 17” notes if touching audit.
-- MEMORY: correct the two merge-tag bullets; add a short Epic 17 gotcha: “Client must send `waitlist_id`; segments need `?wid=` + eligible counts.”
+- MEMORY: correct the two merge-tag bullets; add a short Epic 17 gotcha: “Client must send `waitlist_id`; segments need `?wid=` + eligible counts.” **Status: partially done early (audited 2026-09-28) — AC3 ✅ complete: `MEMORY.md:779`/`:864` already corrected to custom HMAC + "Corrected 2026-09-24 (Epic 17)", note at `:1059` reserves story-file amendments for 17.7. Remaining: AC1 ❌ `story-12.3-broadcast-email.md:18` AC5 still `{{{RESEND_UNSUBSCRIBE_URL}}}` (+ `:282`, `:329`); AC2 ❌ `story-12.4…md:19` AC6 still "Cold only … default selection" (+ `:40`, `:196`, `:212`); AC4 ❌ 12.3/12.4/12.5/12.6 frontmatter all still `**Status:** ready` (only 12.1.8 is `done`); AC5/AC6 ❌ no annotations. Residual stale merge-tag docs outside 17.7's listed files: `sprint-3-plan.md:485`, `sprint-3-design-specs.md:573`, `epic-12-email-system.md:147,162`.**
 
 ---
 

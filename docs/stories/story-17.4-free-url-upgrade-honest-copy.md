@@ -34,6 +34,8 @@ As a founder, I want a clear upgrade path if I land on Broadcast while Free, and
 
 ## Dev Notes
 
+**Alignment check (2026-09-28, Prompt #6): not started — `page.tsx:28-30` still silent `if (tier !== "pro") { redirect("/dashboard") }` (no explanation/upgrade path); success copy still "Your broadcast has been delivered." (`client.tsx:116`) — delivery overclaim (AC3) live; COPY GAP B7 still open. Status remains `ready`.**
+
 ### Files
 
 | File                                     | Line(s)  | Issue                                       |

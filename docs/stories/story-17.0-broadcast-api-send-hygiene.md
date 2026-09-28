@@ -42,6 +42,8 @@ As a platform, I want broadcast sends to report truthfully, generate unsubscribe
 
 ## Dev Notes
 
+**Alignment check (2026-09-28, Prompt #6): not started — every defect in the table below is still live: empty-only validation `route.ts:44-49`; N+1 bounce loop `:88-92`; double unsubscribe gen `:115` + `email.ts:150`; no idempotency on `resend.batch.send(emails)` `:144`; always `200 { ok:true, recipient_count }` even at 0 `:160-163`; insert result never read `:153-158`. `BROADCAST_SUBJECT_MAX`/`BROADCAST_BODY_MAX` constants do not exist in repo. Status remains `ready`.**
+
 ### Primary file — `src/app/api/dashboard/broadcast/route.ts`
 
 Current defects (audit §5):

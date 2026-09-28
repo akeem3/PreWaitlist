@@ -40,6 +40,8 @@ As a platform, I want founder update emails to send safely at any list size, onl
 
 ## Dev Notes
 
+**Alignment check (2026-09-28, Prompt #6): implemented & verified (commit `7bff0dc`) — AC1 optional `waitlist_id` `:63-65` + 400 multi-waitlist `:73-78`; AC2 min-10 `:42-47` / max `:49-54`; AC3 unsub skip `:115` + bounce skip `:116` (admin client `:111`), row still inserts first `:82-89`; AC4 `escapeHtml` `:134`; AC5 `buildBroadcastEmailFooter` `:144-147` + `List-Unsubscribe` headers `:190-192`; AC6 `BATCH_SIZE=100` in-loop `:136-144`/`:200`; AC7 `emailSent: totalSent > 0` `:228`, `sent_at` iff send `:214-219`, send-phase wrapped; AC8 subject + 401/403 preserved. Downstream dependency note: client (16.1) does not yet read `emailSent` — honest-status UX still blocked.**
+
 ### Primary file — `src/app/api/updates/route.ts`
 
 Current defects (audit §4):

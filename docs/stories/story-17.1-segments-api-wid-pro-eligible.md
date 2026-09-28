@@ -36,6 +36,8 @@ As a Pro founder with one or more waitlists, I want segment counts for the waitl
 
 ## Dev Notes
 
+**Alignment check (2026-09-28, Prompt #6): ~80% pre-implemented by Epic 15.3 (commit `c617e02`) — the "current defects" table is STALE: `?wid=` accepted (`:36-37`), `.maybeSingle()` (`:51`), `requirePro` 403 before lookup (`:21-32`), eligible counts with `.is("unsubscribed_at", null)` (`:86`), shape `{ all, hot_warm, cold }` (`:102-106`) all exist. Remaining gaps for this story: (a) multi-waitlist with no `wid` → null from `.maybeSingle()` → **404** (`:53-55`) instead of AC1-required **400**; (b) bounce exclusion silently capped at `BOUNCE_FILTER_MAX = 200` (`:8`); (c) no bounce-exclusion / multi-waitlist-400 tests (15.3's `dashboard-segments.test.ts` has 4 tests). Status remains `ready`.**
+
 ### Primary file — `src/app/api/dashboard/broadcast/segments/route.ts`
 
 Current defects (audit §5 claim 2, 7):

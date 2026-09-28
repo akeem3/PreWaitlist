@@ -35,12 +35,14 @@ As a visitor on a dark-template waitlist, I want the Latest update card to match
 
 ## Dev Notes
 
+**Alignment check (2026-09-28, Prompt #6): not started — `components/public/updates-feed.tsx:7-9` props still `{ update }` only (no `template`); `:13-15` light tokens unchanged; no `bg-dark-template-*` classes in file; call site `[subdomain]/page.tsx:124` renders `<LatestUpdateCard update={latestUpdate} />` with no `template` prop (value in scope at `:97`). Status remains `ready`.**
+
 ### T1 — component (`components/public/updates-feed.tsx`)
 
 Current (L13-15):
 
 ```tsx
-<div className="rounded-[var(--card-radius)] border border-border bg-card p-4">
+<div className="rounded-(--card-radius) border border-border bg-card p-4">
 ```
 
 Target:
@@ -61,7 +63,7 @@ export function LatestUpdateCard({
 
   return (
     <div
-      className={`rounded-[var(--card-radius)] border p-4 ${
+      className={`rounded-(--card-radius) border p-4 ${
         isDark
           ? "border-dark-template-border bg-dark-template-bg"
           : "border-border bg-card"

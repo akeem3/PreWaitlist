@@ -35,6 +35,8 @@ As a founder, I want clicking Referrals or Share% to sort correctly the first ti
 
 ## Dev Notes
 
+**Alignment check (2026-09-28, Prompt #6): not started — bug live exactly as root-caused below: `client.tsx:108` desc comparator + `:121` `-cmp` on `sortDir="desc"` + `:130` first-click `desc` = ascending data with ↓ arrow; the certifying test at `dashboard-leaderboard-page.test.tsx:99-112` still expects `user2` (1 referral) first. Status remains `ready`.**
+
 ### Root cause
 
 `src/app/dashboard/leaderboard/client.tsx`:

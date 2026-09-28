@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/dashboard/updates",
@@ -33,8 +34,7 @@ import UpdatesClient from "../../app/dashboard/updates/client";
 
 const baseProps = {
   updates: [],
-  waitlistName: "Acme",
-  logoUrl: null as string | null,
+  waitlistId: "wl-test",
 };
 
 describe("Updates Compose UI", () => {
@@ -87,5 +87,79 @@ describe("Updates Compose UI", () => {
   it("does not render recent updates when list is empty", () => {
     render(<UpdatesClient {...baseProps} />);
     expect(screen.queryByText("Recent updates")).toBeNull();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const TYPED_BODY = "Hello, this is a brand new update!";
+  const PLACEHOLDER =
+    "What's new? Share progress, ask questions, or just say hi...";
+
+  async function publishTyped(user: ReturnType<typeof userEvent.setup>) {
+    render(<UpdatesClient {...baseProps} />);
+    await user.type(screen.getByPlaceholderText(PLACEHOLDER), TYPED_BODY);
+    await user.click(screen.getByText("Publish"));
+  }
+
+  it("publishes with waitlist_id in the POST body and confirms success", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ id: "upd-9", emailSent: true, emailError: null }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    await publishTyped(user);
+
+    await screen.findByText("Published!");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/updates");
+    const sent = JSON.parse((init as RequestInit).body as string);
+    expect(sent.waitlist_id).toBe("wl-test");
+    expect(sent.body).toBe(TYPED_BODY);
+    expect(screen.getByPlaceholderText(PLACEHOLDER).value).toBe("");
+  });
+
+  it("shows the failure outcome when emailSent is false", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        id: "upd-9",
+        emailSent: false,
+        emailError: "No eligible recipients",
+      }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    await publishTyped(user);
+
+    await screen.findByText(
+      "TODO_COPY_GAP_U6: Update saved, but emails could not be sent."
+    );
+    expect(screen.queryByText("Published!")).toBeNull();
+    // Update itself was saved and prepended to the list
+    expect(screen.getByText("Recent updates")).toBeDefined();
+    expect(screen.getByText(TYPED_BODY)).toBeDefined();
+    expect(screen.getByPlaceholderText(PLACEHOLDER).value).toBe("");
+  });
+
+  it("surfaces the API error and keeps the draft when response is not ok", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: false,
+      json: async () => ({ error: "Too many requests" }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    await publishTyped(user);
+
+    await screen.findByText("Too many requests");
+    expect(screen.queryByText("Published!")).toBeNull();
+    expect(screen.queryByText("Recent updates")).toBeNull();
+    expect(screen.getByPlaceholderText(PLACEHOLDER).value).toBe(TYPED_BODY);
   });
 });

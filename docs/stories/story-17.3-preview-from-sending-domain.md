@@ -33,6 +33,8 @@ As a founder, I want the preview From line to match what recipients will see —
 
 ## Dev Notes
 
+**Alignment check (2026-09-28, Prompt #6): not started — `page.tsx:36` select is still `"id, product_name, headline, subdomain, sender_name"` (no `sending_domain`); client hand-builds `senderDisplay = senderName ? ${senderName.toLowerCase().replace(/\s+/g,".")}@prewaitlist.com : "updates@prewaitlist.com"` (`client.tsx:41-44`) used at preview From `:236-238`; no `resolveFromAddress` import in client. Status remains `ready`.**
+
 ### Files
 
 | File                                     | Line(s) | Issue                                             |

@@ -37,6 +37,8 @@ As a founder/maintainer, I want story docs and MEMORY to match the broadcast arc
 
 ## Dev Notes
 
+**Alignment check (2026-09-28, Prompt #6): partial — AC3 done early: `MEMORY.md:779`/`:864` already corrected to custom HMAC + "Corrected 2026-09-24 (Epic 17)" (note at `:1059` reserves story-file amendments for this story). Not started: AC1 (`story-12.3…md:18` AC5 still `{{{RESEND_UNSUBSCRIBE_URL}}}`, also `:282`/`:329`); AC2 (`story-12.4…md:19` AC6 still "Cold only … default selection", also `:40`/`:196`/`:212`); AC4 (12.3/12.4/12.5/12.6 frontmatter all still `**Status:** ready`); AC5/AC6 no annotations. Residual stale merge-tag docs beyond the table: `docs/epics/sprint-3-plan.md:485`, `docs/design/sprint-3-design-specs.md:573`, `docs/epics/completed/epic-12-email-system.md:147,162`. Status remains `ready`.**
+
 ### Files to amend
 
 | File                                                                   | AC(s)    | Change                                                    |

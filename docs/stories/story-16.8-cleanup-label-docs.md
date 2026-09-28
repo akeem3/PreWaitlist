@@ -43,6 +43,8 @@ As a team, I want dead leaking code removed, the misleading "Quality" label rena
 
 ## Dev Notes
 
+**Alignment check (2026-09-28, Prompt #6): partial — AC1 already satisfied as no-op (orphan route `src/app/api/leaderboard/[subdomain]/route.ts` and `src/__tests__/api/leaderboard.test.ts` both confirmed absent — Epic 14.0 closed it; T1 cross-epic check below resolved). All other ACs not started: dashboard label still `"Quality"` (`client.tsx:245`, zero `Share %` matches in `src/`); `story-12.3.1` still `**Status:** ready`; MEMORY Epic 16 table rows 16.1-16.8 still `⬜ ready` with no Standing Decisions block (AC8). Status remains `ready`.**
+
 ### T1 — orphan API (AC1)
 
 - Route: `src/app/api/leaderboard/[subdomain]/route.ts` — selects/returns `qual_answers` + `referral_code` (audit §3 claim 6); zero production consumers (only tests import it).

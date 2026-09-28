@@ -36,6 +36,8 @@ As a founder, I want the compose form to target the correct waitlist and tell me
 
 ## Dev Notes
 
+**Alignment check (2026-09-28, Prompt #6): not started — `page.tsx:51` still passes no `waitlistId` prop; `client.tsx:11-13` props are `{ updates }` only; `:37` POST body is `{ body }` only (no `waitlist_id`); `:48` unconditional `setSuccess(true)` + `:81` "Published!" even when API now returns `emailSent:false`. Status remains `ready`.**
+
 ### T1 — waitlist_id plumbing (AC1)
 
 **Server** `src/app/dashboard/updates/page.tsx`:

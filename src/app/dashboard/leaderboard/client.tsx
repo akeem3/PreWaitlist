@@ -105,10 +105,10 @@ export default function LeaderboardClient({
           cmp = a.email.localeCompare(b.email);
           break;
         case "referral_count":
-          cmp = b.referral_count - a.referral_count;
+          cmp = a.referral_count - b.referral_count;
           break;
         case "quality_score":
-          cmp = (b.quality_score ?? 0) - (a.quality_score ?? 0);
+          cmp = (a.quality_score ?? 0) - (b.quality_score ?? 0);
           break;
         case "date":
           cmp =

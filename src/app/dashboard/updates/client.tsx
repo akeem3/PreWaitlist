@@ -8,12 +8,18 @@ interface Update {
   created_at: string;
 }
 
+// COPY GAP U6 (Epic 16): founder must approve final failure copy before release.
+const EMAIL_FAILED_COPY =
+  "TODO_COPY_GAP_U6: Update saved, but emails could not be sent.";
+
 interface UpdatesClientProps {
   updates: Update[];
+  waitlistId: string;
 }
 
 export default function UpdatesClient({
   updates: initialUpdates,
+  waitlistId,
 }: UpdatesClientProps) {
   const [body, setBody] = useState("");
   const [saving, setSaving] = useState(false);
@@ -34,7 +40,7 @@ export default function UpdatesClient({
       const res = await fetch("/api/updates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body }),
+        body: JSON.stringify({ body, waitlist_id: waitlistId }),
       });
 
       const data = await res.json();
@@ -45,12 +51,18 @@ export default function UpdatesClient({
       }
 
       setBody("");
-      setSuccess(true);
       setUpdates((prev) => [
         { id: data.id, body, created_at: new Date().toISOString() },
         ...prev,
       ]);
-      setTimeout(() => setSuccess(false), 3000);
+
+      const emailSent = data.emailSent !== false && !data.emailError;
+      if (emailSent) {
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
+      } else {
+        setError(EMAIL_FAILED_COPY);
+      }
     } catch {
       setError("Network error \u2014 please try again");
     } finally {

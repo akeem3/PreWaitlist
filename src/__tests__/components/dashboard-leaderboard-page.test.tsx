@@ -105,11 +105,103 @@ describe("Dashboard Leaderboard Client", () => {
     const firstEmail = screen.getAllByTestId("link")[0];
     expect(firstEmail.textContent).toBe("user0@example.com");
 
-    // Click Referrals header — sorts by referral_count desc (default for non-rank)
+    // First click: referral_count DESCENDING (highest first), arrow ↓
+    // makeRows(3): user0 referral_count=3, user1=2, user2=1
     await user.click(screen.getByText("Referrals"));
-    const afterSort = screen.getAllByTestId("link")[0];
-    expect(afterSort.textContent).toBe("user2@example.com"); // referral_count=3
+    expect(screen.getAllByTestId("link")[0].textContent).toBe(
+      "user0@example.com"
+    );
+    expect(
+      screen.getByRole("button", { name: /Referrals/ }).textContent
+    ).toContain("↓");
+
+    // Second click: ascending (lowest first), arrow ↑
+    await user.click(screen.getByRole("button", { name: /Referrals/ }));
+    expect(screen.getAllByTestId("link")[0].textContent).toBe(
+      "user2@example.com"
+    );
+    expect(
+      screen.getByRole("button", { name: /Referrals/ }).textContent
+    ).toContain("↑");
   });
+
+  const emails = () => screen.getAllByTestId("link").map((l) => l.textContent);
+  const headerBtn = (label: string) =>
+    screen.getByRole("button", { name: new RegExp(`^${label}`) });
+  const arrowOf = (label: string) => {
+    const text = headerBtn(label).textContent ?? "";
+    if (text.includes("↑")) return "↑";
+    if (text.includes("↓")) return "↓";
+    return "";
+  };
+
+  const sortCases = [
+    {
+      // Rank is the default active column (asc) — first click toggles to desc
+      label: "Rank",
+      rows: makeRows(3),
+      first: "user2@example.com",
+      firstArrow: "↓",
+      second: "user0@example.com",
+      secondArrow: "↑",
+    },
+    {
+      label: "Name",
+      rows: makeRows(3),
+      first: "user2@example.com",
+      firstArrow: "↓",
+      second: "user0@example.com",
+      secondArrow: "↑",
+    },
+    {
+      label: "Email",
+      rows: makeRows(3),
+      first: "user2@example.com",
+      firstArrow: "↓",
+      second: "user0@example.com",
+      secondArrow: "↑",
+    },
+    {
+      label: "Referrals",
+      rows: makeRows(3),
+      first: "user0@example.com",
+      firstArrow: "↓",
+      second: "user2@example.com",
+      secondArrow: "↑",
+    },
+    {
+      // makeRows(15): quality 80 at user12 (i=12), 0/null elsewhere
+      label: "Quality",
+      rows: makeRows(15),
+      first: "user12@example.com",
+      firstArrow: "↓",
+      second: "user0@example.com",
+      secondArrow: "↑",
+    },
+    {
+      label: "Date",
+      rows: makeRows(3),
+      first: "user2@example.com",
+      firstArrow: "↓",
+      second: "user0@example.com",
+      secondArrow: "↑",
+    },
+  ];
+
+  for (const c of sortCases) {
+    it(`arrow matches data order for ${c.label} on first and second click`, async () => {
+      const user = userEvent.setup();
+      render(<LeaderboardClient rows={c.rows} totalCount={c.rows.length} />);
+
+      await user.click(headerBtn(c.label));
+      expect(arrowOf(c.label)).toBe(c.firstArrow);
+      expect(emails()[0]).toBe(c.first);
+
+      await user.click(headerBtn(c.label));
+      expect(arrowOf(c.label)).toBe(c.secondArrow);
+      expect(emails()[0]).toBe(c.second);
+    });
+  }
 
   it("searches by email", async () => {
     const user = userEvent.setup();

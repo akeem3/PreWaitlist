@@ -39,6 +39,8 @@ As a Pro founder, I want the compose form to target the correct waitlist and sho
 
 ## Dev Notes
 
+**Alignment check (2026-09-28, Prompt #6): partial — AC1 CRITICAL still unmet: POST body is `JSON.stringify({ subject, body, segment })` (`client.tsx:80`) with no `waitlist_id` → server 400 (`route.ts:37-42`) on every send; engine dead. Defect table partially stale: segments fetch NOW uses `?wid=` (`:48-50`) and labels use eligible `activeCount` (`:59-71`) — those arrived with Epic 15.3 work. Still missing: AC5 length caps (`:67`/`:222` non-empty only), AC7 `subscriberCount` prop in interface (`:21`, passed `page.tsx:60`), AC6 no `{ ok:false }`-on-2xx handling. Status remains `ready`.**
+
 ### Primary file — `src/app/dashboard/broadcast/client.tsx`
 
 Current defects (audit §5 claim 1, issues):

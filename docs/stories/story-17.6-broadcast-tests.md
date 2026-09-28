@@ -36,6 +36,8 @@ As a platform, I want automated coverage of the broadcast send path so the `wait
 
 ## Dev Notes
 
+**Alignment check (2026-09-28, Prompt #6): not started — none of the four target test files exist (`broadcast.test.ts`, `broadcast-segments.test.ts`, `broadcast-client.test.tsx`, `sanitize-email.test.ts`); the only broadcast-adjacent suite is Epic 15.3's `src/__tests__/api/dashboard-segments.test.ts` (4 tests: 401, 403-free, `?wid=` shape, unsub exclusion — partial AC2 coverage, no bounce or multi-waitlist-400 cases); AC5 fake `unsubscribe-page.test.tsx` still renders literal markup with no component import. Status remains `ready`.**
+
 ### Test file targets
 
 | File                                                          | Covers       |

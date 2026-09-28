@@ -27,4 +27,20 @@ describe("LatestUpdateCard", () => {
     render(<LatestUpdateCard update={mockUpdate} />);
     expect(screen.getByText("Latest update")).toBeDefined();
   });
+
+  it("uses dark template classes when template=dark", () => {
+    render(<LatestUpdateCard update={mockUpdate} template="dark" />);
+    const card = screen.getByText("Latest update").closest("div");
+    expect(card?.className).toContain("bg-dark-template-bg");
+    expect(card?.className).toContain("border-dark-template-border");
+  });
+
+  it("keeps light classes on the default template", () => {
+    render(<LatestUpdateCard update={mockUpdate} />);
+    const card = screen.getByText("Latest update").closest("div");
+    expect(card?.className).toContain("bg-card");
+    expect(card?.className).toContain("border-border");
+    expect(card?.className).not.toContain("bg-dark-template");
+    expect(card?.className).not.toContain("border-dark-template");
+  });
 });

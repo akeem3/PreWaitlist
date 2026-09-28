@@ -37,6 +37,8 @@ As a founder with hundreds of subscribers, I want the dashboard leaderboard pagi
 
 ## Dev Notes
 
+**Alignment check (2026-09-28, Prompt #6): not started — no `page` state (`client.tsx:77-79`), no `PAGE_SIZE` in dashboard leaderboard dir, no prev/next buttons, footer still `` `${totalCount} subscribers` `` (`:317-321`), server fetch unbounded (`page.tsx:37-43`). Status remains `ready`.**
+
 ### Current state
 
 `src/app/dashboard/leaderboard/client.tsx`:

@@ -121,7 +121,12 @@ export default async function PublicSubdomainPage({ params }: Props) {
         </Suspense>
       }
       latestUpdateSlot={
-        latestUpdate ? <LatestUpdateCard update={latestUpdate} /> : undefined
+        latestUpdate ? (
+          <LatestUpdateCard
+            update={latestUpdate}
+            template={waitlist.template as "minimal" | "bold" | "dark"}
+          />
+        ) : undefined
       }
     />
   );

@@ -39,6 +39,8 @@ As a developer, I want API and compose-flow tests for founder updates so batch-c
 
 ## Dev Notes
 
+**Alignment check (2026-09-28, Prompt #6): not started — no `src/__tests__/api/updates*.test.ts` exists (18 files in `src/__tests__/api/`, none for updates); compose test still 6 render-only tests with stale `waitlistName`/`logoUrl` fixtures at `baseProps:34-38` (AC8 unmet); card test still 3 tests with no dark assertion. Status remains `ready`.**
+
 ### Existing coverage → target
 
 | File                                                          | Today                                                                   | After 16.3                                                    |

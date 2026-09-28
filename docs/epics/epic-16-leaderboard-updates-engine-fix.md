@@ -87,7 +87,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 **Dev Notes:**
 
-- **Primary file:** `src/app/api/updates/route.ts` (currently: `.single()` L47-53, min-1 empty check L36-38, no waitlist_id, select `id, email` only L79-82, unescaped `${text}` L112, flatten L131-151, silent catch L157-159, always `{ id }` L162).
+- **Primary file:** `src/app/api/updates/route.ts` (currently: `.single()` L47-53, min-1 empty check L36-38, no waitlist_id, select `id, email` only L79-82, unescaped `${text}` L112, flatten L131-151, silent catch L157-159, always `{ id }` L162). **Status: implemented (commit `7bff0dc`, audited 2026-09-28) — line refs stale; actual code: min-10 `:42-47`, max `:49-54`, optional waitlist_id `:63-65`, 400 multi-waitlist `:73-78`, unsub skip `:115`, bounce skip `:116`, `escapeHtml` `:134`, `BATCH_SIZE=100` loop `:136-144`, footer `:144-147`, honest `emailSent` response `:225-232`, `sent_at` iff `totalSent>0` `:214-219`.**
 - **Copy patterns from:** `src/app/api/dashboard/broadcast/route.ts` — waitlist_id required there (L37-42), suppression L84-99, chunk loop L111-147 with per-chunk `batch.send`. Differences: updates keep optional waitlist_id (U4) and always insert the update row first.
 - **escapeHtml:** no existing helper under `src/` (grep clean). Create `escapeHtml` in `src/lib/email.ts` (or `src/lib/sanitize.ts`) covering `& < > " '` — unit-test in 16.3.
 - **Footer:** `buildBroadcastEmailFooter` already exists at `email.ts:130+` and embeds `generateUnsubscribeUrl`. Prefer reusing it over inventing a second footer. Keep `buildEmailFooter` for transactional non-broadcast mail.
@@ -121,7 +121,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 **Dev Notes:**
 
-- **Files:** `src/app/dashboard/updates/page.tsx` (currently returns `<UpdatesClient updates={...} />` without waitlist id — L51), `src/app/dashboard/updates/client.tsx` (L37 `body: JSON.stringify({ body })`, L81 hardcoded "Published!").
+- **Files:** `src/app/dashboard/updates/page.tsx` (currently returns `<UpdatesClient updates={...} />` without waitlist id — L51), `src/app/dashboard/updates/client.tsx` (L37 `body: JSON.stringify({ body })`, L81 hardcoded "Published!"). **Status: not started (audited 2026-09-28) — `page.tsx:51` still `<UpdatesClient updates={updates ?? []} />` (no waitlistId prop); `client.tsx:11-13` props are `{ updates }` only; `:37` body-only POST; `:48` unconditional `setSuccess(true)` + `:81` "Published!" — even though 16.0 now returns 201 `emailSent:false` on total failure, so dishonest-UX path is live.**
 - **COPY GAP U6:** candidate failure phrasing must be approved before AC3 ships; align with broadcast's honest `emailSent`/`failed` response shape (`broadcast/route.ts:156-159`) for consistency.
 - **Backward compat:** if API temporarily lacks `emailSent` (mid-deploy), treat missing field as `true` only when `res.ok` — or ship 16.0 before 16.1 in same release train (preferred; Story Index orders 16.0 first).
 - **No Sidebar strip:** layout already handled by `dashboard/shell.tsx` (Epic 12.3.5) — do not reintroduce Sidebar into this client.
@@ -149,8 +149,8 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 **Dev Notes:**
 
-- **File:** `components/public/updates-feed.tsx` (hardcoded `bg-card text-foreground border-border` L13-15; no template prop).
-- **Call site:** `src/app/(public)/[subdomain]/page.tsx` already selects `template` (L18) and passes it to `WaitlistTemplateContent` (L90/L110) but not to `LatestUpdateCard` (L119).
+- **File:** `components/public/updates-feed.tsx` (hardcoded `bg-card text-foreground border-border` L13-15; no template prop). **Status: not started (audited 2026-09-28) — `updates-feed.tsx:7-9` props still `{ update }` only; `:13-15` light tokens unchanged; zero `bg-dark-template-*` classes in file.**
+- **Call site:** `src/app/(public)/[subdomain]/page.tsx` already selects `template` (L18) and passes it to `WaitlistTemplateContent` (L90/L110) but not to `LatestUpdateCard` (L119). **Status: not started — `template` in scope at `page.tsx:97` but `:124` renders `<LatestUpdateCard update={latestUpdate} />` with no prop.**
 - **Test:** extend `src/__tests__/components/latest-update-card.test.tsx` (3 tests) with a dark-template class assertion — full suite in 16.3 if preferred, but a single assertion can land here to keep CI honest.
 - Import path gotcha: `components/` is at project root — pages under `src/app/...` use relative imports (existing pattern in page.tsx).
 
@@ -182,7 +182,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 **Dev Notes:**
 
-- **Existing:** `src/__tests__/components/dashboard-updates-compose.test.tsx` (6 render-only; no userEvent/fetch mock — AC6 unmet); `src/__tests__/components/latest-update-card.test.tsx` (3; no dark). **Missing:** any `src/__tests__/api/updates*.test.ts`.
+- **Existing:** `src/__tests__/components/dashboard-updates-compose.test.tsx` (6 render-only; no userEvent/fetch mock — AC6 unmet); `src/__tests__/components/latest-update-card.test.tsx` (3; no dark). **Missing:** any `src/__tests__/api/updates*.test.ts`. **Status: not started (audited 2026-09-28) — no updates API test file exists (18 files in `src/__tests__/api/`, none for updates); compose test still 6 render-only `it` blocks with no fetch mock; stale `waitlistName`/`logoUrl` fixtures still in `baseProps:34-38` (AC8 unmet); card test still 3 tests, no dark assertion.**
 - Mock patterns: mock `@/lib/resend` (`resend.batch.send`), `@/lib/supabase/server`, `@/lib/tier-gating` as needed; `generateUnsubscribeUrl` may need env or mock. Follow Epic 13/15 mock gotchas (`after: vi.fn((fn)=>fn())` if `next/server` mocked; avoid fake timers + RTL `waitFor` hangs).
 - Prefer landing smoke tests with 16.0 if convenient; full AC suite is this story's gate.
 - Do not "fix" pre-existing `dashboard-archive` / `dashboard-subscriber-table` failures here.
@@ -209,7 +209,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 **Dev Notes:**
 
-- **File:** `src/app/dashboard/leaderboard/client.tsx` — comparators `referral_count`/`quality_score` already `b - a` (L107-111); final `sortDir === "asc" ? cmp : -cmp` (L121); `handleSort` sets `desc` for non-rank on first click (L130).
+- **File:** `src/app/dashboard/leaderboard/client.tsx` — comparators `referral_count`/`quality_score` already `b - a` (L107-111); final `sortDir === "asc" ? cmp : -cmp` (L121); `handleSort` sets `desc` for non-rank on first click (L130). **Status: not started — bug live as described (verified 2026-09-28): first click on Referrals sets `sortDir="desc"` → `-cmp` on already-descending comparator = ascending data while arrow shows ↓; identical defect on `quality_score`.**
 - **Minimal fix sketch:** change `handleSort` first-click for desc-native keys to set `"asc"` **if** keeping `b-a` comparators, **or** flip comparators to `a-b` and keep `desc` first-click. Prefer: all comparators ascending + `sortDir` sole inverter (easiest to reason about).
 - Server-side canonical rank in `page.tsx:120-127` is correct — do not change ranking algorithm.
 - Search filter (`:81-93`) runs before sort — preserve order of operations.
@@ -241,7 +241,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 - **File:** `src/app/dashboard/leaderboard/client.tsx` — no `page` state today; footer L317-321 is `"${totalCount} subscribers"` / `"${sorted.length} results"`.
 - **Copy:** "Showing X–Y of Z subscribers" is Story 12.3.1 AC6 **verbatim required** — not a new COPY GAP (already approved in shipped story text). Use en dash `–` consistent with public board.
-- **Tests:** add pagination cases to `dashboard-leaderboard-page.test.tsx` (Story 12.3.4 claimed pagination tests but none exist — audit §3.8); at minimum: first page shows 10 of 25, next advances range, prev disabled at start.
+- **Tests:** add pagination cases to `dashboard-leaderboard-page.test.tsx` (Story 12.3.4 claimed pagination tests but none exist — audit §3.8); at minimum: first page shows 10 of 25, next advances range, prev disabled at start. **Status (16.5 overall): not started (audited 2026-09-28) — no `page` state (`client.tsx:77-79`), no `PAGE_SIZE` anywhere in dashboard leaderboard dir, footer still `"${totalCount} subscribers"` (`:317-321`), server fetch unbounded (`page.tsx:37-43`). Enshrining sort test also still certifies the 16.4 bug (`dashboard-leaderboard-page.test.tsx:99-112` expects `user2` = 1 referral first after first Referrals click).**
 - Reset page when `search` or `sortKey` changes via `useEffect` or by resetting inside setters — watch ESLint `react-hooks/set-state-in-effect` (prefer setState inside event handlers when toggling sort/search).
 
 ---
@@ -267,7 +267,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 **Dev Notes:**
 
-- **Existing RPC:** `docs/stories/sql-writeups/epic12-position-recalculation.sql` — `ROW_NUMBER() OVER (ORDER BY referral_count DESC, created_at ASC)` (verify exact clause when writing migration).
+- **Existing RPC:** `docs/stories/sql-writeups/epic12-position-recalculation.sql` — `ROW_NUMBER() OVER (ORDER BY referral_count DESC, created_at ASC)` (verify exact clause when writing migration). **Status: not started (audited 2026-09-28) — zero `.sql` files mention `position_boost`; no `epic16-*` file in `docs/stories/sql-writeups/`; existing RPC ORDER BY at `epic12-position-recalculation.sql:28-32` lacks boost key; `src/lib/positions.ts` never references it.**
 - **Caller:** `src/lib/positions.ts` `recalculatePositions` via `supabase.rpc("recalculate_positions", { p_waitlist_id })` — keep signature stable so 16.7 need only set the flag, not rewire calls.
 - **Clobber root cause:** `milestones.ts:133-134` sets `position: 1` on subscriber update; `subscribers/route.ts:597` then runs RPC which overwrites `position` for every row — 16.7 stops writing `position: 1` and writes `position_boost: true` instead; RPC must read the column (AC2).
 - Manual gate: founder runs SQL in Supabase before 16.7 ships to production.
@@ -295,7 +295,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 **Dev Notes:**
 
-- **File:** `src/lib/milestones.ts` L133-134 (`positionUpdate = { position: 1 }` spread into update L141-148).
+- **File:** `src/lib/milestones.ts` L133-134 (`positionUpdate = { position: 1 }` spread into update L141-148). **Status: not started (audited 2026-09-28) — `milestones.ts:134` still `positionUpdate = { position: 1 }`; type at `:103` has no boost field; select at `:81` lacks `position_boost`; `src/__tests__/lib/milestones.test.ts` does not exist (AC5 unmet — `src/__tests__/lib/` holds only warmth, tier-gating, bounces tests).**
 - **Depends on 16.6** column + RPC existing in the target database before this code runs in production; local/dev: run SQL first.
 - Select list for subscriber in milestones.ts (L81) must include `position_boost` if read; write path needs it in the update object.
 - Tests: new `src/__tests__/lib/milestones.test.ts` with mocked Supabase (follow warmth batch mock patterns). `generateUnsubscribe`/email send failures already caught internally — mock `sendEmail`.
@@ -327,8 +327,8 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 **Dev Notes:**
 
-- **Orphan API:** only tests import it today (audit §3.4 #7/#21). Delete route + `leaderboard.test.ts` together in one commit so suite stays green.
-- **AC2 COPY GAP:** "Share %" is the fix-plan proposal — founder may prefer "Referral share", "% of referrals", etc. Block merge of the label change until approved; other 16.8 doc work can proceed.
-- **Doc-only story touches:** files under `docs/stories/completed/` (7.5, 7.6, 7.7, 12.1.4, 12.1.10, 12.3.1), `docs/PRD.md` L63/L72, audit file, MEMORY.md. Do not delete historical story files.
+- **Orphan API:** only tests import it today (audit §3.4 #7/#21). Delete route + `leaderboard.test.ts` together in one commit so suite stays green. **Status: AC1 satisfied as no-op (verified 2026-09-28) — `src/app/api/leaderboard/[subdomain]/route.ts` absent (deleted by Epic 14.0) and no `src/__tests__/api/leaderboard.test.ts` exists; AC1 = confirm-and-annotate only.**
+- **AC2 COPY GAP:** "Share %" is the fix-plan proposal — founder may prefer "Referral share", "% of referrals", etc. Block merge of the label change until approved; other 16.8 doc work can proceed. **Status: not started — dashboard label still `"Quality"` (`src/app/dashboard/leaderboard/client.tsx:245`); zero `Share %` matches in `src/`.**
+- **Doc-only story touches:** files under `docs/stories/completed/` (7.5, 7.6, 7.7, 12.1.4, 12.1.10, 12.3.1), `docs/PRD.md` L63/L72, audit file, MEMORY.md. Do not delete historical story files. **Status: not started — `story-12.3.1-dashboard-leaderboard.md:4` still `**Status:** ready`; MEMORY Epic 16 table rows 16.1-16.8 still `⬜ ready` with no Standing Decisions block (AC8 unmet).**
 - **Cross-epic:** if Epic 14.0 ships first, re-read AC1 and skip duplicate delete; still update audit annotation with whichever story id closed it.
 - No production runtime change except AC1 (route removal) and AC2 (label string).

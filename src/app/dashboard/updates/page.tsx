@@ -33,7 +33,11 @@ export default async function UpdatesPage({ searchParams }: PageProps) {
   if (wid) {
     wlQuery = wlQuery.eq("id", wid).eq("founder_id", user.id);
   } else {
-    wlQuery = wlQuery.eq("founder_id", user.id);
+    // 16.1 AC1: deterministic default — newest waitlist (matches qualification page 14.4 AC5)
+    wlQuery = wlQuery
+      .eq("founder_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1);
   }
   const { data: waitlist } = await wlQuery.maybeSingle();
 
@@ -48,5 +52,5 @@ export default async function UpdatesPage({ searchParams }: PageProps) {
     .order("created_at", { ascending: false })
     .limit(10);
 
-  return <UpdatesClient updates={updates ?? []} />;
+  return <UpdatesClient updates={updates ?? []} waitlistId={waitlist.id} />;
 }

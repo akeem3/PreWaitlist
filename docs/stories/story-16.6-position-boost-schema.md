@@ -35,6 +35,8 @@ As a platform, I want a durable skip-the-line flag on subscribers and an RPC tha
 
 ## Dev Notes
 
+**Alignment check (2026-09-28, Prompt #6): not started — no `.sql` file mentions `position_boost`; no `epic16-*` file exists in `docs/stories/sql-writeups/` (22 files checked); `epic12-position-recalculation.sql:28-32` ORDER BY still lacks boost key; `src/lib/positions.ts` never references it. Status remains `ready`.**
+
 ### Existing RPC
 
 File: `docs/stories/sql-writeups/epic12-position-recalculation.sql`
