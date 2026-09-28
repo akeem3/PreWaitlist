@@ -100,7 +100,7 @@ export async function checkAndFulfillMilestones(
         sending_domain: string | null;
       } | null;
     }[] = [];
-    let positionUpdate: { position?: number } = {};
+    let positionUpdate: { position_boost?: boolean } = {};
 
     for (const tier of tiers) {
       const threshold = tier.tier_referrals;
@@ -131,7 +131,7 @@ export async function checkAndFulfillMilestones(
         });
 
         if (tier.reward_label.toLowerCase().includes("skip the line")) {
-          positionUpdate = { position: 1 };
+          positionUpdate = { position_boost: true };
         }
       }
     }

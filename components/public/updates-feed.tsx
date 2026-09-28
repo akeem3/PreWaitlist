@@ -19,7 +19,7 @@ export function LatestUpdateCard({
 
   return (
     <div
-      className={`rounded-[var(--card-radius)] border p-4 ${
+      className={`rounded-(--card-radius) border p-4 ${
         isDark
           ? "border-dark-template-border bg-dark-template-bg"
           : "border-border bg-card"

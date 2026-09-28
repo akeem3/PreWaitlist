@@ -74,7 +74,7 @@ export default function UpdatesClient({
     <div className="mx-auto max-w-2xl px-6 py-8">
       <h1 className="mb-6 text-h2 text-foreground">Updates</h1>
 
-      <div className="mb-8 rounded-[var(--card-radius)] border border-border bg-card p-5">
+      <div className="mb-8 rounded-(--card-radius) border border-border bg-card p-5">
         <label className="mb-2 block text-label text-foreground">
           Share an update with your waitlist
         </label>
@@ -113,7 +113,7 @@ export default function UpdatesClient({
             {updates.map((update) => (
               <div
                 key={update.id}
-                className="rounded-[var(--card-radius)] border border-border bg-card p-4"
+                className="rounded-(--card-radius) border border-border bg-card p-4"
               >
                 <p className="mb-2 text-body-sm text-foreground whitespace-pre-wrap">
                   {update.body}
