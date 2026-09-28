@@ -228,7 +228,6 @@ You signed up at ${opts.referralLink.split("?")[0].replace("https://", "")}
 }
 
 function buildMovedUpEmail(opts: {
-  subscriberName: string | null;
   productName: string;
   newPosition: number;
   spotsMoved: number;
@@ -236,25 +235,20 @@ function buildMovedUpEmail(opts: {
   rewardTiers: { threshold: number; label: string }[];
   footer: string;
   tier?: string;
-  customSubject?: string;
-  customBody?: string;
 }): {
   subject: string;
   html: string;
   text: string;
 } {
-  const firstName = opts.subscriberName?.split(" ")[0] || "there";
-  const greeting = opts.subscriberName
-    ? `Hi ${opts.subscriberName},`
-    : "Welcome,";
-
-  const interpolateVars: Record<string, string | number> = {
-    first_name: firstName,
-    position: opts.newPosition,
-    product_name: opts.productName,
-    referral_link: opts.referralLink,
-    spots_moved: opts.spotsMoved,
-  };
+  // Sprint-3 design spec S4 (docs/design/sprint-3-design-specs.md:647-660).
+  // spot/spots inflection applied for the singular case; otherwise verbatim.
+  const spotLabel = `${opts.spotsMoved} spot${opts.spotsMoved !== 1 ? "s" : ""}`;
+  const subject = `🎉 You moved up ${spotLabel}!`;
+  const bodyLine1 = "Great news — someone you referred just joined.";
+  const bodyLine2 = `You moved up ${spotLabel}!`;
+  const bodyLine3 = `You're now #${opts.newPosition} in line.`;
+  const bodyLine4 = "Keep sharing to move up further:";
+  const heading = "🎉 You moved up!";
 
   const rewardTiersHtml =
     opts.rewardTiers.length > 0
@@ -288,11 +282,6 @@ function buildMovedUpEmail(opts: {
       ? `\nHow to move up:\n${opts.rewardTiers.map((t) => `  ${t.threshold} referral${t.threshold !== 1 ? "s" : ""}: ${t.label}`).join("\n")}`
       : "";
 
-  const defaultSubject = `You moved up to #${opts.newPosition} for ${opts.productName}!`;
-  const subject = opts.customSubject?.trim()
-    ? interpolateEmail(opts.customSubject, interpolateVars)
-    : defaultSubject;
-
   const html = `
 <!DOCTYPE html>
 <html lang="en">
@@ -301,11 +290,11 @@ function buildMovedUpEmail(opts: {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <meta name="supported-color-schemes" content="light dark">
-  <title>You moved up!</title>
+  <title>🎉 You moved up!</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: ${BG_LIGHT}; font-family: Arial, Helvetica, sans-serif;">
   <div style="display: none; max-height: 0; overflow: hidden;">
-    Nice! You moved up ${opts.spotsMoved} spot${opts.spotsMoved !== 1 ? "s" : ""} to #${opts.newPosition}.
+    ${bodyLine1} ${bodyLine2} ${bodyLine3}
   </div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: ${BG_LIGHT};">
     <tr>
@@ -328,25 +317,24 @@ function buildMovedUpEmail(opts: {
 
           <!-- Content card -->
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; border: 1px solid ${BORDER_LIGHT};">
-            <!-- Greeting + Body -->
+            <!-- Heading + Body -->
             <tr>
               <td style="padding: 40px 40px 24px 40px;">
-                ${
-                  opts.customBody?.trim()
-                    ? interpolateEmail(opts.customBody, interpolateVars)
-                        .split("\n")
-                        .map(
-                          (line, i) =>
-                            `<p style="margin: 0 0 ${i === 0 ? "16px" : "0"} 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: ${TEXT_SECONDARY};">${line}</p>`
-                        )
-                        .join("")
-                    : `<h1 style="margin: 0 0 16px 0; font-family: Arial, Helvetica, sans-serif; font-size: 24px; line-height: 30px; font-weight: bold; color: ${TEXT_PRIMARY};">
-                      ${greeting}
-                    </h1>
-                    <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: ${TEXT_SECONDARY};">
-                      Nice! You moved up <strong>${opts.spotsMoved} ${opts.spotsMoved === 1 ? "spot" : "spots"}</strong> to <strong>#${opts.newPosition}</strong> in line for <strong>${opts.productName}</strong>.
-                    </p>`
-                }
+                <h1 style="margin: 0 0 16px 0; font-family: Arial, Helvetica, sans-serif; font-size: 24px; line-height: 30px; font-weight: bold; color: ${TEXT_PRIMARY};">
+                  ${heading}
+                </h1>
+                <p style="margin: 0 0 8px 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: ${TEXT_SECONDARY};">
+                  ${bodyLine1}
+                </p>
+                <p style="margin: 0 0 8px 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: ${TEXT_SECONDARY};">
+                  <strong>${bodyLine2}</strong>
+                </p>
+                <p style="margin: 0 0 8px 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: ${TEXT_SECONDARY};">
+                  ${bodyLine3}
+                </p>
+                <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: ${TEXT_SECONDARY};">
+                  ${bodyLine4}
+                </p>
               </td>
             </tr>
 
@@ -375,7 +363,7 @@ function buildMovedUpEmail(opts: {
                   <tr>
                     <td style="border-radius: 8px; background-color: ${BRAND_GREEN};">
                       <a href="${opts.referralLink}" target="_blank" style="background-color: ${BRAND_GREEN}; border: 1px solid ${BRAND_GREEN}; border-radius: 8px; font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: bold; line-height: 16px; text-decoration: none; padding: 14px 28px; color: #ffffff; display: block;">
-                        Share & Move Up
+                        Share your link
                       </a>
                     </td>
                   </tr>
@@ -394,7 +382,7 @@ function buildMovedUpEmail(opts: {
             <tr>
               <td style="padding: 0 40px;" align="center">
                 <p style="margin: 0 0 8px 0; font-family: Arial, sans-serif; font-size: 13px; line-height: 20px; color: ${TEXT_MUTED};">
-                  Keep sharing to keep climbing!
+                  You received this because you're on the ${opts.productName} waitlist.
                 </p>
               </td>
             </tr>
@@ -407,19 +395,18 @@ function buildMovedUpEmail(opts: {
 </body>
 </html>`;
 
-  const bodyText = opts.customBody?.trim()
-    ? interpolateEmail(opts.customBody, interpolateVars)
-    : `${greeting}\n\nNice! You moved up ${opts.spotsMoved} ${opts.spotsMoved === 1 ? "spot" : "spots"} to #${opts.newPosition} in line for ${opts.productName}.`;
+  const text = `${heading}
 
-  const text = `${bodyText}
+${bodyLine1}
+${bodyLine2}
+${bodyLine3}
 
-NEW POSITION: #${opts.newPosition}
-
-Share your referral link to keep climbing:
+${bodyLine4}
 ${opts.referralLink}
 ${rewardTiersText}
+NEW POSITION: #${opts.newPosition}
 
-Keep sharing to keep climbing!
+You received this because you're on the ${opts.productName} waitlist.
 `;
 
   return { subject, html, text };
@@ -623,6 +610,12 @@ export async function POST(request: NextRequest) {
   const updates = await recalculatePositions(waitlist_id, admin);
   const subscriberUpdate = getPositionUpdate(updates, data.id);
   const correctedPosition = subscriberUpdate?.new_position ?? data.position;
+  // The moved-up email is about the REFFERRER's rank gain (Story 12.2 AC1/AC4),
+  // not the new subscriber's — a fresh insert has temporary position 1, so its
+  // spots_moved is always <= 0. Null when no referrer (self-referral nulled above).
+  const referrerUpdate = resolvedReferrerId
+    ? getPositionUpdate(updates, resolvedReferrerId)
+    : null;
 
   // Increment cached subscriber_count (atomic, fire-and-forget on error)
   try {
@@ -768,20 +761,16 @@ export async function POST(request: NextRequest) {
   // AC1: Send when referrer moves up >=1 position
   // AC2: Subject includes new position + product name
   // AC3: Body includes new position, spots moved, referral link
-  // AC4: Skip if self-referral
+  // AC4: Skip if self-referral (referrerUpdate is null then)
   // AC6: Error handling — email failure must not block signup
-  if (
-    subscriberUpdate &&
-    subscriberUpdate.spots_moved >= 1 &&
-    resolvedReferrerId
-  ) {
+  if (referrerUpdate && referrerUpdate.spots_moved >= 1 && resolvedReferrerId) {
     after(async () => {
       try {
         const adminSupabase = createAdminClient();
 
         const { data: referrer } = await adminSupabase
           .from("subscribers")
-          .select("email, referral_code, display_name")
+          .select("email, referral_code")
           .eq("id", resolvedReferrerId)
           .single();
 
@@ -814,8 +803,6 @@ export async function POST(request: NextRequest) {
           .eq("waitlist_id", waitlist_id)
           .order("tier_referrals", { ascending: true });
 
-        const subscriberName = referrer.display_name?.trim() || null;
-
         // Fetch tier for email template selection
         const { data: waitlistWithTier, error: movedUpTierError } =
           await adminSupabase
@@ -844,10 +831,9 @@ export async function POST(request: NextRequest) {
             : buildEmailFooter(waitlist.business_address);
 
         const email = buildMovedUpEmail({
-          subscriberName,
           productName,
-          newPosition: subscriberUpdate.new_position,
-          spotsMoved: subscriberUpdate.spots_moved,
+          newPosition: referrerUpdate.new_position,
+          spotsMoved: referrerUpdate.spots_moved,
           referralLink,
           rewardTiers: (rewardTiers || []).map((t) => ({
             threshold: t.tier_referrals,
@@ -855,8 +841,6 @@ export async function POST(request: NextRequest) {
           })),
           footer,
           tier,
-          customSubject: waitlist.email_subject || undefined,
-          customBody: waitlist.email_body || undefined,
         });
 
         const emailResult = await sendEmail({
@@ -869,7 +853,7 @@ export async function POST(request: NextRequest) {
           productName: waitlist.product_name,
           headline: waitlist.headline,
           sendingDomain: waitlist.sending_domain,
-          idempotencyKey: `moved-up/${resolvedReferrerId}/${subscriberUpdate.new_position}`,
+          idempotencyKey: `moved-up/${resolvedReferrerId}/${referrerUpdate.new_position}`,
           subscriberId: resolvedReferrerId,
           waitlistId: waitlist_id,
         });
@@ -883,8 +867,8 @@ export async function POST(request: NextRequest) {
             event_data: {
               email_id: emailResult.id,
               type: "moved_up",
-              new_position: subscriberUpdate.new_position,
-              spots_moved: subscriberUpdate.spots_moved,
+              new_position: referrerUpdate.new_position,
+              spots_moved: referrerUpdate.spots_moved,
             },
             created_at: new Date().toISOString(),
           });

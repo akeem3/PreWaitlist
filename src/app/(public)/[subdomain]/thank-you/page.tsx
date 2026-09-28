@@ -94,6 +94,12 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
     .select("id", { count: "exact", head: true })
     .eq("referrer_id", subscriber.id);
 
+  // Progress targets the NEXT unearned tier — never a tier the subscriber has
+  // already passed (count 12 vs. first tier 3 rendered "12 of 3").
+  const nextTier = milestoneRewards.find(
+    (r) => r.threshold > (referralCount ?? 0)
+  );
+
   return (
     <div className="flex min-h-screen flex-col items-center bg-background px-4 py-16">
       <div className="flex w-full max-w-[400px] flex-col items-center">
@@ -136,9 +142,11 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
 
         {milestoneRewards.length > 0 ? (
           <div className="mt-8 w-full text-center">
-            <p className="text-body-sm text-muted-foreground mb-3">
-              {`You've referred ${referralCount ?? 0} of ${milestoneRewards[0].threshold} friends toward: ${milestoneRewards[0].label}`}
-            </p>
+            {nextTier && (
+              <p className="text-body-sm text-muted-foreground mb-3">
+                {`You've referred ${referralCount ?? 0} of ${nextTier.threshold} friends toward: ${nextTier.label}`}
+              </p>
+            )}
             <div className="flex flex-wrap justify-center gap-2">
               {milestoneRewards.map((r) => (
                 <div

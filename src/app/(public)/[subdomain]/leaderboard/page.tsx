@@ -49,27 +49,42 @@ export default async function LeaderboardPage({ params, searchParams }: Props) {
     qual_answers: Record<string, string> | null;
     created_at: string;
     display_name?: string;
+    position_boost?: boolean | null;
   };
 
   const admin = createAdminClient();
 
+  // position_boost arrives with epic16-story6-position-boost.sql — fall back
+  // gracefully (no boost sort) until the migration has run.
+  const BASE_COLS =
+    "id, email, referral_code, referrer_id, qual_answers, created_at";
+  const selectCols = `${BASE_COLS}, display_name, position_boost`;
   let selectResult = await admin
     .from("subscribers")
-    .select(
-      "id, email, referral_code, referrer_id, qual_answers, created_at, display_name"
-    )
+    .select(selectCols)
     .eq("waitlist_id", waitlist.id)
     .order("created_at", { ascending: true });
 
-  if (
-    selectResult.error?.code === "PGRST204" &&
-    selectResult.error?.message?.includes("display_name")
-  ) {
-    selectResult = (await admin
-      .from("subscribers")
-      .select("id, email, referral_code, referrer_id, qual_answers, created_at")
-      .eq("waitlist_id", waitlist.id)
-      .order("created_at", { ascending: true })) as typeof selectResult;
+  if (selectResult.error?.code === "PGRST204") {
+    const msg = selectResult.error.message ?? "";
+    const missingBoost = msg.includes("position_boost");
+    const missingName = msg.includes("display_name");
+    if (missingBoost || missingName) {
+      const fallbackCols: string = [
+        BASE_COLS,
+        missingName ? null : "display_name",
+        missingBoost ? null : "position_boost",
+      ]
+        .filter(Boolean)
+        .join(", ");
+      selectResult = (await admin
+        .from("subscribers")
+        .select(fallbackCols)
+        .eq("waitlist_id", waitlist.id)
+        .order("created_at", {
+          ascending: true,
+        })) as unknown as typeof selectResult;
+    }
   }
 
   const rows = (selectResult.data || []) as SubscriberRow[];
@@ -98,7 +113,9 @@ export default async function LeaderboardPage({ params, searchParams }: Props) {
     }
   });
 
-  // Sort and rank — secondary sort by signup date ascending (earlier = higher)
+  // Sort and rank — position_boost DESC, referral_count DESC, secondary sort
+  // by signup date ascending (earlier = higher). Mirrors recalculate_positions
+  // RPC order so leaderboard rank matches real queue position.
   const ranked = rows
     .map((s) => {
       const isCurrent = currentSubscriberId && s.id === currentSubscriberId;
@@ -116,10 +133,13 @@ export default async function LeaderboardPage({ params, searchParams }: Props) {
         name,
         referral_count: referralCounts.get(s.id) || 0,
         qualified_count: qualifiedCounts.get(s.id) || 0,
+        position_boost: !!s.position_boost,
         created_at: s.created_at,
       };
     })
     .sort((a, b) => {
+      if (b.position_boost !== a.position_boost)
+        return b.position_boost ? 1 : -1;
       if (b.referral_count !== a.referral_count)
         return b.referral_count - a.referral_count;
       return (

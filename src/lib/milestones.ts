@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendEmail, buildEmailFooter } from "@/lib/email";
+import { sendEmail, buildEmailFooter, isUnsubscribed } from "@/lib/email";
+import { isEmailBounced } from "@/lib/bounces";
 
 interface MilestoneTier {
   threshold: number;
@@ -14,10 +15,18 @@ function buildMilestoneEmailHTML(
     product_name: string | null;
     headline: string | null;
     business_address?: string | null;
-  } | null
+  } | null,
+  referralLink?: string | null
 ): string {
   const name = waitlist?.product_name || waitlist?.headline || "the waitlist";
   const footerHtml = buildEmailFooter(waitlist?.business_address);
+  const shareButtonHtml = referralLink
+    ? `<p style="margin: 24px 0 0 0;">
+            <a href="${referralLink}" target="_blank" style="background-color: #0F7A5E; border: 1px solid #0F7A5E; border-radius: 8px; font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: bold; line-height: 16px; text-decoration: none; padding: 14px 28px; color: #ffffff; display: block;">
+              Share &amp; Move Up
+            </a>
+          </p>`
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -41,6 +50,7 @@ function buildMilestoneEmailHTML(
                 <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: #4b5563;">
                   Keep sharing to unlock more rewards!
                 </p>
+                ${shareButtonHtml}
               </td>
             </tr>
           </table>
@@ -68,19 +78,35 @@ export async function checkAndFulfillMilestones(
   try {
     const supabase = createAdminClient();
 
-    const { data: tiers } = await supabase
+    const { data: tiers, error: tiersError } = await supabase
       .from("milestone_rewards")
       .select("tier_referrals, reward_label")
       .eq("waitlist_id", waitlistId)
       .order("tier_referrals", { ascending: true });
 
+    if (tiersError) {
+      console.error(
+        `checkAndFulfillMilestones: failed to load tiers for waitlist ${waitlistId}:`,
+        tiersError.message
+      );
+      return;
+    }
+
     if (!tiers || tiers.length === 0) return;
 
-    const { data: subscriber } = await supabase
+    const { data: subscriber, error: subscriberError } = await supabase
       .from("subscribers")
-      .select("email, milestones_earned, milestones_notified, position")
+      .select("email, referral_code, milestones_earned, milestones_notified")
       .eq("id", subscriberId)
       .single();
+
+    if (subscriberError) {
+      console.error(
+        `checkAndFulfillMilestones: failed to load subscriber ${subscriberId}:`,
+        subscriberError.message
+      );
+      return;
+    }
 
     if (!subscriber) return;
 
@@ -98,6 +124,8 @@ export async function checkAndFulfillMilestones(
         headline: string | null;
         sender_name: string | null;
         sending_domain: string | null;
+        business_address?: string | null;
+        subdomain?: string | null;
       } | null;
     }[] = [];
     let positionUpdate: { position_boost?: boolean } = {};
@@ -117,17 +145,24 @@ export async function checkAndFulfillMilestones(
       if (!newNotified.includes(threshold)) {
         newNotified.push(threshold);
 
-        const { data: waitlist } = await supabase
+        const { data: waitlist, error: waitlistError } = await supabase
           .from("waitlists")
           .select(
-            "product_name, headline, sender_name, sending_domain, business_address"
+            "product_name, headline, sender_name, sending_domain, business_address, subdomain"
           )
           .eq("id", waitlistId)
           .single();
 
+        if (waitlistError) {
+          console.error(
+            `checkAndFulfillMilestones: failed to load waitlist ${waitlistId}:`,
+            waitlistError.message
+          );
+        }
+
         emailsToSend.push({
           tier: { tier_referrals: threshold, reward_label: tier.reward_label },
-          waitlist,
+          waitlist: waitlist ?? null,
         });
 
         if (tier.reward_label.toLowerCase().includes("skip the line")) {
@@ -138,7 +173,9 @@ export async function checkAndFulfillMilestones(
 
     if (newEarned.length === earned.length) return;
 
-    await supabase
+    // Persist BEFORE sending: a failed write must not produce emails, or the
+    // next referral would re-send congrats the subscriber never got recorded for.
+    const { error: updateError } = await supabase
       .from("subscribers")
       .update({
         milestones_earned: newEarned,
@@ -147,15 +184,37 @@ export async function checkAndFulfillMilestones(
       })
       .eq("id", subscriberId);
 
+    if (updateError) {
+      console.error(
+        `checkAndFulfillMilestones: failed to persist milestones for subscriber ${subscriberId}:`,
+        updateError.message
+      );
+      return;
+    }
+
+    // Suppression mirrors confirmation/moved-up sends. Earned tiers and the
+    // position boost stay recorded either way — only the email is skipped.
+    const shouldEmail =
+      emailsToSend.length > 0 &&
+      !(await isUnsubscribed(supabase, subscriberId)) &&
+      !(await isEmailBounced(supabase, waitlistId, subscriber.email));
+
+    if (!shouldEmail) return;
+
     for (const email of emailsToSend) {
+      const referralLink =
+        email.waitlist?.subdomain && subscriber.referral_code
+          ? `https://${email.waitlist.subdomain}.prewaitlist.com?ref=${subscriber.referral_code}`
+          : null;
       try {
-        await sendEmail({
+        const result = await sendEmail({
           to: subscriber.email,
           subject: `Congratulations! You earned: ${email.tier.reward_label}`,
           html: buildMilestoneEmailHTML(
             email.tier,
             referralCount,
-            email.waitlist
+            email.waitlist,
+            referralLink
           ),
           stream: "transactional",
           senderName: email.waitlist?.sender_name,
@@ -164,7 +223,14 @@ export async function checkAndFulfillMilestones(
           sendingDomain: email.waitlist?.sending_domain,
           subscriberId,
           waitlistId,
+          idempotencyKey: `milestone/${subscriberId}/${email.tier.tier_referrals}`,
         });
+        if (!result.ok) {
+          console.error(
+            `Milestone email failed for subscriber ${subscriberId} (threshold ${email.tier.tier_referrals}):`,
+            result.error
+          );
+        }
       } catch (err) {
         console.error(
           `Milestone email failed for subscriber ${subscriberId}:`,

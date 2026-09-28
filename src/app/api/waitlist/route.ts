@@ -74,6 +74,32 @@ function checkQuestionCap(count: number, tier: string): string | null {
   return null;
 }
 
+/**
+ * Milestone reward validation — must run BEFORE any write so an invalid
+ * payload can never wipe existing rewards (PATCH deleted rows first).
+ * `[]` is valid (toggle off). Copy approved 2026-09-28.
+ */
+function validateMilestoneRewards(
+  rewards: { threshold?: unknown; label?: unknown }[]
+): string | null {
+  const seen = new Set<number>();
+  for (const r of rewards) {
+    const threshold = Number(r.threshold);
+    if (!Number.isInteger(threshold) || threshold < 1) {
+      return "Threshold must be a whole number greater than 0";
+    }
+    if (seen.has(threshold)) {
+      return "Each tier needs a unique referral count";
+    }
+    seen.add(threshold);
+    const label = typeof r.label === "string" ? r.label.trim() : "";
+    if (!label) {
+      return `Reward for "Refer ${threshold} friends" is required`;
+    }
+  }
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
 
@@ -126,6 +152,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: normalized.error }, { status: 400 });
     }
     normalizedQuestions = normalized.rows;
+  }
+
+  // Milestone validation before any insert — an invalid payload must not
+  // create a waitlist with silently-dropped rewards.
+  if (Array.isArray(body.milestone_rewards)) {
+    const rewardError = validateMilestoneRewards(body.milestone_rewards);
+    if (rewardError) {
+      return NextResponse.json({ error: rewardError }, { status: 400 });
+    }
   }
 
   // Tier enforcement: free = max 1 waitlist, Pro = unlimited
@@ -281,6 +316,15 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: normalized.error }, { status: 400 });
     }
     normalizedQuestions = normalized.rows;
+  }
+
+  // Milestone validation before ANY write — PATCH deletes existing rewards
+  // first, so rejecting here is the only way to avoid wiping on bad input.
+  if (Array.isArray(milestone_rewards)) {
+    const rewardError = validateMilestoneRewards(milestone_rewards);
+    if (rewardError) {
+      return NextResponse.json({ error: rewardError }, { status: 400 });
+    }
   }
 
   // Validate email customization fields

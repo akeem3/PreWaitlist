@@ -1028,6 +1028,42 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - `tags` (`waitlist_id`/`subscriber_id`) preserved on every payload — warmth webhook attribution (15.2).
 - Gates: lint 0 errors/5 pre-existing warnings; `pnpm build` success. No tests added (16.3 owns). Client still sends `{ body }` only — multi-waitlist fix usable only after 16.1 (same release train).
 
+## Milestone Engine Hardening — Prompt #8 Investigation (2026-09-28)
+
+**Status:** Phases 1–6 complete, all gates green (643 tests / 7 baseline fails, lint 0/5, prettier clean, clean build). **Uncommitted on `dev`** with Epic 17 + warmth redesign.
+
+**Root cause framing:** happy path was correct vs Story 7.6 AC8/AC13-16; defects were all silent-failure paths + validation gaps.
+
+**Fixes (founder-approved copy, 2026-09-28):**
+
+- **F1 — `src/lib/milestones.ts`:** update-result checked (dup email aborts, no send), `sendEmail {ok:false}` logged, `isUnsubscribed`/`isEmailBounced` suppression (email-only — earned/boost still persist), `idempotencyKey: milestone/{subscriberId}/{threshold}`, "Share & Move Up" button on congratulatory email (existing copy + `https://{subdomain}.prewaitlist.com?ref={code}` link), tier/subscriber/waitlist query errors logged.
+- **F2 — thank-you progress line:** `nextTier = rewards.find(r => r.threshold > referralCount)` — hides when all tiers passed (fixed "12 of 3"); no all-earned copy (hidden-state only, per founder).
+- **F3 — step-3 client validation** (`onboarding/3/page.tsx`): `Threshold must be a whole number greater than 0` + `Each tier needs a unique referral count` + existing empty-label errors; blocks submit.
+- **F4 — `api/waitlist/route.ts` `validateMilestoneRewards()`:** shared validator, runs in POST before waitlist insert AND in PATCH **before delete-then-insert** (the wipe-on-bad-input path) → 400. `[]` valid (toggle off). Copy: the two approved strings + existing `Reward for "Refer N friends" is required`.
+- **F6 — skip-the-line helper caption** under step-3 tier inputs (approved verbatim): `Add "skip the line" to a reward to move that subscriber to #1 when they earn it`.
+- **F7 — subscriber detail** (`dashboard/subscribers/[id]/page.tsx`): `milestones_earned` selected + "Milestones earned" card (hidden when empty; `threshold → label` + earned date).
+- **Tests:** waitlist-multi 16 (5 new: POST threshold/dup, PATCH threshold/dup-before-delete, empty-array ok), milestones 11, thank-you 13, subscriber-detail 16 (1 new content assert).
+
+**Founder decisions (all 5, 2026-09-28):** approved copy above · skip-the-line helper copy approved · pending rewards = minimal subscriber-detail section (PRD REQ-6.8.3 dashboard expansion NOT built) · **public leaderboard milestone badges = docs-only (Story 16.8 AC5 / Standing Decision L5 — no code)** · thank-you all-earned = hide progress line only.
+
+**Still open:** founder must run `epic16-story6-position-boost.sql` before deploying 16.7; COPY GAP L3/U6/B7; milestone engine changes uncommitted.
+
+## Moving-Up Engine Investigation — Prompt #8 (2026-09-28)
+
+**Status:** Phases 1–6 complete. Code fixes + tests + doc amendment done, **uncommitted** on `dev` alongside milestone hardening. Founder copy/product questions pending (below).
+
+**Root cause (bug 1 — dead trigger):** `src/app/api/subscribers/route.ts` condition used `getPositionUpdate(updates, data.id)` = the NEW subscriber's update (fresh insert has temp `position = 1` → `spots_moved` always ≤ 0) → moved-up email NEVER fired since Story 12.2. The **spec itself** (`story-12.2-moved-up-email.md:172-173`) prescribed the wrong variable (annotated AMENDED 2026-09-28). Fixed: `referrerUpdate = resolvedReferrerId ? getPositionUpdate(updates, resolvedReferrerId) : null`; condition `referrerUpdate && referrerUpdate.spots_moved >= 1 && resolvedReferrerId` (the explicit referrer id check is required for TS narrowing); all 4 in-block usages (email params, idempotency key, event_data) now read `referrerUpdate`.
+
+**Root cause (bug 2 — template leak):** moved-up send passed `customSubject: waitlist.email_subject` / `customBody: waitlist.email_body` — but step 5 saves those fields for EVERY launched waitlist ("Customise your confirmation email"), so the first live moved-up email would have been a duplicate confirmation. Removed → moved-up always uses `buildMovedUpEmail` defaults.
+
+**Rank engine verified correct:** RPC order `position_boost DESC` (if 16.6 SQL run) → `referral_count DESC` → `created_at ASC`; called synchronously on every signup; boost flag set before recalc ✓; monotone-rank property means fixed trigger fires exactly once per genuine gain (no spam path).
+
+**Known divergences left as founder decisions:** (a) both leaderboards compute rank in JS from referral count only — ignore `position_boost` (skip-the-line winners show higher real position than leaderboard rank); (b) zero founder-facing onboarding copy mentions moved-up/milestone congratulation emails (only `pricing-features.ts:15` marketing list); (c) moved-up default template never ran in production — if founder wants sprint-3 spec wording ("🎉 You moved up!") instead of code default ("You moved up to #5 for X!"), that's a copy approval.
+
+**Founder decisions (2026-09-28, all 3 answered):** (a) moved-up template → **sprint-3 spec S4 wording implemented** (`🎉 You moved up {n} spots!` subject/heading, spec body lines 1-4, CTA `Share your link`, footer line `You received this because you're on the {product_name} waitlist.`; spot/spots inflection kept; personal greeting + custom subject/body params REMOVED from `buildMovedUpEmail`); (b) leaderboards → **boost-first sort shipped** (both public + dashboard pages: `position_boost DESC → referral_count DESC → created_at ASC`, mirroring the RPC; PGRST204 fallback drops `position_boost`/`display_name` per missing-column so pages survive until `epic16-story6-position-boost.sql` runs); (c) founder awareness copy → **approved verbatim + shipped**: step-5 Free bullets `Moved-up email` + `Milestone emails`, step-3 milestone description `Subscribers get a congratulation email when they hit a milestone — and any reward with "skip the line" moves them straight to #1.` (renders via `&mdash;`/`&quot;` entities). Step-3 sub-counter + milestone sections restructured into `rounded-xl border bg-card p-4` cards, unified `h-10` inputs, `items-end` row alignment (no more `mt-6` hacks).
+
+**Tests:** `src/__tests__/api/subscribers-referral.test.ts` +3 (fires & sends spec subject to referrer · spots_moved=0 → no send · no referrer → no send). Mock gotcha discovered: **all `after()` IIFEs dequeue from the admin mock queue at REGISTRATION time** (confirmation → moved-up-referrer → cap-warning), not at await-resume — queue fixtures must include a slot for the 90%-cap IIFE between moved-up referrer and moved-up waitlist items; `@/lib/email` mock also needs `buildFreeEmailFooter`. Supabase typing gotcha: `.select(someStringVar)` widens to `string` → `GenericStringError[]`; primary select must use a `const` template-literal column string, fallback results cast `as unknown as typeof selectResult`. Gates: targeted 15/15, full **647 total / 640 pass / 7 fail = exact baseline** (dashboard-archive 4 + dashboard-subscriber-table 3), lint 0/5, prettier clean, clean build (`.next` deleted first; TS fix: explicit `resolvedReferrerId` in condition).
+
 ## Epic 17 Progress (Broadcasting Engine Fix)
 
 **Status:** all 8 stories done (17.0–17.7) — implemented + audited 2026-09-28. **Uncommitted** on `dev`, awaiting `commit-push`.

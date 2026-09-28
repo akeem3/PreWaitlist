@@ -173,6 +173,8 @@ Keep sharing to move up even more:
 6. if (subscriberUpdate.spots_moved >= 1 && resolvedReferrerId) → send email
 ```
 
+**[AMENDED 2026-09-28 — Prompt #8 investigation:** Steps 5–6 above are **wrong as specified**. `subscriberUpdate = getPositionUpdate(updates, data.id)` is the _new subscriber's_ update — a fresh insert has temporary `position = 1`, so its `spots_moved` is always ≤ 0 and the trigger at step 6 can never fire (the bug shipped as implemented). AC1/AC4 are about the **referrer's** rank gain; the condition must read `getPositionUpdate(updates, resolvedReferrerId)` (stored separately, e.g. `referrerUpdate`). Fixed in `src/app/api/subscribers/route.ts` (condition + email params now use `referrerUpdate`), locked by `src/__tests__/api/subscribers-referral.test.ts` moved-up trigger tests.]
+
 ### T4: Log sent event to email_events
 
 After successful send, insert into `email_events`:

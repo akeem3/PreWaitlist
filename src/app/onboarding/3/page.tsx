@@ -225,14 +225,22 @@ export default function OnboardingStep3() {
       if (isSubmitting) return;
 
       if (milestoneEnabled) {
-        const emptyRewards = rewards
-          .map((r, i) => (!r.label.trim() ? i : -1))
-          .filter((i) => i >= 0);
-        if (emptyRewards.length > 0) {
-          const errors = emptyRewards.map(
-            (i) =>
-              `Reward for "Refer ${rewards[i].threshold} friends" is required`
-          );
+        const errors: string[] = [];
+        const seenThresholds = new Set<number>();
+        for (const r of rewards) {
+          if (!Number.isInteger(r.threshold) || r.threshold < 1) {
+            errors.push("Threshold must be a whole number greater than 0");
+          } else if (seenThresholds.has(r.threshold)) {
+            errors.push("Each tier needs a unique referral count");
+          }
+          seenThresholds.add(r.threshold);
+          if (!r.label.trim()) {
+            errors.push(
+              `Reward for "Refer ${r.threshold} friends" is required`
+            );
+          }
+        }
+        if (errors.length > 0) {
           setMilestoneErrors(errors);
           return;
         }
@@ -470,17 +478,22 @@ export default function OnboardingStep3() {
       </div>
 
       {/* Milestone Rewards */}
-      <div className="mb-3">
+      <div className="mb-4 rounded-xl border border-border bg-card p-4">
         <Toggle
           checked={milestoneEnabled}
           onCheckedChange={handleMilestoneToggle}
           label="Milestone rewards"
           disabled={isSubmitting}
         />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Subscribers get a congratulation email when they hit a milestone
+          &mdash; and any reward with &quot;skip the line&quot; moves them
+          straight to #1.
+        </p>
         {milestoneEnabled && (
-          <div className="mt-3 flex flex-col gap-3">
+          <div className="mt-4 flex flex-col gap-3">
             {rewards.map((reward, index) => (
-              <div key={index} className="flex items-start gap-2">
+              <div key={index} className="flex items-end gap-2">
                 <div className="flex flex-col gap-1">
                   <label className="text-xs text-muted-foreground">Refer</label>
                   <input
@@ -492,10 +505,10 @@ export default function OnboardingStep3() {
                     }
                     placeholder="3"
                     disabled={isSubmitting}
-                    className="w-16 rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm text-center placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
+                    className="h-10 w-16 rounded-(--radius-lg) border border-border bg-card px-3 text-sm text-center placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-1 flex-col gap-1">
                   <label className="text-xs text-muted-foreground">
                     friends → reward
                   </label>
@@ -508,7 +521,7 @@ export default function OnboardingStep3() {
                       "e.g. Special reward"
                     }
                     disabled={isSubmitting}
-                    className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-10 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
+                    className="h-10 w-full rounded-(--radius-lg) border border-border bg-card px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
                 {rewards.length > 1 && (
@@ -516,7 +529,7 @@ export default function OnboardingStep3() {
                     type="button"
                     onClick={() => handleRemoveTier(index)}
                     disabled={isSubmitting}
-                    className="mt-6 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
                     title="Remove tier"
                   >
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -530,7 +543,7 @@ export default function OnboardingStep3() {
                   </button>
                 )}
                 {reward.isDefault && (
-                  <Badge variant="info" className="mt-6">
+                  <Badge variant="info" className="mb-1.5">
                     Recommended
                   </Badge>
                 )}
@@ -541,7 +554,7 @@ export default function OnboardingStep3() {
                 type="button"
                 onClick={handleAddTier}
                 disabled={isSubmitting}
-                className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-2 self-start text-sm text-muted-foreground transition-colors hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path
@@ -554,6 +567,10 @@ export default function OnboardingStep3() {
                 Add tier
               </button>
             )}
+            <p className="text-xs text-muted-foreground">
+              Add &quot;skip the line&quot; to a reward to move that subscriber
+              to #1 when they earn it
+            </p>
             {milestoneErrors.length > 0 && (
               <div className="flex flex-col gap-1">
                 {milestoneErrors.map((error, i) => (
@@ -568,7 +585,7 @@ export default function OnboardingStep3() {
       </div>
 
       {/* Signup Counter */}
-      <div className="mb-3">
+      <div className="mb-4 rounded-xl border border-border bg-card p-4">
         <Toggle
           checked={signupCounterEnabled}
           onCheckedChange={handleCounterToggle}
@@ -580,7 +597,7 @@ export default function OnboardingStep3() {
           proof.
         </p>
         {signupCounterEnabled && (
-          <div className="mt-3 flex items-center gap-3">
+          <div className="mt-4 flex items-center gap-3">
             <label className="text-xs text-muted-foreground">
               Show when I have
             </label>
@@ -591,7 +608,7 @@ export default function OnboardingStep3() {
               onChange={(e) => handleThresholdInput(e.target.value)}
               placeholder="10"
               disabled={isSubmitting}
-              className="w-20 rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm text-center placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-10 w-20 rounded-(--radius-lg) border border-border bg-card px-3 text-sm text-center placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
             />
             <label className="text-xs text-muted-foreground">
               or more signups

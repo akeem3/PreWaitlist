@@ -1,6 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  TierIcon,
+  type TierKind,
+} from "../../../../components/dashboard/tier-icon";
 
 interface Subscriber {
   id: string;
@@ -36,6 +40,27 @@ const WARMTH_ORDER: Record<string, number> = {
 
 const PAGE_SIZE = 10;
 
+const SUMMARY_CARDS: {
+  label: string;
+  kind: TierKind;
+  countKey: "hot" | "warm" | "cold";
+  color: string;
+}[] = [
+  { label: "Hot", kind: "hot", countKey: "hot", color: "text-status-hot" },
+  {
+    label: "Warm",
+    kind: "warm",
+    countKey: "warm",
+    color: "text-status-warm",
+  },
+  {
+    label: "Cold",
+    kind: "cold",
+    countKey: "cold",
+    color: "text-status-cold",
+  },
+];
+
 function WarmthBadge({ tier }: { tier: string | null }) {
   const colors: Record<string, string> = {
     hot: "bg-status-hot text-white",
@@ -45,13 +70,25 @@ function WarmthBadge({ tier }: { tier: string | null }) {
   // Warmth restructure: legacy null rows are treated as Hot (DB is NOT NULL
   // after the migration, so this is only a pre-migration fallback).
   const resolved = tier ?? "hot";
+  const isTier =
+    resolved === "hot" || resolved === "warm" || resolved === "cold";
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${colors[resolved] ?? "bg-muted text-muted-foreground"}`}
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium capitalize ${colors[resolved] ?? "bg-muted text-muted-foreground"}`}
     >
+      {isTier && <TierIcon kind={resolved as TierKind} className="h-3 w-3" />}
       {resolved}
     </span>
   );
+}
+
+function formatDate(iso: string | null): string {
+  if (!iso) return "Never";
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 export default function WarmthClient({
@@ -100,15 +137,20 @@ export default function WarmthClient({
 
   if (tier === "free") {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-8">
+      <div className="mx-auto max-w-5xl px-6 py-8">
         <h1 className="mb-6 text-h2 text-foreground">Warmth</h1>
         <div className="relative rounded-[var(--card-radius)] border border-border bg-card p-8">
           <div className="space-y-4 opacity-50">
-            <div className="grid grid-cols-3 gap-4">
-              {["Hot", "Warm", "Cold"].map((label) => (
-                <div key={label} className="text-center">
-                  <div className="text-3xl font-bold text-foreground">—</div>
-                  <div className="text-xs text-muted-foreground">{label}</div>
+            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+              {SUMMARY_CARDS.map((item) => (
+                <div key={item.label} className="text-center">
+                  <div className="text-3xl font-semibold text-foreground">
+                    —
+                  </div>
+                  <div className="mt-1 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                    <TierIcon kind={item.kind} className={item.color} />
+                    {item.label}
+                  </div>
                 </div>
               ))}
             </div>
@@ -127,7 +169,7 @@ export default function WarmthClient({
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
+    <div className="mx-auto max-w-5xl px-6 py-8">
       <h1 className="mb-6 text-h2 text-foreground">Warmth</h1>
 
       {subscribers.length === 0 ? (
@@ -140,20 +182,19 @@ export default function WarmthClient({
       ) : (
         <>
           {/* Summary row */}
-          <div className="mb-6 grid grid-cols-3 gap-4">
-            {[
-              { label: "Hot", count: summary.hot, color: "text-status-hot" },
-              { label: "Warm", count: summary.warm, color: "text-status-warm" },
-              { label: "Cold", count: summary.cold, color: "text-status-cold" },
-            ].map((item) => (
+          <div className="mb-6 grid grid-cols-3 gap-3 sm:gap-4">
+            {SUMMARY_CARDS.map((item) => (
               <div
                 key={item.label}
-                className="rounded-[var(--card-radius)] border border-border bg-card p-4 text-center"
+                className="rounded-[var(--card-radius)] border border-border bg-card p-4 text-center sm:p-5"
               >
-                <div className={`text-3xl font-bold ${item.color}`}>
-                  {item.count}
+                <div
+                  className={`text-3xl font-semibold tabular-nums ${item.color}`}
+                >
+                  {summary[item.countKey]}
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="mt-1 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                  <TierIcon kind={item.kind} className={item.color} />
                   {item.label}
                 </div>
               </div>
@@ -169,131 +210,153 @@ export default function WarmthClient({
 
           {/* Filter + table */}
           <div className="rounded-[var(--card-radius)] border border-border bg-card">
-            {/* Filter bar */}
-            <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-              <span className="text-xs font-medium text-muted-foreground">
-                Filter:
+            {/* Filter bar — count left, filter right (design guide §7) */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
+              <span className="text-body-sm text-muted-foreground">
+                {filtered.length} subscriber
+                {filtered.length !== 1 ? "s" : ""}
               </span>
-              <select
-                value={filter}
-                onChange={(e) => {
-                  setFilter(e.target.value as FilterTier);
-                  setPage(0);
-                }}
-                className="rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground"
-              >
-                <option value="all">All</option>
-                <option value="hot">Hot</option>
-                <option value="warm">Warm</option>
-                <option value="cold">Cold</option>
-              </select>
-              <span className="ml-auto text-xs text-muted-foreground">
-                {filtered.length} subscriber{filtered.length !== 1 ? "s" : ""}
-              </span>
-            </div>
-
-            {/* Column headers */}
-            <div className="grid grid-cols-[1fr_100px_120px_80px] items-center gap-3 border-b border-border px-4 py-3">
-              <span className="text-left text-xs font-medium text-muted-foreground">
-                Email
-              </span>
-              <button
-                type="button"
-                onClick={() => toggleSort("warmth_score")}
-                className="text-left text-xs font-medium text-muted-foreground hover:text-foreground"
-              >
-                Warmth{" "}
-                {sortField === "warmth_score"
-                  ? sortDir === "asc"
-                    ? "\u2191"
-                    : "\u2193"
-                  : ""}
-              </button>
-              <span className="text-left text-xs font-medium text-muted-foreground">
-                Last Engagement
-              </span>
-              <button
-                type="button"
-                onClick={() => toggleSort("referral_count")}
-                className="text-center text-xs font-medium text-muted-foreground hover:text-foreground"
-              >
-                Referrals{" "}
-                {sortField === "referral_count"
-                  ? sortDir === "asc"
-                    ? "\u2191"
-                    : "\u2193"
-                  : ""}
-              </button>
-            </div>
-
-            {/* Rows */}
-            {visible.length === 0 ? (
-              <div className="px-4 py-8 text-center text-body-sm text-muted-foreground">
-                No subscribers match this filter.
-              </div>
-            ) : (
-              visible.map((sub) => (
-                <div
-                  key={sub.id}
-                  className="grid grid-cols-[1fr_100px_120px_80px] items-center gap-3 border-b border-border/50 px-4 py-3 last:border-b-0"
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="warmth-filter"
+                  className="text-xs font-medium text-muted-foreground"
                 >
-                  <span className="truncate text-body-sm font-medium text-foreground">
-                    {sub.email}
+                  Filter:
+                </label>
+                <select
+                  id="warmth-filter"
+                  value={filter}
+                  onChange={(e) => {
+                    setFilter(e.target.value as FilterTier);
+                    setPage(0);
+                  }}
+                  className="rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground"
+                >
+                  <option value="all">All</option>
+                  <option value="hot">Hot ({summary.hot})</option>
+                  <option value="warm">Warm ({summary.warm})</option>
+                  <option value="cold">Cold ({summary.cold})</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Scroll region — horizontal scroll on narrow viewports */}
+            <div className="overflow-x-auto">
+              <div className="min-w-[560px]">
+                {/* Column headers */}
+                <div className="grid grid-cols-[minmax(0,1fr)_110px_130px_90px] items-center gap-4 border-b border-border px-5 py-3">
+                  <span className="text-left text-xs font-medium text-muted-foreground">
+                    Email
                   </span>
-                  <WarmthBadge tier={sub.warmth_score} />
-                  <span className="text-xs text-muted-foreground">
-                    {sub.last_engagement
-                      ? new Date(sub.last_engagement).toLocaleDateString(
-                          "en-US",
-                          {
-                            month: "short",
-                            day: "numeric",
-                          }
-                        )
-                      : "Never"}
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("warmth_score")}
+                    className="text-center text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    Warmth{" "}
+                    {sortField === "warmth_score"
+                      ? sortDir === "asc"
+                        ? "\u2191"
+                        : "\u2193"
+                      : ""}
+                  </button>
+                  <span className="text-left text-xs font-medium text-muted-foreground">
+                    Last Engagement
                   </span>
-                  <span className="text-center text-body-sm text-muted-foreground">
-                    {sub.referral_count > 0 ? (
-                      <span className="font-medium text-foreground">
-                        {sub.referral_count}
-                      </span>
-                    ) : (
-                      "0"
-                    )}
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("referral_count")}
+                    className="text-center text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    Referrals{" "}
+                    {sortField === "referral_count"
+                      ? sortDir === "asc"
+                        ? "\u2191"
+                        : "\u2193"
+                      : ""}
+                  </button>
                 </div>
-              ))
+
+                {/* Rows */}
+                {visible.length === 0 ? (
+                  <div className="px-5 py-10 text-center">
+                    <p className="text-body-sm text-muted-foreground">
+                      No subscribers match this filter.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFilter("all");
+                        setPage(0);
+                      }}
+                      className="mt-3 rounded-lg border border-border px-4 py-2 text-body-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+                    >
+                      Show all
+                    </button>
+                  </div>
+                ) : (
+                  visible.map((sub, i) => (
+                    <div
+                      key={sub.id}
+                      className={`grid grid-cols-[minmax(0,1fr)_110px_130px_90px] items-center gap-4 px-5 py-3 transition-colors hover:bg-muted/30 ${
+                        i < visible.length - 1
+                          ? "border-b border-border/50"
+                          : ""
+                      }`}
+                    >
+                      <span className="truncate text-body-sm font-medium text-foreground">
+                        {sub.email}
+                      </span>
+                      <span className="flex justify-center">
+                        <WarmthBadge tier={sub.warmth_score} />
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(sub.last_engagement)}
+                      </span>
+                      <span className="text-center text-body-sm text-muted-foreground tabular-nums">
+                        {sub.referral_count > 0 ? (
+                          <span className="font-medium text-foreground">
+                            {sub.referral_count}
+                          </span>
+                        ) : (
+                          "0"
+                        )}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            {filtered.length > 0 && (
+              <div className="flex items-center justify-between border-t border-border px-5 py-3 text-xs text-muted-foreground">
+                <span>
+                  Showing {start + 1}–{end} of {filtered.length}
+                </span>
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-4">
+                    <button
+                      type="button"
+                      disabled={!hasPrev}
+                      onClick={() => setPage((p) => p - 1)}
+                      className="font-medium text-accent transition-colors hover:text-accent/80 disabled:pointer-events-none disabled:text-muted-foreground"
+                    >
+                      ← Previous
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!hasNext}
+                      onClick={() => setPage((p) => p + 1)}
+                      className="font-medium text-accent transition-colors hover:text-accent/80 disabled:pointer-events-none disabled:text-muted-foreground"
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
-
-          {/* Pagination */}
-          {filtered.length > PAGE_SIZE && (
-            <div className="mt-4 flex items-center justify-between text-body-sm text-muted-foreground">
-              <span>
-                Showing {start + 1}–{end} of {filtered.length}
-              </span>
-              <div className="flex items-center gap-3">
-                {hasPrev && (
-                  <button
-                    type="button"
-                    onClick={() => setPage((p) => p - 1)}
-                    className="font-medium text-accent hover:text-accent/80"
-                  >
-                    ← Previous
-                  </button>
-                )}
-                {hasNext && (
-                  <button
-                    type="button"
-                    onClick={() => setPage((p) => p + 1)}
-                    className="font-medium text-accent hover:text-accent/80"
-                  >
-                    Next →
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
         </>
       )}
     </div>

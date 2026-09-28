@@ -30,9 +30,13 @@ vi.mock("next/headers", () => ({
   ),
 }));
 
-function buildChain(data: unknown, error: unknown = null) {
+function buildChain(
+  data: unknown,
+  error: unknown = null,
+  extra: Record<string, unknown> = {}
+) {
   const chain: Record<string, ReturnType<typeof vi.fn>> = {};
-  const resolved = { data, error };
+  const resolved = { data, error, ...extra };
 
   const methods = ["select", "eq", "order", "limit", "maybeSingle", "single"];
   for (const m of methods) {
@@ -435,6 +439,97 @@ describe("Thank-you Page", () => {
     ).toBeDefined();
     expect(screen.getByText("1 → Early access")).toBeDefined();
     expect(screen.getByText("5 → Free Pro for 1 month")).toBeDefined();
+    expect(screen.getByText("10 → Lifetime 20% discount")).toBeDefined();
+  });
+
+  it("progress targets the next unearned tier when past the first tier", async () => {
+    const mockSubscriber = {
+      id: "sub-1",
+      email: "test@example.com",
+      position: 3,
+      referral_code: "abc12345",
+      referrer_id: null,
+      waitlists: {
+        id: "wl-1",
+        subdomain: "test",
+        headline: "Test",
+        milestone_rewards_enabled: true,
+        founder_profiles: [{ tier: "free" }],
+      },
+    };
+
+    const mockMilestones = [
+      { tier_referrals: 1, reward_label: "Early access" },
+      { tier_referrals: 5, reward_label: "Free Pro for 1 month" },
+      { tier_referrals: 10, reward_label: "Lifetime 20% discount" },
+    ];
+
+    mockSupabase.from
+      .mockReturnValueOnce(buildChain(mockSubscriber))
+      .mockReturnValueOnce(buildChain(mockMilestones))
+      .mockReturnValueOnce(buildChain(null, null, { count: 7 }));
+
+    const mod = await import("../../app/(public)/[subdomain]/thank-you/page");
+    const ThankYouPage = mod.default;
+
+    const element = await ThankYouPage({
+      params: Promise.resolve({ subdomain: "test" }),
+      searchParams: Promise.resolve({
+        subscriber_id: "sub-1",
+        referral_code: "abc12345",
+      }),
+    });
+
+    render(element);
+
+    expect(
+      screen.getByText(/You've referred 7 of 10 friends toward: Lifetime/)
+    ).toBeDefined();
+    expect(screen.queryByText(/0 of 1/)).toBeNull();
+  });
+
+  it("hides the progress line when every tier is already passed", async () => {
+    const mockSubscriber = {
+      id: "sub-1",
+      email: "test@example.com",
+      position: 3,
+      referral_code: "abc12345",
+      referrer_id: null,
+      waitlists: {
+        id: "wl-1",
+        subdomain: "test",
+        headline: "Test",
+        milestone_rewards_enabled: true,
+        founder_profiles: [{ tier: "free" }],
+      },
+    };
+
+    const mockMilestones = [
+      { tier_referrals: 1, reward_label: "Early access" },
+      { tier_referrals: 5, reward_label: "Free Pro for 1 month" },
+      { tier_referrals: 10, reward_label: "Lifetime 20% discount" },
+    ];
+
+    mockSupabase.from
+      .mockReturnValueOnce(buildChain(mockSubscriber))
+      .mockReturnValueOnce(buildChain(mockMilestones))
+      .mockReturnValueOnce(buildChain(null, null, { count: 12 }));
+
+    const mod = await import("../../app/(public)/[subdomain]/thank-you/page");
+    const ThankYouPage = mod.default;
+
+    const element = await ThankYouPage({
+      params: Promise.resolve({ subdomain: "test" }),
+      searchParams: Promise.resolve({
+        subscriber_id: "sub-1",
+        referral_code: "abc12345",
+      }),
+    });
+
+    render(element);
+
+    expect(screen.queryByText(/You've referred/)).toBeNull();
+    expect(screen.getByText("1 → Early access")).toBeDefined();
     expect(screen.getByText("10 → Lifetime 20% discount")).toBeDefined();
   });
 

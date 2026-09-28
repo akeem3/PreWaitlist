@@ -84,6 +84,15 @@ describe("Subscriber Detail Page", () => {
     expect(content).toContain("qual_answers");
   });
 
+  it("selects milestones_earned and conditionally renders rewards section", () => {
+    const content = fs.readFileSync(PAGE_PATH, "utf-8");
+    expect(content).toContain("milestones_earned");
+    expect(content).toContain("Milestones earned");
+    expect(content).toContain(
+      "milestonesEarned && milestonesEarned.length > 0"
+    );
+  });
+
   it("resolves qualification answer labels from question ids", () => {
     const content = fs.readFileSync(PAGE_PATH, "utf-8");
     expect(content).toContain("questionLabels.get");

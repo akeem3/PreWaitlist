@@ -32,25 +32,39 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     created_at: string;
     milestones_earned: unknown;
     display_name?: string;
+    position_boost?: boolean | null;
   };
 
+  const BASE_COLS = "id, email, referral_code, created_at, milestones_earned";
+  const selectCols = `${BASE_COLS}, display_name, position_boost`;
   let selectResult = await supabase
     .from("subscribers")
-    .select(
-      "id, email, referral_code, created_at, milestones_earned, display_name"
-    )
+    .select(selectCols)
     .eq("waitlist_id", waitlist.id)
     .order("created_at", { ascending: true });
 
-  if (
-    selectResult.error?.code === "PGRST204" &&
-    selectResult.error?.message?.includes("display_name")
-  ) {
-    selectResult = (await supabase
-      .from("subscribers")
-      .select("id, email, referral_code, created_at, milestones_earned")
-      .eq("waitlist_id", waitlist.id)
-      .order("created_at", { ascending: true })) as typeof selectResult;
+  // position_boost arrives with epic16-story6-position-boost.sql — fall back
+  // gracefully (no boost sort) until the migration has run.
+  if (selectResult.error?.code === "PGRST204") {
+    const msg = selectResult.error.message ?? "";
+    const missingBoost = msg.includes("position_boost");
+    const missingName = msg.includes("display_name");
+    if (missingBoost || missingName) {
+      const fallbackCols: string = [
+        BASE_COLS,
+        missingName ? null : "display_name",
+        missingBoost ? null : "position_boost",
+      ]
+        .filter(Boolean)
+        .join(", ");
+      selectResult = (await supabase
+        .from("subscribers")
+        .select(fallbackCols)
+        .eq("waitlist_id", waitlist.id)
+        .order("created_at", {
+          ascending: true,
+        })) as unknown as typeof selectResult;
+    }
   }
 
   const rows = (selectResult.data || []) as SubRow[];
@@ -87,7 +101,9 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     0
   );
 
-  // Rank: referral_count DESC, created_at ASC (earlier = higher)
+  // Rank: position_boost DESC, referral_count DESC, created_at ASC
+  // (earlier = higher) — mirrors recalculate_positions RPC order so the
+  // leaderboard matches real queue position for skip-the-line winners.
   const ranked = rows
     .map((s) => {
       const referral_count = referralCounts.get(s.id) || 0;
@@ -110,6 +126,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
             ? Math.round((referral_count / totalReferrals) * 100)
             : null,
         created_at: s.created_at,
+        position_boost: !!s.position_boost,
         milestone_earned_count: earned.length,
         milestone_total: milestoneRewards?.length || 0,
         milestone_next: nextTier
@@ -118,6 +135,8 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
       };
     })
     .sort((a, b) => {
+      if (b.position_boost !== a.position_boost)
+        return b.position_boost ? 1 : -1;
       if (b.referral_count !== a.referral_count)
         return b.referral_count - a.referral_count;
       return (

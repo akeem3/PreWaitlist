@@ -239,6 +239,38 @@ export default function OnboardingStep5() {
                     </svg>
                     Referral links
                   </li>
+                  <li className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <svg
+                      className="mt-0.5 h-3 w-3 shrink-0 text-accent"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                    >
+                      <path
+                        d="M3 8l3.5 3.5L13 5"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    Moved-up email
+                  </li>
+                  <li className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <svg
+                      className="mt-0.5 h-3 w-3 shrink-0 text-accent"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                    >
+                      <path
+                        d="M3 8l3.5 3.5L13 5"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    Milestone emails
+                  </li>
                 </ul>
               </div>
               <div className="rounded-lg border border-border bg-muted/50 p-3">

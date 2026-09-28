@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { checkAndFulfillMilestones } from "@/lib/milestones";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendEmail } from "@/lib/email";
+import { sendEmail, isUnsubscribed } from "@/lib/email";
+import { isEmailBounced } from "@/lib/bounces";
 import { createMockSupabaseClient } from "../helpers/supabase-mock";
 
 vi.mock("@/lib/supabase/admin", () => ({
@@ -11,6 +12,11 @@ vi.mock("@/lib/supabase/admin", () => ({
 vi.mock("@/lib/email", () => ({
   sendEmail: vi.fn().mockResolvedValue({ ok: true }),
   buildEmailFooter: vi.fn(() => "<footer>"),
+  isUnsubscribed: vi.fn().mockResolvedValue(false),
+}));
+
+vi.mock("@/lib/bounces", () => ({
+  isEmailBounced: vi.fn().mockResolvedValue(false),
 }));
 
 const SKIP_LABEL = "Skip the line!";
@@ -161,5 +167,138 @@ describe("checkAndFulfillMilestones", () => {
     expect(payloads[0]).toMatchObject({ position_boost: true });
     expect(payloads[0].milestones_earned).toHaveLength(2);
     expect(payloads[0].milestones_notified).toEqual([3, 10]);
+  });
+
+  it("does not send any email when the persist step fails", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mock.__queue.push(
+      {
+        data: [{ tier_referrals: 3, reward_label: EARLY_ACCESS_LABEL }],
+        error: null,
+      },
+      { data: subscriberRow(), error: null },
+      { data: baseWaitlist, error: null },
+      { data: null, error: { message: "column position_boost does not exist" } }
+    );
+
+    await checkAndFulfillMilestones("sub-1", "wl-1", 3);
+
+    expect(vi.mocked(sendEmail)).not.toHaveBeenCalled();
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("failed to persist milestones"),
+      "column position_boost does not exist"
+    );
+    errSpy.mockRestore();
+  });
+
+  it("logs (not throws) when sendEmail reports failure", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(sendEmail).mockResolvedValueOnce({
+      ok: false,
+      error: "rate limited",
+    });
+    mock.__queue.push(
+      {
+        data: [{ tier_referrals: 3, reward_label: EARLY_ACCESS_LABEL }],
+        error: null,
+      },
+      { data: subscriberRow(), error: null },
+      { data: baseWaitlist, error: null },
+      { data: null, error: null }
+    );
+
+    await expect(
+      checkAndFulfillMilestones("sub-1", "wl-1", 3)
+    ).resolves.not.toThrow();
+
+    expect(updatePayloads()).toHaveLength(1);
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Milestone email failed"),
+      "rate limited"
+    );
+    errSpy.mockRestore();
+  });
+
+  it("persists milestones but skips the email for unsubscribed subscribers", async () => {
+    vi.mocked(isUnsubscribed).mockResolvedValueOnce(true);
+    mock.__queue.push(
+      {
+        data: [{ tier_referrals: 3, reward_label: EARLY_ACCESS_LABEL }],
+        error: null,
+      },
+      { data: subscriberRow(), error: null },
+      { data: baseWaitlist, error: null },
+      { data: null, error: null }
+    );
+
+    await checkAndFulfillMilestones("sub-1", "wl-1", 3);
+
+    const payloads = updatePayloads();
+    expect(payloads).toHaveLength(1);
+    expect(payloads[0].milestones_notified).toEqual([3]);
+    expect(vi.mocked(sendEmail)).not.toHaveBeenCalled();
+  });
+
+  it("persists milestones but skips the email for bounced addresses", async () => {
+    vi.mocked(isEmailBounced).mockResolvedValueOnce(true);
+    mock.__queue.push(
+      {
+        data: [{ tier_referrals: 3, reward_label: EARLY_ACCESS_LABEL }],
+        error: null,
+      },
+      { data: subscriberRow(), error: null },
+      { data: baseWaitlist, error: null },
+      { data: null, error: null }
+    );
+
+    await checkAndFulfillMilestones("sub-1", "wl-1", 3);
+
+    expect(updatePayloads()).toHaveLength(1);
+    expect(vi.mocked(sendEmail)).not.toHaveBeenCalled();
+  });
+
+  it("passes an idempotency key and a share link to sendEmail", async () => {
+    mock.__queue.push(
+      {
+        data: [{ tier_referrals: 3, reward_label: EARLY_ACCESS_LABEL }],
+        error: null,
+      },
+      {
+        data: subscriberRow({ referral_code: "ref12345" }),
+        error: null,
+      },
+      { data: { ...baseWaitlist, subdomain: "acme" }, error: null },
+      { data: null, error: null }
+    );
+
+    await checkAndFulfillMilestones("sub-1", "wl-1", 3);
+
+    expect(vi.mocked(sendEmail)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(sendEmail)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        idempotencyKey: "milestone/sub-1/3",
+        html: expect.stringContaining(
+          "https://acme.prewaitlist.com?ref=ref12345"
+        ),
+      })
+    );
+  });
+
+  it("omits the share button when no referral code exists", async () => {
+    mock.__queue.push(
+      {
+        data: [{ tier_referrals: 3, reward_label: EARLY_ACCESS_LABEL }],
+        error: null,
+      },
+      { data: subscriberRow(), error: null },
+      { data: { ...baseWaitlist, subdomain: "acme" }, error: null },
+      { data: null, error: null }
+    );
+
+    await checkAndFulfillMilestones("sub-1", "wl-1", 3);
+
+    expect(vi.mocked(sendEmail)).toHaveBeenCalledTimes(1);
+    const html = vi.mocked(sendEmail).mock.calls[0][0]?.html;
+    expect(html).not.toContain("Share &amp; Move Up");
   });
 });

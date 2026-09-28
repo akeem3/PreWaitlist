@@ -79,6 +79,54 @@ describe("POST /api/waitlist (multi-waitlist)", () => {
     expect(body.id).toBe("wl-pro-new");
   });
 
+  it("returns 400 for invalid milestone threshold before creating waitlist", async () => {
+    // Auth (default user), profile fetch — no waitlist insert reached
+    mockSupabase.__queue.push({
+      data: { id: "user-1", tier: "free" },
+      error: null,
+    });
+
+    const callsBefore = mockSupabase.__calls.length;
+    const response = await POST(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "POST",
+        body: {
+          subdomain: "bad-threshold",
+          milestone_rewards: [{ threshold: 0, label: "Early access" }],
+        },
+      })
+    );
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("Threshold must be a whole number greater than 0");
+    const newCalls = mockSupabase.__calls.slice(callsBefore);
+    const inserts = newCalls.filter((c) => c.method === "insert");
+    expect(inserts).toHaveLength(0);
+  });
+
+  it("returns 400 for duplicate milestone thresholds before creating waitlist", async () => {
+    mockSupabase.__queue.push({
+      data: { id: "user-1", tier: "free" },
+      error: null,
+    });
+
+    const response = await POST(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "POST",
+        body: {
+          subdomain: "dup-threshold",
+          milestone_rewards: [
+            { threshold: 5, label: "Early access" },
+            { threshold: 5, label: "VIP badge" },
+          ],
+        },
+      })
+    );
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("Each tier needs a unique referral count");
+  });
+
   it("returns 402 when free tier user already has one waitlist", async () => {
     // Auth (default user), profile (free tier), count (1 waitlist exists)
     mockSupabase.__queue.push({
@@ -221,6 +269,68 @@ describe("PATCH /api/waitlist (multi-waitlist)", () => {
             { threshold: 5, label: "Early access" },
             { threshold: 10, label: "VIP badge" },
           ],
+        },
+      })
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+  });
+
+  it("returns 400 for invalid milestone rewards BEFORE deleting existing rows", async () => {
+    // Auth (default user), ownership check (found) — validation stops here
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+
+    const callsBefore = mockSupabase.__calls.length;
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: {
+          waitlist_id: "wl-1",
+          milestone_rewards: [{ threshold: 1.5, label: "Early access" }],
+        },
+      })
+    );
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("Threshold must be a whole number greater than 0");
+    // The wipe-on-bad-input bug: delete must never be reached
+    const newCalls = mockSupabase.__calls.slice(callsBefore);
+    const deletes = newCalls.filter((c) => c.method === "delete");
+    expect(deletes).toHaveLength(0);
+  });
+
+  it("returns 400 for duplicate milestone thresholds BEFORE deleting existing rows", async () => {
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: {
+          waitlist_id: "wl-1",
+          milestone_rewards: [
+            { threshold: 3, label: "Early access" },
+            { threshold: 3, label: "VIP badge" },
+          ],
+        },
+      })
+    );
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("Each tier needs a unique referral count");
+  });
+
+  it("accepts empty milestone_rewards array (toggle off)", async () => {
+    // Auth (default user), ownership check (found), update, delete (clears), no insert
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+    mockSupabase.__queue.push({ data: null, error: null });
+
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: {
+          waitlist_id: "wl-1",
+          milestone_rewards: [],
         },
       })
     );

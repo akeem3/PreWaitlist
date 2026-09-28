@@ -22,6 +22,7 @@ export default async function SubscriberDetailPage({ params }: Props) {
     .select(
       `
       id, email, position, referral_code, qual_answers, created_at,
+      milestones_earned,
       waitlists!inner (
         id, founder_id, subdomain, headline
       )
@@ -45,6 +46,9 @@ export default async function SubscriberDetailPage({ params }: Props) {
     .order("created_at", { ascending: true });
 
   const referralCount = referrals?.length || 0;
+
+  const milestonesEarned = subscriber.milestones_earned as
+    { threshold: number; label: string; earned_at: string }[] | null;
 
   const qualAnswers = subscriber.qual_answers as Record<string, string> | null;
 
@@ -126,6 +130,27 @@ export default async function SubscriberDetailPage({ params }: Props) {
                 >
                   <span>{r.email}</span>
                   <span>{r.created_at.split("T")[0]}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {milestonesEarned && milestonesEarned.length > 0 && (
+          <div className="mb-6 rounded-[var(--card-radius)] border border-border bg-card p-5">
+            <h3 className="mb-3 text-body-sm font-medium text-foreground">
+              Milestones earned
+            </h3>
+            <ul className="space-y-2">
+              {milestonesEarned.map((m) => (
+                <li
+                  key={m.threshold}
+                  className="flex items-center justify-between text-body-sm text-muted-foreground"
+                >
+                  <span>
+                    {m.threshold} → {m.label}
+                  </span>
+                  <span>{m.earned_at.split("T")[0]}</span>
                 </li>
               ))}
             </ul>
