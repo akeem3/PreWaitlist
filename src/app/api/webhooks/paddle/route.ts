@@ -24,7 +24,10 @@ async function archiveSurplusWaitlists(
     .from("waitlists")
     .select("id, is_archived, created_at")
     .eq("founder_id", userId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    // Tiebreaker: identical created_at must still pick a deterministic
+    // "newest" across Paddle retries.
+    .order("id", { ascending: false });
 
   if (error) {
     throw new Error(`Surplus lookup failed: ${error.message}`);
@@ -208,9 +211,11 @@ export async function POST(req: NextRequest) {
 
       if (data.status === "canceled") {
         update.tier = "free";
-        update.paddle_subscription_id = null;
-        update.paddle_customer_id = null;
         update.paddle_next_billed_at = null;
+        // NOTE: paddle_subscription_id / paddle_customer_id are deliberately
+        // preserved (not nulled) so invoice history stays visible post-cancel
+        // (Paddle presents canceled subs the same way). Gating keys off
+        // tier + paddle_subscription_status, never id presence.
       }
 
       const { error } = await admin
@@ -248,8 +253,7 @@ export async function POST(req: NextRequest) {
         .from("founder_profiles")
         .update({
           tier: "free",
-          paddle_subscription_id: null,
-          paddle_customer_id: null,
+          // Ids preserved for post-cancel invoice history (see note above).
           paddle_subscription_status: "canceled",
           scheduled_change: null,
           paddle_next_billed_at: null,

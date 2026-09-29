@@ -30,10 +30,28 @@ describe("GET /api/cron/email-retry", () => {
     });
   });
 
-  it("rejects requests without the cron secret", async () => {
+  it("rejects requests with a wrong cron secret", async () => {
     const res = await GET(cronRequest("wrong"));
     expect(res.status).toBe(401);
     expect(mockDrain).not.toHaveBeenCalled();
+  });
+
+  it("rejects requests with no authorization header", async () => {
+    const res = await GET(cronRequest(null));
+    expect(res.status).toBe(401);
+    expect(mockDrain).not.toHaveBeenCalled();
+  });
+
+  it("returns 500 when CRON_SECRET is not configured", async () => {
+    const original = process.env.CRON_SECRET;
+    process.env.CRON_SECRET = "";
+    try {
+      const res = await GET(cronRequest("test-cron-secret"));
+      expect(res.status).toBe(500);
+      expect(mockDrain).not.toHaveBeenCalled();
+    } finally {
+      process.env.CRON_SECRET = original;
+    }
   });
 
   it("drains the queue and returns counts", async () => {

@@ -18,7 +18,9 @@ export function QuotaWarningBanner() {
       .then((data) => {
         if (!cancelled && data?.quotaHit) setVisible(true);
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.error("[quota-banner] email-health fetch failed:", err);
+      });
     return () => {
       cancelled = true;
     };

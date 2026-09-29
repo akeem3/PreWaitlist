@@ -24,16 +24,10 @@ describe("QuotaWarningBanner", () => {
     render(<QuotaWarningBanner />);
 
     await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
-    expect(
-      screen.getByText(
-        /Some emails couldn't be sent because the email quota was exceeded\./
-      )
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        /Daily-quota emails retry automatically after midnight UTC\./
-      )
-    ).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Some emails couldn't be sent because the email quota was exceeded. " +
+        "Daily-quota emails retry automatically after midnight UTC."
+    );
   });
 
   it("renders nothing when there is no quota hit", async () => {

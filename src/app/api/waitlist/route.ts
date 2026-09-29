@@ -170,11 +170,15 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Tier enforcement: free = max 1 waitlist, Pro = unlimited
+  // Tier enforcement: free = max 1 ACTIVE waitlist, Pro = unlimited.
+  // Archived lists don't consume the free slot (surplus auto-archive on
+  // downgrade must not 402-deadlock a founder with 0 active lists).
+  // Requires the is_archived backfill (revenue-phase2-is-archived-backfill.sql).
   const { count } = await supabase
     .from("waitlists")
     .select("id", { count: "exact", head: true })
-    .eq("founder_id", user.id);
+    .eq("founder_id", user.id)
+    .eq("is_archived", false);
 
   if (tier === "free" && (count ?? 0) >= 1) {
     return NextResponse.json(
@@ -318,10 +322,19 @@ export async function PATCH(request: NextRequest) {
     // (skip the extra count query for pro — its cap is strict).
     let existingQuestionCount = 0;
     if (founderTier !== "pro") {
-      const { count } = await supabase
+      const { count, error: countError } = await supabase
         .from("qualification_questions")
         .select("id", { count: "exact", head: true })
         .eq("waitlist_id", waitlist_id);
+      // Honest 500, not a misleading 400: a failed count query must not
+      // masquerade as "too many questions" (count ?? 0 would block even
+      // keep/trim saves for downgraded founders).
+      if (countError) {
+        return NextResponse.json(
+          { error: "Could not verify question limit. Please try again." },
+          { status: 500 }
+        );
+      }
       existingQuestionCount = count ?? 0;
     }
     const capError = checkQuestionCap(

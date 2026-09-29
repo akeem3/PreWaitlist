@@ -37,7 +37,7 @@ export async function GET() {
       subscriptionId: [profile.paddle_subscription_id],
       status: ["paid", "completed"],
       perPage: 20,
-      orderBy: "billedAt[DESC]",
+      orderBy: "billed_at[DESC]",
     });
 
     const invoices: InvoiceSummary[] = [];

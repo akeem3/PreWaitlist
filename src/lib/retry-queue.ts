@@ -83,23 +83,30 @@ async function deadLetter(
     );
   }
 
-  const event: Record<string, unknown> = {
-    waitlist_id: row.waitlist_id,
-    event_type: "failed",
-    event_data: {
-      type: row.email_type,
-      error,
-      error_name: errorName ?? null,
-      retried: row.attempts > 0,
-    },
-    created_at: new Date().toISOString(),
-  };
-  if (row.subscriber_id) {
-    event.subscriber_id = row.subscriber_id;
-  }
-  const { error: logError } = await supabase.from("email_events").insert(event);
-  if (logError) {
-    console.error("[retry-queue] dead-letter log failed:", logError.message);
+  // email_events.subscriber_id is NOT NULL — a queue row without one cannot
+  // be logged there. Skip the insert (loudly) instead of failing silently
+  // after the queue row is already deleted.
+  if (!row.subscriber_id) {
+    console.error(
+      "[retry-queue] dead-letter skipped: queue row has no subscriber_id",
+      { queueRowId: row.id, toEmail: row.to_email }
+    );
+  } else {
+    const { error: logError } = await supabase.from("email_events").insert({
+      subscriber_id: row.subscriber_id,
+      waitlist_id: row.waitlist_id,
+      event_type: "failed",
+      event_data: {
+        type: row.email_type,
+        error,
+        error_name: errorName ?? null,
+        retried: row.attempts > 0,
+      },
+      created_at: new Date().toISOString(),
+    });
+    if (logError) {
+      console.error("[retry-queue] dead-letter log failed:", logError.message);
+    }
   }
 
   // Quota dead-letters warn the founder (once/day via the warned flag).

@@ -101,7 +101,13 @@ describe("GET /api/billing/invoices", () => {
       currency: "USD",
     });
     expect(mockList).toHaveBeenCalledWith(
-      expect.objectContaining({ subscriptionId: ["sub-1"], perPage: 20 })
+      expect.objectContaining({
+        subscriptionId: ["sub-1"],
+        perPage: 20,
+        // Contract: Paddle validates order_by against snake_case field names
+        // (billed_at/created_at/id/updated_at). billedAt[DESC] 400s in prod.
+        orderBy: "billed_at[DESC]",
+      })
     );
   });
 

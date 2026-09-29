@@ -83,10 +83,14 @@ export async function GET() {
     .limit(1)
     .maybeSingle();
 
+  // Active lists only — archived (surplus auto-archive on downgrade) must not
+  // inflate the over-cap banner. Requires the is_archived backfill
+  // (revenue-phase2-is-archived-backfill.sql) so legacy NULL rows count.
   const { count: waitlistCount } = await supabase
     .from("waitlists")
     .select("id", { count: "exact", head: true })
-    .eq("founder_id", user.id);
+    .eq("founder_id", user.id)
+    .eq("is_archived", false);
 
   const providers =
     user.identities?.map((i) => i.provider) ??

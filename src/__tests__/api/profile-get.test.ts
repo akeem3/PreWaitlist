@@ -91,4 +91,21 @@ describe("GET /api/profile — Phase 2 billing fields", () => {
       waitlistCount: 1,
     });
   });
+
+  it("excludes archived waitlists from the count", async () => {
+    mockSupabase.__queue.push({
+      data: { tier: "free", created_at: null },
+      error: null,
+    });
+    mockSupabase.__queue.push({ data: null, error: null });
+    mockSupabase.__queue.push({ data: null, error: null, count: 1 });
+
+    const res = await GET();
+    expect(res.status).toBe(200);
+    // Active-only count: archived surplus must not inflate the banner
+    expect(mockSupabase.__calls).toContainEqual({
+      method: "eq",
+      args: ["is_archived", false],
+    });
+  });
 });

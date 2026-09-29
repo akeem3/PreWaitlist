@@ -8,7 +8,7 @@ import { BillingDetails } from "../../../../../components/billing/billing-detail
 import { CancellationFlow } from "../../../../../components/billing/cancellation-flow";
 import { DomainAuthSection } from "../../../../../components/billing/domain-auth-section";
 import { Breadcrumb } from "../../../../../components/dashboard/breadcrumb";
-import { useDashboardTier, useUpgradeModal, useRefreshTier } from "../../shell";
+import { useDashboardTier, useUpgradeModal } from "../../shell";
 
 interface ProfileData {
   tier?: string;
@@ -29,7 +29,6 @@ export default function BillingClient() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const contextTier = useDashboardTier();
   const triggerUpgrade = useUpgradeModal();
-  const refreshTier = useRefreshTier();
   const billingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const contextTierRef = useRef(contextTier);
   useEffect(() => {
@@ -179,25 +178,6 @@ export default function BillingClient() {
     () => openPortal("card"),
     [openPortal]
   );
-
-  // 2.3: return from the Paddle portal with ?canceled=1 → strip param and
-  // re-resolve tier so the card repaints (webhook may still be in flight;
-  // the mount-sync poll covers the race).
-  useEffect(() => {
-    if (!refreshTier) return;
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("canceled") !== "1") return;
-      params.delete("canceled");
-      const qs = params.toString();
-      window.history.replaceState(
-        {},
-        "",
-        window.location.pathname + (qs ? `?${qs}` : "")
-      );
-      void refreshTier();
-    } catch {}
-  }, [refreshTier]);
 
   return (
     <div className="mx-auto max-w-4xl px-8 py-12">

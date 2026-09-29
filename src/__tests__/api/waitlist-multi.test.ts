@@ -145,6 +145,30 @@ describe("POST /api/waitlist (multi-waitlist)", () => {
     const body = await response.json();
     expect(body.error).toContain("Pro");
   });
+
+  it("excludes archived waitlists from the free-slot count", async () => {
+    mockSupabase.__calls.length = 0;
+    // Auth (default user), profile (free tier), count (0 active — archived
+    // lists must not consume the slot), insert
+    mockSupabase.__queue.push({
+      data: { id: "user-1", tier: "free" },
+      error: null,
+    });
+    mockSupabase.__queue.push({ count: 0, data: null, error: null });
+    mockSupabase.__queue.push({ data: { id: "wl-fresh" }, error: null });
+
+    const response = await POST(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "POST",
+        body: { subdomain: "fresh-start" },
+      })
+    );
+    expect(response.status).toBe(201);
+    expect(mockSupabase.__calls).toContainEqual({
+      method: "eq",
+      args: ["is_archived", false],
+    });
+  });
 });
 
 describe("GET /api/waitlist (multi-waitlist)", () => {

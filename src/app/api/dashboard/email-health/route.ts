@@ -39,7 +39,7 @@ export async function GET() {
   }
 
   const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-  const { data: rows } = await supabase
+  const { data: rows, error: eventsError } = await supabase
     .from("email_events")
     .select("event_data, created_at")
     .in("waitlist_id", ids)
@@ -47,6 +47,14 @@ export async function GET() {
     .gte("created_at", since)
     .order("created_at", { ascending: false })
     .limit(100);
+
+  if (eventsError) {
+    console.error("[email-health] events query failed:", eventsError.message);
+    return NextResponse.json(
+      { error: "Failed to load email health" },
+      { status: 500 }
+    );
+  }
 
   const quota = (
     (rows ?? []) as {

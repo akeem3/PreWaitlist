@@ -121,9 +121,10 @@ describe("POST /api/webhooks/paddle — Phase 2 billing correctness", () => {
     const payloads = updatePayloads();
     expect(payloads[0]).toMatchObject({
       tier: "free",
-      paddle_subscription_id: null,
-      paddle_customer_id: null,
     });
+    // Ids preserved (not nulled) so invoice history stays visible post-cancel
+    expect(payloads[0]).not.toHaveProperty("paddle_subscription_id");
+    expect(payloads[0]).not.toHaveProperty("paddle_customer_id");
     const inCalls = mockAdminSupabase.__calls.filter((c) => c.method === "in");
     expect(inCalls).toHaveLength(1);
     expect(inCalls[0].args[0]).toBe("id");
