@@ -1,0 +1,28 @@
+
+> prewaitlist@0.1.0 start C:\Users\User\Work Projects\Product US\wait-app
+> next start
+
+▲ Next.js 16.2.12
+- Local:         http://localhost:3000
+- Network:       http://172.29.160.1:3000
+✓ Ready in 264ms
+AuthApiError: Invalid Refresh Token: Refresh Token Not Found
+    at iu (C:\Users\User\Work Projects\Product US\wait-app\.next\server\edge\chunks\[root-of-the-server]__111zexj._.js:19:47640)
+    at async ih (C:\Users\User\Work Projects\Product US\wait-app\.next\server\edge\chunks\[root-of-the-server]__111zexj._.js:19:48567)
+    at async ic (C:\Users\User\Work Projects\Product US\wait-app\.next\server\edge\chunks\[root-of-the-server]__111zexj._.js:19:48024)
+    at async r (C:\Users\User\Work Projects\Product US\wait-app\.next\server\edge\chunks\[root-of-the-server]__111zexj._.js:32:23715)
+    at async (C:\Users\User\Work Projects\Product US\wait-app\.next\server\edge\chunks\[root-of-the-server]__111zexj._.js:32:23978) {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_not_found'
+}
+AuthApiError: Invalid Refresh Token: Refresh Token Not Found
+    at iu (C:\Users\User\Work Projects\Product US\wait-app\.next\server\edge\chunks\[root-of-the-server]__111zexj._.js:19:47640)
+    at async ih (C:\Users\User\Work Projects\Product US\wait-app\.next\server\edge\chunks\[root-of-the-server]__111zexj._.js:19:48567)
+    at async ic (C:\Users\User\Work Projects\Product US\wait-app\.next\server\edge\chunks\[root-of-the-server]__111zexj._.js:19:48024)
+    at async r (C:\Users\User\Work Projects\Product US\wait-app\.next\server\edge\chunks\[root-of-the-server]__111zexj._.js:32:23715)
+    at async (C:\Users\User\Work Projects\Product US\wait-app\.next\server\edge\chunks\[root-of-the-server]__111zexj._.js:32:23978) {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_not_found'
+}
