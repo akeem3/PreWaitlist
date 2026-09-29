@@ -137,3 +137,90 @@ describe("server-side question cap (14.0 AC4)", () => {
     expect(body.error).toContain("Too many questions");
   });
 });
+
+describe("grandfathered question saves (2.5 rule A)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSupabase.__queue.length = 0;
+    mockSupabase.__calls.length = 0;
+  });
+
+  function existingRows(count: number) {
+    return Array.from({ length: count }, (_, i) => ({ id: `q-${i + 1}` }));
+  }
+
+  function pushGrandfatheredSave(existingCount: number, newCount: number) {
+    // ownership lookup (free tier)
+    mockSupabase.__queue.push({
+      data: { id: "wl-1", founder_profiles: [{ tier: "free" }] },
+      error: null,
+    });
+    // grandfather count query
+    mockSupabase.__queue.push({
+      data: null,
+      error: null,
+      count: existingCount,
+    });
+    // waitlist row update
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+    // existing-question load (new questions carry no ids → all insert)
+    mockSupabase.__queue.push({
+      data: existingRows(existingCount),
+      error: null,
+    });
+    // question insert
+    mockSupabase.__queue.push({ data: [], error: null });
+    // orphan delete (existing ids minus kept ids)
+    if (existingCount > newCount) {
+      mockSupabase.__queue.push({ data: [], error: null });
+    }
+  }
+
+  it("free PATCH keeping 4 grandfathered questions succeeds", async () => {
+    pushGrandfatheredSave(4, 4);
+
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: { waitlist_id: "wl-1", questions: freeTextQuestions(4) },
+      })
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+  });
+
+  it("free PATCH trimming 4 questions down to 2 succeeds", async () => {
+    pushGrandfatheredSave(4, 2);
+
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: { waitlist_id: "wl-1", questions: freeTextQuestions(2) },
+      })
+    );
+
+    expect(response.status).toBe(200);
+  });
+
+  it("free PATCH adding a 3rd question past the grandfathered size is rejected", async () => {
+    // existing 2, new 3: past the free cap AND past the grandfathered size
+    mockSupabase.__queue.push({
+      data: { id: "wl-1", founder_profiles: [{ tier: "free" }] },
+      error: null,
+    });
+    mockSupabase.__queue.push({ data: null, error: null, count: 2 });
+
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: { waitlist_id: "wl-1", questions: freeTextQuestions(3) },
+      })
+    );
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toContain("Too many questions");
+  });
+});

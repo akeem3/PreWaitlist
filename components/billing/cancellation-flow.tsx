@@ -4,24 +4,20 @@ import { useState } from "react";
 
 interface CancellationFlowProps {
   isPro: boolean;
+  onOpenPortal?: () => void;
+  portalPending?: boolean;
+  portalError?: string | null;
 }
 
-export function CancellationFlow({ isPro }: CancellationFlowProps) {
+export function CancellationFlow({
+  isPro,
+  onOpenPortal,
+  portalPending,
+  portalError,
+}: CancellationFlowProps) {
   const [confirming, setConfirming] = useState(false);
 
   if (!isPro) return null;
-
-  async function handleConfirmCancel() {
-    try {
-      const res = await fetch("/api/billing/portal", { method: "POST" });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch {
-      // Silently fail — user can retry
-    }
-  }
 
   return (
     <div className="rounded-xl border border-border bg-card p-6">
@@ -51,8 +47,9 @@ export function CancellationFlow({ isPro }: CancellationFlowProps) {
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={handleConfirmCancel}
-              className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive/90"
+              onClick={onOpenPortal}
+              disabled={portalPending}
+              className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive/90 disabled:opacity-50"
             >
               Confirm cancellation
             </button>
@@ -64,6 +61,11 @@ export function CancellationFlow({ isPro }: CancellationFlowProps) {
               Keep subscription
             </button>
           </div>
+          {portalError && (
+            <p role="alert" className="text-body-sm text-destructive">
+              {portalError}
+            </p>
+          )}
         </div>
       )}
     </div>

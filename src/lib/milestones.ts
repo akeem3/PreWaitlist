@@ -119,6 +119,7 @@ export async function checkAndFulfillMilestones(
     const newNotified: number[] = [...notified];
     const emailsToSend: {
       tier: { tier_referrals: number; reward_label: string };
+      founderTier: string;
       waitlist: {
         product_name: string | null;
         headline: string | null;
@@ -148,7 +149,7 @@ export async function checkAndFulfillMilestones(
         const { data: waitlist, error: waitlistError } = await supabase
           .from("waitlists")
           .select(
-            "product_name, headline, sender_name, sending_domain, business_address, subdomain"
+            "product_name, headline, sender_name, sending_domain, business_address, subdomain, founder_profiles!inner(tier)"
           )
           .eq("id", waitlistId)
           .single();
@@ -160,8 +161,18 @@ export async function checkAndFulfillMilestones(
           );
         }
 
+        // 2.5 rule B: custom sender identity is Pro-only — tier rides along
+        // with the queued email (join comes free on the waitlist select).
+        const founderTier =
+          (
+            waitlist as unknown as {
+              founder_profiles?: { tier: string }[];
+            } | null
+          )?.founder_profiles?.[0]?.tier || "free";
+
         emailsToSend.push({
           tier: { tier_referrals: threshold, reward_label: tier.reward_label },
+          founderTier,
           waitlist: waitlist ?? null,
         });
 
@@ -217,10 +228,12 @@ export async function checkAndFulfillMilestones(
             referralLink
           ),
           stream: "transactional",
-          senderName: email.waitlist?.sender_name,
+          senderName:
+            email.founderTier === "pro" ? email.waitlist?.sender_name : null,
           productName: email.waitlist?.product_name,
           headline: email.waitlist?.headline,
-          sendingDomain: email.waitlist?.sending_domain,
+          sendingDomain:
+            email.founderTier === "pro" ? email.waitlist?.sending_domain : null,
           subscriberId,
           waitlistId,
           idempotencyKey: `milestone/${subscriberId}/${email.tier.tier_referrals}`,

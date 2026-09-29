@@ -10,6 +10,7 @@ import {
 } from "react";
 import { Sidebar } from "../../../components/dashboard/sidebar";
 import { UpgradeModal } from "../../../components/dashboard/upgrade-modal";
+import { QuotaWarningBanner } from "../../../components/dashboard/quota-warning-banner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { STORAGE_KEY } from "../../../components/dashboard/waitlist-switcher";
 
@@ -372,6 +373,7 @@ export default function DashboardShell({
       </button>
 
       <main className="min-h-screen lg:ml-67">
+        <QuotaWarningBanner />
         <DashboardContext.Provider value={contextValue}>
           {children}
         </DashboardContext.Provider>

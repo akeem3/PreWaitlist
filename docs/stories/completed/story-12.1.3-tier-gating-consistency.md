@@ -14,7 +14,7 @@ As a founder, I want locked features to be consistently locked everywhere so tha
 - AC1: The WarmthPanel component shall display a locked overlay for Free tier: greyed-out bars with reduced opacity, a "Pro" badge, and text "Upgrade to Pro to see warmth scores".
 - AC2: The WarmthPanel shall accept a `tier` prop. When `tier === "free"`, render the locked overlay. When `tier === "pro"`, render live data (current behavior).
 - AC3: The Warmth stat card (from Story 12.1.2) shall show a lock icon next to "Warmth" label when `tier === "free"`.
-- AC4: The CSV Export button shall remain hidden for Free tier (current behavior at line 483 of `client.tsx` — already correct).
+- AC4: The CSV Export button shall remain hidden for Free tier (current behavior at line 483 of `client.tsx` — already correct). **AMENDED 2026-09-29 (Phase 2.6):** outdated — CSV export is Free on all tiers. The Export CSV button now lives on the dashboard leaderboard page and is always visible; `GET /api/subscribers/export` has no tier gate.
 - AC5: The sidebar locked items (Warmth, Broadcast) shall show tooltips (covered in Story 12.1.0 AC4).
 - AC6: Lint and build shall pass with zero errors.
 
@@ -135,7 +135,7 @@ In the Warmth stat card (from Story 12.1.2), when `tier === "free"`, show a lock
 
 ### T3: Verify CSV export behavior
 
-Line 483 in `client.tsx`: `{tier === "pro" && ( ... )}` — this already hides the CSV export button for Free tier. Verify it works correctly with no changes needed.
+Line 483 in `client.tsx`: `{tier === "pro" && ( ... )}` — this already hides the CSV export button for Free tier. Verify it works correctly with no changes needed. **AMENDED 2026-09-29 (Phase 2.6):** superseded — the export button moved to the dashboard leaderboard page, is always visible, and CSV export is Free on all tiers.
 
 ### T4: Lint + build
 
@@ -147,6 +147,6 @@ Run `pnpm lint` and `pnpm build`.
 2. Free tier founder: Warmth stat card shows lock icon and "—"
 3. Pro tier founder: WarmthPanel shows live data bars
 4. Pro tier founder: Warmth stat card shows "X Hot, Y Warm"
-5. CSV Export button visible only for Pro tier
+5. ~~CSV Export button visible only for Pro tier~~ **AMENDED 2026-09-29 (Phase 2.6):** CSV export is Free — button always visible on the dashboard leaderboard.
 6. Sidebar locked items show tooltips (from Story 12.1.0)
 7. `pnpm lint` and `pnpm build` pass with zero errors

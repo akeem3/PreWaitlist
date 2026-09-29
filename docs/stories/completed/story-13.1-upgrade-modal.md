@@ -17,7 +17,7 @@ As a free founder, I want to see a context-sensitive upgrade modal when I hit a 
 - AC6: Dismissable via X button, "Maybe later", or backdrop click.
 - AC7: Design system: bg-card, border-border, centered overlay with backdrop blur, max-w-[480px].
 - AC8: After dismissal, same trigger suppressed for 7 days (localStorage cooldown).
-- AC9: Triggered at 7 context points: (1) sidebar Broadcast click, (2) sidebar Warmth click, (3) subscriber approaching 500 cap, (4) 3rd qual question attempt, (5) settings billing CTA, (6) CSV export attempt, (7) dashboard first-subscriber window.
+- AC9: Triggered at 7 context points: (1) sidebar Broadcast click, (2) sidebar Warmth click, (3) subscriber approaching 500 cap, (4) 3rd qual question attempt, (5) settings billing CTA, (6) CSV export attempt, (7) dashboard first-subscriber window. **AMENDED 2026-09-29 (Phase 2.6):** (6) was never wired — CSV export is Free on all tiers, so it has no upgrade trigger (the `csv_export` headline key in `upgrade-modal.tsx` is inert).
 - AC10: Lint and build shall pass with zero errors.
 
 ## Tasks
@@ -43,23 +43,23 @@ T4 (AC10) Lint + build
 - `src/app/dashboard/page.tsx` — wire subscriber approaching cap
 - `src/app/onboarding/4a/page.tsx` — wire 3rd qual question
 - `src/app/dashboard/settings/profile/client.tsx` — wire billing CTA
-- `src/app/dashboard/client.tsx` — wire CSV export + first-subscriber
+- `src/app/dashboard/client.tsx` — wire CSV export + first-subscriber **AMENDED 2026-09-29 (Phase 2.6):** CSV-export trigger never wired — intentionally, CSV export is Free on all tiers.
 
 ## Implementation Status
 
 **Status: DONE**
 
-| AC                             | Status  | Evidence                                                                                                   |
-| ------------------------------ | ------- | ---------------------------------------------------------------------------------------------------------- |
-| AC1: UpgradeModal component    | ✅ Done | `components/dashboard/upgrade-modal.tsx` created                                                           |
-| AC2: Props + usePaddle         | ✅ Done | Props: open, onOpenChange, triggerSource                                                                   |
-| AC3: Context-specific headline | ✅ Done | HEADLINES map with 7 trigger sources                                                                       |
-| AC4: Feature bullets + price   | ✅ Done | 6 features, "$15/month", "Cancel anytime"                                                                  |
-| AC5: Paddle checkout CTA       | ✅ Done | Uses usePaddle + /api/billing/checkout                                                                     |
-| AC6: Dismissable               | ✅ Done | X button, "Maybe later", backdrop click, Escape                                                            |
-| AC7: Design system compliance  | ✅ Done | bg-card, border-border, backdrop-blur, max-w-[480px]                                                       |
-| AC8: 7-day cooldown            | ✅ Done | localStorage + isSuppressed() exported (AMENDED 2026-09-29: `pro-cta-*` deep links exempt — see Dev Notes) |
-| AC9: 7 trigger points          | ✅ Done | Sidebar(2), warmth panel, settings billing wired                                                           |
-| AC10: Lint + build             | ✅ Done | 0 errors, build passes                                                                                     |
+| AC                             | Status                                                            | Evidence                                                                                                   |
+| ------------------------------ | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| AC1: UpgradeModal component    | ✅ Done                                                           | `components/dashboard/upgrade-modal.tsx` created                                                           |
+| AC2: Props + usePaddle         | ✅ Done                                                           | Props: open, onOpenChange, triggerSource                                                                   |
+| AC3: Context-specific headline | ✅ Done                                                           | HEADLINES map with 7 trigger sources                                                                       |
+| AC4: Feature bullets + price   | ✅ Done                                                           | 6 features, "$15/month", "Cancel anytime"                                                                  |
+| AC5: Paddle checkout CTA       | ✅ Done                                                           | Uses usePaddle + /api/billing/checkout                                                                     |
+| AC6: Dismissable               | ✅ Done                                                           | X button, "Maybe later", backdrop click, Escape                                                            |
+| AC7: Design system compliance  | ✅ Done                                                           | bg-card, border-border, backdrop-blur, max-w-[480px]                                                       |
+| AC8: 7-day cooldown            | ✅ Done                                                           | localStorage + isSuppressed() exported (AMENDED 2026-09-29: `pro-cta-*` deep links exempt — see Dev Notes) |
+| AC9: 7 trigger points          | ⚠️ Partial — CSV trigger never built (intentionally: CSV is Free) | Sidebar(2), warmth panel, settings billing wired                                                           |
+| AC10: Lint + build             | ✅ Done                                                           | 0 errors, build passes                                                                                     |
 
 **Gap:** Depends on Story 13.0 (usePaddle hook). Sidebar already has locked state for Broadcast/Warmth — those click handlers need wiring to modal.

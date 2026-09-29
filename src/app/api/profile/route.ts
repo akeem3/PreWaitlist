@@ -27,13 +27,18 @@ export async function GET() {
     bio?: string | null;
     tier?: string | null;
     created_at?: string | null;
+    scheduled_change?: { action: string; effective_at: string } | null;
+    paddle_subscription_status?: string | null;
+    paddle_next_billed_at?: string | null;
   };
 
   let profile: ProfileRow | null = null;
 
   const fullSelect = await supabase
     .from("founder_profiles")
-    .select("display_name, avatar_url, bio, tier, created_at")
+    .select(
+      "display_name, avatar_url, bio, tier, created_at, scheduled_change, paddle_subscription_status, paddle_next_billed_at"
+    )
     .eq("id", user.id)
     .maybeSingle();
 
@@ -78,6 +83,11 @@ export async function GET() {
     .limit(1)
     .maybeSingle();
 
+  const { count: waitlistCount } = await supabase
+    .from("waitlists")
+    .select("id", { count: "exact", head: true })
+    .eq("founder_id", user.id);
+
   const providers =
     user.identities?.map((i) => i.provider) ??
     (typeof user.app_metadata?.provider === "string"
@@ -93,6 +103,10 @@ export async function GET() {
     createdAt: profile?.created_at ?? null,
     businessAddress: waitlist?.business_address || "",
     hasPassword: providers.includes("email"),
+    scheduledChange: profile?.scheduled_change ?? null,
+    subscriptionStatus: profile?.paddle_subscription_status ?? null,
+    nextBilledAt: profile?.paddle_next_billed_at ?? null,
+    waitlistCount: waitlistCount ?? 0,
   });
 }
 

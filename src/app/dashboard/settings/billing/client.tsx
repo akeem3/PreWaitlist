@@ -8,11 +8,15 @@ import { BillingDetails } from "../../../../../components/billing/billing-detail
 import { CancellationFlow } from "../../../../../components/billing/cancellation-flow";
 import { DomainAuthSection } from "../../../../../components/billing/domain-auth-section";
 import { Breadcrumb } from "../../../../../components/dashboard/breadcrumb";
-import { useDashboardTier, useUpgradeModal } from "../../shell";
+import { useDashboardTier, useUpgradeModal, useRefreshTier } from "../../shell";
 
 interface ProfileData {
   tier?: string;
   businessAddress?: string;
+  scheduledChange?: { action: string; effective_at: string } | null;
+  subscriptionStatus?: string | null;
+  nextBilledAt?: string | null;
+  waitlistCount?: number;
 }
 
 function fetchProfile(): Promise<ProfileData | null> {
@@ -25,6 +29,7 @@ export default function BillingClient() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const contextTier = useDashboardTier();
   const triggerUpgrade = useUpgradeModal();
+  const refreshTier = useRefreshTier();
   const billingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const contextTierRef = useRef(contextTier);
   useEffect(() => {
@@ -137,17 +142,62 @@ export default function BillingClient() {
     }
   }, []);
 
-  const handleManageBilling = useCallback(async () => {
+  // 2.3: portal errors surfaced inline per-button (was silent), with pending
+  // state disabling the trigger until the portal URL resolves.
+  const [portalPending, setPortalPending] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
+  const [portalErrorFor, setPortalErrorFor] = useState<
+    "card" | "cancel" | null
+  >(null);
+
+  const openPortal = useCallback(async (source: "card" | "cancel") => {
+    setPortalPending(true);
+    setPortalError(null);
+    setPortalErrorFor(null);
     try {
       const res = await fetch("/api/billing/portal", { method: "POST" });
-      const data = await res.json();
-      if (data.url) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.url) {
         window.location.href = data.url;
+        return;
       }
+      setPortalError(
+        typeof data.error === "string" && data.error
+          ? data.error
+          : "Something went wrong. Please try again."
+      );
+      setPortalErrorFor(source);
     } catch {
-      // Silent
+      setPortalError("Something went wrong. Please try again.");
+      setPortalErrorFor(source);
+    } finally {
+      setPortalPending(false);
     }
   }, []);
+
+  const handleManageBilling = useCallback(
+    () => openPortal("card"),
+    [openPortal]
+  );
+
+  // 2.3: return from the Paddle portal with ?canceled=1 → strip param and
+  // re-resolve tier so the card repaints (webhook may still be in flight;
+  // the mount-sync poll covers the race).
+  useEffect(() => {
+    if (!refreshTier) return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("canceled") !== "1") return;
+      params.delete("canceled");
+      const qs = params.toString();
+      window.history.replaceState(
+        {},
+        "",
+        window.location.pathname + (qs ? `?${qs}` : "")
+      );
+      void refreshTier();
+    } catch {}
+  }, [refreshTier]);
 
   return (
     <div className="mx-auto max-w-4xl px-8 py-12">
@@ -160,10 +210,24 @@ export default function BillingClient() {
       </div>
 
       <div className="space-y-6">
+        {!isPro && (profile?.waitlistCount ?? 0) > 1 && (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
+            <p className="text-body-sm text-destructive">
+              Free includes 1 waitlist — you have {profile?.waitlistCount}.
+              Upgrade to Pro to manage them all, or archive the ones you
+              don&apos;t need.
+            </p>
+          </div>
+        )}
         <SubscriptionCard
           tier={tier}
-          waitlistCount={1}
+          waitlistCount={profile?.waitlistCount ?? 1}
+          scheduledChange={profile?.scheduledChange ?? null}
+          subscriptionStatus={profile?.subscriptionStatus ?? null}
+          nextBilledAt={profile?.nextBilledAt ?? null}
           onManageBilling={isPro ? handleManageBilling : undefined}
+          managePending={portalPending}
+          portalError={portalErrorFor === "card" ? portalError : null}
         />
         <PlanComparison
           currentTier={tier}
@@ -175,7 +239,12 @@ export default function BillingClient() {
         />
         <InvoiceHistory isPro={isPro} />
         {isPro && <DomainAuthSection />}
-        <CancellationFlow isPro={isPro} />
+        <CancellationFlow
+          isPro={isPro}
+          onOpenPortal={() => openPortal("cancel")}
+          portalPending={portalPending}
+          portalError={portalErrorFor === "cancel" ? portalError : null}
+        />
       </div>
     </div>
   );

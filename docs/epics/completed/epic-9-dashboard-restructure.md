@@ -140,7 +140,7 @@ Work through these in dependency order, one at a time. Stories 9.0–9.4 form th
 **Status:** ready
 **Design Refs:** — (no UI — API endpoint + button)
 
-**Story:** As a Pro tier founder, I want to export my subscriber data as a CSV file so that I can analyze it in spreadsheet software.
+**Story:** As a Pro tier founder, I want to export my subscriber data as a CSV file so that I can analyze it in spreadsheet software. **AMENDED 2026-09-29 (Phase 2.6):** CSV export is now Free on all tiers — button always visible on the dashboard leaderboard, export route ungated. The Pro-only ACs below are historical record.
 
 **Acceptance Criteria (EARS):**
 
@@ -153,7 +153,7 @@ Work through these in dependency order, one at a time. Stories 9.0–9.4 form th
 
 **Tasks:** T1 (AC1-AC2) Conditional button render based on tier · T2 (AC3-AC4) CSV generation + download · T3 (AC5) API route with tier check · T4 (AC6) Lint + build
 
-**Out of scope:** CSV export for Free tier (upsell opportunity), custom column selection, filtered export (Sprint 2 exports all).
+**Out of scope:** ~~CSV export for Free tier (upsell opportunity)~~ **(shipped — Free on all tiers, confirmed Phase 2.6)**, custom column selection, filtered export (Sprint 2 exports all).
 
 **Dev Notes:**
 

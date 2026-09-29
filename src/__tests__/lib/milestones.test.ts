@@ -301,4 +301,61 @@ describe("checkAndFulfillMilestones", () => {
     const html = vi.mocked(sendEmail).mock.calls[0][0]?.html;
     expect(html).not.toContain("Share &amp; Move Up");
   });
+
+  it("passes custom sender identity through on Pro (2.5 rule B)", async () => {
+    mock.__queue.push(
+      {
+        data: [{ tier_referrals: 3, reward_label: EARLY_ACCESS_LABEL }],
+        error: null,
+      },
+      { data: subscriberRow(), error: null },
+      {
+        data: {
+          ...baseWaitlist,
+          sender_name: "Ada",
+          sending_domain: "ada.com",
+          founder_profiles: [{ tier: "pro" }],
+        },
+        error: null,
+      },
+      { data: null, error: null }
+    );
+
+    await checkAndFulfillMilestones("sub-1", "wl-1", 3);
+
+    expect(vi.mocked(sendEmail)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(sendEmail)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        senderName: "Ada",
+        sendingDomain: "ada.com",
+      })
+    );
+  });
+
+  it("falls back to the default sender on Free even with custom identity configured (2.5 rule B)", async () => {
+    mock.__queue.push(
+      {
+        data: [{ tier_referrals: 3, reward_label: EARLY_ACCESS_LABEL }],
+        error: null,
+      },
+      { data: subscriberRow(), error: null },
+      {
+        data: {
+          ...baseWaitlist,
+          sender_name: "Ada",
+          sending_domain: "ada.com",
+          founder_profiles: [{ tier: "free" }],
+        },
+        error: null,
+      },
+      { data: null, error: null }
+    );
+
+    await checkAndFulfillMilestones("sub-1", "wl-1", 3);
+
+    expect(vi.mocked(sendEmail)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(sendEmail)).toHaveBeenCalledWith(
+      expect.objectContaining({ senderName: null, sendingDomain: null })
+    );
+  });
 });

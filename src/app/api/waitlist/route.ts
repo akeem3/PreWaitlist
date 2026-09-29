@@ -65,13 +65,20 @@ function normalizeQuestions(
 
 /**
  * 14.0 AC4: reject questions.length above tier cap with 400.
+ * 2.5 rule A (founder decision 2026-09-29): free-tier saves are grandfathered
+ * against the waitlist's EXISTING question count — a downgraded founder may
+ * keep (and trim) what they have; only additions past BOTH the free cap and
+ * the grandfathered size are rejected. Pro keeps its strict cap.
  */
-function checkQuestionCap(count: number, tier: string): string | null {
+function checkQuestionCap(
+  count: number,
+  tier: string,
+  existingCount = 0
+): string | null {
   const limits = getTierLimits((tier === "pro" ? "pro" : "free") as Tier);
-  if (count > limits.maxQuestions) {
-    return `Too many questions. Free plan allows ${limits.maxQuestions} questions; upgrade to Pro for up to ${getTierLimits("pro").maxQuestions}.`;
-  }
-  return null;
+  if (count <= limits.maxQuestions) return null;
+  if (tier !== "pro" && count <= existingCount) return null;
+  return `Too many questions. Free plan allows ${limits.maxQuestions} questions; upgrade to Pro for up to ${getTierLimits("pro").maxQuestions}.`;
 }
 
 /**
@@ -307,7 +314,21 @@ export async function PATCH(request: NextRequest) {
   // 14.0 AC4-AC5: server-side question cap + type/options validation (PATCH)
   let normalizedQuestions: NormalizedQuestion[] | null = null;
   if (Array.isArray(questions)) {
-    const capError = checkQuestionCap(questions.length, founderTier);
+    // 2.5 rule A: grandfather free saves against the existing question count
+    // (skip the extra count query for pro — its cap is strict).
+    let existingQuestionCount = 0;
+    if (founderTier !== "pro") {
+      const { count } = await supabase
+        .from("qualification_questions")
+        .select("id", { count: "exact", head: true })
+        .eq("waitlist_id", waitlist_id);
+      existingQuestionCount = count ?? 0;
+    }
+    const capError = checkQuestionCap(
+      questions.length,
+      founderTier,
+      existingQuestionCount
+    );
     if (capError) {
       return NextResponse.json({ error: capError }, { status: 400 });
     }

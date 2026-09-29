@@ -18,7 +18,7 @@ export async function POST() {
     .from("founder_profiles")
     .select("paddle_customer_id, paddle_subscription_id")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile?.paddle_customer_id || !profile?.paddle_subscription_id) {
     return NextResponse.json(

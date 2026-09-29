@@ -967,7 +967,7 @@ On click: icon changes to checkmark for 2s, then reverts.
 
 ---
 
-## S9 — Upgrade Modal (7 Triggers)
+## S9 — Upgrade Modal (6 Triggers)
 
 **Story:** 13.1
 **Component:** `components/dashboard/upgrade-modal.tsx`
@@ -987,7 +987,6 @@ On click: icon changes to checkmark for 2s, then reverts.
 │  ✓  Broadcast emails to your list                    │
 │  ✓  Warmth-segmented targeting                       │
 │  ✓  Email customisation                              │
-│  ✓  CSV export                                       │
 │  ✓  Custom sender domain                             │
 │  ✓  5 qualification questions                        │
 │                                                      │
@@ -1010,9 +1009,8 @@ Each trigger shows a **different headline** but the same feature list and CTA.
 | 2   | Qual question cap hit (2)    | "Upgrade for more qualification questions" | User tries to add 3rd question in onboarding Step 4a |
 | 3   | Warmth panel clicked         | "Unlock warmth insights"                   | Click on warmth panel (Free tier)                    |
 | 4   | Broadcast attempted          | "Upgrade to send broadcasts"               | Click Broadcast nav item (Free tier)                 |
-| 5   | CSV export attempted         | "Upgrade to export subscribers"            | Click Export CSV button (Free tier)                  |
-| 6   | Domain auth attempted        | "Upgrade for custom sender domain"         | Click domain auth in Settings (Free tier)            |
-| 7   | Settings email customisation | "Upgrade for email customisation"          | Click sender name field in Settings (Free tier)      |
+| 5   | Domain auth attempted        | "Upgrade for custom sender domain"         | Click domain auth in Settings (Free tier)            |
+| 6   | Settings email customisation | "Upgrade for email customisation"          | Click sender name field in Settings (Free tier)      |
 
 ### Feature List (Verbatim)
 
@@ -1021,7 +1019,6 @@ Each trigger shows a **different headline** but the same feature list and CTA.
 ✓  Broadcast emails to your list
 ✓  Warmth-segmented targeting
 ✓  Email customisation
-✓  CSV export
 ✓  Custom sender domain
 ✓  5 qualification questions
 ```
@@ -1070,9 +1067,8 @@ function dismissModal(trigger: string): void {
 | 2 (qual cap)   | `src/app/onboarding/4a/page.tsx`        | Check questions.length >= 2 before adding       |
 | 3 (warmth)     | `components/dashboard/warmth-panel.tsx` | onClick handler when tier === "free"            |
 | 4 (broadcast)  | `components/dashboard/sidebar.tsx`      | onClick handler for Broadcast nav item          |
-| 5 (CSV)        | `src/app/dashboard/client.tsx`          | onClick handler for Export CSV button           |
-| 6 (domain)     | Settings page (S8)                      | onClick handler for domain section              |
-| 7 (email)      | Settings page (S6)                      | onClick handler for sender name field           |
+| 5 (domain)     | Settings page (S8)                      | onClick handler for domain section              |
+| 6 (email)      | Settings page (S6)                      | onClick handler for sender name field           |
 
 ---
 

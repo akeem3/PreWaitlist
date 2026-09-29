@@ -209,7 +209,7 @@ Each stat card shows exactly three things:
 
 - Search input: left side, `bg-card border-border rounded-lg`, placeholder "Search by email"
 - Warmth filter: right side, `<select>` dropdown — All / Hot / Warm / Cold
-- CSV export button: rightmost, Pro tier only, secondary variant
+- CSV export button: rightmost, all tiers, secondary variant
 - Subscriber count: below search bar, above table
 
 ### Warmth Badge Colors

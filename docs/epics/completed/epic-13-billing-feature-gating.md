@@ -142,7 +142,7 @@ NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
 - AC6: Dismissable via X button, "Maybe later", or backdrop click.
 - AC7: Design system: bg-card, border-border, centered overlay with backdrop blur, max-w-[480px].
 - AC8: After dismissal, same trigger suppressed for 7 days (localStorage cooldown).
-- AC9: Triggered at 7 context points: (1) sidebar Broadcast click, (2) sidebar Warmth click, (3) subscriber approaching 500 cap, (4) 3rd qual question attempt, (5) settings billing CTA, (6) CSV export attempt, (7) dashboard first-subscriber window.
+- AC9: Triggered at 7 context points: (1) sidebar Broadcast click, (2) sidebar Warmth click, (3) subscriber approaching 500 cap, (4) 3rd qual question attempt, (5) settings billing CTA, (6) CSV export attempt, (7) dashboard first-subscriber window. **AMENDED 2026-09-29 (Phase 2.6):** the (6) CSV-export trigger was never wired — CSV export is Free (`tier-gating.ts` marks `csv_export` requiredTier free, `FREE_FEATURES` lists "CSV export, all columns"); the `csv_export` headline key in `upgrade-modal.tsx` is inert.
 - AC10: Lint and build shall pass with zero errors.
 
 **Tasks:** T1 (AC1-AC7) Build modal component, T2 (AC8) Cooldown logic, T3 (AC9) Wire 7 trigger points, T4 (AC10) Lint + build
@@ -168,7 +168,7 @@ NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
 
 - AC1: A `src/lib/tier-gating.ts` utility shall provide `isPro(tier: string): boolean`.
 - AC2: The utility shall export `requirePro(tier: string, feature: string): { allowed: boolean; reason?: string }` for server-side use.
-- AC3: Server-side: API routes for broadcast, warmth (Pro page), CSV export, and domain auth shall check tier before executing.
+- AC3: Server-side: API routes for broadcast, warmth (Pro page), CSV export, and domain auth shall check tier before executing. **AMENDED 2026-09-29 (Phase 2.6):** the CSV-export check was never built and is not wanted — `GET /api/subscribers/export` is intentionally ungated (Free on all tiers); the story's own status table confirms only broadcast, warmth, and verify-domain routes use `requirePro()`.
 - AC4: Client-side: sidebar locked items, warmth panel overlay, qual question cap (3rd question) shall check tier and show upgrade modal.
 - AC5: The tier shall be available via `DashboardContext` (already exists) for client-side checks.
 - AC6: Lint and build shall pass with zero errors.

@@ -2,10 +2,10 @@ import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { resend } from "@/lib/resend";
 import {
   resolveFromAddress,
   buildBroadcastEmailFooterWithUrl,
+  sendBatchWithRetry,
 } from "@/lib/email";
 import {
   generateUnsubscribeUrl,
@@ -218,7 +218,8 @@ export async function POST(req: NextRequest) {
     });
 
     batchesAttempted += 1;
-    const result = await resend.batch.send(emails, {
+    // 3.1e: transient rate-limit retries happen inside (same chunk key).
+    const result = await sendBatchWithRetry(emails, {
       idempotencyKey: `broadcast/${waitlist.id}/${requestId}/chunk-${chunkIndex}`,
     });
 

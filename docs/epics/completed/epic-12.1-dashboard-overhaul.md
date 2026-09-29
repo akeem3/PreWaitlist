@@ -151,7 +151,7 @@ Work through these in dependency order, one at a time. Story 12.1.0 is the found
 - AC1: The WarmthPanel component shall display a locked overlay for Free tier: greyed-out bars with a blur effect, a "Pro" badge, and text "Upgrade to Pro to see warmth scores".
 - AC2: The WarmthPanel shall accept a `tier` prop. When `tier === "free"`, render the locked overlay. When `tier === "pro"`, render live data (current behavior).
 - AC3: The Warmth stat card (from Story 12.1.2) shall show a lock icon next to "Warmth" label when `tier === "free"`.
-- AC4: The CSV Export button shall remain hidden for Free tier (current behavior at line 483 of `client.tsx` — already correct).
+- AC4: The CSV Export button shall remain hidden for Free tier (current behavior at line 483 of `client.tsx` — already correct). **AMENDED 2026-09-29 (Phase 2.6):** outdated — CSV export is Free on all tiers (button always visible on the dashboard leaderboard; export route ungated).
 - AC5: The sidebar locked items (Warmth, Broadcast) shall show tooltips (covered in Story 12.1.0 AC4).
 - AC6: Lint and build shall pass with zero errors.
 
@@ -163,7 +163,7 @@ Work through these in dependency order, one at a time. Story 12.1.0 is the found
 
 - T1: Modify `components/dashboard/warmth-panel.tsx`. Add `tier?: string` prop. When `tier === "free"`, render: container with `opacity-50`, bars at 0% width, overlay with lock icon SVG + "Upgrade to Pro" text. Use `relative` positioning on container, `absolute inset-0` for overlay.
 - T2: In `client.tsx` stat card grid, when `tier === "free"`, add a small lock icon (reuse the SVG from sidebar) next to the "Warmth" label text.
-- T3: Line 483 already has `{tier === "pro" && (...)}` — verify this works correctly.
+- T3: Line 483 already has `{tier === "pro" && (...)}` — verify this works correctly. **AMENDED 2026-09-29 (Phase 2.6):** superseded — export moved to the leaderboard page, always visible, Free on all tiers.
 
 **Issue mapping:** A4 (warmth lock inconsistency), C2 (warmth stat card), D2 (CSV export — already correct).
 

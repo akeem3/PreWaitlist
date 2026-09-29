@@ -655,8 +655,8 @@ A free founder who hits the 500-signup cap sees an upgrade modal. Pro founders h
 
 **Acceptance Criteria (EARS):**
 
-- AC1: The system shall display an upgrade modal with 7 context-sensitive trigger variants.
-- AC2: Trigger variants: (1) signup cap hit (500), (2) qual question cap hit (2), (3) warmth panel clicked, (4) broadcast attempted, (5) CSV export attempted, (6) domain auth attempted, (7) settings email customisation attempted.
+- AC1: The system shall display an upgrade modal with 6 context-sensitive trigger variants.
+- AC2: Trigger variants: (1) signup cap hit (500), (2) qual question cap hit (2), (3) warmth panel clicked, (4) broadcast attempted, (5) domain auth attempted, (6) settings email customisation attempted. **AMENDED 2026-09-29 (Phase 2.6):** CSV export was listed as trigger (5) but was never built — CSV export is Free on all tiers (see `src/lib/pricing-features.ts` FREE_FEATURES), so it has no upgrade trigger.
 - AC3: Each trigger shall show a contextual headline (e.g., "Upgrade to send broadcasts" for trigger 4).
 - AC4: The modal shall show: Pro features list, $15/mo price, "Upgrade to Pro" CTA, "Maybe later" dismiss.
 - AC5: The modal shall use the design system: `bg-card`, `border-border`, `rounded-(--card-radius)`, centered overlay with backdrop blur.
@@ -664,7 +664,7 @@ A free founder who hits the 500-signup cap sees an upgrade modal. Pro founders h
 - AC7: The modal shall be closable via X button, "Maybe later", or clicking the backdrop.
 - AC8: Lint and build shall pass with zero errors.
 
-**Tasks:** T1 (AC1-AC3) Build modal component with 7 trigger variants · T2 (AC4-AC5) Modal design + feature list · T3 (AC6) Cooldown logic (localStorage) · T4 (AC7) Dismiss behavior · T5 (AC8) Lint + build
+**Tasks:** T1 (AC1-AC3) Build modal component with 6 trigger variants · T2 (AC4-AC5) Modal design + feature list · T3 (AC6) Cooldown logic (localStorage) · T4 (AC7) Dismiss behavior · T5 (AC8) Lint + build
 
 **Dev Notes:**
 
@@ -685,7 +685,7 @@ A free founder who hits the 500-signup cap sees an upgrade modal. Pro founders h
 **Acceptance Criteria (EARS):**
 
 - AC1: The system shall check `founder_profiles.tier` before rendering Pro-gated features.
-- AC2: Pro-gated features: broadcast email, warmth-segmented broadcast, email customisation, CSV export (already gated), domain authentication.
+- AC2: Pro-gated features: broadcast email, warmth-segmented broadcast, email customisation, domain authentication. **AMENDED 2026-09-29 (Phase 2.6):** CSV export was listed here as "(already gated)" but never was — it is Free on all tiers.
 - AC3: When a Free founder attempts a Pro feature, the system shall show the upgrade modal (Story 12.1) instead of the feature.
 - AC4: The tier check shall be performed server-side in API routes and client-side in UI components.
 - AC5: The tier shall be fetched from `founder_profiles.tier` and passed through the dashboard layout.

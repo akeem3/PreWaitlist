@@ -2,11 +2,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePro } from "@/lib/tier-gating";
-import { resend } from "@/lib/resend";
 import {
   resolveFromAddress,
   buildBroadcastEmailFooter,
   escapeHtml,
+  sendBatchWithRetry,
 } from "@/lib/email";
 import { generateUnsubscribeUrl } from "@/lib/unsubscribe";
 import { isEmailBounced } from "@/lib/bounces";
@@ -197,7 +197,8 @@ export async function POST(request: NextRequest) {
           };
         });
 
-        const result = await resend.batch.send(emails);
+        // 3.1e: transient rate-limit retries happen inside.
+        const result = await sendBatchWithRetry(emails);
 
         if (result.error) {
           sendError = result.error.message ?? "Batch send failed";

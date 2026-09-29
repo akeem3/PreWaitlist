@@ -11,7 +11,7 @@ As a system, I want consistent tier-based feature access enforcement so that Fre
 
 - AC1: A `src/lib/tier-gating.ts` utility shall provide `isPro(tier: string): boolean`.
 - AC2: The utility shall export `requirePro(tier: string, feature: string): { allowed: boolean; reason?: string }` for server-side use.
-- AC3: Server-side: API routes for broadcast, warmth (Pro page), CSV export, and domain auth shall check tier before executing.
+- AC3: Server-side: API routes for broadcast, warmth (Pro page), CSV export, and domain auth shall check tier before executing. **AMENDED 2026-09-29 (Phase 2.6):** the CSV-export check was never built and is not wanted — `GET /api/subscribers/export` is intentionally ungated (Free on all tiers); the status table below confirms only broadcast, warmth, and verify-domain routes use `requirePro()`.
 - AC4: Client-side: sidebar locked items, warmth panel overlay, qual question cap (3rd question) shall check tier and show upgrade modal.
 - AC5: The tier shall be available via `DashboardContext` (already exists) for client-side checks.
 - AC6: Lint and build shall pass with zero errors.

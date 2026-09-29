@@ -12,7 +12,7 @@ updated: 2026-08-31
 **Status:** ready
 **Design Refs:** — (no UI design — API endpoint + button only)
 
-**Story:** As a Pro tier founder, I want to export my subscriber data as a CSV file so that I can analyze it in spreadsheet software.
+**Story:** As a Pro tier founder, I want to export my subscriber data as a CSV file so that I can analyze it in spreadsheet software. **AMENDED 2026-09-29 (Phase 2.6 — founder decision: CSV export stays Free, fix docs):** this story shipped the export Pro-gated, but CSV export is now Free on all tiers — the Export CSV button lives on the dashboard leaderboard page, is always visible, and `GET /api/subscribers/export` has no tier gate (`src/lib/tier-gating.ts` marks `csv_export` requiredTier free; `FREE_FEATURES` lists "CSV export, all columns"). The Pro-only ACs below are historical record, not current behavior.
 
 ## Design Specs
 
@@ -56,7 +56,7 @@ No design SVG for this feature. Implementation follows standard CSV export patte
 
 ## Out of scope
 
-CSV export for Free tier (upsell opportunity), custom column selection, filtered export (Sprint 2 exports all subscribers).
+CSV export for Free tier ~~(upsell opportunity)~~ **(shipped — Free on all tiers since the leaderboard move, confirmed Phase 2.6)**, custom column selection, filtered export (Sprint 2 exports all subscribers).
 
 ## Dev Notes
 

@@ -7,6 +7,7 @@ const triggerMock = vi.fn();
 vi.mock("@/app/dashboard/shell", () => ({
   useDashboardTier: () => tierMock(),
   useUpgradeModal: () => triggerMock,
+  useRefreshTier: () => null,
 }));
 
 vi.mock("next/navigation", () => ({

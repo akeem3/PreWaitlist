@@ -348,4 +348,96 @@ describe("POST /api/subscribers — referral tracking", () => {
     expect(response.status).toBe(201);
     expect(mockedSendEmail).not.toHaveBeenCalled();
   });
+
+  // --- Sender identity fallback (2.5 rule B) ---
+
+  function pushMovedUpReferralQueueWithSender(
+    tier: string,
+    senderName: string | null,
+    sendingDomain: string | null
+  ) {
+    mockAdminSupabase.__queue.push({
+      data: { id: "referrer-1", waitlist_id: "wl-1" },
+      error: null,
+    });
+    mockAdminSupabase.__queue.push({
+      data: {
+        id: "sub-new",
+        email: "new@example.com",
+        referral_code: "new123",
+        position: 9,
+      },
+      error: null,
+    });
+    mockAdminSupabase.__queue.push({
+      data: null,
+      error: null,
+      count: 3,
+    });
+    mockAdminSupabase.__queue.push({ data: null, error: null });
+    mockAdminSupabase.__queue.push({
+      data: {
+        email: "referrer@example.com",
+        referral_code: "REF123",
+        display_name: null,
+      },
+      error: null,
+    });
+    mockAdminSupabase.__queue.push({ data: null, error: null });
+    mockAdminSupabase.__queue.push({
+      data: {
+        product_name: "Acme",
+        headline: null,
+        subdomain: "acme",
+        sender_name: senderName,
+        sending_domain: sendingDomain,
+        business_address: null,
+        email_subject: null,
+        email_body: null,
+      },
+      error: null,
+    });
+    mockAdminSupabase.__queue.push({
+      data: [{ tier_referrals: 3, reward_label: "Early access" }],
+      error: null,
+    });
+    mockAdminSupabase.__queue.push({
+      data: { founder_profiles: [{ tier }] },
+      error: null,
+    });
+  }
+
+  it("passes custom sender identity through on Pro for moved-up email", async () => {
+    pushCapCheck();
+    pushMovedUpReferralQueueWithSender("pro", "Ada", "ada.com");
+    mockedGetPositionUpdate.mockImplementation((_updates, id) =>
+      id === "referrer-1" ? movedUpReferrerUpdate : null
+    );
+
+    const response = await postReferralSignup();
+    expect(response.status).toBe(201);
+
+    expect(mockedSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockedSendEmail.mock.calls[0][0]).toMatchObject({
+      senderName: "Ada",
+      sendingDomain: "ada.com",
+    });
+  });
+
+  it("falls back to default sender on Free for moved-up email", async () => {
+    pushCapCheck();
+    pushMovedUpReferralQueueWithSender("free", "Ada", "ada.com");
+    mockedGetPositionUpdate.mockImplementation((_updates, id) =>
+      id === "referrer-1" ? movedUpReferrerUpdate : null
+    );
+
+    const response = await postReferralSignup();
+    expect(response.status).toBe(201);
+
+    expect(mockedSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockedSendEmail.mock.calls[0][0]).toMatchObject({
+      senderName: null,
+      sendingDomain: null,
+    });
+  });
 });

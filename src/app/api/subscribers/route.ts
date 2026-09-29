@@ -12,6 +12,7 @@ import {
   interpolateEmail,
 } from "@/lib/email";
 import { isEmailBounced } from "@/lib/bounces";
+import { enqueueEmailRetry, maybeWarnFounderQuota } from "@/lib/retry-queue";
 
 const BRAND_GREEN = "#0F7A5E";
 const TEXT_PRIMARY = "#1a1a1a";
@@ -725,10 +726,12 @@ export async function POST(request: NextRequest) {
         html: email.html,
         text: email.text,
         stream: "transactional",
-        senderName: waitlist.sender_name,
+        // 2.5 rule B: custom sender identity is Pro-only — free resolves to
+        // the default prewaitlist.com sender (config stays in the row).
+        senderName: tier === "pro" ? waitlist.sender_name : null,
         productName: waitlist.product_name,
         headline: waitlist.headline,
-        sendingDomain: waitlist.sending_domain,
+        sendingDomain: tier === "pro" ? waitlist.sending_domain : null,
         idempotencyKey: `confirmation-email/${data.id}`,
         subscriberId: data.id,
         waitlistId: waitlist_id,
@@ -751,6 +754,55 @@ export async function POST(request: NextRequest) {
           `Confirmation email failed for ${data.email}:`,
           emailResult.error
         );
+        // 3.1: daily quota parks for a midnight-UTC retry (logged as
+        // delivery_delayed); monthly/other failures are dead-lettered
+        // (logged as failed). Either way the loss is now visible.
+        if (emailResult.errorKind === "daily_quota") {
+          await enqueueEmailRetry(adminSupabase, {
+            waitlist_id,
+            subscriber_id: data.id,
+            to_email: data.email,
+            subject: email.subject,
+            html: email.html,
+            text_payload: email.text,
+            stream: "transactional",
+            sender_name: tier === "pro" ? waitlist.sender_name : null,
+            product_name: waitlist.product_name,
+            headline: waitlist.headline,
+            sending_domain: tier === "pro" ? waitlist.sending_domain : null,
+            idempotency_key: `confirmation-email/${data.id}`,
+            email_type: "confirmation",
+          });
+          await adminSupabase.from("email_events").insert({
+            subscriber_id: data.id,
+            waitlist_id,
+            event_type: "delivery_delayed",
+            event_data: {
+              type: "confirmation",
+              error: emailResult.error,
+              error_name: emailResult.errorName ?? null,
+            },
+            created_at: new Date().toISOString(),
+          });
+        } else {
+          await adminSupabase.from("email_events").insert({
+            subscriber_id: data.id,
+            waitlist_id,
+            event_type: "failed",
+            event_data: {
+              type: "confirmation",
+              error: emailResult.error,
+              error_name: emailResult.errorName ?? null,
+            },
+            created_at: new Date().toISOString(),
+          });
+        }
+        // 3.1d: quota failures warn the founder (once/day; never throws).
+        if (emailResult.errorKind === "daily_quota") {
+          await maybeWarnFounderQuota(adminSupabase, waitlist_id, "daily");
+        } else if (emailResult.errorKind === "monthly_quota") {
+          await maybeWarnFounderQuota(adminSupabase, waitlist_id, "monthly");
+        }
       }
     } catch (err) {
       console.error("Confirmation email IIFE failed:", err);
@@ -849,10 +901,12 @@ export async function POST(request: NextRequest) {
           html: email.html,
           text: email.text,
           stream: "transactional",
-          senderName: waitlist.sender_name,
+          // 2.5 rule B: custom sender identity is Pro-only — free resolves to
+          // the default prewaitlist.com sender (config stays in the row).
+          senderName: tier === "pro" ? waitlist.sender_name : null,
           productName: waitlist.product_name,
           headline: waitlist.headline,
-          sendingDomain: waitlist.sending_domain,
+          sendingDomain: tier === "pro" ? waitlist.sending_domain : null,
           idempotencyKey: `moved-up/${resolvedReferrerId}/${referrerUpdate.new_position}`,
           subscriberId: resolvedReferrerId,
           waitlistId: waitlist_id,
@@ -872,6 +926,59 @@ export async function POST(request: NextRequest) {
             },
             created_at: new Date().toISOString(),
           });
+        } else {
+          // 3.1: daily quota parks for a midnight-UTC retry; monthly/other
+          // failures are dead-lettered. Either way the loss is now visible.
+          console.error(
+            `Moved-up email failed for ${referrer.email}:`,
+            emailResult.error
+          );
+          if (emailResult.errorKind === "daily_quota") {
+            await enqueueEmailRetry(adminSupabase, {
+              waitlist_id,
+              subscriber_id: resolvedReferrerId,
+              to_email: referrer.email,
+              subject: email.subject,
+              html: email.html,
+              text_payload: email.text,
+              stream: "transactional",
+              sender_name: tier === "pro" ? waitlist.sender_name : null,
+              product_name: waitlist.product_name,
+              headline: waitlist.headline,
+              sending_domain: tier === "pro" ? waitlist.sending_domain : null,
+              idempotency_key: `moved-up/${resolvedReferrerId}/${referrerUpdate.new_position}`,
+              email_type: "moved_up",
+            });
+            await adminSupabase.from("email_events").insert({
+              subscriber_id: resolvedReferrerId,
+              waitlist_id,
+              event_type: "delivery_delayed",
+              event_data: {
+                type: "moved_up",
+                error: emailResult.error,
+                error_name: emailResult.errorName ?? null,
+              },
+              created_at: new Date().toISOString(),
+            });
+          } else {
+            await adminSupabase.from("email_events").insert({
+              subscriber_id: resolvedReferrerId,
+              waitlist_id,
+              event_type: "failed",
+              event_data: {
+                type: "moved_up",
+                error: emailResult.error,
+                error_name: emailResult.errorName ?? null,
+              },
+              created_at: new Date().toISOString(),
+            });
+          }
+          // 3.1d: quota failures warn the founder (once/day; never throws).
+          if (emailResult.errorKind === "daily_quota") {
+            await maybeWarnFounderQuota(adminSupabase, waitlist_id, "daily");
+          } else if (emailResult.errorKind === "monthly_quota") {
+            await maybeWarnFounderQuota(adminSupabase, waitlist_id, "monthly");
+          }
         }
       } catch (err) {
         console.error("Moved-up email IIFE failed:", err);

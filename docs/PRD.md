@@ -71,7 +71,7 @@ A pre-launch waitlist tool for bootstrapped indie hackers, solo founders, and ea
 - **Referral system:** Unique referral links, position tracking, milestone threshold display
 - **Public leaderboard:** Ranked by referral count, milestone display, anonymized emails
 - **Dashboard restructure:** Left sidebar navigation (replaces top tabs), stat cards, subscriber table with search/filter
-- **CSV export:** Subscriber data export for Pro tier
+- **CSV export:** Subscriber data export for all tiers (Free includes all columns)
 - **Founder updates:** Email-first delivery via Resend; on-page shows latest update card only
 
 **Technical Scope:**
@@ -588,7 +588,7 @@ Repeat the child-table pattern for milestone_rewards and founder_updates. This i
 | /dashboard                  | Page (restructured)  | Left sidebar layout, stat cards, subscriber table                            |
 | /dashboard/subscribers/:id  | Page                 | Individual subscriber view, qual answers                                     |
 | /api/subscribers            | Route Handler (POST) | Create subscriber (public signup)                                            |
-| /api/subscribers/export     | Route Handler (GET)  | CSV export (Pro tier)                                                        |
+| /api/subscribers/export     | Route Handler (GET)  | CSV export (all tiers)                                                       |
 | /api/leaderboard/:subdomain | Route Handler (GET)  | Leaderboard data for public page                                             |
 | /api/updates                | Route Handler (POST) | Create founder update + dispatch email to subscribers                        |
 
@@ -637,7 +637,7 @@ components/
 │   ├── sidebar.tsx                   -> left sidebar navigation
 │   ├── stat-cards.tsx                -> real-time stats (subscribers, referrals, position)
 │   ├── subscriber-table.tsx          -> subscriber list with search/filter
-│   └── csv-export-button.tsx         -> CSV export (Pro tier)
+│   └── csv-export-button.tsx         -> CSV export (all tiers)
 └── share/
     ├── referral-link.tsx             -> unique referral link display + copy
     └── share-buttons.tsx             -> Web Share + Copy Link (referral)

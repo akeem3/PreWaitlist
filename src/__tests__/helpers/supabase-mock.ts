@@ -21,6 +21,8 @@ interface MockQuery {
   range: ReturnType<typeof vi.fn>;
   eq: ReturnType<typeof vi.fn>;
   in: ReturnType<typeof vi.fn>;
+  lte: ReturnType<typeof vi.fn>;
+  gte: ReturnType<typeof vi.fn>;
   not: ReturnType<typeof vi.fn>;
   is: ReturnType<typeof vi.fn>;
   filter: ReturnType<typeof vi.fn>;
@@ -74,6 +76,14 @@ export function createMockSupabaseClient(responses: MockResponse[] = []) {
       }),
       in: vi.fn((...args: unknown[]) => {
         calls.push({ method: "in", args });
+        return chain;
+      }),
+      lte: vi.fn((...args: unknown[]) => {
+        calls.push({ method: "lte", args });
+        return chain;
+      }),
+      gte: vi.fn((...args: unknown[]) => {
+        calls.push({ method: "gte", args });
         return chain;
       }),
       not: vi.fn((...args: unknown[]) => {

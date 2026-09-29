@@ -154,13 +154,78 @@ export function buildBroadcastEmailFooterWithUrl(
 }
 
 /**
+ * 3.1: Resend 429 taxonomy. The SDK reports failures as
+ * `{ message, statusCode, name }` (see resend@6.x `ErrorResponse`) — the
+ * `name` is the exact error code (`rate_limit_exceeded`,
+ * `daily_quota_exceeded`, `monthly_quota_exceeded`). A bare 429 without a
+ * known name is treated as transient (HTTP-correct: retry a few times).
+ */
+export type ResendErrorKind =
+  "rate_limit" | "daily_quota" | "monthly_quota" | "other";
+
+export function classifyResendError(
+  error: { name?: string | null; statusCode?: number | null } | null | undefined
+): ResendErrorKind {
+  const name = error?.name ?? "";
+  if (name === "rate_limit_exceeded") return "rate_limit";
+  if (name === "daily_quota_exceeded") return "daily_quota";
+  if (name === "monthly_quota_exceeded") return "monthly_quota";
+  if (error?.statusCode === 429) return "rate_limit";
+  return "other";
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+type BatchSendResult = Awaited<ReturnType<typeof resend.batch.send>>;
+
+/**
+ * 3.1e: batch-send with inline transient retry for the broadcast + updates
+ * chunk loops. Retries ONLY `rate_limit` failures with backoff (same chunk
+ * idempotency key, so retries can never double-send). Quota failures return
+ * immediately — per-item failed accounting stays 3.3's scope.
+ */
+export async function sendBatchWithRetry(
+  emails: Parameters<typeof resend.batch.send>[0],
+  options?: { idempotencyKey?: string; retryDelaysMs?: number[] }
+): Promise<BatchSendResult> {
+  const delays = options?.retryDelaysMs ?? [1000, 2000];
+  for (let attempt = 0; ; attempt++) {
+    const result = await resend.batch.send(
+      emails,
+      options?.idempotencyKey ? { idempotencyKey: options.idempotencyKey } : {}
+    );
+    if (!result.error) return result;
+    if (
+      classifyResendError(result.error) === "rate_limit" &&
+      attempt < delays.length
+    ) {
+      await delay(delays[attempt]);
+      continue;
+    }
+    return result;
+  }
+}
+
+/**
  * AC5: Send a transactional email via Resend's Emails API (single send).
  * AC6: Error handling — returns { ok, error } instead of throwing.
+ * 3.1: preserves the Resend error classification (`errorKind`/`errorName`)
+ * instead of reducing failures to a message string, and retries transient
+ * `rate_limit` failures inline with backoff (same idempotency key, so
+ * retries can never double-send). Quota failures are returned, never
+ * retried here — daily parking lives in the retry queue, monthly is
+ * dead-lettered by the caller.
  */
-export async function sendEmail(params: SendEmailParams): Promise<{
+export async function sendEmail(
+  params: SendEmailParams & { retryDelaysMs?: number[] }
+): Promise<{
   ok: boolean;
   id?: string;
   error?: string;
+  errorKind?: ResendErrorKind;
+  errorName?: string;
 }> {
   const from = resolveFromAddress(
     params.senderName,
@@ -203,20 +268,36 @@ export async function sendEmail(params: SendEmailParams): Promise<{
       sendParams.tags = tags;
     }
 
-    const result = await resend.emails.send(
-      sendParams,
-      params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : {}
-    );
+    const delays = params.retryDelaysMs ?? [1000, 2000];
 
-    if (result.error) {
-      return { ok: false, error: result.error.message };
+    for (let attempt = 0; ; attempt++) {
+      const result = await resend.emails.send(
+        sendParams,
+        params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : {}
+      );
+
+      if (!result.error) {
+        return { ok: true, id: result.data?.id };
+      }
+
+      const kind = classifyResendError(result.error);
+      if (kind === "rate_limit" && attempt < delays.length) {
+        await delay(delays[attempt]);
+        continue;
+      }
+
+      return {
+        ok: false,
+        error: result.error.message,
+        errorKind: kind,
+        errorName: result.error.name ?? undefined,
+      };
     }
-
-    return { ok: true, id: result.data?.id };
   } catch (err) {
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Unknown email error",
+      errorKind: "other",
     };
   }
 }
