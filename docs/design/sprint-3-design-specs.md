@@ -212,7 +212,7 @@ Settings form fields use the same pattern as onboarding Step 3:
 <div className="flex flex-col gap-1.5">
   <label className="text-xs font-medium text-muted-foreground">{Label}</label>
   <input
-    className="h-10 rounded-[var(--input-radius)] border border-border bg-card px-3 py-2 text-sm
+    className="h-10 rounded-(--input-radius) border border-border bg-card px-3 py-2 text-sm
       placeholder:text-muted-foreground
       focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent
       disabled:cursor-not-allowed disabled:opacity-50"
