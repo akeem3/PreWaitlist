@@ -190,7 +190,7 @@ For MVP: no animation. Mount/unmount is sufficient. Add transitions in v1.1.
 Every settings section uses:
 
 ```tsx
-<div className="rounded-[var(--card-radius)] border border-border bg-card p-6">
+<div className="rounded-(--card-radius) border border-border bg-card p-6">
   <h3 className="mb-4 text-lg font-semibold text-foreground">
     {Section Title}
   </h3>
