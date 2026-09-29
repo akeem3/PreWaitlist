@@ -19,6 +19,9 @@ vi.mock("next/navigation", () => ({
   notFound: vi.fn(() => {
     throw new Error("NOT_FOUND");
   }),
+  redirect: vi.fn((path: string) => {
+    throw new Error(`NEXT_REDIRECT:${path}`);
+  }),
 }));
 
 vi.mock("next/headers", () => ({
@@ -569,5 +572,71 @@ describe("Thank-you Page", () => {
     expect(
       screen.getByText("Share your link to move up the waitlist:")
     ).toBeDefined();
+  });
+
+  it("redirects archived waitlists to /gone (4.3)", async () => {
+    const mockSubscriber = {
+      id: "sub-1",
+      email: "test@example.com",
+      position: 42,
+      referral_code: "abc12345",
+      referrer_id: null,
+      waitlists: {
+        id: "wl-1",
+        subdomain: "test",
+        headline: "Test",
+        milestone_rewards_enabled: false,
+        is_archived: true,
+        founder_profiles: [{ tier: "free" }],
+      },
+    };
+
+    mockSupabase.from.mockReturnValueOnce(buildChain(mockSubscriber));
+
+    const mod = await import("../../app/(public)/[subdomain]/thank-you/page");
+    const ThankYouPage = mod.default;
+
+    await expect(
+      ThankYouPage({
+        params: Promise.resolve({ subdomain: "test" }),
+        searchParams: Promise.resolve({
+          subscriber_id: "sub-1",
+          referral_code: "abc12345",
+        }),
+      })
+    ).rejects.toThrow("NEXT_REDIRECT:/test/gone");
+  });
+
+  it("renders recovery UI for missing params instead of a bare 404 (4.6)", async () => {
+    const mod = await import("../../app/(public)/[subdomain]/thank-you/page");
+    const ThankYouPage = mod.default;
+
+    const element = await ThankYouPage({
+      params: Promise.resolve({ subdomain: "test" }),
+      searchParams: Promise.resolve({}),
+    });
+    render(element);
+
+    expect(screen.getByText("Invalid link")).toBeDefined();
+    expect(screen.getByText("← Back to waitlist")).toBeDefined();
+  });
+
+  it("renders recovery UI for an unknown subscriber instead of a bare 404 (4.6)", async () => {
+    mockSupabase.from.mockReturnValueOnce(buildChain(null));
+
+    const mod = await import("../../app/(public)/[subdomain]/thank-you/page");
+    const ThankYouPage = mod.default;
+
+    const element = await ThankYouPage({
+      params: Promise.resolve({ subdomain: "test" }),
+      searchParams: Promise.resolve({
+        subscriber_id: "sub-gone",
+        referral_code: "nope1234",
+      }),
+    });
+    render(element);
+
+    expect(screen.getByText("Invalid link")).toBeDefined();
+    expect(screen.getByText("← Back to waitlist")).toBeDefined();
   });
 });

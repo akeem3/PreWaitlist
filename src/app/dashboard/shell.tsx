@@ -13,6 +13,7 @@ import { UpgradeModal } from "../../../components/dashboard/upgrade-modal";
 import { QuotaWarningBanner } from "../../../components/dashboard/quota-warning-banner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { STORAGE_KEY } from "../../../components/dashboard/waitlist-switcher";
+import { resolveActiveWaitlist } from "../../lib/active-waitlist";
 
 interface WaitlistRow {
   id: string;
@@ -66,12 +67,6 @@ interface DashboardShellProps {
   tier: string;
 }
 
-function getServerDefaultId(waitlists: WaitlistRow[]): string {
-  // Layout redirects zero-waitlist users to onboarding, but query errors render
-  // the shell with an empty array — never index [-1].
-  return waitlists.length > 0 ? waitlists[waitlists.length - 1].id : "";
-}
-
 function getStoredId(waitlists: WaitlistRow[]): string | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -96,8 +91,8 @@ export default function DashboardShell({
   }>({ open: false, triggerSource: "" });
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [activeWaitlistId, setActiveWaitlistId] = useState(() =>
-    getServerDefaultId(waitlists)
+  const [activeWaitlistId, setActiveWaitlistId] = useState(
+    () => resolveActiveWaitlist(waitlists)?.id ?? ""
   );
   const [tier, setTierState] = useState(serverTier);
   const tierRef = useRef(serverTier);
@@ -183,17 +178,19 @@ export default function DashboardShell({
 
   // Sync from URL param or localStorage after hydration (client-only).
   // Server renders with the last waitlist; client hydrates the same, then
-  // corrects to the stored preference.
+  // corrects to the stored preference. 4.4: shared precedence — ?wid >
+  // stored > newest (same value as current state in the fallback case, so
+  // React bails out with no extra render).
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const wid = searchParams.get("wid");
-    if (wid && waitlists.some((w) => w.id === wid)) {
-      setActiveWaitlistId(wid);
-      return;
-    }
     const stored = getStoredId(waitlists);
-    if (stored) {
-      setActiveWaitlistId(stored);
+    const resolved = resolveActiveWaitlist(waitlists, {
+      wid,
+      storedId: stored,
+    });
+    if (resolved) {
+      setActiveWaitlistId(resolved.id);
     }
   }, [searchParams, waitlists]);
   /* eslint-enable react-hooks/set-state-in-effect */

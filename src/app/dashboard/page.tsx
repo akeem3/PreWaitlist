@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../lib/supabase/server";
+import { resolveActiveWaitlistRow } from "../../lib/active-waitlist";
 import DashboardClient from "./client";
 
 interface PageProps {
@@ -19,27 +20,25 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const { wid } = await searchParams;
 
-  let waitlistQuery = supabase
-    .from("waitlists")
-    .select("id, headline, subdomain, template, product_name, cold_threshold")
-    .eq("founder_id", user.id)
-    .order("created_at", { ascending: true });
+  // 4.4: shared resolution — ?wid (validated) else newest. Previously this
+  // page ordered ASC and took [0], i.e. the OLDEST list.
+  const waitlist = await resolveActiveWaitlistRow<{
+    id: string;
+    headline: string;
+    subdomain: string;
+    template: string;
+    product_name: string | null;
+    cold_threshold: number | null;
+  }>(
+    supabase,
+    user.id,
+    wid,
+    "id, headline, subdomain, template, product_name, cold_threshold"
+  );
 
-  if (wid) {
-    waitlistQuery = waitlistQuery.eq("id", wid);
-  }
-
-  const { data: waitlists, error: waitlistError } = await waitlistQuery;
-
-  if (waitlistError) {
+  if (!waitlist) {
     redirect("/onboarding/1");
   }
-
-  if (!waitlists || waitlists.length === 0) {
-    redirect("/onboarding/1");
-  }
-
-  const waitlist = waitlists![0];
 
   const { data: profile } = await supabase
     .from("founder_profiles")

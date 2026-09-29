@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../../lib/supabase/server";
+import { resolveActiveWaitlistRow } from "../../../lib/active-waitlist";
 import LeaderboardClient from "./client";
 
 interface PageProps {
@@ -15,13 +16,12 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
 
   const { wid } = await searchParams;
 
-  let wlQuery = supabase.from("waitlists").select("id");
-  if (wid) {
-    wlQuery = wlQuery.eq("id", wid).eq("founder_id", user.id);
-  } else {
-    wlQuery = wlQuery.eq("founder_id", user.id);
-  }
-  const { data: waitlist } = await wlQuery.maybeSingle();
+  // 4.4: shared resolution — ?wid (validated) else newest.
+  const waitlist = await resolveActiveWaitlistRow<{ id: string }>(
+    supabase,
+    user.id,
+    wid
+  );
   if (!waitlist) redirect("/onboarding/1");
 
   // Try with display_name; fall back without it if column doesn't exist yet

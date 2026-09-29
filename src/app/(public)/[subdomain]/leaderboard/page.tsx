@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { PoweredByFooter } from "../../../../../components/share/powered-by-footer";
 import { LeaderboardClient } from "./leaderboard-client";
@@ -25,7 +25,7 @@ export default async function LeaderboardPage({ params, searchParams }: Props) {
     .from("waitlists")
     .select(
       `
-      id, headline, template, milestone_rewards_enabled,
+      id, headline, template, is_archived, milestone_rewards_enabled,
       founder_profiles!inner ( tier )
     `
     )
@@ -33,6 +33,11 @@ export default async function LeaderboardPage({ params, searchParams }: Props) {
     .single();
 
   if (!waitlist) notFound();
+
+  // 4.3: archived waitlists hide the public surface (matches the main page).
+  if ((waitlist as { is_archived?: boolean }).is_archived) {
+    redirect(`/${subdomain}/gone`);
+  }
 
   const founderProfile = Array.isArray(waitlist.founder_profiles)
     ? waitlist.founder_profiles[0]

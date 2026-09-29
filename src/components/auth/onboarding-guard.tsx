@@ -12,7 +12,10 @@ export async function OnboardingGuard({
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Unauthenticated users pass through — middleware handles auth for Phase B routes
+  // Unauthenticated users pass through — updateSession (supabase/middleware)
+  // redirects Phase-B routes (/onboarding/4, /4a, /5, /success) to
+  // /onboarding/signup, so by the time this guard runs for those routes a
+  // user is guaranteed.
   if (!user) {
     return <>{children}</>;
   }

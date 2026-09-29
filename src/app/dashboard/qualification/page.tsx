@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../../lib/supabase/server";
+import { resolveActiveWaitlistRow } from "../../../lib/active-waitlist";
 import QualificationClient from "./client";
 
 interface PageProps {
@@ -15,17 +16,11 @@ export default async function QualificationPage({ searchParams }: PageProps) {
 
   const { wid } = await searchParams;
 
-  let wlQuery = supabase.from("waitlists").select("id, subdomain");
-  if (wid) {
-    wlQuery = wlQuery.eq("id", wid).eq("founder_id", user.id);
-  } else {
-    // 14.4 AC5: deterministic default — newest waitlist for the founder
-    wlQuery = wlQuery
-      .eq("founder_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1);
-  }
-  const { data: waitlist } = await wlQuery.maybeSingle();
+  // 4.4: shared resolution — ?wid (validated) else newest.
+  const waitlist = await resolveActiveWaitlistRow<{
+    id: string;
+    subdomain: string;
+  }>(supabase, user.id, wid, "id, subdomain");
   if (!waitlist) redirect("/onboarding/1");
 
   return (

@@ -1,6 +1,6 @@
 # Revenue, Lifecycle & Email Fix Plan
 
-**Date:** 2026-09-29 · **Branch:** `dev` · **Status:** Phases 1–2 + 3.1 DONE, uncommitted (commit only on founder instruction); 3.2–3.7 + Phases 4–6 not started (Phase 4 in progress)
+**Date:** 2026-09-29 · **Branch:** `dev` · **Status:** Phases 1–4 + 3.1 DONE, uncommitted (commit only on founder instruction); 3.2–3.7 + Phases 5–6 not started
 **Source:** two-pass investigation (4 codebase agents + Paddle/Resend docs), founder's 7 observed issues.
 **Standing rules:** lint 0 errors + full suite at baseline + clean build per phase; copy gaps stop-and-ask; no new env/deps without asking; SQL migrations are founder-run with verification probes.
 
@@ -63,14 +63,14 @@
 
 ## Phase 4 — Funnel dead-ends
 
-- [ ] 4.1 FlushGate: pre-check existing waitlist before POST; discard-draft escape; headline-without-slug → Step 1.
-- [ ] 4.2 Phase-B server guard: unauth `/onboarding/4*` → `/onboarding/signup`.
-- [ ] 4.3 Archived: `is_archived` on leaderboard/thank-you → `/gone`; archived-dashboard read-only call.
-- [ ] 4.4 `resolveActiveWaitlist` helper (newest default; `?wid` > stored > newest) shared everywhere.
-- [ ] 4.5 Updates free-gate modal (broadcast pattern); tier-before-lookup ordering.
-- [ ] 4.6 Thank-you recovery UI + PGRST204 silent-success fix; resubscribe GET→POST-confirm.
+- [x] 4.1 FlushGate: pre-check existing waitlist before POST; discard-draft escape; headline-without-slug → Step 1. **DONE 2026-09-29:** FlushGate GETs `/api/waitlist` before POST — existing server record wins (free founders dodged the 402 dead end, pro founders dodged duplicate rows); headline-without-slug routes to Step 1; error UI gains a "Start fresh" escape (reuses Step 1 label verbatim) that clears the draft and routes to Step 1; empty-record falls to error UI instead of an eternal spinner; pre-check 404 short-circuits the second GET. **TESTS (6):** fresh redirect, POST-only-when-new + draft clear, server-wins skips POST, slugless → Step 1 with zero fetch, escape clears + routes, pre-check 500 → error UI.
+- [x] 4.2 Phase-B server guard: unauth `/onboarding/4*` → `/onboarding/signup`. **DONE 2026-09-29:** `updateSession` redirects unauth `/onboarding/4|4a|5|success` to `/onboarding/signup` (before the generic `/signin` guard; success was listed public but dead-ended in FlushGate). Preserves query params; Phase-A + authed pass through; generic `/signin` redirect untouched. Guard comment corrected (it claimed middleware handled Phase B — now true). **TESTS (7):** all four routes → signup, Phase-A passthrough, authed passthrough, generic signin preserved.
+- [x] 4.3 Archived: `is_archived` on leaderboard/thank-you → `/gone`; archived-dashboard read-only call. **DONE 2026-09-29:** leaderboard + thank-you pages select `is_archived` and redirect to `/:subdomain/gone` (mirrors the main public page); **READ-ONLY CALL: archived waitlists stay fully editable in the dashboard** — archive means "hidden public page + no new signups" per the shipped 12.2.1 copy, and founders may pause-then-edit; only the public surface closes. **TESTS (3):** leaderboard archived → /gone, leaderboard active renders, thank-you archived → /gone.
+- [x] 4.4 `resolveActiveWaitlist` helper (newest default; `?wid` > stored > newest) shared everywhere. **DONE 2026-09-29:** `src/lib/active-waitlist.ts` (server row flavor with column passthrough + client pure flavor); adopted in all 6 section pages (overview leaderboard qualification warmth broadcast updates) — fixes overview defaulting to the OLDEST list; shell unified on the client flavor (behavior-identical, bailout-safe). Invalid/foreign `?wid` falls back to newest (shell self-heal parity). **TESTS (5):** server wid-valid/wid-invalid→newest/no-wid→newest/empty→null; client precedence + fallthrough + empty.
+- [x] 4.5 Updates free-gate modal (broadcast pattern); tier-before-lookup ordering. **DONE 2026-09-29:** `UpdatesFreeGate` mirrors `BroadcastFreeGate` (H1 + auto-open modal with existing `updates` trigger + CTA; existing strings only, no new copy); page returns the gate instead of `redirect("/dashboard")`; tier check stays before the waitlist lookup (Free + bad wid → gate, not 404). **TESTS (3):** free → gate + trigger fired, pro → client, pro without waitlist → onboarding.
+- [x] 4.6 Thank-you recovery UI + PGRST204 silent-success fix; resubscribe GET→POST-confirm. **DONE 2026-09-29:** thank-you missing/bad params render a recovery card (existing "Invalid link" + generic error + "← Back to waitlist" strings) instead of bare `notFound()`; PATCH display-name PGRST204 swallow removed (migration long since run; client already stays editable on !ok); resubscribe page validates-only on GET + `ResubscribeConfirm` posts to new `POST /api/unsubscribe/resubscribe` (verified token, matched-row required → 404 otherwise — no silent success; prefetchers/scanners can't trigger it). **TESTS (9):** resubscribe route 400/200/404, page confirm/invalid UI, confirm POST success/failure, thank-you recovery ×2.
 
-**Verify:** per-item walkthroughs + regression tests; suite at baseline.
+**Verify:** per-item walkthroughs + regression tests; suite at baseline. **TESTS DONE 2026-09-29 (+33):** flush-gate (6) · supabase-middleware Phase-B guard (7) · public-leaderboard-archived (2) + thank-you archived (1) + recovery (2) · active-waitlist (5) · dashboard-updates-page (3) · resubscribe route (3) + page/confirm (4). **GATES 2026-09-29:** lint 0 errors / 5 pre-existing warnings · full suite 793 = 786 pass / 7 fail = exact baseline (dashboard-archive 4 + dashboard-subscriber-table 3) · clean build (`.next` deleted first; fixed a strict postgrest cast in active-waitlist.ts via `as unknown as`) · prettier clean · server restarted. Uncommitted.
 
 ## Phase 5 — Growth surfaces
 

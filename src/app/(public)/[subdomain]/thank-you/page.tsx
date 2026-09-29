@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { PoweredByFooter } from "../../../../../components/share/powered-by-footer";
 import { ReferralLink } from "../../../../../components/share/referral-link";
@@ -11,12 +11,36 @@ type Props = {
   searchParams: Promise<{ subscriber_id?: string; referral_code?: string }>;
 };
 
+/**
+ * 4.6 recovery UI: stale/incomplete thank-you links render a way back
+ * instead of a bare 404. Copy reuses existing strings only ("Invalid
+ * link", the generic error line, and the leaderboard page's back link).
+ */
+function recoveryCard(subdomain: string) {
+  return (
+    <div className="flex min-h-screen flex-col items-center bg-background px-4 py-16">
+      <div className="flex w-full max-w-[400px] flex-col items-center text-center">
+        <h1 className="text-h2 text-foreground">Invalid link</h1>
+        <p className="mt-2 text-body text-muted-foreground">
+          Something went wrong. Please try again.
+        </p>
+        <a
+          href={`/${subdomain}`}
+          className="text-body-lg font-semibold text-accent mt-8 hover:underline"
+        >
+          ← Back to waitlist
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export default async function ThankYouPage({ params, searchParams }: Props) {
   const { subdomain } = await params;
   const { subscriber_id, referral_code } = await searchParams;
 
   if (!subscriber_id || !referral_code) {
-    notFound();
+    return recoveryCard(subdomain);
   }
 
   const admin = createAdminClient();
@@ -28,7 +52,7 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
       id, email, position, referral_code, referrer_id,
       waitlists!inner (
         id, subdomain, headline, template, brand_color, logo_url, cta_text,
-        milestone_rewards_enabled,
+        milestone_rewards_enabled, is_archived,
         founder_profiles!inner ( tier )
       )
     `
@@ -37,7 +61,9 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
     .eq("referral_code", referral_code)
     .single();
 
-  if (!subscriber) notFound();
+  if (!subscriber) {
+    return recoveryCard(subdomain);
+  }
 
   const waitlist = subscriber.waitlists as unknown as {
     id: string;
@@ -48,12 +74,18 @@ export default async function ThankYouPage({ params, searchParams }: Props) {
     logo_url: string | null;
     cta_text: string;
     milestone_rewards_enabled: boolean;
+    is_archived: boolean;
     founder_profiles: { tier: string }[];
   };
   const founderProfile = Array.isArray(waitlist.founder_profiles)
     ? waitlist.founder_profiles[0]
     : waitlist.founder_profiles;
   const tier = founderProfile?.tier || "free";
+
+  // 4.3: archived waitlists hide the public surface (matches the main page).
+  if (waitlist.is_archived) {
+    redirect(`/${subdomain}/gone`);
+  }
 
   const { data: milestoneRewardsData } = waitlist.milestone_rewards_enabled
     ? await admin

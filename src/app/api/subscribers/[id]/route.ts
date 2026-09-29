@@ -89,15 +89,13 @@ export async function PATCH(request: NextRequest, { params }: Props) {
 
   const trimmed = typeof display_name === "string" ? display_name.trim() : null;
 
-  let { error } = await supabase
+  // 4.6: no silent success — a failed save surfaces (the input stays
+  // editable for retry). The display_name migration (12.2.0/12.2.13) has
+  // run; the old PGRST204 swallow is removed.
+  const { error } = await supabase
     .from("subscribers")
     .update({ display_name: trimmed || null })
     .eq("id", id);
-
-  // If column doesn't exist yet, silently succeed (migration pending)
-  if (error?.code === "PGRST204" && error?.message?.includes("display_name")) {
-    error = null;
-  }
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });

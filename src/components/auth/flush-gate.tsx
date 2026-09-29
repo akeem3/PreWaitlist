@@ -52,10 +52,14 @@ function mapServerToState(
  * FlushGate resolves server state once on mount, then renders children inside
  * AuthedOnboardingProvider.
  *
- * Ordering: POST (if local data) → confirm 2xx → GET full record → confirm
- * success → only then clear localStorage. Any failure preserves local data
- * and shows a retry UI.
+ * Ordering: GET (pre-check) → POST local data only when no server record
+ * exists → confirm 2xx → GET full record → confirm success → only then
+ * clear localStorage. Any failure preserves local data and shows a retry UI.
  *
+ * - 4.1: an existing server waitlist always wins — never blind-POST (a free
+ *   founder's duplicate POST 402s; a pro founder's spawns a duplicate row).
+ * - 4.1: headline-without-slug means Step 1 was never completed — route back
+ *   to Step 1 instead of flushing an un-creatable draft.
  * - If 404 from GET with no local data: redirect to Step 1 (truly fresh).
  * - Shows a branded spinner while resolving, retry button on failure.
  */
@@ -75,9 +79,40 @@ export function FlushGate({ children }: { children: React.ReactNode }) {
         stored &&
         (stored.slug || stored.headline || stored.template !== "minimal");
 
+      // 4.1: no slug means Step 1 was never completed — route back to
+      // complete it. POSTing would 400 (subdomain required) into a dead end.
+      if (hasLocalData && !stored.slug) {
+        router.replace("/onboarding/1");
+        return;
+      }
+
       try {
-        // Step 1: POST local data to server (if any)
-        if (hasLocalData) {
+        // 4.1: pre-check — GET before POST. An existing server record wins;
+        // blind-POSTing a duplicate 402s for free founders ("Upgrade to Pro
+        // to create more waitlists") and spawns a duplicate row for pro.
+        let record: Record<string, unknown> | Record<string, unknown>[] | null =
+          null;
+        let getFailed = false;
+        let preStatus: number | null = null;
+        {
+          const preRes = await fetch("/api/waitlist");
+          if (cancelled) return;
+          preStatus = preRes.status;
+          if (preRes.ok) {
+            record = await preRes.json();
+            if (Array.isArray(record) && record.length === 0) record = null;
+          } else if (preRes.status !== 404) {
+            getFailed = true;
+          }
+        }
+
+        if (getFailed) {
+          if (!cancelled) setStatus("error");
+          return;
+        }
+
+        // Step 1: POST local data to server (only when no server record)
+        if (hasLocalData && !record) {
           const { waitlistId: _, loading: __, ...edits } = stored;
           void _;
           void __;
@@ -115,29 +150,44 @@ export function FlushGate({ children }: { children: React.ReactNode }) {
           }
         }
 
-        // Step 2: GET the full record (works for both flushed and existing)
-        const getRes = await fetch("/api/waitlist");
+        // Step 2: GET the full record — only when we just POSTed (the
+        // pre-check already loaded it otherwise; a pre-check 404 with no
+        // local data means truly fresh — no second request needed).
+        if (!record) {
+          if (preStatus === 404 && !hasLocalData) {
+            router.replace("/onboarding/1");
+            return;
+          }
+          const getRes = await fetch("/api/waitlist");
 
-        if (cancelled) return;
+          if (cancelled) return;
 
-        // 404 with no local data → truly fresh user, go to Step 1
-        if (getRes.status === 404 && !hasLocalData) {
-          router.replace("/onboarding/1");
-          return;
+          // 404 with no local data → truly fresh user, go to Step 1
+          if (getRes.status === 404 && !hasLocalData) {
+            router.replace("/onboarding/1");
+            return;
+          }
+
+          // 404 with local data → POST failed to create (shouldn't happen, but handle)
+          if (getRes.status === 404) {
+            if (!cancelled) setStatus("error");
+            return;
+          }
+
+          if (!getRes.ok) {
+            if (!cancelled) setStatus("error");
+            return;
+          }
+
+          record = await getRes.json();
+          if (Array.isArray(record) && record.length === 0) record = null;
         }
 
-        // 404 with local data → POST failed to create (shouldn't happen, but handle)
-        if (getRes.status === 404) {
+        if (!record) {
+          // Empty record with no path forward — retry surface, not a spinner.
           if (!cancelled) setStatus("error");
           return;
         }
-
-        if (!getRes.ok) {
-          if (!cancelled) setStatus("error");
-          return;
-        }
-
-        const record = await getRes.json();
 
         // GET now returns an array — take the most recently created waitlist
         const waitlistRecord = Array.isArray(record)
@@ -177,16 +227,36 @@ export function FlushGate({ children }: { children: React.ReactNode }) {
         <p className="text-sm text-muted-foreground">
           Something went wrong loading your waitlist.
         </p>
-        <button
-          onClick={() => {
-            setStatus("loading");
-            // Re-trigger effect by toggling a key — simplest approach
-            window.location.reload();
-          }}
-          className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
-        >
-          Try again
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => {
+              setStatus("loading");
+              // Re-trigger effect by toggling a key — simplest approach
+              window.location.reload();
+            }}
+            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+          >
+            Try again
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              // 4.1 discard-draft escape: retrying replays the same failing
+              // flush, so offer a way out — drop the local draft and restart
+              // at Step 1 (same "Start fresh" label as the Step 1 prompt).
+              try {
+                localStorage.removeItem(STORAGE_KEY);
+                sessionStorage.removeItem("prewaitlist_onboarding_active");
+              } catch {
+                // Ignore — navigation still gets them out of the dead end
+              }
+              router.replace("/onboarding/1");
+            }}
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Start fresh
+          </button>
+        </div>
       </div>
     );
   }

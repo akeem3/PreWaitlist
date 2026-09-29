@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../../lib/supabase/server";
+import { resolveActiveWaitlistRow } from "../../../lib/active-waitlist";
 import UpdatesClient from "./client";
+import UpdatesFreeGate from "./free-gate";
 
 interface PageProps {
   searchParams: Promise<{ wid?: string }>;
@@ -23,23 +25,21 @@ export default async function UpdatesPage({ searchParams }: PageProps) {
     .eq("id", user.id)
     .maybeSingle();
 
+  // 4.5: broadcast pattern — free founders get the upgrade path (modal +
+  // trigger "updates"), not a silent redirect. Tier is checked before the
+  // waitlist lookup (Free + bad wid → gate, not 404).
   if ((profile?.tier ?? "free") !== "pro") {
-    redirect("/dashboard");
+    return <UpdatesFreeGate />;
   }
 
   const { wid } = await searchParams;
 
-  let wlQuery = supabase.from("waitlists").select("id");
-  if (wid) {
-    wlQuery = wlQuery.eq("id", wid).eq("founder_id", user.id);
-  } else {
-    // 16.1 AC1: deterministic default — newest waitlist (matches qualification page 14.4 AC5)
-    wlQuery = wlQuery
-      .eq("founder_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1);
-  }
-  const { data: waitlist } = await wlQuery.maybeSingle();
+  // 4.4: shared resolution — ?wid (validated) else newest.
+  const waitlist = await resolveActiveWaitlistRow<{ id: string }>(
+    supabase,
+    user.id,
+    wid
+  );
 
   if (!waitlist) {
     redirect("/onboarding/1");

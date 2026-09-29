@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../../lib/supabase/server";
+import { resolveActiveWaitlistRow } from "../../../lib/active-waitlist";
 import BroadcastClient from "./client";
 import BroadcastFreeGate from "./free-gate";
 
@@ -36,17 +37,20 @@ export default async function BroadcastPage({ searchParams }: PageProps) {
 
   const { wid } = await searchParams;
 
-  let wlQuery = supabase
-    .from("waitlists")
-    .select(
-      "id, product_name, headline, subdomain, sender_name, sending_domain"
-    );
-  if (wid) {
-    wlQuery = wlQuery.eq("id", wid).eq("founder_id", user.id);
-  } else {
-    wlQuery = wlQuery.eq("founder_id", user.id);
-  }
-  const { data: waitlist } = await wlQuery.maybeSingle();
+  // 4.4: shared resolution — ?wid (validated) else newest.
+  const waitlist = await resolveActiveWaitlistRow<{
+    id: string;
+    product_name: string | null;
+    headline: string | null;
+    subdomain: string;
+    sender_name: string | null;
+    sending_domain: string | null;
+  }>(
+    supabase,
+    user.id,
+    wid,
+    "id, product_name, headline, subdomain, sender_name, sending_domain"
+  );
 
   if (!waitlist) {
     redirect("/onboarding/1");

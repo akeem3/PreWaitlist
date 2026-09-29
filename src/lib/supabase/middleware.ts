@@ -37,6 +37,22 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // 4.2: Phase-B onboarding routes need an account with context — send
+  // unauthenticated visitors to the onboarding signup step (which returns
+  // them to Step 4), not the generic /signin page where the draft strands.
+  const pathname = request.nextUrl.pathname;
+  const isPhaseB = [
+    "/onboarding/4",
+    "/onboarding/4a",
+    "/onboarding/5",
+    "/onboarding/success",
+  ].some((p) => pathname === p || pathname === `${p}/`);
+  if (!user && isPhaseB) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/onboarding/signup";
+    return NextResponse.redirect(url);
+  }
+
   // Redirect unauthenticated users to /signin unless on public routes
   if (
     !user &&
