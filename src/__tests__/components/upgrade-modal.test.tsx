@@ -115,6 +115,38 @@ describe("UpgradeModal", () => {
     ).toBeInTheDocument();
   });
 
+  // Non-2xx must still show the API's own error string (the route pairs
+  // every error with a non-2xx status), not the generic fallback.
+  it("surfaces the API error string on non-2xx responses", async () => {
+    const onOpenChange = vi.fn();
+    mockFetch.mockResolvedValueOnce({
+      status: 400,
+      ok: false,
+      json: async () => ({ error: "Already subscribed to Pro" }),
+    });
+    render(<UpgradeModal {...defaultProps} onOpenChange={onOpenChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
+    expect(
+      await screen.findByText("Already subscribed to Pro")
+    ).toBeInTheDocument();
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+  });
+
+  // Error body without a message (e.g. the checkout route's empty-object 500)
+  // falls back to the generic message.
+  it("falls back to the generic message when the error body has no message", async () => {
+    mockFetch.mockResolvedValueOnce({
+      status: 500,
+      ok: false,
+      json: async () => ({}),
+    });
+    render(<UpgradeModal {...defaultProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
+    expect(
+      await screen.findByText("Something went wrong. Please try again.")
+    ).toBeInTheDocument();
+  });
+
   it("auto-closes when the trigger is within cooldown", () => {
     const onOpenChange = vi.fn();
     localStorageMock.setItem(

@@ -95,7 +95,7 @@ export function UpgradeModal({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ triggerSource }),
     })
-      .then((res) => {
+      .then(async (res) => {
         // Logged-out visitor: route to signup with the pay intent preserved
         // instead of failing silently.
         if (res.status === 401) {
@@ -103,7 +103,20 @@ export function UpgradeModal({
           router.push("/signup?next=/dashboard/settings/billing&plan=pro");
           return null;
         }
-        if (!res.ok) throw new Error(`Checkout failed: ${res.status}`);
+        if (!res.ok) {
+          // Surface the API's own error string when the body has one (e.g.
+          // "Already subscribed to Pro"); fall back to the generic message.
+          try {
+            const body = (await res.json()) as { error?: unknown };
+            if (typeof body?.error === "string" && body.error) {
+              setError(body.error);
+              return null;
+            }
+          } catch {
+            // Non-JSON body — fall through to the generic message.
+          }
+          throw new Error(`Checkout failed: ${res.status}`);
+        }
         return res.json();
       })
       .then((data) => {

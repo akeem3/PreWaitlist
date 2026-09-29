@@ -100,6 +100,30 @@ describe("POST /api/billing/checkout", () => {
     const body = await res.json();
     expect(body.error).toContain("Already subscribed");
   });
+
+  // Pay-before-onboarding: fresh signups reach checkout from onboarding/1
+  // before any waitlist exists, and founder_profiles is otherwise created
+  // lazily at waitlist creation. Checkout must auto-create the row, not 404.
+  it("auto-creates the founder profile when missing", async () => {
+    const client = buildMockClient({ id: "user-1" }, null);
+    mockCreateClient.mockResolvedValue(
+      client as ReturnType<typeof createClient>
+    );
+
+    const { POST } = await import("@/app/api/billing/checkout/route");
+    const req = new Request("http://localhost/api/billing/checkout", {
+      method: "POST",
+      body: JSON.stringify({ triggerSource: "pro-cta-onboarding" }),
+      headers: { "content-type": "application/json" },
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.priceId).toBe("price_test_123");
+    expect(client.from("founder_profiles").insert).toHaveBeenCalledWith({
+      id: "user-1",
+    });
+  });
 });
 
 describe("POST /api/webhooks/paddle", () => {

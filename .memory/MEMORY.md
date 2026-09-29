@@ -1142,6 +1142,15 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - **Gotcha:** never exempt `billing` wholesale — `triggerUpgrade("billing")` is also the settings-page button (line 167); exempting it would kill AC8 for a passive opener.
 - **Verified live (2026-09-29):** restarted the founder's server with the fix (old PID 67084 died when `.next` was rebuilt → new PID 2580, log at `.next-server.log`); temp Playwright probe (deleted after run) proved both suppressed-key and clean arrivals **open and stay** on `/onboarding/1?plan=pro`. Gates: lint 0/5, suite **691 total / 684 pass / 7 fail = exact baseline** (+4 new tests), clean build.
 
+**Upgrade-click error fix (Prompt #8, 2026-09-29):**
+
+- **Symptom:** founder clicked "Upgrade to Pro" → red "Something went wrong. Please try again."
+- **Root cause:** pay-before-onboarding lands fresh signups on `onboarding/1?plan=pro` where the modal opens **before any waitlist exists**, but `founder_profiles` rows are only auto-created lazily at waitlist creation (`api/waitlist/route.ts:117-139`). Checkout route's `.single()` on the missing row → **404 "Profile not found"** → modal's `!res.ok` throw → generic message. The modal's `data.error` branch was **dead code** — the route pairs every error string with a non-2xx status, which threw before the branch ran.
+- **Evidence:** env + auth guards healthy (unauth POST → 401 on local and prod); cloud DB showed exactly one profileless user — the founder's fresh test signup created 11:12:16Z that morning.
+- **Fix:** checkout route `.maybeSingle()` + **create-if-missing** (`insert({id: user.id})`, mirroring the waitlist route; concurrent-create race re-selects before 500-ing); modal parses non-2xx bodies and surfaces the API's existing `error` strings, generic fallback when absent (web.dev fetch pattern). Research: Supabase PGRST116 docs (`.maybeSingle()` for "row may not exist") + web.dev fetch error handling.
+- **Tests:** +3 — billing auto-create → 200, modal surfaces non-2xx API string, modal falls back when body has no message.
+- **Flagged, NOT fixed (scope):** (a) auth callback acquisition capture (`callback/route.ts:47-56`) does a best-effort `update` on a possibly-absent profile row → acquisition data silently dropped for fresh signups (profile now gets created at checkout or waitlist creation, but not at callback); (b) `use-paddle-upgrade.ts` (steps 4a/5) fails **silently** (console-only) on checkout errors — no user-facing message.
+
 1. ~~Implement Story 1.2 (Toggle, Select, Textarea)~~ ✅ Done
 2. ~~Run Follow-Up Audit (Prompt #4) on completed Epic 1~~ ✅ Done — all clean
 3. ~~Create Epic 2 branch from dev~~ ✅ Done

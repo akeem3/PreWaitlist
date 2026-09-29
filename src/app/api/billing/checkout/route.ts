@@ -26,13 +26,32 @@ export async function POST(req: Request) {
     .from("founder_profiles")
     .select("id, tier")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    // Pay-before-onboarding: fresh signups reach checkout from onboarding/1
+    // before any waitlist exists, and founder_profiles is otherwise created
+    // lazily at waitlist creation (api/waitlist/route.ts). Create it here so
+    // checkout never 404s. Same pattern + insert policy as that route.
+    const { error: insertProfileError } = await supabase
+      .from("founder_profiles")
+      .insert({ id: user.id });
+
+    if (insertProfileError) {
+      // Concurrent-create race (double-click): another request may have
+      // inserted the row first — proceed if it now exists.
+      const { data: retried } = await supabase
+        .from("founder_profiles")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!retried) {
+        return NextResponse.json({}, { status: 500 });
+      }
+    }
   }
 
-  if (profile.tier === "pro") {
+  if (profile?.tier === "pro") {
     return NextResponse.json(
       { error: "Already subscribed to Pro" },
       { status: 400 }
