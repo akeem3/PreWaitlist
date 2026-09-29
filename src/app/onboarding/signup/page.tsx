@@ -178,7 +178,7 @@ export default function OnboardingSignup() {
         <p className="mt-6 text-xs text-muted-foreground">
           Already have an account?{" "}
           <Link
-            href="/signin"
+            href="/signin?next=/onboarding/4"
             className="font-medium text-accent hover:underline"
           >
             Sign in

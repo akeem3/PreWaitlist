@@ -9,6 +9,8 @@ import { createClient } from "../../../../src/lib/supabase/client";
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
+  // Post-auth intent forwarded from signup (already includes plan=pro when set).
+  const next = searchParams.get("next");
   const [cooldown, setCooldown] = useState(0);
   const [resending, setResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
@@ -115,7 +117,7 @@ function VerifyEmailContent() {
 
         <p className="mt-6 text-sm text-[#6B6459]">
           <Link
-            href="/signin"
+            href={next ? `/signin?next=${encodeURIComponent(next)}` : "/signin"}
             className="font-medium text-[#0F7A5E] hover:underline"
           >
             Back to sign in

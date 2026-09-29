@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { PRO_INTENT_DEST, PRO_ONBOARDING_ENTRY } from "@/lib/auth-redirect";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -65,6 +66,27 @@ export async function GET(request: NextRequest) {
       // truth — it checks for waitlists and redirects to onboarding if needed.
       if (!cookieRedirect && !searchParams.get("next")) {
         redirectPath = "/dashboard";
+      }
+
+      // ?plan=pro pay-before-onboarding: branch on waitlist count here, since
+      // layouts never receive searchParams (the dashboard layout exception was
+      // dead code). Zero waitlists → onboarding step 1 with the upgrade modal
+      // auto-opened; one or more → billing (its own ?plan=pro auto-open runs).
+      // Destinations are shared with the client-side resolvePostAuthPath
+      // (src/lib/auth-redirect.ts) via PRO_INTENT_DEST/PRO_ONBOARDING_ENTRY —
+      // keep the count semantics in sync between the two.
+      if (user && redirectPath === PRO_INTENT_DEST) {
+        try {
+          const { count, error } = await supabase
+            .from("waitlists")
+            .select("id", { count: "exact", head: true })
+            .eq("founder_id", user.id);
+          if (!error && (count ?? 0) === 0) {
+            redirectPath = PRO_ONBOARDING_ENTRY;
+          }
+        } catch {
+          // Keep the original destination on query failures — billing renders.
+        }
       }
 
       const response = NextResponse.redirect(`${origin}${redirectPath}`, 302);

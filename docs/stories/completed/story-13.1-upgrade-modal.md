@@ -31,7 +31,7 @@ T4 (AC10) Lint + build
 
 - Modal UX: show short interstitial before opening Paddle checkout. Modal IS the pricing comparison.
 - Contextual triggers (feature gate clicks, limits) convert better than ambient ones.
-- Cooldown: localStorage key `upgrade-dismissed-{trigger}` with `{ dismissedAt }` timestamp. If < 7 days since dismiss, don't show.
+- Cooldown: localStorage key `upgrade-dismissed-{trigger}` with `{ dismissedAt }` timestamp. If < 7 days since dismiss, don't show. **AMENDED 2026-09-29:** explicit-intent arrival deep links (`?plan=pro` → `pro-cta-onboarding` / `pro-cta-billing`) are exempt from the cooldown read — otherwise they flicker shut on arrival and the stripped param loses the pay intent. Passive openers unchanged.
 - Trigger content varies by source but shares same CTA and feature list.
 - Design: max-w-[480px], backdrop backdrop-blur-sm bg-black/50, focus trap, Escape dismisses.
 - Sidebar already shows locked state for Broadcast and Warmth — wire those click handlers to open modal instead of just tooltip.
@@ -49,17 +49,17 @@ T4 (AC10) Lint + build
 
 **Status: DONE**
 
-| AC                             | Status  | Evidence                                             |
-| ------------------------------ | ------- | ---------------------------------------------------- |
-| AC1: UpgradeModal component    | ✅ Done | `components/dashboard/upgrade-modal.tsx` created     |
-| AC2: Props + usePaddle         | ✅ Done | Props: open, onOpenChange, triggerSource             |
-| AC3: Context-specific headline | ✅ Done | HEADLINES map with 7 trigger sources                 |
-| AC4: Feature bullets + price   | ✅ Done | 6 features, "$15/month", "Cancel anytime"            |
-| AC5: Paddle checkout CTA       | ✅ Done | Uses usePaddle + /api/billing/checkout               |
-| AC6: Dismissable               | ✅ Done | X button, "Maybe later", backdrop click, Escape      |
-| AC7: Design system compliance  | ✅ Done | bg-card, border-border, backdrop-blur, max-w-[480px] |
-| AC8: 7-day cooldown            | ✅ Done | localStorage + isSuppressed() exported               |
-| AC9: 7 trigger points          | ✅ Done | Sidebar(2), warmth panel, settings billing wired     |
-| AC10: Lint + build             | ✅ Done | 0 errors, build passes                               |
+| AC                             | Status  | Evidence                                                                                                   |
+| ------------------------------ | ------- | ---------------------------------------------------------------------------------------------------------- |
+| AC1: UpgradeModal component    | ✅ Done | `components/dashboard/upgrade-modal.tsx` created                                                           |
+| AC2: Props + usePaddle         | ✅ Done | Props: open, onOpenChange, triggerSource                                                                   |
+| AC3: Context-specific headline | ✅ Done | HEADLINES map with 7 trigger sources                                                                       |
+| AC4: Feature bullets + price   | ✅ Done | 6 features, "$15/month", "Cancel anytime"                                                                  |
+| AC5: Paddle checkout CTA       | ✅ Done | Uses usePaddle + /api/billing/checkout                                                                     |
+| AC6: Dismissable               | ✅ Done | X button, "Maybe later", backdrop click, Escape                                                            |
+| AC7: Design system compliance  | ✅ Done | bg-card, border-border, backdrop-blur, max-w-[480px]                                                       |
+| AC8: 7-day cooldown            | ✅ Done | localStorage + isSuppressed() exported (AMENDED 2026-09-29: `pro-cta-*` deep links exempt — see Dev Notes) |
+| AC9: 7 trigger points          | ✅ Done | Sidebar(2), warmth panel, settings billing wired                                                           |
+| AC10: Lint + build             | ✅ Done | 0 errors, build passes                                                                                     |
 
 **Gap:** Depends on Story 13.0 (usePaddle hook). Sidebar already has locked state for Broadcast/Warmth — those click handlers need wiring to modal.

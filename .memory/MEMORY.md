@@ -1100,7 +1100,47 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 **MEMORY corrections applied:** merge-tag claims removed from Epic 12 architecture notes (2026-09-24); story-file AC amendments done by 17.7 (2026-09-28).
 
-## Next Steps
+## Pro CTA → Signup → Upgrade Modal Fix — Prompt #8 (2026-09-29)
+
+**Status:** Phases 1–6 complete + **Prompt #3 audit passed** (2026-09-29), all gates green (lint 0 errors/5 pre-existing warnings, full suite **687 total / 680 passed / 7 failed = exact baseline**, clean build, prettier clean). **Uncommitted** on `dev` alongside Phase-1 revenue-lifecycle fixes.
+
+**Root cause:** `dashboard/layout.tsx` read a `searchParams` prop for a `?plan=pro` exception — **Next.js never passes `searchParams` to layouts** (proven from `next/dist/.../create-component-tree.js`: `searchParams` only when `isPage`; official docs: "Layouts do not rerender on navigation, so they cannot access search params"). `plan` was always `undefined` → zero-waitlist guard always bounced to `/onboarding/1` and no upgrade modal ever opened for Pro-intent signups.
+
+**Fix (founder-approved design — modal over onboarding/1, not an obstructive detour):**
+
+- `src/app/auth/callback/route.ts` — branch **only when** `redirectPath === PRO_INTENT_DEST`: count waitlists (`select("id", {count:"exact",head:true})`); 0 → `PRO_ONBOARDING_ENTRY`; ≥1 → billing (its existing `?plan=pro` auto-open runs); query error/throw → keep original dest. Non-billing `plan=pro` paths (resume-onboarding `next`) preserved verbatim.
+- `src/app/onboarding/onboarding-client-layout.tsx` — new child `PlanProAutoOpen` (inside the upgrade context Provider, so the trigger comes from context — same pattern as billing's `useUpgradeModal()`): opens UpgradeModal once with trigger source **`pro-cta-onboarding`** (no HEADLINES entry → existing fallback copy **"Unlock all Pro features"**, no copy gate), strips `?plan=pro` via `history.replaceState`, skips already-Pro founders. After Paddle success, existing `successPath` + `?upgraded=1` poll resumes onboarding/1.
+- `src/app/dashboard/layout.tsx` — removed the dead `searchParams` plan exception (plain zero-waitlist bounce, comment notes the callback owns the branch).
+- `src/app/dashboard/shell.tsx` — `getServerDefaultId([])` returns `""` instead of `waitlists[-1].id` (latent crash once layout renders shell with empty array on query error).
+
+**Dismissible-modal research verdict (web):** keep dismissible — a no-exit paywall is a top dark-pattern complaint (EU dark-pattern guidance; forced-action friction reduces conversion); ≥48h re-prompt suppression recommended — our `COOLDOWN_DAYS = 1` already applies to every trigger including `pro-cta-onboarding`.
+
+**Tests (new, 9):** `src/__tests__/api/auth-callback-plan-pro.test.ts` (6: zero→onboarding, ≥1→billing, error keeps dest, no-plan no query, default dest, non-billing plan=pro verbatim) + `src/__tests__/components/onboarding-plan-pro.test.tsx` (3: opens+strips, no-param closed, already-Pro closed).
+
+**Gotchas:**
+
+- **happy-dom strips the forbidden `cookie` request header** (fetch-spec compliance) → a real `NextRequest` can't carry cookies in tests. Workaround: `Object.assign(new Request(url), { cookies: { get } })` — route only touches `request.url` + `request.cookies.get()`.
+- **`react-hooks/set-state-in-effect` fires on intra-file `triggerUpgrade` in an effect** — billing passes lint only because its trigger comes from imported `useUpgradeModal()`. Fix: put the auto-open effect in a child component consuming context, not in the file that owns the setter.
+
+**Flows after fix:** fresh visitor → Pro CTA → `/signup?next=…&plan=pro` → email link → callback → `/onboarding/1?plan=pro` + modal → pay → onboarding/1 (`?upgraded=1`) → continue. Existing account → `/dashboard/settings/billing?plan=pro` + modal (existing code). Dismiss → 1-day cooldown, flow continues.
+
+**Prompt #3 audit findings + fixes (2026-09-29):**
+
+- **BUG (fixed): signed-in redirect hole for 0-waitlist founders.** Client-side `router.push/replace(dest)` legs (new signup/signin mount effects + Phase-1 signin submit) bypassed the callback's count branch → dashboard layout bounced them to `/onboarding/1` with `?plan=pro` lost (no modal). Fix: `resolvePostAuthPath(deps, dest, userId?)` in `src/lib/auth-redirect.ts` — counts own waitlists client-side for `PRO_INTENT_DEST` only; 0 → `PRO_ONBOARDING_ENTRY`; error/no-session → keep dest. Used by signup effect, signin effect, signin `navigatePostAuth` (3 submit sites). Callback keeps its own inline query (same semantics) sharing `PRO_INTENT_DEST`/`PRO_ONBOARDING_ENTRY` constants.
+- **Asymmetry (fixed): billing auto-open only stripped `?plan=pro` when free** — a Pro founder kept the stale param forever (could re-trigger after a downgrade). Now: always strip on mount, open gated by `contextTierRef.current !== "pro"` (`billing/client.tsx`).
+- **Test gaps (filled):** already-subscribed `POST /api/billing/checkout` → 400 (`billing.test.ts`); billing auto-open free-opens/pro-skips/no-param (`billing-plan-pro.test.tsx`, 3); onboarding `?upgraded=1` pay-return leg (fake timers, polls `/api/profile`); signed-in redirect on both auth pages incl. count branches (`auth-signed-in-redirect.test.tsx`, 6); `resolvePostAuthPath` units (8).
+- **Flagged, NOT fixed (founder decisions):** (a) 2026-09-22 "logged-in users see Open Dashboard" CTA is unimplemented — `pricing-section.tsx` static `/signup?…` for everyone (functionally covered by session-redirect); (b) auth-redirect cookie expiry (1h) still drops intent on very slow verification (pre-existing); (c) checkout re-entrancy race within webhook latency window (layered guards: tier checks, server 400, once-only open, 1-day cooldown).
+- **TS gotcha:** passing a supabase client directly into a hand-rolled structural interface → "Type instantiation is excessively deep". Fix: `postAuthDeps(client)` factory — closures (`getUser`, `countOwnWaitlists`) + `from(table: string): unknown` with an internal cast; keeps call sites type-safe and the build green.
+- **Double-pay guard layers verified:** billing `contextTierRef !== "pro"` · onboarding `form.tier` (server tier precedence over localStorage, `context.tsx:213,217`) · server 400 "Already subscribed to Pro" · UpgradeModal 401→signup · `COOLDOWN_DAYS = 1` · once-only refs + param strip.
+
+**Upgrade-modal flicker fix (Prompt #8 re-run, 2026-09-29):**
+
+- **Symptom:** founder — "the upgrade modal just flickers." Playwright probes against the live `:3000` server proved the mechanism: clean storage → modal mounts and stays; `upgrade-dismissed-pro-cta-onboarding` key present → mounts then unmounts in **3ms**.
+- **Root cause:** the AC8 cooldown effect in `upgrade-modal.tsx` auto-closes ANY open whose trigger has a <24h dismiss key. `PlanProAutoOpen` (`?plan=pro` arrival) only gates on tier, so a prior dismissal shut the arrival modal immediately — and the param was already stripped, so the pay intent was silently lost.
+- **Fix:** `COOLDOWN_EXEMPT_TRIGGERS` in `upgrade-modal.tsx` = `pro-cta-onboarding` + `pro-cta-billing` — explicit-intent deep links survive a prior dismissal (research: show upgrade prompts on active purchase intent, keep frequency caps for passive re-prompts). Billing deep link now uses its OWN trigger `pro-cta-billing` (was sharing `billing` with the settings-page button, so it couldn't be exempted wholesale); `HEADLINES["pro-cta-billing"] = "Manage your subscription"` reuses the existing string → headline unchanged. Settings button keeps `billing` → cooldown still applies. `?upgrade=cap` deliberately left alone (code comment documents intentional cooldown honor).
+- **Tests:** +2 exemption cases in `upgrade-modal.test.tsx` (it.each), +1 founder-repro in `onboarding-plan-pro.test.tsx` (suppressed key + `?plan=pro` → modal stays after effect cycles), +1 key-isolation in `billing-plan-pro.test.tsx` (assert now `pro-cta-billing`). Temp probe `tests/e2e/plan-pro-probe.spec.ts` deleted (repro locked at unit/integration level instead).
+- **Gotcha:** never exempt `billing` wholesale — `triggerUpgrade("billing")` is also the settings-page button (line 167); exempting it would kill AC8 for a passive opener.
+- **Verified live (2026-09-29):** restarted the founder's server with the fix (old PID 67084 died when `.next` was rebuilt → new PID 2580, log at `.next-server.log`); temp Playwright probe (deleted after run) proved both suppressed-key and clean arrivals **open and stay** on `/onboarding/1?plan=pro`. Gates: lint 0/5, suite **691 total / 684 pass / 7 fail = exact baseline** (+4 new tests), clean build.
 
 1. ~~Implement Story 1.2 (Toggle, Select, Textarea)~~ ✅ Done
 2. ~~Run Follow-Up Audit (Prompt #4) on completed Epic 1~~ ✅ Done — all clean

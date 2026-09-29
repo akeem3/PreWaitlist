@@ -99,15 +99,30 @@ export function PricingSection() {
 
                     <div className="flex-1" />
 
-                    <Link href="/onboarding/1" className="mt-auto">
-                      <Button
-                        variant={tier.variant}
-                        size="lg"
-                        className="w-full"
+                    {tier.name === "Pro" ? (
+                      <Link
+                        href="/signup?next=/dashboard/settings/billing&plan=pro"
+                        className="mt-auto"
                       >
-                        Build it free &mdash; live in 4 mins &rarr;
-                      </Button>
-                    </Link>
+                        <Button
+                          variant={tier.variant}
+                          size="lg"
+                          className="w-full"
+                        >
+                          Go Pro &mdash; live in 4 mins &rarr;
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Link href="/onboarding/1" className="mt-auto">
+                        <Button
+                          variant={tier.variant}
+                          size="lg"
+                          className="w-full"
+                        >
+                          Build it free &mdash; live in 4 mins &rarr;
+                        </Button>
+                      </Link>
+                    )}
                   </CardContent>
                 </Card>
               </StaggerItem>

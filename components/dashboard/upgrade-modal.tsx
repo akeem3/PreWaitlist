@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePaddle } from "@/hooks/use-paddle";
 import { PRO_FEATURES } from "@/lib/pricing-features";
 
@@ -8,6 +9,13 @@ interface UpgradeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   triggerSource: string;
+  // Path Paddle returns to after successful payment (?upgraded=1 appended).
+  // A path (not a full URL) because the origin can only be resolved in a
+  // client-only context — reading window.location during render throws on
+  // the server, since "use client" components still prerender. Defaults to
+  // the billing page; onboarding passes its current step so payers resume
+  // where they left off.
+  successPath?: string;
 }
 
 const HEADLINES: Record<string, string> = {
@@ -17,11 +25,28 @@ const HEADLINES: Record<string, string> = {
   qual_question: "Add more qualification questions",
   billing: "Manage your subscription",
   csv_export: "Export your subscriber data",
+  email_customisation: "Customise your sender name, subject and body",
   first_subscriber: "Unlock Pro features for your waitlist",
   updates: "Share updates and email your waitlist",
+  // Deep-link arrival keeps the billing page's own headline (existing string,
+  // so the ?plan=pro leg renders exactly what it did before its trigger key
+  // was split off from the settings-page "billing" opener).
+  "pro-cta-billing": "Manage your subscription",
 };
 
 const COOLDOWN_DAYS = 1;
+
+// Explicit-intent arrival deep links (?plan=pro from the Go Pro CTA) are
+// exempt from the dismiss cooldown: the founder actively chose "Go Pro" in
+// this session, so a prior dismissal must not auto-close the arrival modal —
+// it flashed for ~3ms, then the already-stripped param lost the pay intent
+// (reported as "the upgrade modal just flickers"). The cooldown still governs
+// passive re-prompts (sidebar, gates, settings buttons), which use their own
+// trigger keys.
+const COOLDOWN_EXEMPT_TRIGGERS = new Set([
+  "pro-cta-onboarding",
+  "pro-cta-billing",
+]);
 
 function getCooldownKey(triggerSource: string): string {
   return `upgrade-dismissed-${triggerSource}`;
@@ -54,12 +79,16 @@ export function UpgradeModal({
   open,
   onOpenChange,
   triggerSource,
+  successPath,
 }: UpgradeModalProps) {
   const paddle = usePaddle();
+  const router = useRouter();
   const backdropRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleUpgrade = useCallback(() => {
     if (!paddle) return;
+    setError(null);
 
     fetch("/api/billing/checkout", {
       method: "POST",
@@ -67,35 +96,47 @@ export function UpgradeModal({
       body: JSON.stringify({ triggerSource }),
     })
       .then((res) => {
+        // Logged-out visitor: route to signup with the pay intent preserved
+        // instead of failing silently.
+        if (res.status === 401) {
+          onOpenChange(false);
+          router.push("/signup?next=/dashboard/settings/billing&plan=pro");
+          return null;
+        }
         if (!res.ok) throw new Error(`Checkout failed: ${res.status}`);
         return res.json();
       })
       .then((data) => {
+        if (!data) return;
         if (data.error) {
-          console.error("Checkout error:", data.error);
+          setError(data.error);
           return;
         }
         if (data.priceId) {
+          // window is safe here: this only executes on click, in the browser.
+          const successUrl = successPath
+            ? `${window.location.origin}${successPath}?upgraded=1`
+            : `${window.location.origin}/dashboard/settings/billing?upgraded=1`;
           paddle.Checkout.open({
             items: [{ priceId: data.priceId, quantity: 1 }],
             customData: data.customData,
             settings: {
               variant: "one-page",
-              successUrl: `${window.location.origin}/dashboard/settings/billing?upgraded=1`,
+              successUrl,
             },
           });
           window.dispatchEvent(new CustomEvent("paddle-checkout-opened"));
+          onOpenChange(false);
         }
       })
-      .catch((err) => {
-        console.error("Failed to open checkout:", err);
+      .catch(() => {
+        setError("Something went wrong. Please try again.");
       });
-
-    onOpenChange(false);
-  }, [paddle, triggerSource, onOpenChange]);
+  }, [paddle, triggerSource, onOpenChange, router, successPath]);
 
   const handleDismiss = useCallback(() => {
     suppress(triggerSource);
+    setError(null);
     onOpenChange(false);
   }, [triggerSource, onOpenChange]);
 
@@ -117,6 +158,20 @@ export function UpgradeModal({
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open, handleDismiss]);
+
+  // AC8 cooldown: a dismissed trigger stays suppressed for COOLDOWN_DAYS.
+  // Enforced here so every opener (sidebar, gates, billing) honors it —
+  // except explicit-intent deep links, which must survive a prior dismissal
+  // or they flicker shut and the arrival pay intent is lost.
+  useEffect(() => {
+    if (
+      open &&
+      !COOLDOWN_EXEMPT_TRIGGERS.has(triggerSource) &&
+      isSuppressed(triggerSource)
+    ) {
+      onOpenChange(false);
+    }
+  }, [open, triggerSource, onOpenChange]);
 
   if (!open) return null;
 
@@ -197,6 +252,12 @@ export function UpgradeModal({
         >
           Upgrade to Pro
         </button>
+
+        {error && (
+          <p className="mt-2 text-center text-xs text-destructive" role="alert">
+            {error}
+          </p>
+        )}
 
         <button
           type="button"

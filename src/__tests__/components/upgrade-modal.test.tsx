@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import {
   UpgradeModal,
   isSuppressed,
@@ -9,6 +9,11 @@ vi.mock("../../../src/hooks/use-paddle", () => ({
   usePaddle: vi.fn(() => ({
     Checkout: { open: vi.fn() },
   })),
+}));
+
+const mockPush = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
 }));
 
 const mockFetch = vi.fn();
@@ -81,6 +86,75 @@ describe("UpgradeModal", () => {
       screen.getByText("See who's engaged and who's cold")
     ).toBeInTheDocument();
   });
+
+  it("redirects logged-out users to signup on 401", async () => {
+    const onOpenChange = vi.fn();
+    mockFetch.mockResolvedValueOnce({ status: 401, ok: false });
+    render(<UpgradeModal {...defaultProps} onOpenChange={onOpenChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith(
+        "/signup?next=/dashboard/settings/billing&plan=pro"
+      );
+    });
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("shows API errors inline and keeps the modal open", async () => {
+    const onOpenChange = vi.fn();
+    mockFetch.mockResolvedValueOnce({
+      status: 200,
+      ok: true,
+      json: async () => ({ error: "Already subscribed" }),
+    });
+    render(<UpgradeModal {...defaultProps} onOpenChange={onOpenChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
+    expect(await screen.findByText("Already subscribed")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Upgrade to Pro" })
+    ).toBeInTheDocument();
+  });
+
+  it("auto-closes when the trigger is within cooldown", () => {
+    const onOpenChange = vi.fn();
+    localStorageMock.setItem(
+      "upgrade-dismissed-sidebar",
+      JSON.stringify({ dismissedAt: Date.now() })
+    );
+    render(
+      <UpgradeModal
+        {...defaultProps}
+        triggerSource="sidebar"
+        onOpenChange={onOpenChange}
+      />
+    );
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  // Flicker regression: explicit-intent ?plan=pro deep links must survive a
+  // prior dismissal, or the arrival modal shuts ~3ms after paint and the
+  // stripped param loses the pay intent.
+  it.each(["pro-cta-onboarding", "pro-cta-billing"])(
+    "does not auto-close exempted trigger %s within cooldown",
+    (trigger) => {
+      const onOpenChange = vi.fn();
+      localStorageMock.setItem(
+        `upgrade-dismissed-${trigger}`,
+        JSON.stringify({ dismissedAt: Date.now() })
+      );
+      render(
+        <UpgradeModal
+          {...defaultProps}
+          triggerSource={trigger}
+          onOpenChange={onOpenChange}
+        />
+      );
+      expect(onOpenChange).not.toHaveBeenCalled();
+      expect(
+        screen.getByRole("heading", { name: "Upgrade to Pro" })
+      ).toBeInTheDocument();
+    }
+  );
 });
 
 describe("isSuppressed (cooldown)", () => {

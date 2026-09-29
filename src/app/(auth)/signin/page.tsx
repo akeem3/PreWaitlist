@@ -2,19 +2,33 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
 import { PasswordInput } from "../../../../components/ui/password-input";
 import { Spinner } from "../../../../components/ui/spinner";
 import { createClient } from "../../../../src/lib/supabase/client";
+import {
+  getAuthIntent,
+  postAuthDeps,
+  resolvePostAuthPath,
+  writeAuthRedirectCookie,
+} from "../../../../src/lib/auth-redirect";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_SUBMIT_ATTEMPTS = 5;
 const SUBMIT_COOLDOWN_MS = 60_000;
 
 export default function SigninPage() {
+  return (
+    <Suspense fallback={null}>
+      <SigninPageContent />
+    </Suspense>
+  );
+}
+
+function SigninPageContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +38,37 @@ export default function SigninPage() {
   const submitAttempts = useRef(0);
   const lastSubmitTime = useRef(0);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Preserve post-login destination (e.g. /onboarding/4, billing?plan=pro).
+  const { dest } = getAuthIntent(searchParams);
   const supabase = createClient();
+
+  // Already signed in — skip the form and honor the post-auth intent.
+  // Guards the Go Pro flow when a logged-in founder lands here directly.
+  // Zero-waitlist Pro-intent founders land on /onboarding/1?plan=pro — the
+  // dashboard layout would bounce them and drop the intent otherwise.
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (cancelled || !data.user) return;
+      const path = await resolvePostAuthPath(
+        postAuthDeps(supabase),
+        dest,
+        data.user.id
+      );
+      if (!cancelled) router.replace(path);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, router, dest]);
+
+  // Post-sign-in navigation honoring the intent (billing?plan=pro →
+  // /onboarding/1?plan=pro for zero-waitlist founders, else the destination).
+  const navigatePostAuth = useCallback(async () => {
+    const path = await resolvePostAuthPath(postAuthDeps(supabase), dest);
+    router.push(path);
+  }, [supabase, dest, router]);
 
   const validateEmail = useCallback((value: string) => {
     if (!value) {
@@ -68,8 +112,8 @@ export default function SigninPage() {
         handled = true;
         subscription.unsubscribe();
         clearTimeout(fallbackTimer);
-        // Always go to dashboard — the server layout decides the correct destination
-        router.push("/dashboard");
+        // Honor intent when present — the server layout decides otherwise
+        void navigatePostAuth();
       }
     });
 
@@ -78,7 +122,7 @@ export default function SigninPage() {
       if (!handled) {
         handled = true;
         subscription.unsubscribe();
-        router.push("/dashboard");
+        void navigatePostAuth();
       }
     }, 2000);
 
@@ -109,13 +153,18 @@ export default function SigninPage() {
       handled = true;
       clearTimeout(fallbackTimer);
       subscription.unsubscribe();
-      router.push("/dashboard");
+      void navigatePostAuth();
     }
   }
 
   async function handleGoogleOAuth() {
     setError(null);
     setLoading(true);
+
+    // If intent present, set cookie so callback knows where to redirect
+    if (dest) {
+      writeAuthRedirectCookie(dest);
+    }
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -239,7 +288,7 @@ export default function SigninPage() {
         </form>
 
         <Link
-          href="/signup"
+          href={dest ? `/signup?next=${encodeURIComponent(dest)}` : "/signup"}
           className="mt-5 block text-center text-body-sm text-muted-foreground hover:text-[var(--color-foreground)]"
         >
           Don&apos;t have an account?{" "}

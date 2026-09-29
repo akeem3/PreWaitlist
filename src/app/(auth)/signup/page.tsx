@@ -4,12 +4,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { Suspense, useCallback, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
 import { PasswordInput } from "../../../../components/ui/password-input";
 import { Spinner } from "../../../../components/ui/spinner";
 import { createClient } from "../../../../src/lib/supabase/client";
+import {
+  getAuthIntent,
+  postAuthDeps,
+  resolvePostAuthPath,
+  writeAuthRedirectCookie,
+} from "../../../../src/lib/auth-redirect";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_SUBMIT_ATTEMPTS = 5;
@@ -34,8 +40,32 @@ function SignupPageContent() {
   const lastSubmitTime = useRef(0);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next");
+  // Post-auth destination (e.g. /dashboard/settings/billing?plan=pro for
+  // Pro-intent signups). Carried via cookie + verify-email URL so not even
+  // the email-verification round trip drops it.
+  const { dest } = getAuthIntent(searchParams);
   const supabase = createClient();
+
+  // Already signed in (e.g. a logged-in founder clicked Go Pro) — skip the
+  // form and honor the post-auth intent (billing?plan=pro) or dashboard.
+  // Zero-waitlist Pro-intent founders land on /onboarding/1?plan=pro — the
+  // dashboard layout would bounce them and drop the intent otherwise.
+  // createBrowserClient is a singleton, so this effect runs once.
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (cancelled || !data.user) return;
+      const path = await resolvePostAuthPath(
+        postAuthDeps(supabase),
+        dest,
+        data.user.id
+      );
+      if (!cancelled) router.replace(path);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, router, dest]);
 
   const passwordValid = password.length >= 8;
 
@@ -74,9 +104,9 @@ function SignupPageContent() {
 
     setLoading(true);
 
-    // If next param present, set cookie so callback knows where to redirect
-    if (next) {
-      document.cookie = `auth_redirect_to=${next}; path=/; max-age=300`;
+    // If intent present, set cookie so callback knows where to redirect
+    if (dest) {
+      writeAuthRedirectCookie(dest);
     }
 
     const { error: signUpError } = await supabase.auth.signUp({
@@ -105,16 +135,18 @@ function SignupPageContent() {
       return;
     }
 
-    router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+    router.push(
+      `/verify-email?email=${encodeURIComponent(email)}${dest ? `&next=${encodeURIComponent(dest)}` : ""}`
+    );
   }
 
   async function handleGoogleOAuth() {
     setError(null);
     setLoading(true);
 
-    // If next param present, set cookie so callback knows where to redirect
-    if (next) {
-      document.cookie = `auth_redirect_to=${next}; path=/; max-age=300`;
+    // If intent present, set cookie so callback knows where to redirect
+    if (dest) {
+      writeAuthRedirectCookie(dest);
     }
 
     const { error } = await supabase.auth.signInWithOAuth({
@@ -262,7 +294,7 @@ function SignupPageContent() {
         </p>
 
         <Link
-          href="/signin"
+          href={dest ? `/signin?next=${encodeURIComponent(dest)}` : "/signin"}
           className="mt-4 block text-center text-body-sm text-muted-foreground hover:text-[var(--color-foreground)]"
         >
           Already have an account?{" "}

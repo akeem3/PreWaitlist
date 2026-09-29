@@ -98,6 +98,32 @@ export default function BillingClient() {
     };
   }, [startPolling, stopPolling]);
 
+  // ?plan=pro deep link (pay-before-onboarding): auto-open checkout once
+  // for free-tier founders. Param always stripped so refresh doesn't reopen
+  // (and a stale param can't re-trigger after a downgrade).
+  const planOpenedRef = useRef(false);
+  useEffect(() => {
+    if (planOpenedRef.current) return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("plan") !== "pro") return;
+      planOpenedRef.current = true;
+      params.delete("plan");
+      const qs = params.toString();
+      window.history.replaceState(
+        {},
+        "",
+        window.location.pathname + (qs ? `?${qs}` : "")
+      );
+      if (contextTierRef.current !== "pro") {
+        // Distinct from the settings-page "billing" button: this deep link is
+        // explicit Go Pro intent, so it must be exempt from the dismiss
+        // cooldown (a prior dismissal would flicker the arrival modal shut).
+        triggerUpgrade("pro-cta-billing");
+      }
+    } catch {}
+  }, [triggerUpgrade]);
+
   const handleAddressSave = useCallback(async (address: string) => {
     const res = await fetch("/api/profile", {
       method: "PATCH",

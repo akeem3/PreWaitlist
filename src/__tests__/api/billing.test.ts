@@ -78,6 +78,28 @@ describe("POST /api/billing/checkout", () => {
     const res = await POST(req);
     expect(res.status).toBe(401);
   });
+
+  // Double-pay safety net: even if a UI guard is bypassed, an already-Pro
+  // founder must never reach Paddle checkout.
+  it("returns 400 when the founder is already on Pro", async () => {
+    mockCreateClient.mockResolvedValue(
+      buildMockClient(
+        { id: "user-1" },
+        { id: "user-1", tier: "pro" }
+      ) as ReturnType<typeof createClient>
+    );
+
+    const { POST } = await import("@/app/api/billing/checkout/route");
+    const req = new Request("http://localhost/api/billing/checkout", {
+      method: "POST",
+      body: JSON.stringify({ triggerSource: "pro-cta-onboarding" }),
+      headers: { "content-type": "application/json" },
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain("Already subscribed");
+  });
 });
 
 describe("POST /api/webhooks/paddle", () => {

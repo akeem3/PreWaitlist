@@ -66,7 +66,9 @@ interface DashboardShellProps {
 }
 
 function getServerDefaultId(waitlists: WaitlistRow[]): string {
-  return waitlists[waitlists.length - 1].id;
+  // Layout redirects zero-waitlist users to onboarding, but query errors render
+  // the shell with an empty array — never index [-1].
+  return waitlists.length > 0 ? waitlists[waitlists.length - 1].id : "";
 }
 
 function getStoredId(waitlists: WaitlistRow[]): string | null {
@@ -267,6 +269,27 @@ export default function DashboardShell({
       }
     } catch {}
   }, [startTierPolling]);
+
+  // Cap-warning email deep link: ?upgrade=cap opens the Pro modal with the
+  // subscriber-cap trigger (mount-only). Honors the 1-day dismiss cooldown
+  // via the modal itself.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("upgrade") === "cap") {
+        setUpgradeModal({ open: true, triggerSource: "subscriber_cap" });
+        params.delete("upgrade");
+        const qs = params.toString();
+        window.history.replaceState(
+          {},
+          "",
+          window.location.pathname + (qs ? `?${qs}` : "")
+        );
+      }
+    } catch {}
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const effectiveId = activeWaitlistId;
 

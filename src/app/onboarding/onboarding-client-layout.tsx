@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useCallback, createContext, useContext } from "react";
+import {
+  useState,
+  useCallback,
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+} from "react";
 import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { LocalOnboardingProvider, useOnboardingForm } from "./context";
@@ -230,11 +237,64 @@ function UpgradeModalWrapper({ children }: { children: React.ReactNode }) {
   }>({ open: false, triggerSource: "" });
 
   const form = useOnboardingForm();
+  const pathname = usePathname();
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleTierChanged = useCallback(() => {
     // Update onboarding context tier
     form.updateField("tier", "pro" as "free" | "pro");
   }, [form]);
+
+  // Paddle successUrl return (?upgraded=1): poll /api/profile until the
+  // webhook lands, then flip the onboarding tier so Pro-gated fields unlock
+  // on the step the founder paid from. Strips the param like dashboard shell.
+  useEffect(() => {
+    let params: URLSearchParams | null = null;
+    try {
+      params = new URLSearchParams(window.location.search);
+    } catch {
+      return;
+    }
+    if (params.get("upgraded") !== "1") return;
+
+    params.delete("upgraded");
+    const qs = params.toString();
+    window.history.replaceState(
+      {},
+      "",
+      window.location.pathname + (qs ? `?${qs}` : "")
+    );
+
+    let attempts = 0;
+    pollRef.current = setInterval(async () => {
+      attempts++;
+      if (attempts >= 30) {
+        if (pollRef.current) clearInterval(pollRef.current);
+        pollRef.current = null;
+        return;
+      }
+      try {
+        const res = await fetch("/api/profile");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.tier === "pro") {
+            if (pollRef.current) clearInterval(pollRef.current);
+            pollRef.current = null;
+            handleTierChanged();
+          }
+        }
+      } catch {
+        // Silent — keep polling
+      }
+    }, 2000);
+
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [handleTierChanged]);
 
   const paddleUpgrade = usePaddleUpgrade({
     onTierChanged: handleTierChanged,
@@ -264,9 +324,49 @@ function UpgradeModalWrapper({ children }: { children: React.ReactNode }) {
         open={upgradeModal.open}
         onOpenChange={handleOpenChange}
         triggerSource={upgradeModal.triggerSource}
+        successPath={pathname}
       />
     </OnboardingUpgradeContext.Provider>
   );
+}
+
+// ---------------------------------------------------------------------------
+// ?plan=pro deep link (Pro CTA → signup → auth callback routes zero-waitlist
+// founders here): auto-open the upgrade modal once over onboarding, then strip
+// the param so a refresh doesn't reopen. Already-Pro founders are skipped; the
+// dismiss cooldown (COOLDOWN_DAYS) still applies inside UpgradeModal.
+// Lives in its own child so the trigger comes from context (same pattern as
+// billing's useUpgradeModal opener).
+// ---------------------------------------------------------------------------
+
+function PlanProAutoOpen() {
+  const upgrade = useOnboardingUpgrade();
+  const form = useOnboardingForm();
+  const openedRef = useRef(false);
+
+  useEffect(() => {
+    if (openedRef.current || !upgrade) return;
+    let params: URLSearchParams;
+    try {
+      params = new URLSearchParams(window.location.search);
+    } catch {
+      return;
+    }
+    if (params.get("plan") !== "pro") return;
+    openedRef.current = true;
+    params.delete("plan");
+    const qs = params.toString();
+    window.history.replaceState(
+      {},
+      "",
+      window.location.pathname + (qs ? `?${qs}` : "")
+    );
+    if (form.tier !== "pro") {
+      upgrade.triggerUpgrade("pro-cta-onboarding");
+    }
+  }, [upgrade, form.tier]);
+
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -286,6 +386,7 @@ export function OnboardingClientLayout({
   return (
     <LocalOnboardingProvider initialTier={tier}>
       <UpgradeModalWrapper>
+        <PlanProAutoOpen />
         {isAuthed ? (
           <FlushGate>
             <OnboardingLayoutInner>{children}</OnboardingLayoutInner>
