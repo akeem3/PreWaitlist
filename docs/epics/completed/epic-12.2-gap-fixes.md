@@ -242,8 +242,8 @@ All 19 gaps closed. Settings page is organized into clear tabs. Privacy policy a
 
 **Dev Notes:**
 
-- T1: Add checkbox below email input in the capture form with `required` attribute. **Status: implemented — checkbox in both form variants (with-questions and inline), unchecked by default, required, inline error.**
-- T2: In `POST /api/subscribers`, add consent fields. Extract IP from headers. **Status: implemented — API validates `consent_given_at` (400 if missing), captures IP from `x-forwarded-for`/`x-real-ip`, inserts both fields.**
+- T1: Add checkbox below email input in the capture form with `required` attribute. **Status: implemented — checkbox in both form variants (with-questions and inline), unchecked by default, required, inline error.** **[REGRESSION NOTE 2026-09-30 (revenue plan Phase 6.9):** this T1–T3 work shipped with Story 12.2.6 (commit `0d33bbb`) but was **silently reverted by commit `afcdcf9`** ("enhance subscriber management and leaderboard features") — the checkbox and client guard vanished from `email-capture-form.tsx` while `consent_given_at` kept being stamped unconditionally (fabricated consent records). **Restored 2026-09-30** (Phase 6.4/6.8): checkbox in both variants + client guard + server 400 re-added. Client enforcement is a state guard (not the HTML `required` attribute this note originally claimed); server rejects with `400 "Consent is required to join the waitlist"`.**]**
+- T2: In `POST /api/subscribers`, add consent fields. Extract IP from headers. **Status: implemented — API validates `consent_given_at` (400 if missing), captures IP from `x-forwarded-for`/`x-real-ip`, inserts both fields.** **[See regression note above — validation was removed in `afcdcf9`, restored 2026-09-30.]**
 - T3: Client-side validation prevents submission without checkbox. **Status: implemented — checkbox `required` attribute + inline error message.**
 - **Depends on:** Story 12.2.0 (schema migration must run first for `consent_given_at`/`consent_ip_address` columns).
 

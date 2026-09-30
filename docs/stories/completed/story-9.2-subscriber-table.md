@@ -38,7 +38,7 @@ updated: 2026-08-31
 - ✅ Row click navigates to `/dashboard/subscribers/:id`
 - ✅ Subscriber count displayed above table
 - ✅ Empty state message matches design
-- ✅ Export CSV button (Pro tier only)
+- ✅ Export CSV button (Pro tier only) **[AMENDED 2026-09-30 (revenue plan Phase 6.9):** CSV export is Free on all tiers — button always visible (Phase 2.6 founder decision, 2026-09-29).**]**
 
 ## Acceptance Criteria (EARS)
 

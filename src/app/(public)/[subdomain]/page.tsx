@@ -1,4 +1,5 @@
-import { Suspense } from "react";
+import { Suspense, cache } from "react";
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound, redirect } from "next/navigation";
@@ -8,22 +9,60 @@ import { LatestUpdateCard } from "../../../../components/public/updates-feed";
 
 type Props = { params: Promise<{ subdomain: string }> };
 
-export default async function PublicSubdomainPage({ params }: Props) {
-  const { subdomain } = await params;
-  const supabase = await createClient();
-
-  const { data: waitlist } = await supabase
-    .from("waitlists")
-    .select(
-      `
+const WAITLIST_SELECT = `
       id, subdomain, template, headline, subheadline, cta_text,
       logo_url, product_name, brand_color, qualification_enabled, milestone_rewards_enabled,
       signup_counter_enabled, signup_counter_threshold, is_archived,
       founder_profiles!inner ( tier )
-    `
-    )
+    `;
+
+// Single cached fetch shared by generateMetadata and the page (React cache dedupes per request)
+const getWaitlist = cache(async (subdomain: string) => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("waitlists")
+    .select(WAITLIST_SELECT)
     .eq("subdomain", subdomain)
     .single();
+  return { waitlist: data, supabase };
+});
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { subdomain } = await params;
+  const { waitlist } = await getWaitlist(subdomain);
+
+  if (!waitlist || waitlist.is_archived) {
+    return {};
+  }
+
+  const title =
+    waitlist.headline?.trim() ||
+    waitlist.product_name?.trim() ||
+    `${subdomain}.prewaitlist.com`;
+  const description = waitlist.subheadline?.trim() || undefined;
+  const url = `https://${subdomain}.prewaitlist.com`;
+
+  return {
+    title,
+    ...(description ? { description } : {}),
+    openGraph: {
+      title,
+      ...(description ? { description } : {}),
+      url,
+      siteName: "PreWaitlist",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      ...(description ? { description } : {}),
+    },
+  };
+}
+
+export default async function PublicSubdomainPage({ params }: Props) {
+  const { subdomain } = await params;
+  const { waitlist, supabase } = await getWaitlist(subdomain);
 
   if (!waitlist) {
     notFound();

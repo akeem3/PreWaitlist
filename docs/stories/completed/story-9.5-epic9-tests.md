@@ -28,7 +28,7 @@ updated: 2026-08-31
 - AC1: The system shall have component tests for the dashboard sidebar (`components/dashboard/sidebar.tsx`) covering: renders all navigation items, active state highlighting, disabled state for Broadcasts/Settings, mobile hamburger toggle.
 - AC2: The system shall have component tests for stat cards covering: renders 4 cards, displays real subscriber count, displays referral percentage, displays warmth counts, shows em-dash when no data.
 - AC3: The system shall have component tests for subscriber table covering: renders table columns, search filters by email, sort by position, sort by referrals, empty state message, row click navigation.
-- AC4: The system shall have component tests for CSV export covering: button visible for Pro tier, button hidden for Free tier, CSV content format, filename format.
+- AC4: The system shall have component tests for CSV export covering: button visible for Pro tier, button hidden for Free tier, CSV content format, filename format. **[AMENDED 2026-09-30 (revenue plan Phase 6.9):** CSV export is Free on all tiers (Phase 2.6) — button always visible; the Pro/Free visibility tests do not exist. `src/__tests__/api/csv-export.test.ts` covers content/filename/RFC4180 only. Historical record.**]**
 - AC5: The system shall have component tests for subscriber detail page covering: renders subscriber info, renders referral data, renders qualification answers, back button navigation, not found state.
 - AC6: All tests shall pass with `pnpm test`.
 - AC7: Lint and build shall pass with zero errors.

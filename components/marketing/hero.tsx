@@ -8,8 +8,9 @@ import { FadeIn } from "./animations";
 
 function HeroContent() {
   const searchParams = useSearchParams();
-  const ref = searchParams.get("ref");
-  const isPoweredBy = Boolean(ref);
+  // Only the "Powered by" footer attribution flips the hero — subscriber
+  // referral links (?ref={code}) must show the default marketing hero.
+  const isPoweredBy = searchParams.get("src") === "powered-by";
 
   if (isPoweredBy) {
     return (

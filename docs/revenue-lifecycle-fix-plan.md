@@ -1,6 +1,6 @@
 # Revenue, Lifecycle & Email Fix Plan
 
-**Date:** 2026-09-29 · **Branch:** `dev` · **Status:** Phases 1–4 + 3.1 DONE; Phase 1 committed (`18aaba2` + `7678c32`, merged to `main`); Phases 2 + 3.1 committed (`b90192b` — subject line misleading, body lists the work); Phase 4 uncommitted (commit only on founder instruction); 3.2–3.7 + Phases 5–6 not started. **AUDIT 2026-09-29 (Prompt #3, Phases 2 + 3.1):** findings annotated inline; ship-blockers I1–I3 + M1 open; Phase 4 not yet audited.
+**Date:** 2026-09-29 · **Branch:** `dev` · **Status:** Phases 1–6 + 3.1 DONE; Phase 1 committed (`18aaba2` + `7678c32`, merged to `main`); Phases 2 + 3.1 committed (`b90192b` — subject line misleading, body lists the work); Phases 4–6 uncommitted (commit only on founder instruction); 3.2–3.7 not started. **AUDIT 2026-09-29 (Prompt #3, Phases 2 + 3.1):** findings annotated inline; ship-blockers I1 fixed, I2/I3 pending founder SQL (0.9), M1 fixed; Phase 4 not yet audited.
 **Source:** two-pass investigation (4 codebase agents + Paddle/Resend docs), founder's 7 observed issues.
 **Standing rules:** lint 0 errors + full suite at baseline + clean build per phase; copy gaps stop-and-ask; no new env/deps without asking; SQL migrations are founder-run with verification probes.
 
@@ -74,17 +74,26 @@
 
 **Verify:** per-item walkthroughs + regression tests; suite at baseline. **TESTS DONE 2026-09-29 (+33):** flush-gate (6) · supabase-middleware Phase-B guard (7) · public-leaderboard-archived (2) + thank-you archived (1) + recovery (2) · active-waitlist (5) · dashboard-updates-page (3) · resubscribe route (3) + page/confirm (4). **GATES 2026-09-29:** lint 0 errors / 5 pre-existing warnings · full suite 793 = 786 pass / 7 fail = exact baseline (dashboard-archive 4 + dashboard-subscriber-table 3) · clean build (`.next` deleted first; fixed a strict postgrest cast in active-waitlist.ts via `as unknown as`) · prettier clean · server restarted. Uncommitted.
 
-## Phase 5 — Growth surfaces
+## Phase 5 — Growth surfaces (DONE 2026-09-30 — uncommitted)
 
-- [ ] 5.1 Per-subdomain `generateMetadata` (og:title/description + twitter card) from waitlist row. **GATE: og:image strategy (static vs dynamic).**
-- [ ] 5.2 Success buttons → shared `ShareButtons`; optional platform tabs (design call).
-- [ ] 5.3 Footer absolute `www` URL with identifying param on both links; merge acquisition cookie on subdomain rewrite; tighten hero trigger; namespace subscriber `?ref=`. **GATE: "referred" = hero / attribution / credit?**
+- [x] 5.1 Per-subdomain `generateMetadata` (og:title/description + twitter card) from waitlist row. **GATE RESOLVED (founder): dynamic per-subdomain PNG** — `src/app/(public)/[subdomain]/opengraph-image.tsx` (1200×630 `ImageResponse`, headline/subheadline/brand colour from the waitlists row, 300s revalidate) + `generateMetadata` in `page.tsx:30`.
+- [x] 5.2 Success buttons → shared `ShareButtons`. **GATE RESOLVED (founder): reuse ShareButtons only** — no platform tabs (deferred).
+- [x] 5.3 Footer absolute `www` URL with identifying param on both links; hero trigger tightened; **GATE RESOLVED (founder): namespace split** — `?ref=` = subscriber credit, `?src=powered-by` = attribution/hero. Client filter `/^[0-9a-f]{8}$/i` keeps attribution params from 400ing signup.
 
-**Verify:** X + Facebook unfurl validators; cookie walkthrough subdomain→apex→signup.
+**Verify:** X + Facebook unfurl validators; cookie walkthrough subdomain→apex→signup. **GATES (Phase 5):** lint 0 errors / 5 pre-existing warnings · suite 798 = 791 pass / 7 fail = baseline · clean build.
 
-## Phase 6 — Debt + doc honesty
+## Phase 6 — Debt + doc honesty (DONE 2026-09-30 — uncommitted; SQL founder-run gate OPEN)
 
-`middleware.ts` → `proxy.ts` migration; delete one supabase helper; `.env.example` (from `src`, not docs); signup honeypot/timing/IP-limit; `email_normalized` (or `citext`) + 23505 hardening + no raw-error echo; atomic cap; `display_name` cap; consent checkbox-or-amend-doc; doc corrections (price var, csv trigger, cooldown, meta-tags claims, consent claim).
+- [x] 6.1 `src/middleware.ts` → `src/proxy.ts` (`git mv`; export `middleware` → `proxy`; config unchanged; build shows `ƒ Proxy (Middleware)`).
+- [x] 6.2 Delete duplicate helper `src/lib/supabase/proxy.ts`.
+- [x] 6.3 `.env.example` at repo root (13 vars, from `src` not docs) + `!.env.example` negation in `.gitignore`.
+- [x] 6.4–6.7 `POST /api/subscribers` hardening: validation order = required → honeypot → ≥2s timing → consent (400) → email format → `display_name` ≤100 (400) → 5/hour per-IP (429, skips `unknown` ip) → tier hoisted → referral → qual → atomic claim → insert; **atomic cap** via `increment_subscriber_count(p_waitlist_id, p_cap)` with `releaseClaim()` on every insert-error path + legacy 1-arg fallback; **23505** → 409 (email dup) / one retry with a fresh code (non-email) / generic 500 otherwise — **no raw-error echo**.
+- [x] 6.8 Consent checkbox + honeypot input + `ts` in both form variants + `PreviewConsent` parity in LivePreview + Meta Preview skipped (not a form replica). **Consent claim fixed by rebuilding, not amending** — restores Epic 12.2.6 work silently reverted by commit `afcdcf9`.
+- [x] SQL (founder-run, **OPEN GATE**): `docs/stories/sql-writeups/revenue-phase6-subscriber-protections.sql` — 2-arg increment fn with `p_cap`, decrement fn (drops both old signatures first), `email_normalized` generated column + dedupe index, verification probes incl. cap simulation. Safe any time before deploy.
+- [x] 6.9 Doc corrections: **price var** (`PADDLE_PRO_PRICE_ID` server-only, epic-13 + story-13.0) · **cooldown** 7→1 day (8 spots: sprint-3-plan ×2, epic-13 ×2, story-13.1 ×3, story-13.6) · **csv trigger stragglers** (story-9.2/9.5/9.7, epic-9 AC4+AC8, dashboard-overhaul 4.3) · **meta-tags claims** (user-flow Notes verified against Phase 5.1; Excalidraw mirror left raw by design) · **consent claim** (regression notes in epic-12.2 T1/T2, story-12.2.6, MEMORY 12.2.6) · `docs/PROMPTS.md` middleware→proxy.ts (2 lines).
+- [x] Bonus (both founder-gated `/signup` bugs): `handleSubmit` uses `validateEmail`'s return value (stale-state bug), `onBlur` syncs error, `/terms`→`/legal/terms`, `/privacy`→`/legal/privacy`.
+
+**GATES (Phase 6):** lint 0 errors / 5 pre-existing warnings · full suite **810 = 803 pass / 7 fail = exact baseline** (dashboard-archive 4 + dashboard-subscriber-table 3; **+12 new tests**) · clean build (`.next` deleted first) · `accent-accent` confirmed present in compiled CSS · pre-existing comment typo (`would400`) fixed.
 
 ## Copy gaps (stop-and-ask when reached)
 

@@ -79,6 +79,18 @@ function pushCreateSubscriber() {
   });
 }
 
+// Phase 6: valid submission shape — consent + form-load timestamp (>=2s old)
+const FORM_TS = Date.now() - 5000;
+function signupBody(extra: Record<string, unknown> = {}) {
+  return JSON.stringify({
+    waitlist_id: "waitlist-1",
+    email: "test@test.com",
+    consent: true,
+    ts: FORM_TS,
+    ...extra,
+  });
+}
+
 describe("POST /api/subscribers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -93,10 +105,7 @@ describe("POST /api/subscribers", () => {
 
     const request = new NextRequest("http://localhost/api/subscribers", {
       method: "POST",
-      body: JSON.stringify({
-        waitlist_id: "waitlist-1",
-        email: "test@test.com",
-      }),
+      body: signupBody(),
     });
 
     const response = await POST(request);
@@ -121,10 +130,7 @@ describe("POST /api/subscribers", () => {
   it("returns 400 for invalid email format", async () => {
     const request = new NextRequest("http://localhost/api/subscribers", {
       method: "POST",
-      body: JSON.stringify({
-        waitlist_id: "waitlist-1",
-        email: "not-an-email",
-      }),
+      body: signupBody({ email: "not-an-email" }),
     });
 
     const response = await POST(request);
@@ -152,10 +158,7 @@ describe("POST /api/subscribers", () => {
 
     const request = new NextRequest("http://localhost/api/subscribers", {
       method: "POST",
-      body: JSON.stringify({
-        waitlist_id: "waitlist-1",
-        email: "test@test.com",
-      }),
+      body: signupBody(),
     });
 
     const response = await POST(request);
@@ -188,11 +191,7 @@ describe("POST /api/subscribers", () => {
 
     const request = new NextRequest("http://localhost/api/subscribers", {
       method: "POST",
-      body: JSON.stringify({
-        waitlist_id: "waitlist-1",
-        email: "test@test.com",
-        qual_answers: { "q-1": "answer" },
-      }),
+      body: signupBody({ qual_answers: { "q-1": "answer" } }),
     });
 
     const response = await POST(request);
@@ -223,9 +222,7 @@ describe("POST /api/subscribers", () => {
 
     const request = new NextRequest("http://localhost/api/subscribers", {
       method: "POST",
-      body: JSON.stringify({
-        waitlist_id: "waitlist-1",
-        email: "test@test.com",
+      body: signupBody({
         qual_answers: { "q-1": "keep", "text-key": "drop" },
       }),
     });
@@ -249,10 +246,7 @@ describe("POST /api/subscribers", () => {
 
     const request = new NextRequest("http://localhost/api/subscribers", {
       method: "POST",
-      body: JSON.stringify({
-        waitlist_id: "waitlist-1",
-        email: "test@test.com",
-      }),
+      body: signupBody(),
     });
 
     const response = await POST(request);
@@ -260,22 +254,19 @@ describe("POST /api/subscribers", () => {
     expect(data.referral_code).toHaveLength(8);
   });
 
-  it("increments subscriber_count via RPC after successful insert", async () => {
+  it("claims cap atomically via RPC (p_cap for Free) on signup", async () => {
     pushCreateSubscriber();
 
     const request = new NextRequest("http://localhost/api/subscribers", {
       method: "POST",
-      body: JSON.stringify({
-        waitlist_id: "waitlist-1",
-        email: "test@test.com",
-      }),
+      body: signupBody(),
     });
 
     await POST(request);
 
     expect(mockAdminSupabase.rpc).toHaveBeenCalledWith(
       "increment_subscriber_count",
-      { p_waitlist_id: "waitlist-1" }
+      { p_waitlist_id: "waitlist-1", p_cap: 500 }
     );
   });
 
@@ -333,10 +324,7 @@ describe("POST /api/subscribers", () => {
   async function postDirectSignup() {
     const request = new NextRequest("http://localhost/api/subscribers", {
       method: "POST",
-      body: JSON.stringify({
-        waitlist_id: "waitlist-1",
-        email: "test@test.com",
-      }),
+      body: signupBody(),
     });
     const response = await POST(request);
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -457,5 +445,145 @@ describe("POST /api/subscribers", () => {
     expect((failed[0].event_data as Record<string, unknown>).error_name).toBe(
       "monthly_quota_exceeded"
     );
+  });
+
+  // --- Phase 6: signup protections (revenue-lifecycle plan) ---
+
+  it("rejects signup without consent (12.2.6 AC3)", async () => {
+    const request = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      body: JSON.stringify({
+        waitlist_id: "waitlist-1",
+        email: "test@test.com",
+        ts: FORM_TS,
+      }),
+    });
+    const response = await POST(request);
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data.error).toBe("Consent is required to join the waitlist");
+  });
+
+  it("rejects signup when the honeypot field is filled", async () => {
+    const request = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      body: signupBody({ website: "https://spam.example" }),
+    });
+    const response = await POST(request);
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data.error).toBe("Something went wrong. Please try again.");
+  });
+
+  it("rejects signup with missing or too-fast form timestamp", async () => {
+    const missing = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      body: JSON.stringify({
+        waitlist_id: "waitlist-1",
+        email: "test@test.com",
+        consent: true,
+      }),
+    });
+    expect((await POST(missing)).status).toBe(400);
+
+    const tooFast = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      body: signupBody({ ts: Date.now() }),
+    });
+    expect((await POST(tooFast)).status).toBe(400);
+  });
+
+  it("rate-limits to 5 signups/hour per IP (429)", async () => {
+    mockAdminSupabase.__queue.push({ data: null, error: null, count: 5 });
+    const request = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      headers: { "x-forwarded-for": "203.0.113.7" },
+      body: signupBody(),
+    });
+    const response = await POST(request);
+    expect(response.status).toBe(429);
+    const data = await response.json();
+    expect(data.error).toBe("Something went wrong. Please try again.");
+  });
+
+  it("returns 403 when the atomic claim reports the cap reached", async () => {
+    mockSupabase.__queue.push({
+      data: { subscriber_count: 499, founder_profiles: { tier: "free" } },
+      error: null,
+    });
+    mockAdminSupabase.rpc.mockResolvedValueOnce({ data: null, error: null });
+    const request = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      body: signupBody(),
+    });
+    const response = await POST(request);
+    expect(response.status).toBe(403);
+    const data = await response.json();
+    expect(data.error).toContain("Subscriber limit reached");
+  });
+
+  it("does not echo raw DB errors on insert failure (generic 500)", async () => {
+    mockSupabase.__queue.push({
+      data: { subscriber_count: 10, founder_profiles: { tier: "free" } },
+      error: null,
+    });
+    mockAdminSupabase.__queue.push({
+      data: null,
+      error: { message: 'relation "subscribers" is broken', code: "XX000" },
+    });
+    const request = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      body: signupBody(),
+    });
+    const response = await POST(request);
+    expect(response.status).toBe(500);
+    const data = await response.json();
+    expect(data.error).toBe("Something went wrong. Please try again.");
+    expect(JSON.stringify(data)).not.toContain("is broken");
+  });
+
+  it("retries once with a fresh referral_code on non-email unique violation", async () => {
+    mockSupabase.__queue.push({
+      data: { subscriber_count: 10, founder_profiles: { tier: "free" } },
+      error: null,
+    });
+    mockAdminSupabase.__queue.push({
+      data: null,
+      error: {
+        message:
+          'duplicate key value violates unique constraint "subscribers_referral_code_key"',
+        code: "23505",
+      },
+    });
+    mockAdminSupabase.__queue.push({
+      data: {
+        id: "sub-1",
+        email: "test@test.com",
+        referral_code: "retry999",
+        position: 1,
+      },
+      error: null,
+    });
+    const request = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      body: signupBody(),
+    });
+    const response = await POST(request);
+    expect(response.status).toBe(201);
+    const insertCalls = mockAdminSupabase.__calls.filter(
+      (c) => c.method === "insert"
+    );
+    expect(insertCalls.length).toBe(2);
+  });
+
+  it("rejects display_name longer than 100 characters", async () => {
+    const request = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      body: signupBody({ display_name: "x".repeat(101) }),
+    });
+    const response = await POST(request);
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data.error).toBe("Display name must be 100 characters or fewer");
   });
 });

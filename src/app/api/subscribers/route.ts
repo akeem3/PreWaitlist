@@ -413,6 +413,12 @@ You received this because you're on the ${opts.productName} waitlist.
   return { subject, html, text };
 }
 
+const GENERIC_SIGNUP_ERROR = "Something went wrong. Please try again.";
+
+function genericSignupError(status = 400) {
+  return NextResponse.json({ error: GENERIC_SIGNUP_ERROR }, { status });
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   // 14.0 AC8: no public SELECT (or anon insert) on subscribers after RLS close.
@@ -426,11 +432,38 @@ export async function POST(request: NextRequest) {
     referral_code: incomingRefCode,
     qual_answers,
     display_name,
+    consent,
+    website: honeypot,
+    ts: formTimestamp,
   } = body;
 
   if (!waitlist_id || !email) {
     return NextResponse.json(
       { error: "Missing required fields" },
+      { status: 400 }
+    );
+  }
+
+  // 6.4: honeypot — hidden "website" field must stay empty (bots fill it)
+  if (honeypot !== undefined && honeypot !== null && honeypot !== "") {
+    return genericSignupError();
+  }
+
+  // 6.4: >= 2s between form load and submit (the form always sends ts;
+  // missing/forged/too-fast timestamps are rejected)
+  if (
+    typeof formTimestamp !== "number" ||
+    !Number.isFinite(formTimestamp) ||
+    Date.now() - formTimestamp < 2000
+  ) {
+    return genericSignupError();
+  }
+
+  // 12.2.6 AC3/T3: consent is required — stamping consent fields for an
+  // unchecked box would be a false GDPR record.
+  if (consent !== true) {
+    return NextResponse.json(
+      { error: "Consent is required to join the waitlist" },
       { status: 400 }
     );
   }
@@ -450,6 +483,28 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const trimmedName =
+    typeof display_name === "string" ? display_name.trim() : "";
+  if (trimmedName.length > 100) {
+    return NextResponse.json(
+      { error: "Display name must be 100 characters or fewer" },
+      { status: 400 }
+    );
+  }
+
+  // 6.4: 5 signups/hour per IP (uses the consent_ip_address we already stamp)
+  if (ipAddress !== "unknown") {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count: recentFromIp } = await admin
+      .from("subscribers")
+      .select("id", { count: "exact", head: true })
+      .eq("consent_ip_address", ipAddress)
+      .gte("created_at", oneHourAgo);
+    if ((recentFromIp ?? 0) >= 5) {
+      return genericSignupError(429);
+    }
+  }
+
   // 500 cap check — Free tier only (waitlists has public read)
   const { data: waitlistRow } = await supabase
     .from("waitlists")
@@ -457,11 +512,12 @@ export async function POST(request: NextRequest) {
     .eq("id", waitlist_id)
     .single();
 
+  let tier = "free";
   if (waitlistRow) {
     const founderProfile = Array.isArray(waitlistRow.founder_profiles)
       ? waitlistRow.founder_profiles[0]
       : waitlistRow.founder_profiles;
-    const tier = founderProfile?.tier || "free";
+    tier = founderProfile?.tier || "free";
     const count = waitlistRow.subscriber_count ?? 0;
 
     if (tier === "free" && count >= 500) {
@@ -533,6 +589,59 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // 6.6: atomic cap claim — one conditional UPDATE increments and enforces
+  // the free cap together. Explicit NULL = capped. Claimed before insert and
+  // released if the insert fails. On legacy SQL (no p_cap arg) the call
+  // errors, claimOk stays false, and the post-insert fallback below keeps
+  // today's behavior.
+  let claimOk = false;
+  let claimed = false;
+  if (waitlistRow) {
+    try {
+      const { data: newCount, error: claimErr } = await admin.rpc(
+        "increment_subscriber_count",
+        {
+          p_waitlist_id: waitlist_id,
+          p_cap: tier === "free" ? 500 : null,
+        }
+      );
+      if (claimErr) {
+        console.error(
+          "[subscribers] cap claim failed (legacy SQL?):",
+          claimErr.message
+        );
+      } else if (newCount === null) {
+        return NextResponse.json(
+          {
+            error:
+              "Subscriber limit reached. Upgrade to Pro for unlimited signups.",
+          },
+          { status: 403 }
+        );
+      } else if (typeof newCount === "number") {
+        claimOk = true;
+        claimed = true;
+      }
+    } catch (e) {
+      console.error("[subscribers] cap claim threw:", e);
+    }
+  }
+
+  const releaseClaim = async () => {
+    if (!claimed) return;
+    claimed = false;
+    try {
+      const { error: relErr } = await admin.rpc("decrement_subscriber_count", {
+        p_waitlist_id: waitlist_id,
+      });
+      if (relErr) {
+        console.error("[subscribers] claim release failed:", relErr.message);
+      }
+    } catch (e) {
+      console.error("[subscribers] claim release threw:", e);
+    }
+  };
+
   const baseInsert = {
     waitlist_id,
     email: trimmedEmail,
@@ -545,41 +654,77 @@ export async function POST(request: NextRequest) {
     consent_ip_address: ipAddress,
   };
 
-  // Try with display_name; fall back without it if column doesn't exist yet
-  let insertResult = await admin
-    .from("subscribers")
-    .insert({ ...baseInsert, display_name: display_name?.trim() || null })
-    .select("id, email, referral_code, position")
-    .single();
+  const insertColumns = "id, email, referral_code, position";
 
-  if (
-    insertResult.error?.code === "PGRST204" &&
-    insertResult.error?.message?.includes("display_name")
-  ) {
-    insertResult = await admin
+  // Try with display_name; fall back without it if column doesn't exist yet
+  const attemptInsert = async (overrides?: {
+    display_name?: string | null;
+    referral_code?: string;
+  }) => {
+    const row: Record<string, unknown> = {
+      ...baseInsert,
+      display_name:
+        overrides && "display_name" in overrides
+          ? overrides.display_name
+          : trimmedName || null,
+      ...(overrides?.referral_code
+        ? { referral_code: overrides.referral_code }
+        : {}),
+    };
+    let res = await admin
       .from("subscribers")
-      .insert(baseInsert)
-      .select("id, email, referral_code, position")
+      .insert(row)
+      .select(insertColumns)
       .single();
+    if (
+      res.error?.code === "PGRST204" &&
+      res.error?.message?.includes("display_name")
+    ) {
+      const withoutName = { ...row };
+      delete withoutName.display_name;
+      res = await admin
+        .from("subscribers")
+        .insert(withoutName)
+        .select(insertColumns)
+        .single();
+    }
+    return res;
+  };
+
+  let insertResult = await attemptInsert();
+  // referral_code is globally unique — on the (rare) collision retry once
+  // with a fresh code. Email dups fall through to the 409 below.
+  if (
+    insertResult.error?.code === "23505" &&
+    !/email/i.test(
+      `${insertResult.error.message ?? ""} ${insertResult.error.details ?? ""}`
+    )
+  ) {
+    insertResult = await attemptInsert({
+      referral_code: generateReferralCode(),
+    });
   }
 
   const { data, error } = insertResult;
 
   if (error) {
-    if (
-      error.code === "23505" &&
-      error.message.includes("subscribers_waitlist_email_idx")
-    ) {
-      return NextResponse.json(
-        { error: "This email is already on the waitlist" },
-        { status: 409 }
-      );
+    if (error.code === "23505") {
+      const constraintDesc = `${error.message ?? ""} ${error.details ?? ""}`;
+      if (/email/i.test(constraintDesc)) {
+        await releaseClaim();
+        return NextResponse.json(
+          { error: "This email is already on the waitlist" },
+          { status: 409 }
+        );
+      }
+      console.error("Subscriber creation unique violation:", error);
+      await releaseClaim();
+      return genericSignupError(500);
     }
+    // Never echo DB/driver messages to the client — log instead.
     console.error("Subscriber creation error:", error);
-    return NextResponse.json(
-      { error: error.message, details: error.details, hint: error.hint },
-      { status: 400 }
-    );
+    await releaseClaim();
+    return genericSignupError(500);
   }
 
   // Post-insert: check for self-referral and trigger milestones
@@ -618,19 +763,25 @@ export async function POST(request: NextRequest) {
     ? getPositionUpdate(updates, resolvedReferrerId)
     : null;
 
-  // Increment cached subscriber_count (atomic, fire-and-forget on error)
-  try {
-    const { error: countErr } = await admin.rpc("increment_subscriber_count", {
-      p_waitlist_id: waitlist_id,
-    });
-    if (countErr) {
-      console.error(
-        "[subscribers] increment_subscriber_count failed:",
-        countErr.message
+  // Increment cached subscriber_count when the atomic claim above did not
+  // run (legacy SQL or claim error) — same fire-and-forget behavior as before.
+  if (!claimOk) {
+    try {
+      const { error: countErr } = await admin.rpc(
+        "increment_subscriber_count",
+        {
+          p_waitlist_id: waitlist_id,
+        }
       );
+      if (countErr) {
+        console.error(
+          "[subscribers] increment_subscriber_count failed:",
+          countErr.message
+        );
+      }
+    } catch (e) {
+      console.error("[subscribers] increment_subscriber_count threw:", e);
     }
-  } catch (e) {
-    console.error("[subscribers] increment_subscriber_count threw:", e);
   }
 
   // --- Confirmation email (fire-and-forget) ---

@@ -44,6 +44,11 @@ function freeTextQuestion(text: string, id = "q-1") {
   };
 }
 
+// 12.2.6: consent checkbox must be checked before submit is allowed
+async function acceptConsent(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("checkbox"));
+}
+
 describe("EmailCaptureForm", () => {
   it("renders email input with placeholder", () => {
     render(<EmailCaptureForm {...defaultProps} />);
@@ -118,6 +123,7 @@ describe("EmailCaptureForm", () => {
 
     const input = screen.getByPlaceholderText("Email address");
     await user.type(input, "test@example.com");
+    await acceptConsent(user);
     await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
 
     await waitFor(() => {
@@ -138,6 +144,7 @@ describe("EmailCaptureForm", () => {
 
     const input = screen.getByPlaceholderText("Email address");
     await user.type(input, "test@example.com");
+    await acceptConsent(user);
     await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
 
     await waitFor(() => {
@@ -159,18 +166,24 @@ describe("EmailCaptureForm", () => {
 
     const input = screen.getByPlaceholderText("Email address");
     await user.type(input, "test@example.com");
+    await acceptConsent(user);
     await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
 
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith("/api/subscribers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          waitlist_id: "waitlist-1",
-          email: "test@example.com",
-        }),
+        body: expect.any(String),
       });
     });
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body).toMatchObject({
+      waitlist_id: "waitlist-1",
+      email: "test@example.com",
+      consent: true,
+      website: "",
+    });
+    expect(typeof body.ts).toBe("number");
   });
 
   it("renders free-text questions as input fields", () => {
@@ -245,6 +258,7 @@ describe("EmailCaptureForm", () => {
       screen.getByPlaceholderText("What brings you here?"),
       "Friend recommendation"
     );
+    await acceptConsent(user);
     await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
 
     await waitFor(() => {
@@ -283,6 +297,7 @@ describe("EmailCaptureForm", () => {
       "test@example.com"
     );
     await user.click(screen.getByRole("radio", { name: "Pro" }));
+    await acceptConsent(user);
     await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
 
     await waitFor(() => {
@@ -313,11 +328,56 @@ describe("EmailCaptureForm", () => {
       screen.getByPlaceholderText("Email address"),
       "test@example.com"
     );
+    await acceptConsent(user);
     await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
 
     await waitFor(() => {
       const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(callBody.qual_answers).toBeUndefined();
     });
+  });
+
+  it("blocks submit and shows the consent error when unchecked (12.2.6 AC6)", async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+
+    const user = userEvent.setup();
+    render(<EmailCaptureForm {...defaultProps} />);
+
+    await user.type(
+      screen.getByPlaceholderText("Email address"),
+      "test@example.com"
+    );
+    await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
+
+    expect(
+      screen.getByText("You must agree to receive emails to join the waitlist.")
+    ).toBeDefined();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("clears the consent error once the checkbox is checked", async () => {
+    const user = userEvent.setup();
+    render(<EmailCaptureForm {...defaultProps} />);
+
+    await user.type(
+      screen.getByPlaceholderText("Email address"),
+      "test@example.com"
+    );
+    await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
+    expect(screen.getByRole("alert")).toBeDefined();
+
+    await user.click(screen.getByRole("checkbox"));
+    await waitFor(() => {
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
+  });
+
+  it("renders the honeypot field hidden from humans", () => {
+    render(<EmailCaptureForm {...defaultProps} />);
+    const honeypot = document.querySelector('input[name="website"]');
+    expect(honeypot).not.toBeNull();
+    expect(honeypot!.getAttribute("tabindex")).toBe("-1");
+    expect(honeypot!.closest('[aria-hidden="true"]')).not.toBeNull();
   });
 });

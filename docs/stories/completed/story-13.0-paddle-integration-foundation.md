@@ -66,7 +66,7 @@ T5 (AC10) Lint + build
 - `src/hooks/use-paddle.ts` — new hook
 - `src/app/api/billing/checkout/route.ts` — new route
 - `src/app/api/webhooks/paddle/route.ts` — new route
-- `.env.local` — add `NEXT_PUBLIC_PADDLE_ENV`, `NEXT_PUBLIC_PADDLE_PRO_PRICE_ID`, rename `PADDLE_CLIENT_TOKEN`
+- `.env.local` — add `NEXT_PUBLIC_PADDLE_ENV`, `PADDLE_PRO_PRICE_ID`, rename `PADDLE_CLIENT_TOKEN` **[CORRECTED 2026-09-30 (revenue plan Phase 6.9):** price ID var is `PADDLE_PRO_PRICE_ID` (server-side only — `checkout/route.ts` reads `process.env.PADDLE_PRO_PRICE_ID`), not `NEXT_PUBLIC_PADDLE_PRO_PRICE_ID`. `NEXT_PUBLIC_PADDLE_ENV` / `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` keep the `NEXT_PUBLIC_` prefix.**]**
 
 ## Out of Scope
 

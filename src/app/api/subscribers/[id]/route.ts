@@ -89,6 +89,16 @@ export async function PATCH(request: NextRequest, { params }: Props) {
 
   const trimmed = typeof display_name === "string" ? display_name.trim() : null;
 
+  // Phase 6 display_name cap (same limit as POST /api/subscribers): the
+  // thank-you name input is the real write path — POST never receives
+  // display_name — so the cap must live here to have any effect.
+  if (trimmed && trimmed.length > 100) {
+    return NextResponse.json(
+      { error: "Display name must be 100 characters or fewer" },
+      { status: 400 }
+    );
+  }
+
   // 4.6: no silent success — a failed save surfaces (the input stays
   // editable for retry). The display_name migration (12.2.0/12.2.13) has
   // run; the old PGRST204 swallow is removed.

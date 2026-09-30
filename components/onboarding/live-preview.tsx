@@ -81,6 +81,36 @@ function BrowserFrame({
   );
 }
 
+function PreviewConsent({
+  isDark,
+  className,
+}: {
+  isDark: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={cn("w-full max-w-md", className)}>
+      <label className="flex items-start gap-2">
+        <input
+          type="checkbox"
+          readOnly
+          tabIndex={-1}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-accent"
+        />
+        <span
+          className={cn(
+            "text-xs",
+            isDark ? "text-dark-template-muted" : "text-muted-foreground"
+          )}
+        >
+          I agree to receive email updates about this product. You can
+          unsubscribe at any time.
+        </span>
+      </label>
+    </div>
+  );
+}
+
 function PreviewEmailForm({
   template,
   ctaText,
@@ -112,46 +142,49 @@ function PreviewEmailForm({
   const btnText = isBold ? "text-base font-semibold" : "text-sm font-medium";
 
   return (
-    <div
-      className={cn(
-        "flex gap-2 w-full max-w-md",
-        isMobile ? "flex-col" : "flex-row"
-      )}
-    >
-      <input
-        type="email"
-        placeholder="Email address"
-        readOnly
+    <>
+      <div
         className={cn(
-          inputHeight,
-          "flex-1 min-w-0 rounded-[var(--input-radius)]",
-          inputBorder,
-          inputBg,
-          inputText,
-          "px-[var(--input-padding-x)] py-[var(--input-padding-y)]",
-          textSize,
-          inputPlaceholder,
-          "focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent",
-          isMobile && "w-full flex-none"
+          "flex gap-2 w-full max-w-md",
+          isMobile ? "flex-col" : "flex-row"
         )}
-      />
-      <button
-        type="button"
-        className={cn(
-          "inline-flex items-center justify-center",
-          btnHeight,
-          btnPadding,
-          "rounded-[var(--button-radius)]",
-          btnText,
-          "text-white transition-colors whitespace-nowrap",
-          "bg-[var(--brand-color)]",
-          isMobile && "w-full"
-        )}
-        style={{ "--brand-color": brandColor } as React.CSSProperties}
       >
-        {ctaText || "Join Waitlist"}
-      </button>
-    </div>
+        <input
+          type="email"
+          placeholder="Email address"
+          readOnly
+          className={cn(
+            inputHeight,
+            "flex-1 min-w-0 rounded-[var(--input-radius)]",
+            inputBorder,
+            inputBg,
+            inputText,
+            "px-[var(--input-padding-x)] py-[var(--input-padding-y)]",
+            textSize,
+            inputPlaceholder,
+            "focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent",
+            isMobile && "w-full flex-none"
+          )}
+        />
+        <button
+          type="button"
+          className={cn(
+            "inline-flex items-center justify-center",
+            btnHeight,
+            btnPadding,
+            "rounded-[var(--button-radius)]",
+            btnText,
+            "text-white transition-colors whitespace-nowrap",
+            "bg-[var(--brand-color)]",
+            isMobile && "w-full"
+          )}
+          style={{ "--brand-color": brandColor } as React.CSSProperties}
+        >
+          {ctaText || "Join Waitlist"}
+        </button>
+      </div>
+      <PreviewConsent isDark={isDark} className="mt-3" />
+    </>
   );
 }
 
@@ -272,6 +305,7 @@ function PreviewQuestionForm({
           </div>
         ))}
       </div>
+      <PreviewConsent isDark={isDark} />
       <button
         type="button"
         className={cn(

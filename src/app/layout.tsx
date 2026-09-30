@@ -20,6 +20,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_BASE_URL || "https://www.prewaitlist.com"
+  ),
   title: "PreWaitlist",
   description: "Pre-launch waitlist builder",
 };

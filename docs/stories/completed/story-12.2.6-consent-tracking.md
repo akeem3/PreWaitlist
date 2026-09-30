@@ -5,6 +5,8 @@
 **Depends on:** 12.2.0
 **Design Refs:** —
 
+> **[REGRESSION NOTE 2026-09-30 (revenue plan Phase 6.9):** this story's checkbox + client guard + server 400 shipped with Epic 12.2 (commit `0d33bbb`) but were **silently reverted by commit `afcdcf9`** — `email-capture-form.tsx` lost the checkbox/guard while `consent_given_at`/`consent_ip_address` kept being stamped unconditionally for non-consenting signups. **Restored 2026-09-30** in `components/public/email-capture-form.tsx` (both form variants, verbatim AC1/AC6 copy) and `src/app/api/subscribers/route.ts` (400 `"Consent is required to join the waitlist"`). Enforcement is a client state guard + server check (not the HTML `required` attribute); AC7's mock class `accent-[var(--color-accent)]` is broken Tailwind v4 syntax — implementation uses the generated `accent-accent` utility. Tests: `src/__tests__/api/subscribers.test.ts` (consent 400) + `src/__tests__/components/email-capture-form.test.tsx` (block/clear/hidden).**]**
+
 ## Story
 
 As a founder, I need subscriber consent to be tracked at signup for GDPR compliance.

@@ -83,21 +83,35 @@ describe("PoweredByFooter", () => {
     expect(wrapper?.className).toContain("border-border");
   });
 
-  it("links to homepage", () => {
+  it("links to homepage with powered-by attribution", () => {
     render(<PoweredByFooter template="minimal" standalone />);
     const poweredByLink = screen.getByText("Powered by").closest("a");
-    expect(poweredByLink?.getAttribute("href")).toBe("/?ref=powered-by");
+    expect(poweredByLink?.getAttribute("href")).toBe(
+      "https://www.prewaitlist.com/?src=powered-by"
+    );
   });
 
   it("links to privacy page", () => {
     render(<PoweredByFooter template="minimal" standalone />);
     const privacyLink = screen.getByText("Privacy").closest("a");
-    expect(privacyLink?.getAttribute("href")).toBe("/legal/privacy");
+    expect(privacyLink?.getAttribute("href")).toBe(
+      "https://www.prewaitlist.com/legal/privacy"
+    );
   });
 
   it("links to terms page", () => {
     render(<PoweredByFooter template="minimal" standalone />);
     const termsLink = screen.getByText("Terms").closest("a");
-    expect(termsLink?.getAttribute("href")).toBe("/legal/terms");
+    expect(termsLink?.getAttribute("href")).toBe(
+      "https://www.prewaitlist.com/legal/terms"
+    );
+  });
+
+  it("uses the same attribution URL for the logo link", () => {
+    render(<PoweredByFooter template="minimal" standalone />);
+    const logoLink = screen.getByAltText("PreWaitlist").closest("a");
+    expect(logoLink?.getAttribute("href")).toBe(
+      "https://www.prewaitlist.com/?src=powered-by"
+    );
   });
 });

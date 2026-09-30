@@ -69,7 +69,7 @@ PADDLE_API_KEY=pdl_sdbx_apikey_...
 NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=test_...
 PADDLE_WEBHOOK_SECRET=pdl_ntfset_...
 NEXT_PUBLIC_PADDLE_ENV=sandbox
-NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
+PADDLE_PRO_PRICE_ID=pri_... **[CORRECTED 2026-09-30 (revenue plan Phase 6.9):** was `NEXT_PUBLIC_PADDLE_PRO_PRICE_ID` — the price ID is read server-side only (`process.env.PADDLE_PRO_PRICE_ID` in `src/app/api/billing/checkout/route.ts:4`) and must NOT be `NEXT_PUBLIC_` (client exposure of a price handle is needless surface). `NEXT_PUBLIC_PADDLE_ENV` and `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` are the correct client vars.**]**
 ```
 
 ## Story Index
@@ -141,7 +141,7 @@ NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
 - AC5: One primary CTA ("Upgrade to Pro") that opens Paddle overlay checkout with `customData: { trigger_source }`.
 - AC6: Dismissable via X button, "Maybe later", or backdrop click.
 - AC7: Design system: bg-card, border-border, centered overlay with backdrop blur, max-w-[480px].
-- AC8: After dismissal, same trigger suppressed for 7 days (localStorage cooldown).
+- AC8: After dismissal, same trigger suppressed for 7 days (localStorage cooldown). **[AMENDED 2026-09-30 (revenue plan Phase 6.9):** suppression is **1 day** — `COOLDOWN_DAYS = 1` at `components/dashboard/upgrade-modal.tsx:37` (founder decision 2026-09-22); `pro-cta-onboarding`/`pro-cta-billing` deep links are exempt (Phase 1.5c).**]**
 - AC9: Triggered at 7 context points: (1) sidebar Broadcast click, (2) sidebar Warmth click, (3) subscriber approaching 500 cap, (4) 3rd qual question attempt, (5) settings billing CTA, (6) CSV export attempt, (7) dashboard first-subscriber window. **AMENDED 2026-09-29 (Phase 2.6):** the (6) CSV-export trigger was never wired — CSV export is Free (`tier-gating.ts` marks `csv_export` requiredTier free, `FREE_FEATURES` lists "CSV export, all columns"); the `csv_export` headline key in `upgrade-modal.tsx` is inert.
 - AC10: Lint and build shall pass with zero errors.
 
@@ -297,6 +297,6 @@ NEXT_PUBLIC_PADDLE_PRO_PRICE_ID=pri_...
 - Mock Paddle SDK in tests (vi.mock("@paddle/paddle-js")).
 - Mock Supabase for tier checks and updates.
 - Test the webhook handler with synthetic Paddle payloads.
-- Test cooldown: set localStorage, verify modal doesn't show within 7 days.
+- Test cooldown: set localStorage, verify modal doesn't show within 7 days. **[AMENDED 2026-09-30 (revenue plan Phase 6.9):** cooldown is 1 day (`COOLDOWN_DAYS = 1`, `upgrade-modal.tsx:37`).**]**
 - Test cap: mock waitlist with subscriber_count=500, verify 403 response.
 - **Status: NOT IMPLEMENTED** — No tests exist for any Epic 13 story. All dependent code (Paddle hook, checkout route, webhook, upgrade modal, tier-gating, cap check) is not built yet.

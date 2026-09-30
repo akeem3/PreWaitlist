@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useOnboardingForm } from "../context";
 import MetaPreview from "../../../../components/onboarding/meta-preview";
+import { ShareButtons } from "../../../../components/share/share-buttons";
 
 export default function OnboardingSuccess() {
   const form = useOnboardingForm();
@@ -28,14 +29,6 @@ export default function OnboardingSuccess() {
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Silent fail
-    }
-  }
-
-  async function handleShare() {
-    try {
-      await navigator.share({ url: `https://${liveUrl}` });
-    } catch {
-      // User cancelled
     }
   }
 
@@ -86,23 +79,8 @@ export default function OnboardingSuccess() {
           />
         </div>
 
-        {/* Share + Copy buttons */}
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={handleShare}
-            className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
-          >
-            Share
-          </button>
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="flex-1 rounded-lg border border-foreground py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-          >
-            Copy link
-          </button>
-        </div>
+        {/* Share + Copy buttons — shared component (same as thank-you page) */}
+        <ShareButtons url={`https://${liveUrl}`} className="w-full" />
       </div>
 
       {/* What will happen next */}
