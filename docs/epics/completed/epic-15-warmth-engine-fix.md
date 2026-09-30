@@ -1,7 +1,7 @@
 # Epic 15 — Warmth Engine Fix & Hardening
 
 **Status:** done
-**Amended 2026-09-25:** Warmth model restructure (Unscored removed, baseline 70 = Hot at signup, any-action recency clock) supersedes Standing Decision 3 and the marked ACs below. Annotations only — original AC text preserved. Plan: `docs/dashboard-warmth-redesign-plan.md` §4.
+**Amended 2026-09-25:** Warmth model restructure (Unscored removed, baseline 70 = Hot at signup, any-action recency clock) supersedes Standing Decision 3 and the marked ACs below. Annotations only — original AC text preserved. Plan: `docs/completed/dashboard-warmth-redesign-plan.md` §4.
 **Source:** [Five-Engine Audit §2 Warmth](../scans/engine-audit-5-engines.md#2-warmth--%EF%B8%8F-partial-verified-rescan-confidence-96), [PRD §2 Sprint 3](../PRD.md), [MVP Vision Module 3 — Warmth Tracking](../product-vision-mvp-waitlist-tool.md#module-3--warmth-tracking), [Story 11.0–11.7](completed/story-11.0-resend-webhook.md), [Story 12.3.3](completed/story-12.3.3-dashboard-warmth.md), Vercel Cron docs, Resend Webhook event types
 
 ## Design References

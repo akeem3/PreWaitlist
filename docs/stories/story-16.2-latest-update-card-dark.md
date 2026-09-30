@@ -1,6 +1,6 @@
 # Story 16.2 — LatestUpdateCard Dark Template
 
-**Status:** ready
+**Status:** done
 **Epic:** 16 — Leaderboard & Founder Updates Engine Fix
 **Depends on:** —
 **Design Refs:** Story 7.7 AC5 typography; dark tokens `bg-dark-template-*` / `text-dark-template-*` / `border-dark-template-border` from `src/app/globals.css`

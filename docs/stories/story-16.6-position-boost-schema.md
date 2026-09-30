@@ -1,6 +1,6 @@
 # Story 16.6 — position_boost Schema Migration
 
-**Status:** ready
+**Status:** done
 **Epic:** 16 — Leaderboard & Founder Updates Engine Fix
 **Depends on:** —
 **Design Refs:** — (SQL only)

@@ -4,7 +4,7 @@
 **Epic:** 17 — Broadcasting Engine Fix
 **Depends on:** 17.1
 **Design Refs:** C3 compose form (`docs/design/sprint-3-design-specs.md` §C3); segment pills already in `client.tsx` (keep pill UI, not C3’s `<select>` — pills are current implementation + Story 12.4 AC1)
-**Source:** [Audit §5 claim 1](../scans/engine-audit-5-engines.md#5-broadcasting--%EF%B8%8F-not-functional-verified-rescan-confidence-98), [Epic 17 Standing Decisions B1/B3/B15/B17](../epics/epic-17-broadcast-engine-fix.md), [Story 12.3](../stories/completed/story-12.3-broadcast-email.md), [Story 12.1.8](../stories/completed/story-12.1.8-broadcast-duplicate-fixes.md)
+**Source:** [Audit §5 claim 1](../../scans/engine-audit-5-engines.md#5-broadcasting--%EF%B8%8F-not-functional-verified-rescan-confidence-98), [Epic 17 Standing Decisions B1/B3/B15/B17](../../epics/completed/epic-17-broadcast-engine-fix.md), [Story 12.3](../../stories/completed/story-12.3-broadcast-email.md), [Story 12.1.8](../../stories/completed/story-12.1.8-broadcast-duplicate-fixes.md)
 
 ## Story
 

@@ -4,7 +4,7 @@
 **Epic:** 17 — Broadcasting Engine Fix
 **Depends on:** 17.0–17.6
 **Design Refs:** — (documentation only)
-**Source:** [Audit §5 documentation claims](../scans/engine-audit-5-engines.md#5-broadcasting--%EF%B8%8F-not-functional-verified-rescan-confidence-98), [Epic 17 Standing Decisions B5/B16/B17](../epics/epic-17-broadcast-engine-fix.md), [Story 12.3](../stories/completed/story-12.3-broadcast-email.md), [Story 12.4](../stories/completed/story-12.4-warmth-segmented-broadcast.md), [Story 12.5](../stories/completed/story-12.5-email-customisation.md), [Story 12.6](../stories/completed/story-12.6-email-infrastructure-separation.md), [Story 12.1.8](../stories/completed/story-12.1.8-broadcast-duplicate-fixes.md), MEMORY.md
+**Source:** [Audit §5 documentation claims](../../scans/engine-audit-5-engines.md#5-broadcasting--%EF%B8%8F-not-functional-verified-rescan-confidence-98), [Epic 17 Standing Decisions B5/B16/B17](../../epics/completed/epic-17-broadcast-engine-fix.md), [Story 12.3](../../stories/completed/story-12.3-broadcast-email.md), [Story 12.4](../../stories/completed/story-12.4-warmth-segmented-broadcast.md), [Story 12.5](../../stories/completed/story-12.5-email-customisation.md), [Story 12.6](../../stories/completed/story-12.6-email-infrastructure-separation.md), [Story 12.1.8](../../stories/completed/story-12.1.8-broadcast-duplicate-fixes.md), MEMORY.md
 
 ## Story
 

@@ -1,6 +1,6 @@
 # Story 16.5 — Dashboard Leaderboard Pagination
 
-**Status:** ready
+**Status:** done
 **Epic:** 16 — Leaderboard & Founder Updates Engine Fix
 **Depends on:** 16.4
 **Design Refs:** Story 12.3.1 AC5/AC6 (verbatim counter copy); public pattern `leaderboard-client.tsx` PAGE_SIZE=10 + prev/next + "Showing X–Y of Z"

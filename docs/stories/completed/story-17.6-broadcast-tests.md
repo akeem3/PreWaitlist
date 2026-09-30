@@ -4,7 +4,7 @@
 **Epic:** 17 — Broadcasting Engine Fix
 **Depends on:** 17.0, 17.1, 17.2, 17.3, 17.5
 **Design Refs:** — (tests)
-**Source:** [Audit §5 zero send-path tests](../scans/engine-audit-5-engines.md#5-broadcasting--%EF%B8%8F-not-functional-verified-rescan-confidence-98), [Epic 17 Standing Decisions B1/B4/B9](../epics/epic-17-broadcast-engine-fix.md), Testing infrastructure (Vitest + happy-dom + RTL)
+**Source:** [Audit §5 zero send-path tests](../../scans/engine-audit-5-engines.md#5-broadcasting--%EF%B8%8F-not-functional-verified-rescan-confidence-98), [Epic 17 Standing Decisions B1/B4/B9](../../epics/completed/epic-17-broadcast-engine-fix.md), Testing infrastructure (Vitest + happy-dom + RTL)
 
 ## Story
 

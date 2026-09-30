@@ -4,7 +4,7 @@
 **Epic:** 17 — Broadcasting Engine Fix
 **Depends on:** —
 **Design Refs:** — (API only; no SVG)
-**Source:** [Audit §5 Broadcasting](../scans/engine-audit-5-engines.md#5-broadcasting--%EF%B8%8F-not-functional-verified-rescan-confidence-98), [Epic 17 Standing Decisions B4/B9/B12–B14](../epics/epic-17-broadcast-engine-fix.md), [PRD L171 Unsubscribe mechanism](../PRD.md), [PRD REQ-7.1a.1–4 Never Audiences](../PRD.md), Resend Batch API + Idempotency docs
+**Source:** [Audit §5 Broadcasting](../../scans/engine-audit-5-engines.md#5-broadcasting--%EF%B8%8F-not-functional-verified-rescan-confidence-98), [Epic 17 Standing Decisions B4/B9/B12–B14](../../epics/completed/epic-17-broadcast-engine-fix.md), [PRD L171 Unsubscribe mechanism](../../PRD.md), [PRD REQ-7.1a.1–4 Never Audiences](../../PRD.md), Resend Batch API + Idempotency docs
 
 ## Story
 

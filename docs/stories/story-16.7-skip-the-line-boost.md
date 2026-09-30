@@ -1,6 +1,6 @@
 # Story 16.7 — Skip-the-Line Durable Position Boost
 
-**Status:** ready
+**Status:** done
 **Epic:** 16 — Leaderboard & Founder Updates Engine Fix
 **Depends on:** 16.6
 **Design Refs:** PRD REQ-6.8.3 (milestone label containing "skip the line" → boost to front of queue)

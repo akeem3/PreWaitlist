@@ -1,6 +1,6 @@
 # Epic 16 — Leaderboard & Founder Updates Engine Fix
 
-**Status:** ready
+**Status:** in-progress
 **Source:** [Five-Engine Audit §3 Leaderboard](../scans/engine-audit-5-engines.md#3-leaderboard--%EF%B8%8F-partial-verified-rescan-confidence-95), [Five-Engine Audit §4 Founder Updates](../scans/engine-audit-5-engines.md#4-founder-updates--%EF%B8%8F-partial-verified-rescan-confidence-97), [PRD §6.15 Founder Updates](../PRD.md#615-founder-updates--email-first-delivery), [PRD REQ-6.8.3](../PRD.md) (skip-the-line), [PRD Sprint 2 screens L63/72](../PRD.md), [Story 7.5](../stories/completed/story-7.5-public-leaderboard-page.md), [Story 7.6](../stories/completed/story-7.6-email-first-updates-milestone-hybrid.md), [Story 7.7](../stories/completed/story-7.7-founder-updates-feed.md), [Story 12.1.4](../stories/completed/story-12.1.4-founder-updates-compose.md), [Story 12.1.10](../stories/completed/story-12.1.10-epic-tests.md), [Story 12.3.1](../stories/completed/story-12.3.1-dashboard-leaderboard.md), [Vision :111/:114](../product-vision-mvp-waitlist-tool.md), Resend Batch API docs, CAN-SPAM FTC guide, waitlist competitor research (audit §3.7 / §4.6)
 
 ## Design References
@@ -48,13 +48,13 @@ Dashboard leaderboard first-click on Referrals/Share% sorts descending with ↓ 
 | ID   | Title                                       | Depends on                   | Status |
 | ---- | ------------------------------------------- | ---------------------------- | ------ |
 | 16.0 | Updates API Send Path Hardening             | —                            | done   |
-| 16.1 | Updates Client Publish Flow + Honest Status | 16.0                         | ready  |
-| 16.2 | LatestUpdateCard Dark Template              | —                            | ready  |
-| 16.3 | Founder Updates Tests                       | 16.0, 16.1, 16.2             | ready  |
-| 16.4 | Dashboard Leaderboard Sort Fix              | —                            | ready  |
-| 16.5 | Dashboard Leaderboard Pagination            | 16.4                         | ready  |
-| 16.6 | position_boost Schema Migration             | —                            | ready  |
-| 16.7 | Skip-the-Line Durable Position Boost        | 16.6                         | ready  |
+| 16.1 | Updates Client Publish Flow + Honest Status | 16.0                         | done   |
+| 16.2 | LatestUpdateCard Dark Template              | —                            | done   |
+| 16.3 | Founder Updates Tests                       | 16.0, 16.1, 16.2             | done   |
+| 16.4 | Dashboard Leaderboard Sort Fix              | —                            | done   |
+| 16.5 | Dashboard Leaderboard Pagination            | 16.4                         | done   |
+| 16.6 | position_boost Schema Migration             | —                            | done   |
+| 16.7 | Skip-the-Line Durable Position Boost        | 16.6                         | done   |
 | 16.8 | Cleanup, Label & Doc Amendments             | 16.0, 16.3, 16.4, 16.5, 16.7 | ready  |
 
 **Execution order:** 16.0 first (highest-risk send path). Then **16.1 + 16.2 + 16.4 + 16.6 in parallel** (independent surfaces; 16.6 is founder-run SQL only). Then 16.5 (same file as 16.4), 16.7 (needs 16.6 SQL live), 16.3 (tests after Updates code lands), 16.8 last (depends on 16.0/16.3/16.4/16.5/16.7 outcomes). Manual gates: founder runs `position_boost` SQL (16.6) before 16.7 deploy; founder approves **COPY GAP** strings (L3, U6) before those UI strings ship; coordinate L7 orphan-API delete with Epic 14.0 if that epic runs first.
@@ -101,7 +101,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 16.1 — Updates Client Publish Flow + Honest Status
 
-**Status:** ready
+**Status:** done
 **Design Refs:** Story 12.1.4 compose layout (textarea + Publish + recent list)
 **Story:** As a founder, I want the compose form to target the correct waitlist and tell me whether emails actually sent — so I trust the Updates feature after publishing.
 
@@ -130,7 +130,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 16.2 — LatestUpdateCard Dark Template
 
-**Status:** ready
+**Status:** done
 **Design Refs:** Story 7.7 AC5 typography (caption label, body text, caption timestamp); dark template tokens `bg-dark-template-bg`, `text-dark-template-text`, `text-dark-template-secondary`, `border-dark-template-border` from `globals.css`
 **Story:** As a visitor on a dark-template waitlist, I want the Latest update card to match the page theme so it does not appear as a white box on a dark background.
 
@@ -158,7 +158,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 16.3 — Founder Updates Tests
 
-**Status:** ready
+**Status:** done
 **Design Refs:** —
 **Source:** [Audit §4.5 Tests inventory](../scans/engine-audit-5-engines.md), [Story 12.1.10 AC5](../stories/completed/story-12.1.10-epic-tests.md)
 **Story:** As a developer, I want API and compose-flow tests for founder updates so batch-cap, suppression, validation, multi-waitlist, and honest-status behavior cannot regress silently.
@@ -191,7 +191,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 16.4 — Dashboard Leaderboard Sort Fix
 
-**Status:** ready
+**Status:** done
 **Design Refs:** Story 12.3.1 AC3 (server rank) + sortable headers already in client; no HF SVG
 **Story:** As a founder, I want clicking Referrals or Share% to sort correctly the first time — so I can find top advocates without fighting inverted arrows.
 
@@ -219,7 +219,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 16.5 — Dashboard Leaderboard Pagination
 
-**Status:** ready
+**Status:** done
 **Design Refs:** Story 12.3.1 AC5/AC6; public pattern `leaderboard-client.tsx` PAGE_SIZE=10 + prev/next + "Showing X–Y of Z"
 **Story:** As a founder with hundreds of subscribers, I want the dashboard leaderboard paginated with a clear range counter so the table stays scannable and meets Story 12.3.1.
 
@@ -248,7 +248,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 16.6 — position_boost Schema Migration
 
-**Status:** ready
+**Status:** done
 **Design Refs:** — (SQL only)
 **Story:** As a platform, I want a durable skip-the-line flag on subscribers and an RPC that honors it so milestone perks survive every position recalculation.
 
@@ -276,7 +276,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 
 ### Story 16.7 — Skip-the-Line Durable Position Boost
 
-**Status:** ready
+**Status:** done
 **Design Refs:** REQ-6.8.3 (milestone reward label containing "skip the line" boosts position to front)
 **Story:** As a subscriber who earned a "skip the line" reward, I want my front-of-queue position to persist after future signups — so the perk is real, not momentarily true.
 

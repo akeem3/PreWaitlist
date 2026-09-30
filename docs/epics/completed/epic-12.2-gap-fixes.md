@@ -1,7 +1,7 @@
 # Epic 12.2 — Gap Fixes
 
 **Status:** in-progress (15/19 stories implemented)
-**Source:** [Sprint Gap Analysis](../sprint-gap-analysis.md), [PRD §2c Sprint 3.2](../PRD.md#2c-sprint-32--gap-fixes)
+**Source:** [Sprint Gap Analysis](../../completed/sprint-gap-analysis.md), [PRD §2c Sprint 3.2](../PRD.md#2c-sprint-32--gap-fixes)
 
 ## Goal
 
