@@ -30,7 +30,7 @@ T5 (AC6-AC7) Lint + build + count
 - Mock Paddle SDK in tests (vi.mock("@paddle/paddle-js")).
 - Mock Supabase for tier checks and updates.
 - Test the webhook handler with synthetic Paddle payloads.
-- Test cooldown: set localStorage, verify modal doesn't show within 7 days.
+- Test cooldown: set localStorage, verify modal doesn't show within 7 days. **[AMENDED 2026-09-30 (revenue plan Phase 6.9):** cooldown is 1 day (`COOLDOWN_DAYS = 1`, `upgrade-modal.tsx:37`) — tests assert the 1-day window; `pro-cta-*` deep links are cooldown-exempt (Phase 1.5c).**]**
 - Test cap: mock waitlist with subscriber_count=500, verify 403 response.
 
 ## Files to Create

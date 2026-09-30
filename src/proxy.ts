@@ -41,6 +41,10 @@ function captureAcquisition(request: NextRequest): NextResponse | null {
   if (url.pathname !== "/") return null;
 
   const ref = url.searchParams.get("ref");
+  // "Powered by" footer attribution (?src=powered-by) lands in the same
+  // ref_param column as legacy ?ref= values — explicit ref wins if both.
+  const src = url.searchParams.get("src");
+  const acquisitionRef = ref ?? src;
   const utmSource = url.searchParams.get("utm_source");
   const utmMedium = url.searchParams.get("utm_medium");
   const utmCampaign = url.searchParams.get("utm_campaign");
@@ -48,7 +52,7 @@ function captureAcquisition(request: NextRequest): NextResponse | null {
   const utmContent = url.searchParams.get("utm_content");
 
   if (
-    !ref &&
+    !acquisitionRef &&
     !utmSource &&
     !utmMedium &&
     !utmCampaign &&
@@ -59,24 +63,35 @@ function captureAcquisition(request: NextRequest): NextResponse | null {
   }
 
   const acquisition: Record<string, string> = {};
-  if (ref) acquisition.ref = ref;
+  if (acquisitionRef) acquisition.ref = acquisitionRef;
   if (utmSource) acquisition.utm_source = utmSource;
   if (utmMedium) acquisition.utm_medium = utmMedium;
   if (utmCampaign) acquisition.utm_campaign = utmCampaign;
   if (utmTerm) acquisition.utm_term = utmTerm;
   if (utmContent) acquisition.utm_content = utmContent;
 
+  // Share the cookie across the apex and all founder subdomains; only the
+  // server (auth callback) reads it. Host-only on localhost/lvh.me dev hosts.
+  const hostname = url.hostname;
+  const cookieDomain =
+    hostname === "prewaitlist.com" || hostname.endsWith(".prewaitlist.com")
+      ? ".prewaitlist.com"
+      : undefined;
+
   const response = NextResponse.next();
   response.cookies.set("mw_acquisition", JSON.stringify(acquisition), {
     maxAge: 60 * 60 * 24 * 30,
     path: "/",
     sameSite: "lax",
+    httpOnly: true,
+    secure: url.protocol === "https:",
+    ...(cookieDomain ? { domain: cookieDomain } : {}),
   });
 
   return response;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const host = request.headers.get("host") ?? "";
   const subdomain = getSubdomain(host);
 
@@ -107,5 +122,13 @@ export async function middleware(request: NextRequest) {
   url.pathname = path.startsWith(`/${subdomain}`)
     ? path
     : `/${subdomain}${path}`;
-  return NextResponse.rewrite(url);
+  const rewriteResponse = NextResponse.rewrite(url);
+  // Preserve acquisition attribution on subdomain rewrites — previously
+  // this branch discarded the capture response and dropped the cookie.
+  if (acquisitionResponse) {
+    for (const cookie of acquisitionResponse.cookies.getAll()) {
+      rewriteResponse.cookies.set(cookie);
+    }
+  }
+  return rewriteResponse;
 }

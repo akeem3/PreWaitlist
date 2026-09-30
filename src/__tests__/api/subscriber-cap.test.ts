@@ -57,6 +57,18 @@ function makeChain(data: unknown, error: unknown = null) {
   return chain;
 }
 
+// Phase 6: consent + form-load timestamp (>=2s old) required by the route
+const FORM_TS = Date.now() - 5000;
+function capBody(extra: Record<string, unknown> = {}) {
+  return JSON.stringify({
+    waitlist_id: "w-1",
+    email: "test@example.com",
+    consent: true,
+    ts: FORM_TS,
+    ...extra,
+  });
+}
+
 describe("POST /api/subscribers — 500 cap check", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -81,10 +93,7 @@ describe("POST /api/subscribers — 500 cap check", () => {
     const { POST } = await import("@/app/api/subscribers/route");
     const req = new Request("http://localhost/api/subscribers", {
       method: "POST",
-      body: JSON.stringify({
-        waitlist_id: "w-1",
-        email: "test@example.com",
-      }),
+      body: capBody(),
     });
     const res = await POST(req);
     expect(res.status).toBe(403);
@@ -111,10 +120,7 @@ describe("POST /api/subscribers — 500 cap check", () => {
     const { POST } = await import("@/app/api/subscribers/route");
     const req = new Request("http://localhost/api/subscribers", {
       method: "POST",
-      body: JSON.stringify({
-        waitlist_id: "w-1",
-        email: "test@example.com",
-      }),
+      body: capBody(),
     });
     const res = await POST(req);
     expect(res.status).toBe(403);
@@ -136,7 +142,8 @@ describe("POST /api/subscribers — 500 cap check", () => {
       from: vi.fn().mockReturnValue(makeChain(capData)),
     } as ReturnType<typeof createClient>);
 
-    // Cap passes — insert path uses admin client
+    // Cap passes — insert path uses admin client. Atomic claim returns the
+    // new count (601) — a null would mean "capped" and 403.
     mockCreateAdminClient.mockReturnValue({
       from: vi.fn().mockReturnValue(
         makeChain({
@@ -146,7 +153,7 @@ describe("POST /api/subscribers — 500 cap check", () => {
           position: 1,
         })
       ),
-      rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
+      rpc: vi.fn().mockResolvedValue({ data: 601, error: null }),
       auth: {
         admin: {
           getUserById: vi.fn().mockResolvedValue({
@@ -160,13 +167,44 @@ describe("POST /api/subscribers — 500 cap check", () => {
     const { POST } = await import("@/app/api/subscribers/route");
     const req = new Request("http://localhost/api/subscribers", {
       method: "POST",
-      body: JSON.stringify({
-        waitlist_id: "w-1",
-        email: "test@example.com",
-      }),
+      body: capBody(),
     });
     const res = await POST(req);
     // Pro bypasses cap — should not be 403
     expect(res.status).not.toBe(403);
+  });
+
+  it("returns 403 when the atomic claim returns NULL (capped mid-race)", async () => {
+    // Read passes (499 < 500), but the atomic claim reports no slot left
+    mockCreateClient.mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "user-1" } },
+          error: null,
+        }),
+      },
+      from: vi.fn().mockReturnValue(
+        makeChain({
+          subscriber_count: 499,
+          founder_profiles: { tier: "free" },
+        })
+      ),
+    } as ReturnType<typeof createClient>);
+
+    mockCreateAdminClient.mockReturnValue({
+      from: vi.fn(),
+      rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
+      auth: { admin: {} },
+    } as unknown as ReturnType<typeof createAdminClient>);
+
+    const { POST } = await import("@/app/api/subscribers/route");
+    const req = new Request("http://localhost/api/subscribers", {
+      method: "POST",
+      body: capBody(),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(403);
+    const data = await res.json();
+    expect(data.error).toContain("Subscriber limit reached");
   });
 });

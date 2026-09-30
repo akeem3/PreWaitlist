@@ -265,12 +265,12 @@
 
 **Goal:** Locked features are consistently locked everywhere.
 
-| #   | Change                                    | Detail                                                           | Effort |
-| --- | ----------------------------------------- | ---------------------------------------------------------------- | ------ |
-| 4.1 | **Warmth panel: locked overlay for Free** | Show greyed bars + "Upgrade to Pro to see warmth scores" message | Low    |
-| 4.2 | **Warmth stat card: locked state**        | Show "—" with lock icon, not just "—"                            | Low    |
-| 4.3 | **CSV export: trigger upgrade modal**     | Instead of hidden, show button that opens upgrade modal          | Low    |
-| 4.4 | **Sidebar tooltips**                      | Hovering locked items shows "Pro feature — upgrade to unlock"    | Low    |
+| #   | Change                                    | Detail                                                                                                                                                                                                                                                                                 | Effort |
+| --- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 4.1 | **Warmth panel: locked overlay for Free** | Show greyed bars + "Upgrade to Pro to see warmth scores" message                                                                                                                                                                                                                       | Low    |
+| 4.2 | **Warmth stat card: locked state**        | Show "—" with lock icon, not just "—"                                                                                                                                                                                                                                                  | Low    |
+| 4.3 | **CSV export: trigger upgrade modal**     | Instead of hidden, show button that opens upgrade modal **[SUPERSEDED 2026-09-30 (revenue plan Phase 6.9):** rejected — founder decision in the revenue plan Phase 2.6 (2026-09-29) keeps CSV Free on all tiers: button always visible, export route ungated, no upgrade trigger.**]** | Low    |
+| 4.4 | **Sidebar tooltips**                      | Hovering locked items shows "Pro feature — upgrade to unlock"                                                                                                                                                                                                                          | Low    |
 
 **Estimated effort:** 1 day
 

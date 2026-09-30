@@ -844,7 +844,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 | 12.2.3  | ✅ done | Settings Page Overhaul — scope-first architecture: account settings at `/dashboard/settings`, waitlist settings at `/dashboard/[waitlistId]/settings`, two-tier sidebar nav. Restructured to three-level hierarchy: hub → waitlist list → waitlist detail. Profile extracted to `/dashboard/settings/profile`. Sidebar ACCOUNT section removed. Vertical card layout on hub. |
 | 12.2.4  | ✅ done | Privacy Policy — `/legal/privacy` static page, marketing footer link, PoweredByFooter link                                                                                                                                                                                                                                                                                   |
 | 12.2.5  | ✅ done | Terms of Service — `/legal/terms` static page, references privacy policy, both footers linked                                                                                                                                                                                                                                                                                |
-| 12.2.6  | ✅ done | Consent Tracking — checkbox in email capture form (both variants), API consent validation + IP capture                                                                                                                                                                                                                                                                       |
+| 12.2.6  | ✅ done | Consent Tracking — checkbox in email capture form (both variants), API consent validation + IP capture **[REGRESSION 2026-09-30: shipped at `0d33bbb`, silently reverted by `afcdcf9` (checkbox/guard/validation removed, `consent_given_at` stamped unconditionally); restored by revenue plan Phase 6.4/6.8 with tests — see story/epic regression notes]**                |
 | 12.2.7  | ✅ done | Unsubscribe Mechanism — HMAC tokens in emails, `/unsubscribe` page, send-time check, resubscribe                                                                                                                                                                                                                                                                             |
 | 12.2.8  | ✅ done | Bounce Suppression — webhook inserts to bounced_emails, `isEmailBounced()` check, Bounced badge                                                                                                                                                                                                                                                                              |
 | 12.2.9  | ✅ done | Physical Address in Emails — settings address field, email footer with address                                                                                                                                                                                                                                                                                               |
@@ -1150,6 +1150,50 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - **Fix:** checkout route `.maybeSingle()` + **create-if-missing** (`insert({id: user.id})`, mirroring the waitlist route; concurrent-create race re-selects before 500-ing); modal parses non-2xx bodies and surfaces the API's existing `error` strings, generic fallback when absent (web.dev fetch pattern). Research: Supabase PGRST116 docs (`.maybeSingle()` for "row may not exist") + web.dev fetch error handling.
 - **Tests:** +3 — billing auto-create → 200, modal surfaces non-2xx API string, modal falls back when body has no message.
 - **Flagged, NOT fixed (scope):** (a) auth callback acquisition capture (`callback/route.ts:47-56`) does a best-effort `update` on a possibly-absent profile row → acquisition data silently dropped for fresh signups (profile now gets created at checkout or waitlist creation, but not at callback); (b) `use-paddle-upgrade.ts` (steps 4a/5) fails **silently** (console-only) on checkout errors — no user-facing message.
+
+## Revenue Lifecycle Plan — Phases 5 + 6 (2026-09-30)
+
+**Status:** Phases 5–6 DONE + **Prompt #3 audit passed (2026-09-30)**, all gates green, committed on `dev` (Phases 1–4 shipped earlier). Plan: `docs/revenue-lifecycle-fix-plan.md`.
+
+**Phase 5 — Growth surfaces (all 3 founder gates resolved):**
+
+- 5.1 **Dynamic per-subdomain PNG og:image** — `src/app/(public)/[subdomain]/opengraph-image.tsx` (1200×630 `ImageResponse`, headline/subheadline/brand colour from waitlists row, 300s revalidate) + `generateMetadata` (og:title/description/twitter) in `page.tsx:30`.
+- 5.2 Success buttons → shared `ShareButtons` only (no platform tabs).
+- 5.3 **Namespace split:** `?ref=` = subscriber credit (8-hex only, client `/^[0-9a-f]{8}$/i` filter) · `?src=powered-by` = attribution/hero (footer brand links, tightened hero trigger).
+
+**Phase 6 — Debt + doc honesty:**
+
+- **proxy.ts migration:** `git mv src/middleware.ts src/proxy.ts`, export `middleware` → `proxy`; deleted duplicate helper `src/lib/supabase/proxy.ts`; root `.env.example` (13 vars) + `!.env.example` gitignore negation. Build shows `ƒ Proxy (Middleware)`.
+- **`POST /api/subscribers` hardening:** validation order = required → honeypot → ≥2s timing → consent 400 → email format → display_name ≤100 → 5/hour per-IP (skips `unknown`) → tier → referral → qual → **atomic claim** `increment_subscriber_count(p_waitlist_id, p_cap)` + `releaseClaim()` on every insert-error path (+ legacy 1-arg fallback) → insert; **23505** → 409 (email) / one retry with fresh code / generic 500 — no raw-error echo.
+- **Consent rebuilt, not amended:** shipped at `0d33bbb` (Epic 12.2.6) then **silently reverted by `afcdcf9`** (checkbox/guard/validation removed while `consent_given_at` kept stamping unconditionally = fabricated consent records). Restored (Phase 6.4/6.8) in both form variants + `PreviewConsent` preview parity + server 400. Regression notes in epic-12.2 T1/T2, story-12.2.6, MEMORY 12.2.6 row.
+- **Doc corrections (6.9):** price var → `PADDLE_PRO_PRICE_ID` server-only (epic-13 + story-13.0 wrongly said `NEXT_PUBLIC_…`) · cooldown 7→1 day, 8 spots (`COOLDOWN_DAYS = 1`, founder decision 2026-09-22) · CSV-trigger stragglers 6 spots (story-9.2/9.5/9.7, epic-9 AC4+AC8, dashboard-overhaul 4.3) · meta-tags claim verified vs Phase 5.1 (Excalidraw mirror left raw by design) · `docs/PROMPTS.md` middleware→proxy.ts (2 lines).
+- **Bonus `/signup` fixes:** `handleSubmit` uses `validateEmail()` return (stale-state bug), `onBlur` syncs error, `/terms`→`/legal/terms`, `/privacy`→`/legal/privacy`.
+- **FOUNDER GATE (closed):** `docs/stories/sql-writeups/revenue-phase6-subscriber-protections.sql` **run by founder 2026-09-30** (2-arg increment + decrement fn, `email_normalized` generated column + dedupe index, probes).
+
+**Prompt #3 audit (2026-09-30) — 2 findings, both fixed:**
+
+- **F1 — display_name cap on the wrong endpoint:** POST `/api/subscribers` had the ≤100 check, but the form never sends `display_name` — the real write path is PATCH `/api/subscribers/[id]` (thank-you name input), which had no cap. Added the same 400 + `maxLength={100}` on the input + 3 tests in `subscribers-id.test.ts` (PATCH describe block; that file also gained admin-client mock + queue clearing).
+- **F2 — og:image dropped subheadline:** `opengraph-image.tsx` selected `subheadline` but rendered `productName` as the subtitle; plan 5.1 specifies headline/subheadline/brand colour. Fixed: subtitle = subheadline (sliced 140) → productName → subdomain.
+- Verified end-to-end: validation order, claim/release/no-double-decrement (legacy fallback + `claimed` flag), 23505 paths, consentBlock in both form variants, PreviewConsent (186/308), metadataBase, hero `?src=` trigger, footer `SITE_URL` links, `.env.example` = exact match for all 13 `process.env` keys, all 6.9 doc corrections landed (story-13.0 uses "CORRECTED", overhaul 4.3 "SUPERSEDED").
+
+**Gates:** lint 0 errors / 5 pre-existing warnings · full suite **813 = 806 pass / 7 fail = exact baseline** (dashboard-archive 4 + dashboard-subscriber-table 3; +15 new tests across 5–6 + audit) · clean build (`.next` deleted first, `ƒ Proxy (Middleware)`) · `accent-accent` confirmed in compiled CSS. Note: full-suite runs are flaky under load (one run showed 12 fails, immediate re-run = baseline 7) — always re-run before concluding regression.
+
+**Gotchas (Phases 5–6):**
+
+- `useRef(Date.now())` violates `react-hooks/purity` (impure call in render) — capture the form-load timestamp in a mount effect (`loadedAtRef`), fallback `?? Date.now()` inside the submit handler.
+- Test/route bodies must now include `consent: true` + `ts: Date.now()-5000` (`FORM_TS`/`signupBody`/`capBody` helpers) or signup 400s on timing/consent first.
+- Supabase mock: `rpc` is an unqueued default `{data: []}` → claim lands in the legacy-fallback branch for existing tests; Pro-at-cap test must mock `{data: 601}` (a `null` now means capped → 403).
+- `vi.clearAllMocks()` does not clear once-queues; rate-limit query dequeues only when `x-forwarded-for` is set (tests set none → ip `unknown` → skipped).
+
+## Revenue Lifecycle Plan — Phase 4 Audit (2026-09-30)
+
+**Status:** Prompt #3 audit of Phase 4 (Funnel dead-ends) complete, **1 finding fixed**, gates green (lint 0/5, suite **814 = 807 pass / 7 fail = exact baseline**, clean build, prettier clean). Fix uncommitted at audit time → committed with docs.
+
+**Finding F1 — FlushGate fresh-founder path keyed on a 404 the API never returns:** `GET /api/waitlist` returns `200 []` for zero waitlists (never 404 — 401/400/200 only). FlushGate's truly-fresh branch checked `preStatus === 404` → dead in production: fresh founder at `/onboarding/4` (e.g. post-signup with cleared storage) hit the "Something went wrong" error UI + a redundant second GET instead of Step 1. Fix in `src/components/auth/flush-gate.tsx`: truly fresh = pre-check proved empty (200 [] or 404) AND no local draft → `router.replace("/onboarding/1")` before the second GET; removed dead `preStatus` tracking + unreachable "404 && !hasLocalData" branch after POST (POST only runs when a draft exists); kept "404 after successful POST → error UI" as defense. +1 regression test (200 `[]` contract, asserts exactly 1 fetch) — 7 total.
+
+**Other 4.x claims verified:** 4.2 Phase-B proxy guard `middleware.ts:44-52` (list → `/onboarding/signup` before generic guard, query preserved, both proxy legs, 7 tests) · 4.3 archived → `/{subdomain}/gone` on leaderboard:38-39 + thank-you:86-87, recovery card for missing params/unknown subscriber, read-only call holds (no `is_archived` block on dashboard edit) · 4.4 `resolveActiveWaitlist` adopted in all 6 section pages + shell (`?wid` > stored > newest at shell:185-195, unknown-wid self-heal :203-213; layout + GET both `created_at ASC` so client "last = newest" holds; no stragglers — updates:52 orders the updates list) · 4.5 `UpdatesFreeGate` before waitlist lookup (page:31), free → modal trigger `"updates"` (existing strings) · 4.6 resubscribe POST + token 400/404, GET-only page validates without mutating, PATCH PGRST204 swallow removed (prior audit), 7 tests.
+
+**Gotcha:** the other three `fetch("/api/waitlist")` callers (onboarding/signup:39, onboarding/3:280) use bare `res.ok` → also true for `200 []` — harmless because they just push to `/onboarding/4`, where the fixed FlushGate normalizes. If any future caller needs "has a waitlist", check `Array.isArray(json) && json.length > 0`, not `res.ok`.
 
 1. ~~Implement Story 1.2 (Toggle, Select, Textarea)~~ ✅ Done
 2. ~~Run Follow-Up Audit (Prompt #4) on completed Epic 1~~ ✅ Done — all clean

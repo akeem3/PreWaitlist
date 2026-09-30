@@ -208,7 +208,7 @@ Work through these in dependency order, one at a time. Stories 9.0–9.4 form th
 - AC1: The system shall have component tests for the dashboard sidebar (`components/dashboard/sidebar.tsx`) covering: renders all navigation items, active state highlighting, disabled state for Broadcasts/Settings, mobile hamburger toggle.
 - AC2: The system shall have component tests for stat cards covering: renders 4 cards, displays real subscriber count, displays referral percentage, displays warmth counts, shows em-dash when no data.
 - AC3: The system shall have component tests for subscriber table covering: renders table columns, search filters by email, sort by position, sort by referrals, empty state message, row click navigation.
-- AC4: The system shall have component tests for CSV export covering: button visible for Pro tier, button hidden for Free tier, CSV content format, filename format.
+- AC4: The system shall have component tests for CSV export covering: button visible for Pro tier, button hidden for Free tier, CSV content format, filename format. **[AMENDED 2026-09-30 (revenue plan Phase 6.9):** CSV export is Free on all tiers (Phase 2.6) — button always visible; the Pro/Free visibility tests do not exist. Historical record.**]**
 - AC5: The system shall have component tests for subscriber detail page covering: renders subscriber info, renders referral data, renders qualification answers, back button navigation, not found state.
 - AC6: All tests shall pass with `pnpm test`.
 - AC7: Lint and build shall pass with zero errors.
@@ -324,7 +324,7 @@ _Final Verification:_
 - AC5: The system shall have component tests for the top referrers panel covering: renders top 5, sorts by quality score, empty state (0 referrers), CTA in empty state.
 - AC6: The system shall have component tests for the warmth distribution panel covering: renders 4 bars (Hot/Warm/Cold/Unscored), locked state for Free tier, live data for Pro tier, em-dash when no data.
 - AC7: The system shall have component tests for the subscriber table covering: renders all columns (#, Email, Date, Referrals, Quality, Warmth), search filters by email, warmth filter dropdown, sort by position/referrals/quality, expandable row shows qual answers, row click navigation, empty state.
-- AC8: The system shall have component tests for CSV export covering: button visible for Pro tier, button hidden for Free tier, CSV contains all 7 columns, CSV filename format.
+- AC8: The system shall have component tests for CSV export covering: button visible for Pro tier, button hidden for Free tier, CSV contains all 7 columns, CSV filename format. **[AMENDED 2026-09-30 (revenue plan Phase 6.9):** CSV export is Free on all tiers (Phase 2.6) — button always visible; the Pro/Free visibility tests do not exist. Historical record.**]**
 - AC9: The system shall have component tests for the subscriber detail page covering: renders subscriber info, renders referral data, renders qualification answers, back button, not found state.
 - AC10: The system shall have API route tests for `/api/dashboard/chart` covering: returns daily counts, handles empty data, requires auth.
 - AC11: The system shall have API route tests for `/api/dashboard/qualification` covering: returns question distributions, handles no questions, requires auth.

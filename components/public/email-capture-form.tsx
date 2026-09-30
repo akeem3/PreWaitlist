@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Spinner } from "../ui/spinner";
 import { getTierLimits, type Tier } from "../../src/lib/tier-gating";
@@ -39,13 +39,28 @@ export function EmailCaptureForm({
 }: EmailCaptureFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const referralCode = searchParams.get("ref");
+  // Only send 8-char hex codes (what generateReferralCode produces) —
+  // attribution params like ?ref=powered-by would 400 and block signup.
+  const refParam = searchParams.get("ref");
+  const referralCode =
+    refParam && /^[0-9a-f]{8}$/i.test(refParam) ? refParam : null;
 
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [consent, setConsent] = useState(false);
+  const [consentError, setConsentError] = useState(false);
+  // Honeypot: hidden "website" field humans never see; bots fill it
+  const [honeypot, setHoneypot] = useState("");
+  // 6.4: form-load timestamp for the >=2s server timing check.
+  // Captured in a mount effect — Date.now() during render violates
+  // react-hooks/purity (impure call in render).
+  const loadedAtRef = useRef<number | null>(null);
+  useEffect(() => {
+    loadedAtRef.current = Date.now();
+  }, []);
   const isDark = template === "dark";
   const isBold = template === "bold";
 
@@ -78,12 +93,26 @@ export function EmailCaptureForm({
       return;
     }
 
+    if (!consent) {
+      setConsentError(true);
+      return;
+    }
+
+    // Honeypot filled by a bot — bail before hitting the API
+    if (honeypot.trim().length > 0) {
+      setApiError("Something went wrong. Please try again.");
+      return;
+    }
+
     setLoading(true);
 
     try {
       const body: Record<string, unknown> = {
         waitlist_id: waitlistId,
         email: email.trim().toLowerCase(),
+        consent: true,
+        website: honeypot,
+        ts: loadedAtRef.current ?? Date.now(),
       };
 
       if (referralCode) {
@@ -144,6 +173,37 @@ export function EmailCaptureForm({
   const btnPadding = isBold ? "px-7" : "px-4";
   const btnText = isBold ? "text-base font-semibold" : "text-sm font-medium";
 
+  // 12.2.6 AC1/AC4: consent checkbox — identical in both layout variants
+  const consentBlock = (
+    <div className="mt-3">
+      <label className="flex cursor-pointer items-start gap-2">
+        <input
+          type="checkbox"
+          checked={consent}
+          onChange={(e) => {
+            setConsent(e.target.checked);
+            if (consentError) setConsentError(false);
+          }}
+          disabled={loading}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-accent"
+        />
+        <span
+          className={`text-xs ${
+            isDark ? "text-dark-template-muted" : "text-muted-foreground"
+          }`}
+        >
+          I agree to receive email updates about this product. You can
+          unsubscribe at any time.
+        </span>
+      </label>
+      {consentError && (
+        <p className="mt-1 text-xs text-destructive" role="alert">
+          You must agree to receive emails to join the waitlist.
+        </p>
+      )}
+    </div>
+  );
+
   return (
     <div className="w-full max-w-md mt-2">
       {capReached ? (
@@ -171,6 +231,21 @@ export function EmailCaptureForm({
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="w-full">
+          {/* Honeypot — off-screen, humans never fill it */}
+          <div
+            aria-hidden="true"
+            className="absolute -left-[9999px] h-px w-px overflow-hidden"
+          >
+            <input
+              type="text"
+              name="website"
+              value={honeypot}
+              onChange={(e) => setHoneypot(e.target.value)}
+              tabIndex={-1}
+              autoComplete="off"
+              aria-label="Leave this field empty"
+            />
+          </div>
           {capWarningHigh && (
             <div
               className={`mb-3 rounded-[var(--input-radius)] border px-3 py-2 text-xs ${
@@ -296,6 +371,8 @@ export function EmailCaptureForm({
                 ))}
               </div>
 
+              {consentBlock}
+
               <button
                 type="submit"
                 disabled={loading}
@@ -351,6 +428,8 @@ export function EmailCaptureForm({
                   )}
                 </button>
               </div>
+
+              {consentBlock}
 
               <p
                 className={`mt-2 text-center text-xs ${isDark ? "text-dark-template-muted" : "text-muted-foreground"}`}

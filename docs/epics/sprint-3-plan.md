@@ -660,7 +660,7 @@ A free founder who hits the 500-signup cap sees an upgrade modal. Pro founders h
 - AC3: Each trigger shall show a contextual headline (e.g., "Upgrade to send broadcasts" for trigger 4).
 - AC4: The modal shall show: Pro features list, $15/mo price, "Upgrade to Pro" CTA, "Maybe later" dismiss.
 - AC5: The modal shall use the design system: `bg-card`, `border-border`, `rounded-(--card-radius)`, centered overlay with backdrop blur.
-- AC6: The modal shall not show again for the same trigger within 7 days (cooldown).
+- AC6: The modal shall not show again for the same trigger within 7 days (cooldown). **[AMENDED 2026-09-30 (revenue plan Phase 6.9):** cooldown is **1 day** — `COOLDOWN_DAYS = 1` in `components/dashboard/upgrade-modal.tsx:37` (founder decision 2026-09-22, reduced from 7). Explicit-intent `?plan=pro` deep links (`pro-cta-onboarding`/`pro-cta-billing`) are exempt — see revenue plan Phase 1.5c.**]**
 - AC7: The modal shall be closable via X button, "Maybe later", or clicking the backdrop.
 - AC8: Lint and build shall pass with zero errors.
 
@@ -671,7 +671,7 @@ A free founder who hits the 500-signup cap sees an upgrade modal. Pro founders h
 - Create `components/dashboard/upgrade-modal.tsx` (client component)
 - Trigger detection: check tier in each gated feature's click handler, show modal if tier === "free"
 - Cooldown: `localStorage.setItem('upgrade-modal-dismissed-{trigger}', Date.now())`, check on mount
-- 7-day cooldown: `if (Date.now() - dismissed < 7 * 24 * 60 * 60 * 1000) return`
+- 7-day cooldown: `if (Date.now() - dismissed < 7 * 24 * 60 * 60 * 1000) return` **[CORRECTED 2026-09-30 (revenue plan Phase 6.9):** actual implementation is a **1-day** window — `elapsed < COOLDOWN_DAYS * 24 * 60 * 60 * 1000` with `COOLDOWN_DAYS = 1` (`upgrade-modal.tsx:37,61`); this 7-day snippet never matched shipped code after the founder's 2026-09-22 decision.**]**
 - Modal content varies by trigger but shares the same CTA and feature list
 - Design: centered on screen, max-w-md, backdrop backdrop-blur-sm bg-black/50
 

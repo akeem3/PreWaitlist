@@ -7,11 +7,19 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: () => Promise.resolve(mockSupabase),
 }));
 
-import { GET } from "../../app/api/subscribers/[id]/route";
+// PATCH uses the service-role client (anon SELECT revoked, Epic 14.0 AC8)
+const mockAdminSupabase = createMockSupabaseClient();
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: () => mockAdminSupabase,
+}));
+
+import { GET, PATCH } from "../../app/api/subscribers/[id]/route";
 
 describe("GET /api/subscribers/:id", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSupabase.__queue.length = 0;
+    mockAdminSupabase.__queue.length = 0;
   });
 
   it("returns subscriber with position and referral count", async () => {
@@ -94,5 +102,61 @@ describe("GET /api/subscribers/:id", () => {
     });
 
     expect(response.status).toBe(404);
+  });
+});
+
+describe("PATCH /api/subscribers/:id (audit F1 — display_name cap)", () => {
+  const patchRequest = (body: unknown) =>
+    new NextRequest("http://localhost/api/subscribers/sub-1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  const params = { params: Promise.resolve({ id: "sub-1" }) };
+
+  it("rejects display_name longer than 100 characters without writing", async () => {
+    mockAdminSupabase.__queue.push(
+      { data: { id: "sub-1", referral_code: "abc12345" }, error: null } // ownership
+    );
+
+    const response = await PATCH(
+      patchRequest({
+        display_name: "x".repeat(101),
+        referral_code: "abc12345",
+      }),
+      params
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toBe("Display name must be 100 characters or fewer");
+    expect(mockAdminSupabase.__calls.some((c) => c.method === "update")).toBe(
+      false
+    );
+  });
+
+  it("accepts display_name of exactly 100 characters", async () => {
+    mockAdminSupabase.__queue.push(
+      { data: { id: "sub-1", referral_code: "abc12345" }, error: null }, // ownership
+      { error: null } // update
+    );
+
+    const response = await PATCH(
+      patchRequest({
+        display_name: "x".repeat(100),
+        referral_code: "abc12345",
+      }),
+      params
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.success).toBe(true);
+  });
+
+  it("returns 400 without referral_code", async () => {
+    const response = await PATCH(patchRequest({ display_name: "Ada" }), params);
+
+    expect(response.status).toBe(400);
   });
 });

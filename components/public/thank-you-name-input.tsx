@@ -51,6 +51,7 @@ export function ThankYouNameInput({
         type="text"
         placeholder="First name (optional)"
         value={displayName}
+        maxLength={100}
         onChange={(e) => setDisplayName(e.target.value)}
         onBlur={save}
         onKeyDown={(e) => {

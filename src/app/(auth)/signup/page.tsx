@@ -69,22 +69,21 @@ function SignupPageContent() {
 
   const passwordValid = password.length >= 8;
 
-  const validateEmail = useCallback((value: string) => {
-    if (!value) {
-      setEmailError("Email address is required");
-    } else if (!EMAIL_REGEX.test(value)) {
-      setEmailError("Please enter a valid email address");
-    } else {
-      setEmailError(null);
-    }
+  const validateEmail = useCallback((value: string): string | null => {
+    if (!value) return "Email address is required";
+    if (!EMAIL_REGEX.test(value)) return "Please enter a valid email address";
+    return null;
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    validateEmail(email);
-    if (emailError) return;
+    // Validate synchronously — reading the emailError state here would use
+    // the previous render's value (setState hasn't flushed yet).
+    const nextEmailError = validateEmail(email);
+    setEmailError(nextEmailError);
+    if (nextEmailError) return;
 
     const now = Date.now();
     if (submitAttempts.current >= MAX_SUBMIT_ATTEMPTS) {
@@ -229,7 +228,7 @@ function SignupPageContent() {
             onChange={(e) => setEmail(e.target.value)}
             onBlur={() => {
               setEmailTouched(true);
-              validateEmail(email);
+              setEmailError(validateEmail(email));
             }}
             error={emailTouched ? (emailError ?? undefined) : undefined}
             required
@@ -278,14 +277,14 @@ function SignupPageContent() {
         <p className="mt-5 text-center text-caption text-muted-foreground">
           By creating an account, you agree to our{" "}
           <Link
-            href="/terms"
+            href="/legal/terms"
             className="underline hover:text-[var(--color-foreground)]"
           >
             Terms
           </Link>{" "}
           and{" "}
           <Link
-            href="/privacy"
+            href="/legal/privacy"
             className="underline hover:text-[var(--color-foreground)]"
           >
             Privacy Policy

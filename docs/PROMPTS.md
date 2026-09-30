@@ -604,7 +604,7 @@ Read every file directly involved — not just the file where the symptom appear
 
 For UI issues: compare the implementation against the design SVG or preview component that serves as source of truth. Read both files side by side. Document every visual/structural difference.
 For data issues: trace the query from the component through the API route to Supabase. Check what the server component sees vs. what a direct REST call returns.
-For routing issues: check middleware.ts rewrite logic, trailing slash behavior, and whether the dynamic segment receives the correct params.
+For routing issues: check proxy.ts rewrite logic, trailing slash behavior, and whether the dynamic segment receives the correct params.
 
 Project-specific checks (apply as relevant):
 - Supabase: PostgREST returns 400 for queries referencing non-existent columns. Verify the column exists in the actual DB schema, not just in code.
@@ -612,7 +612,7 @@ Project-specific checks (apply as relevant):
 - Tailwind v4: @theme inline does NOT create CSS custom properties. Use utility class names (bg-card), NOT var() arbitrary values (bg-[--color-card]).
 - Design tokens: Never use hardcoded hex. All colors must reference CSS custom properties via Tailwind utility classes.
 - Next.js 16: Server Components run on the server. Client Components ("use client") cannot access cookies/headers.
-- Middleware: On Windows, use middleware.ts at src/middleware.ts for subdomain routing (not proxy.ts).
+- Proxy: On Next.js 16 use proxy.ts at src/proxy.ts for subdomain routing (not middleware.ts — Next.js 16 renamed middleware.ts to proxy.ts).
 - Story ACs: The story's acceptance criteria are the source of truth. If the implementation deviates from the AC, that's a bug.
 
 HARD GATE — Before proceeding to Phase 2, you MUST:

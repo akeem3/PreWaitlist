@@ -73,6 +73,22 @@ describe("FlushGate (4.1)", () => {
     expect(screen.queryByTestId("kid")).toBeNull();
   });
 
+  it("redirects to Step 1 when the server has no waitlists (GET 200 [] — the real contract, no second request)", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse([]));
+
+    render(
+      <FlushGate>
+        <div data-testid="kid" />
+      </FlushGate>
+    );
+
+    await waitFor(() =>
+      expect(mockReplace).toHaveBeenCalledWith("/onboarding/1")
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("kid")).toBeNull();
+  });
+
   it("POSTs local data only when no server record exists, then clears the draft", async () => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(storedDraft()));
     fetchMock
