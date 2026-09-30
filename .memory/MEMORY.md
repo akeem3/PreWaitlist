@@ -1185,6 +1185,16 @@ Design specs use hex values that don't always match the token system exactly. Ma
 - Supabase mock: `rpc` is an unqueued default `{data: []}` → claim lands in the legacy-fallback branch for existing tests; Pro-at-cap test must mock `{data: 601}` (a `null` now means capped → 403).
 - `vi.clearAllMocks()` does not clear once-queues; rate-limit query dequeues only when `x-forwarded-for` is set (tests set none → ip `unknown` → skipped).
 
+## Revenue Lifecycle Plan — Phase 4 Audit (2026-09-30)
+
+**Status:** Prompt #3 audit of Phase 4 (Funnel dead-ends) complete, **1 finding fixed**, gates green (lint 0/5, suite **814 = 807 pass / 7 fail = exact baseline**, clean build, prettier clean). Fix uncommitted at audit time → committed with docs.
+
+**Finding F1 — FlushGate fresh-founder path keyed on a 404 the API never returns:** `GET /api/waitlist` returns `200 []` for zero waitlists (never 404 — 401/400/200 only). FlushGate's truly-fresh branch checked `preStatus === 404` → dead in production: fresh founder at `/onboarding/4` (e.g. post-signup with cleared storage) hit the "Something went wrong" error UI + a redundant second GET instead of Step 1. Fix in `src/components/auth/flush-gate.tsx`: truly fresh = pre-check proved empty (200 [] or 404) AND no local draft → `router.replace("/onboarding/1")` before the second GET; removed dead `preStatus` tracking + unreachable "404 && !hasLocalData" branch after POST (POST only runs when a draft exists); kept "404 after successful POST → error UI" as defense. +1 regression test (200 `[]` contract, asserts exactly 1 fetch) — 7 total.
+
+**Other 4.x claims verified:** 4.2 Phase-B proxy guard `middleware.ts:44-52` (list → `/onboarding/signup` before generic guard, query preserved, both proxy legs, 7 tests) · 4.3 archived → `/{subdomain}/gone` on leaderboard:38-39 + thank-you:86-87, recovery card for missing params/unknown subscriber, read-only call holds (no `is_archived` block on dashboard edit) · 4.4 `resolveActiveWaitlist` adopted in all 6 section pages + shell (`?wid` > stored > newest at shell:185-195, unknown-wid self-heal :203-213; layout + GET both `created_at ASC` so client "last = newest" holds; no stragglers — updates:52 orders the updates list) · 4.5 `UpdatesFreeGate` before waitlist lookup (page:31), free → modal trigger `"updates"` (existing strings) · 4.6 resubscribe POST + token 400/404, GET-only page validates without mutating, PATCH PGRST204 swallow removed (prior audit), 7 tests.
+
+**Gotcha:** the other three `fetch("/api/waitlist")` callers (onboarding/signup:39, onboarding/3:280) use bare `res.ok` → also true for `200 []` — harmless because they just push to `/onboarding/4`, where the fixed FlushGate normalizes. If any future caller needs "has a waitlist", check `Array.isArray(json) && json.length > 0`, not `res.ok`.
+
 1. ~~Implement Story 1.2 (Toggle, Select, Textarea)~~ ✅ Done
 2. ~~Run Follow-Up Audit (Prompt #4) on completed Epic 1~~ ✅ Done — all clean
 3. ~~Create Epic 2 branch from dev~~ ✅ Done

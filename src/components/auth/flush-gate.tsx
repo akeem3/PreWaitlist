@@ -60,7 +60,8 @@ function mapServerToState(
  *   founder's duplicate POST 402s; a pro founder's spawns a duplicate row).
  * - 4.1: headline-without-slug means Step 1 was never completed — route back
  *   to Step 1 instead of flushing an un-creatable draft.
- * - If 404 from GET with no local data: redirect to Step 1 (truly fresh).
+ * - If the pre-check proves the server is empty (200 [] — GET never 404s —
+ *   or 404) and there is no local draft: redirect to Step 1 (truly fresh).
  * - Shows a branded spinner while resolving, retry button on failure.
  */
 export function FlushGate({ children }: { children: React.ReactNode }) {
@@ -93,11 +94,9 @@ export function FlushGate({ children }: { children: React.ReactNode }) {
         let record: Record<string, unknown> | Record<string, unknown>[] | null =
           null;
         let getFailed = false;
-        let preStatus: number | null = null;
         {
           const preRes = await fetch("/api/waitlist");
           if (cancelled) return;
-          preStatus = preRes.status;
           if (preRes.ok) {
             record = await preRes.json();
             if (Array.isArray(record) && record.length === 0) record = null;
@@ -151,10 +150,14 @@ export function FlushGate({ children }: { children: React.ReactNode }) {
         }
 
         // Step 2: GET the full record — only when we just POSTed (the
-        // pre-check already loaded it otherwise; a pre-check 404 with no
-        // local data means truly fresh — no second request needed).
+        // pre-check already loaded it otherwise; a proven-empty server with
+        // no local data means truly fresh — no second request needed).
         if (!record) {
-          if (preStatus === 404 && !hasLocalData) {
+          // 4.1 truly fresh: the pre-check proved there is nothing on the
+          // server (GET returns 200 [] for zero waitlists — it never 404s —
+          // or a legacy 404) and we have no draft to flush. Route to Step 1
+          // instead of a misleading error UI.
+          if (!hasLocalData) {
             router.replace("/onboarding/1");
             return;
           }
@@ -162,13 +165,7 @@ export function FlushGate({ children }: { children: React.ReactNode }) {
 
           if (cancelled) return;
 
-          // 404 with no local data → truly fresh user, go to Step 1
-          if (getRes.status === 404 && !hasLocalData) {
-            router.replace("/onboarding/1");
-            return;
-          }
-
-          // 404 with local data → POST failed to create (shouldn't happen, but handle)
+          // 404 after a successful POST → the record never materialized
           if (getRes.status === 404) {
             if (!cancelled) setStatus("error");
             return;
