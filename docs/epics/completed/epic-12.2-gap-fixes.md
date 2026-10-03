@@ -46,7 +46,7 @@ All 19 gaps closed. Settings page is organized into clear tabs. Privacy policy a
 
 **Acceptance Criteria (EARS):**
 
-- AC1: The `subscribers` table shall have a new column `consent_given_at timestamptz nullable` — set on signup when the consent checkbox is checked.
+- AC1: The `subscribers` table shall have a new column `consent_given_at timestamptz nullable` — set on signup when the consent checkbox is checked. **[AMENDED 2026-09-30 — Epic 18 W3:** "when the consent checkbox is checked" superseded — stamped unconditionally at signup (no checkbox).**]**
 - AC2: The `subscribers` table shall have a new column `consent_ip_address text nullable` — captures IP at signup for GDPR audit trail.
 - AC3: The `subscribers` table shall have a new column `unsubscribed_at timestamptz nullable` — set when subscriber clicks unsubscribe link.
 - AC4: The `waitlists` table shall have a new column `is_archived boolean default false` — set when founder archives the waitlist.
@@ -236,13 +236,15 @@ All 19 gaps closed. Settings page is organized into clear tabs. Privacy policy a
 - AC7: The consent checkbox shall use native `<input type="checkbox">` with `accent-color: var(--color-accent)`.
 - AC8: Lint and build shall pass with zero errors.
 
+> **[AMENDED 2026-09-30 — Epic 18 W3:** checkbox ACs (AC1, AC2, AC3, AC6, AC7) superseded — the email capture form renders the approved click-through line "By joining, you agree to receive emails and accept our Terms and Privacy Policy." (Terms/Privacy as links); no checkbox, no client guard, no server 400. AC4/AC5 remain live: `consent_given_at` + `consent_ip_address` are stamped unconditionally at signup.**]**
+
 **Tasks:** T1 (AC1-AC3) Consent checkbox in email capture form · T2 (AC4-AC5) API consent fields + IP capture · T3 (AC6) Validation error · T4 (AC7) Styling · T5 (AC8) Lint + build
 
 **Out of scope:** Consent withdrawal UI, consent audit log, consent for founders.
 
 **Dev Notes:**
 
-- T1: Add checkbox below email input in the capture form with `required` attribute. **Status: implemented — checkbox in both form variants (with-questions and inline), unchecked by default, required, inline error.** **[REGRESSION NOTE 2026-09-30 (revenue plan Phase 6.9):** this T1–T3 work shipped with Story 12.2.6 (commit `0d33bbb`) but was **silently reverted by commit `afcdcf9`** ("enhance subscriber management and leaderboard features") — the checkbox and client guard vanished from `email-capture-form.tsx` while `consent_given_at` kept being stamped unconditionally (fabricated consent records). **Restored 2026-09-30** (Phase 6.4/6.8): checkbox in both variants + client guard + server 400 re-added. Client enforcement is a state guard (not the HTML `required` attribute this note originally claimed); server rejects with `400 "Consent is required to join the waitlist"`.**]**
+- T1: Add checkbox below email input in the capture form with `required` attribute. **Status: implemented — checkbox in both form variants (with-questions and inline), unchecked by default, required, inline error.** **[REGRESSION NOTE 2026-09-30 (revenue plan Phase 6.9):** this T1–T3 work shipped with Story 12.2.6 (commit `0d33bbb`) but was **silently reverted by commit `afcdcf9`** ("enhance subscriber management and leaderboard features") — the checkbox and client guard vanished from `email-capture-form.tsx` while `consent_given_at` kept being stamped unconditionally (fabricated consent records). **Restored 2026-09-30** (Phase 6.4/6.8): checkbox in both variants + client guard + server 400 re-added. Client enforcement is a state guard (not the HTML `required` attribute this note originally claimed); server rejects with `400 "Consent is required to join the waitlist"`.**]** **[AMENDED 2026-09-30 — Epic 18 W3:** the restored checkbox + client guard + server 400 were replaced by Epic 18.1's approved click-through line (no checkbox); provenance stamping (`consent_given_at` + `consent_ip_address`) retained, stamped unconditionally.**]**
 - T2: In `POST /api/subscribers`, add consent fields. Extract IP from headers. **Status: implemented — API validates `consent_given_at` (400 if missing), captures IP from `x-forwarded-for`/`x-real-ip`, inserts both fields.** **[See regression note above — validation was removed in `afcdcf9`, restored 2026-09-30.]**
 - T3: Client-side validation prevents submission without checkbox. **Status: implemented — checkbox `required` attribute + inline error message.**
 - **Depends on:** Story 12.2.0 (schema migration must run first for `consent_given_at`/`consent_ip_address` columns).

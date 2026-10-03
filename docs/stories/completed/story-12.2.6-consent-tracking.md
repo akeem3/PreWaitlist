@@ -7,6 +7,8 @@
 
 > **[REGRESSION NOTE 2026-09-30 (revenue plan Phase 6.9):** this story's checkbox + client guard + server 400 shipped with Epic 12.2 (commit `0d33bbb`) but were **silently reverted by commit `afcdcf9`** — `email-capture-form.tsx` lost the checkbox/guard while `consent_given_at`/`consent_ip_address` kept being stamped unconditionally for non-consenting signups. **Restored 2026-09-30** in `components/public/email-capture-form.tsx` (both form variants, verbatim AC1/AC6 copy) and `src/app/api/subscribers/route.ts` (400 `"Consent is required to join the waitlist"`). Enforcement is a client state guard + server check (not the HTML `required` attribute); AC7's mock class `accent-[var(--color-accent)]` is broken Tailwind v4 syntax — implementation uses the generated `accent-accent` utility. Tests: `src/__tests__/api/subscribers.test.ts` (consent 400) + `src/__tests__/components/email-capture-form.test.tsx` (block/clear/hidden).**]**
 
+> **[AMENDED 2026-09-30 — Epic 18 W3:** checkbox ACs (AC1, AC2, AC3, AC6, AC7) superseded by the approved click-through line — "By joining, you agree to receive emails and accept our Terms and Privacy Policy." with Terms/Privacy links; no checkbox, no client guard, no server 400. AC4/AC5 remain live — `consent_given_at` + `consent_ip_address` stamped unconditionally at signup. The consent tests above were inverted accordingly in Epic 18.5 (form renders the sentence + submits without a consent flag; API accepts consent-less bodies and still asserts stamping).**]**
+
 ## Story
 
 As a founder, I need subscriber consent to be tracked at signup for GDPR compliance.

@@ -432,7 +432,6 @@ export async function POST(request: NextRequest) {
     referral_code: incomingRefCode,
     qual_answers,
     display_name,
-    consent,
     website: honeypot,
     ts: formTimestamp,
   } = body;
@@ -459,15 +458,10 @@ export async function POST(request: NextRequest) {
     return genericSignupError();
   }
 
-  // 12.2.6 AC3/T3: consent is required — stamping consent fields for an
-  // unchecked box would be a false GDPR record.
-  if (consent !== true) {
-    return NextResponse.json(
-      { error: "Consent is required to join the waitlist" },
-      { status: 400 }
-    );
-  }
-
+  // W3 (Epic 18): no consent flag is read or required — the approved
+  // click-through sentence is shown client-side and submitting the form is
+  // the affirmative act. Provenance (consent_given_at + consent_ip_address)
+  // is stamped unconditionally on insert for GDPR/CASL records.
   const ipAddress =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     request.headers.get("x-real-ip") ||

@@ -1,9 +1,14 @@
 "use client";
 
-import { useDeferredValue, useState } from "react";
+import { useEffect, useDeferredValue, useRef, useState } from "react";
 import { cn } from "../lib/cn";
-import { WaitlistTemplateContent } from "../share/waitlist-template-content";
+import {
+  WaitlistBrand,
+  WaitlistTemplateContent,
+} from "../share/waitlist-template-content";
 import { PoweredByFooter } from "../share/powered-by-footer";
+import { ConsentLine, TrustLine } from "../public/consent-line";
+import { LatestUpdateCard } from "../public/updates-feed";
 
 type Template = "minimal" | "bold" | "dark";
 type ViewMode = "desktop" | "mobile";
@@ -20,6 +25,15 @@ interface Question {
   type: "free_text" | "multiple_choice";
   options?: string[] | null;
 }
+
+// 18.2 AC1: static sample update for the preview — no fetch (W8 copy: approved
+// by founder 2026-09-30, reused from the existing LatestUpdateCard test line).
+// Deterministic created_at → "January 1, 2026" (updates-feed.tsx date format).
+const PREVIEW_UPDATE = {
+  id: "preview-update",
+  body: "We just launched our beta!",
+  created_at: "2026-01-01T00:00:00.000Z",
+};
 
 interface LivePreviewProps {
   template: Template;
@@ -49,15 +63,64 @@ function BrowserFrame({
   template?: Template;
 }) {
   const isDark = template === "dark";
+  const contentRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const [natural, setNatural] = useState(0);
+  const [available, setAvailable] = useState(0);
+
+  useEffect(() => {
+    const updateAvailable = () => {
+      // Mirrors the frame classes: max-h calc(100vh-6rem), header h-9 + border-b,
+      // inner pt-2 pb-6, frame border-y. offsetHeight is 0 without layout, so
+      // fall back to the h-9 class height.
+      const headerH = headerRef.current?.offsetHeight || 36;
+      const chrome = headerH + 8 + 24 + 3;
+      setAvailable(Math.max(240, window.innerHeight - 96 - chrome));
+    };
+    updateAvailable();
+    window.addEventListener("resize", updateAvailable);
+    return () => window.removeEventListener("resize", updateAvailable);
+  }, []);
+
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    const measure = (fallback?: number) => {
+      const h = el.scrollHeight || fallback || 0;
+      if (h > 0) setNatural((prev) => (prev === h ? prev : h));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    // Phase 3 fit: observe the UNSCALED content only — our own scale/height
+    // writes never touch its layout box, so this cannot feedback-loop.
+    const ro = new ResizeObserver((entries) => {
+      measure(entries[0]?.contentRect.height);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Phase 3 fit algorithm: grow with content first; when the content is
+  // taller than the available pane, uniformly scale down (top-center origin;
+  // the frame background paints the side gutters) with a 0.6 clamp, and
+  // scroll only below the clamp. Computed values need runtime numbers, so
+  // they are inline styles (same exception as dynamic brandColor).
+  const scaled = natural > 0 && available > 0 && natural > available;
+  const scale = scaled ? Math.max(available / natural, 0.6) : 1;
+  const wrapperHeight = scaled
+    ? Math.min(natural * scale, available)
+    : undefined;
+  const needsScroll = scaled && natural * scale > available + 1;
 
   return (
     <div
       className={cn(
         "w-full flex flex-col max-h-[calc(100vh-6rem)] overflow-hidden rounded-(--radius-lg) shadow-(--shadow-float) border border-border",
-        isDark ? "bg-dark-template-bg" : "bg-card"
+        isDark ? "bg-dark-template-bg" : "bg-background"
       )}
     >
       <div
+        ref={headerRef}
         className={cn(
           "flex h-9 shrink-0 items-center border-b px-3 gap-1.5",
           isDark
@@ -74,8 +137,33 @@ function BrowserFrame({
           </span>
         )}
       </div>
-      <div className="flex flex-col px-6 pt-2 pb-6 min-h-0 flex-1 overflow-y-auto">
-        {children}
+      <div className="flex flex-col px-6 pt-2 pb-6 min-h-0 flex-1 overflow-hidden">
+        <div
+          data-testid="preview-scaler"
+          style={
+            wrapperHeight !== undefined
+              ? {
+                  height: wrapperHeight,
+                  overflowY: needsScroll ? "auto" : "hidden",
+                }
+              : undefined
+          }
+        >
+          <div
+            ref={contentRef}
+            data-testid="preview-content"
+            style={
+              scale < 1
+                ? {
+                    transform: `scale(${scale})`,
+                    transformOrigin: "top center",
+                  }
+                : undefined
+            }
+          >
+            {children}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -88,44 +176,23 @@ function PreviewConsent({
   isDark: boolean;
   className?: string;
 }) {
-  return (
-    <div className={cn("w-full max-w-md", className)}>
-      <label className="flex items-start gap-2">
-        <input
-          type="checkbox"
-          readOnly
-          tabIndex={-1}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-accent"
-        />
-        <span
-          className={cn(
-            "text-xs",
-            isDark ? "text-dark-template-muted" : "text-muted-foreground"
-          )}
-        >
-          I agree to receive email updates about this product. You can
-          unsubscribe at any time.
-        </span>
-      </label>
-    </div>
-  );
+  // W3: approved click-through sentence — shared source, no checkbox (AC4)
+  return <ConsentLine isDark={isDark} className={className} />;
 }
 
 function PreviewEmailForm({
   template,
   ctaText,
   brandColor,
-  isMobile,
 }: {
   template: Template;
   ctaText: string;
   brandColor: string;
-  isMobile: boolean;
 }) {
   const isBold = template === "bold";
   const isDark = template === "dark";
 
-  const inputHeight = "h-10";
+  const inputHeight = "h-11";
   const inputBorder = isBold
     ? "border-2 border-foreground"
     : isDark
@@ -137,54 +204,50 @@ function PreviewEmailForm({
     ? "placeholder:text-dark-template-muted"
     : "placeholder:text-muted-foreground";
   const textSize = isBold ? "text-base" : "text-sm";
-  const btnHeight = "h-10";
+  const btnHeight = "h-11";
   const btnPadding = isBold ? "px-7" : "px-4";
-  const btnText = isBold ? "text-base font-semibold" : "text-sm font-medium";
+  const btnText = isBold ? "text-base font-semibold" : "text-sm font-semibold";
 
+  // D4: always stacked full-width — live and preview share one shape.
   return (
-    <>
-      <div
+    <div className="flex w-full max-w-md flex-col gap-3">
+      <input
+        type="email"
+        placeholder="Email address"
+        readOnly
         className={cn(
-          "flex gap-2 w-full max-w-md",
-          isMobile ? "flex-col" : "flex-row"
+          inputHeight,
+          "w-full rounded-[var(--input-radius)]",
+          inputBorder,
+          inputBg,
+          inputText,
+          "px-[var(--input-padding-x)] py-[var(--input-padding-y)]",
+          textSize,
+          inputPlaceholder,
+          "focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent"
         )}
+      />
+      <button
+        type="button"
+        className={cn(
+          "inline-flex items-center justify-center",
+          btnHeight,
+          "w-full",
+          btnPadding,
+          "rounded-[var(--button-radius)]",
+          btnText,
+          "text-white transition-colors",
+          "bg-[var(--brand-color)]"
+        )}
+        style={{ "--brand-color": brandColor } as React.CSSProperties}
       >
-        <input
-          type="email"
-          placeholder="Email address"
-          readOnly
-          className={cn(
-            inputHeight,
-            "flex-1 min-w-0 rounded-[var(--input-radius)]",
-            inputBorder,
-            inputBg,
-            inputText,
-            "px-[var(--input-padding-x)] py-[var(--input-padding-y)]",
-            textSize,
-            inputPlaceholder,
-            "focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent",
-            isMobile && "w-full flex-none"
-          )}
-        />
-        <button
-          type="button"
-          className={cn(
-            "inline-flex items-center justify-center",
-            btnHeight,
-            btnPadding,
-            "rounded-[var(--button-radius)]",
-            btnText,
-            "text-white transition-colors whitespace-nowrap",
-            "bg-[var(--brand-color)]",
-            isMobile && "w-full"
-          )}
-          style={{ "--brand-color": brandColor } as React.CSSProperties}
-        >
-          {ctaText || "Join Waitlist"}
-        </button>
-      </div>
-      <PreviewConsent isDark={isDark} className="mt-3" />
-    </>
+        {ctaText || "Join Waitlist"}
+      </button>
+      {/* Swap (founder, 2026-09-30, amended): button → consent → trust —
+          mirrors email-capture-form.tsx */}
+      <PreviewConsent isDark={isDark} />
+      <TrustLine isDark={isDark} className="mt-0" />
+    </div>
   );
 }
 
@@ -202,7 +265,7 @@ function PreviewQuestionForm({
   const isBold = template === "bold";
   const isDark = template === "dark";
 
-  const inputHeight = "h-10";
+  const inputHeight = "h-11";
   const inputBorder = isBold
     ? "border-2 border-foreground"
     : isDark
@@ -214,18 +277,19 @@ function PreviewQuestionForm({
     ? "placeholder:text-dark-template-muted"
     : "placeholder:text-muted-foreground";
   const textSize = isBold ? "text-base" : "text-sm";
-  const btnHeight = "h-10";
+  const btnHeight = "h-11";
   const btnPadding = isBold ? "px-7" : "px-4";
-  const btnText = isBold ? "text-base font-semibold" : "text-sm font-medium";
-  const cardBorder = isBold
-    ? "border-2 border-foreground"
-    : isDark
-      ? "border border-dark-template-border"
-      : "border border-border";
-  const cardText = isDark
+  const btnText = isBold ? "text-base font-semibold" : "text-sm font-semibold";
+  // Qualification fields are muted on every template so the email field
+  // keeps the shine (mirrors email-capture-form.tsx). Dark needs the input
+  // surface token — bg was invisible against the page (founder, 2026-09-30).
+  const qualBorder = isDark
+    ? "border border-dark-template-border"
+    : "border border-border";
+  const qualBg = isDark ? "bg-dark-template-input" : "bg-muted";
+  const qualLabel = isDark
     ? "text-dark-template-muted"
     : "text-muted-foreground";
-  const cardGap = isBold ? "gap-2.5" : "gap-2";
 
   const questionSlots =
     questions && questions.length > 0
@@ -233,7 +297,7 @@ function PreviewQuestionForm({
       : [{ text: "", type: "free_text" as const, options: null }];
 
   return (
-    <div className="flex flex-col gap-3 w-full max-w-md">
+    <div className="flex w-full max-w-md flex-col gap-3">
       <input
         type="email"
         placeholder="Email address"
@@ -250,62 +314,71 @@ function PreviewQuestionForm({
           "focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent"
         )}
       />
-      <div className={cn("flex flex-col", cardGap)}>
-        {questionSlots.map((q, i) => (
-          <div
-            key={q.id || i}
-            className={cn(
-              "flex flex-col gap-1.5 rounded-[var(--radius-md)]",
-              cardBorder,
-              "px-3.5 py-2.5",
-              textSize,
-              cardText
-            )}
-          >
-            <span className="flex items-center justify-between gap-2">
-              <span>
+      {questionSlots.map((q, i) => (
+        <div key={q.id || i} className="flex flex-col gap-1.5">
+          {q.type === "multiple_choice" && q.options?.length ? (
+            <>
+              <span className={`text-sm font-medium ${qualLabel}`}>
                 {q.text
                   ? q.text.trim().endsWith("?")
                     ? q.text.trim()
                     : `${q.text.trim()}?`
-                  : "What are you currently using?"}
+                  : "What are you currently using?"}{" "}
+                <span className="font-normal">(optional)</span>
               </span>
-              <span className={cn("text-xs shrink-0", cardText)}>
-                (optional)
-              </span>
-            </span>
-            {q.type === "multiple_choice" && q.options?.length ? (
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-2">
                 {q.options.map((opt) => (
                   <span
                     key={opt}
                     className={cn(
-                      "text-xs flex items-center gap-1.5",
-                      cardText
+                      "flex min-h-9 items-center gap-3 rounded-[var(--input-radius)] border px-3 py-2 text-sm",
+                      qualBorder,
+                      qualBg,
+                      inputText
                     )}
                   >
                     <span
                       className={cn(
-                        "inline-block h-2.5 w-2.5 rounded-full border",
-                        cardBorder
+                        "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border-2",
+                        isDark
+                          ? "border-dark-template-muted/60"
+                          : "border-muted-foreground/60"
                       )}
                     />
                     {opt}
                   </span>
                 ))}
               </div>
-            ) : (
+            </>
+          ) : (
+            <div
+              className={cn(
+                "flex h-11 items-center justify-between gap-2 rounded-[var(--input-radius)] px-[var(--input-padding-x)]",
+                qualBorder,
+                qualBg
+              )}
+            >
               <span
                 className={cn(
-                  "block h-8 rounded-[var(--input-radius)]",
-                  cardBorder
+                  `truncate ${textSize} font-normal`,
+                  isDark
+                    ? "text-dark-template-muted/70"
+                    : "text-muted-foreground/70"
                 )}
-              />
-            )}
-          </div>
-        ))}
-      </div>
-      <PreviewConsent isDark={isDark} />
+              >
+                {q.text
+                  ? q.text.trim().endsWith("?")
+                    ? q.text.trim()
+                    : `${q.text.trim()}?`
+                  : "What are you currently using?"}
+              </span>
+              <span className={`shrink-0 text-xs font-normal ${qualLabel}`}>
+                (optional)
+              </span>
+            </div>
+          )}
+        </div>
+      ))}
       <button
         type="button"
         className={cn(
@@ -322,6 +395,8 @@ function PreviewQuestionForm({
       >
         {ctaText || "Join Waitlist"}
       </button>
+      <PreviewConsent isDark={isDark} />
+      <TrustLine isDark={isDark} className="mt-0" />
     </div>
   );
 }
@@ -371,9 +446,19 @@ export function LivePreview({
       template={deferredTemplate}
       ctaText={deferredCtaText}
       brandColor={deferredBrandColor}
-      isMobile={isMobile}
     />
   );
+
+  // Phase 3 density step: when many modules are on, tighten section gaps so
+  // the fit-mechanism's required scale stays legible. Static module count —
+  // not scale-driven — so it cannot feedback into the fit loop.
+  const moduleCount =
+    (deferredLogoUrl || deferredProductName ? 1 : 0) +
+    (deferredSignupCounter ? 1 : 0) +
+    (deferredRewards.length > 0 ? 1 : 0) +
+    1 + // preview update card (always shown)
+    (deferredShowQuestions ? (deferredQuestions?.length ?? 0) : 0);
+  const compact = moduleCount >= 6;
 
   return (
     <div className="flex flex-col gap-3">
@@ -419,6 +504,16 @@ export function LivePreview({
           <BrowserFrame slug={deferredSlug} template={deferredTemplate}>
             <div className="flex flex-col min-h-full">
               <div className="flex-1">
+                {(deferredLogoUrl || deferredProductName) && (
+                  <div className="pt-6">
+                    <WaitlistBrand
+                      logoUrl={deferredLogoUrl}
+                      productName={deferredProductName}
+                      isDark={deferredTemplate === "dark"}
+                      isLive={false}
+                    />
+                  </div>
+                )}
                 <WaitlistTemplateContent
                   template={deferredTemplate}
                   headline={deferredHeadline}
@@ -432,10 +527,18 @@ export function LivePreview({
                   signupCounterVisible={!!deferredSignupCounter}
                   milestoneRewards={deferredRewards}
                   emailCaptureForm={emailCaptureForm}
+                  latestUpdateSlot={
+                    <LatestUpdateCard
+                      update={PREVIEW_UPDATE}
+                      template={deferredTemplate}
+                    />
+                  }
+                  variant="preview"
+                  compact={compact}
                 />
               </div>
               {tier === "free" && (
-                <PoweredByFooter template={deferredTemplate} />
+                <PoweredByFooter template={deferredTemplate} standalone />
               )}
             </div>
           </BrowserFrame>

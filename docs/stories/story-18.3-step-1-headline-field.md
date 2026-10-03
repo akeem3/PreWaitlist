@@ -1,6 +1,6 @@
 # Story 18.3 — Step 1 Headline field + product-name differentiation
 
-**Status:** ready
+**Status:** done
 **Epic:** 18 — Live Waitlist Page Redesign (Bare-Minimum Contract)
 **Depends on:** —
 **Design Refs:** `docs/design/High-fidelity-svgs/HF 4 onboard step 1.svg` (Headline/Subheadline fields), `docs/design/design-analysis.md` L72-73 (labels "Headline"/"Subheadline"), L100-101 (input dimensions)

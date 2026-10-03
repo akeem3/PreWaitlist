@@ -17,7 +17,7 @@ Vitest + @testing-library/react for component tests. Config: `vitest.config.mts`
 
 - AC1: The system shall have component tests for archive waitlist covering: renders archive button, confirmation dialog triggers API call, archived banner displays, unarchive works.
 - AC2: The system shall have component tests for edit after onboarding covering: editable fields render, save buttons trigger API, success/error feedback displays, live preview updates.
-- AC3: The system shall have component tests for consent tracking covering: checkbox renders, required validation, consent captured in submission.
+- AC3: The system shall have component tests for consent tracking covering: checkbox renders, required validation, consent captured in submission. **[AMENDED 2026-09-30 — Epic 18 W3:** checkbox coverage superseded — tests now cover the click-through sentence (both links, no checkbox, submit without consent flag) + API stamping assertions (Epic 18.5).**]**
 - AC4: The system shall have component tests for unsubscribe page covering: renders confirmation message, resubscribe option works.
 - AC5: The system shall have API route tests for unsubscribe covering: verifies HMAC token, updates subscriber, rejects invalid token.
 - AC6: The system shall have API route tests for bounce handling covering: inserts bounce record, skips bounced emails, soft bounce retry after 24h.

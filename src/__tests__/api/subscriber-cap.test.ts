@@ -57,13 +57,12 @@ function makeChain(data: unknown, error: unknown = null) {
   return chain;
 }
 
-// Phase 6: consent + form-load timestamp (>=2s old) required by the route
+// Phase 6: form-load timestamp (>=2s old) required by the route
 const FORM_TS = Date.now() - 5000;
 function capBody(extra: Record<string, unknown> = {}) {
   return JSON.stringify({
     waitlist_id: "w-1",
     email: "test@example.com",
-    consent: true,
     ts: FORM_TS,
     ...extra,
   });

@@ -1,6 +1,6 @@
 # Story 18.0 — Shared renderer restructure + live/preview variants
 
-**Status:** ready
+**Status:** done
 **Epic:** 18 — Live Waitlist Page Redesign (Bare-Minimum Contract)
 **Depends on:** —
 **Design Refs:** research anatomy (LaunchList/Waitframe/UseWait/Waitlister — see Source), `src/app/globals.css` tokens; **no public-page HF SVG exists** (W7)

@@ -167,7 +167,7 @@ A pre-launch waitlist tool for bootstrapped indie hackers, solo founders, and ea
 - Privacy Policy page: data collected, processing, retention, user rights, sub-processor list
 - Terms of Service page: auto-renewal disclosure, acceptable use, liability cap
 - Consent records table: `consent_records` in Supabase with type, granted_at, withdrawn_at, ip, consent_text
-- Consent checkbox on signup: separate from signup, logged with timestamp + IP
+- Consent checkbox on signup: separate from signup, logged with timestamp + IP **[AMENDED 2026-09-30 — Epic 18 W3:** checkbox superseded — no checkbox. The email capture form renders the approved click-through sentence **"By joining, you agree to receive emails and accept our Terms and Privacy Policy."** (Terms/Privacy as links); timestamp + IP provenance stamping retained, stamped unconditionally at signup.**]**
 - Unsubscribe mechanism: List-Unsubscribe header (RFC 8058) + visible link in every broadcast
 - Physical address in every email footer: CAN-SPAM requirement
 - Bounce suppression list: `email_suppressions` table, hard bounces suppressed immediately
@@ -175,15 +175,15 @@ A pre-launch waitlist tool for bootstrapped indie hackers, solo founders, and ea
 
 **Legal Compliance Requirements:**
 
-| Requirement           | Risk if missing                                 | Implementation                                |
-| --------------------- | ----------------------------------------------- | --------------------------------------------- |
-| Privacy Policy        | CCPA: $2,500-$7,500/violation, GDPR: €20M or 4% | `/privacy` page listing all sub-processors    |
-| Terms of Service      | State AG enforcement, ROSCA penalties           | `/terms` with auto-renewal disclosure         |
-| Consent checkbox      | GDPR: signing up ≠ marketing consent            | Separate checkbox, logged with timestamp + IP |
-| Unsubscribe mechanism | CAN-SPAM: $46,517/email, Gmail blocking         | List-Unsubscribe header + visible link        |
-| Physical address      | CAN-SPAM requirement                            | Footer in all emails                          |
-| Bounce suppression    | Domain reputation destruction                   | `email_suppressions` table                    |
-| DPAs                  | GDPR Article 28                                 | Agreements with all sub-processors            |
+| Requirement           | Risk if missing                                 | Implementation                                                                                                                                                                                                                                                                                                                                       |
+| --------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Privacy Policy        | CCPA: $2,500-$7,500/violation, GDPR: €20M or 4% | `/privacy` page listing all sub-processors                                                                                                                                                                                                                                                                                                           |
+| Terms of Service      | State AG enforcement, ROSCA penalties           | `/terms` with auto-renewal disclosure                                                                                                                                                                                                                                                                                                                |
+| Consent checkbox      | GDPR: signing up ≠ marketing consent            | Separate checkbox, logged with timestamp + IP. **[AMENDED 2026-09-30 — Epic 18 W3:** checkbox superseded — inline click-through sentence (W3 verbatim) with Terms/Privacy links; timestamp + IP provenance stamping retained. The "signing up ≠ marketing consent" risk stands and is evidenced by the click-through record captured at signup.**]** |
+| Unsubscribe mechanism | CAN-SPAM: $46,517/email, Gmail blocking         | List-Unsubscribe header + visible link                                                                                                                                                                                                                                                                                                               |
+| Physical address      | CAN-SPAM requirement                            | Footer in all emails                                                                                                                                                                                                                                                                                                                                 |
+| Bounce suppression    | Domain reputation destruction                   | `email_suppressions` table                                                                                                                                                                                                                                                                                                                           |
+| DPAs                  | GDPR Article 28                                 | Agreements with all sub-processors                                                                                                                                                                                                                                                                                                                   |
 
 **Explicitly not in Sprint 3.2:**
 
@@ -307,7 +307,7 @@ _(Unchanged in substance from PRD v1 — repeated here at the level needed for b
 - REQ-6.8.1: The Meta Preview panel shall update live from Headline/Sub-headline/brand-color and shall be persisted as the future og:title/og:description/og:image source data.
 - REQ-6.8.2: While the milestone-rewards toggle is OFF, the system shall render no reward-tier configuration UI at all, not even collapsed.
 - REQ-6.8.3: When the milestone-rewards toggle is switched ON, the system shall reveal 1-5 reward tiers (default: 4 tiers at 1, 5, 10, 25 referrals). Each tier has an editable referral threshold (positive integer) and an editable reward label (required). The founder can add tiers (up to 5) or remove tiers (minimum 1). The platform tracks which milestones each subscriber has reached (`milestones_earned` column), sends a congratulatory email when a threshold is reached, and shows a pending rewards dashboard. The founder handles actual reward delivery (discount codes, swag, access grants). For milestones where the reward label contains "skip the line", the platform shall also boost the subscriber's position to the front of the queue. The live preview shows a simulated subscriber view with position, progress toward milestones, and locked/unlocked states.
-- REQ-6.8.4: The system shall accept logo uploads in PNG or SVG only, up to 2MB, stored in Supabase Storage.
+- REQ-6.8.4: The system shall accept logo uploads in PNG or SVG only, up to 2MB, stored in Supabase Storage. **[AMENDED 2026-09-30 — Epic 18 W4:** storage deviation — settings + onboarding persist the logo as a base64 data URL in `waitlists.logo_url` (PNG/SVG type + 2MB limits enforced client-side); Supabase Storage migration deferred (out of scope for Epic 18).**]**
 - REQ-6.8.5: The brand-color field shall validate as a well-formed hex value before it can be saved; default value is #0F7A5E.
 - REQ-6.8.6: The Meta Preview panel shall render as an OG-card mock (simulating how the waitlist URL appears when shared on social media / messaging apps). It shall contain: (a) a browser-chrome header with three dots matching the main live-preview panel style; (b) inside the card: the headline (bold), subheadline (grey), a mini email input field, and a mini "Join waitlist" button — a miniature version of the actual waitlist page; (c) below a divider line: the domain in small grey text (e.g. "acme.prewaitlist.com"), a bold line reading "[Headline] — Join the waitlist", and a grey description line repeating the subheadline text. This component represents the og:title / og:description / og:image source data and is not a generic content preview.
 
@@ -373,7 +373,7 @@ _(Unchanged in substance from PRD v1 — repeated here at the level needed for b
 
 - REQ-6.15.1: The system shall provide a compose/create action for founder updates. When a founder posts an update, the system shall dispatch an email to all subscribers of that waitlist via Resend, using the founder's product name as the sender.
 - REQ-6.15.2: The `founder_updates` table shall include a `sent_at` column (nullable) set after email dispatch completes. If email dispatch fails, `sent_at` remains null.
-- REQ-6.15.3: The on-page updates section shall display only the most recent update as a single "Latest update" card above the email capture form. If no updates exist, the card shall not render.
+- REQ-6.15.3: The on-page updates section shall display only the most recent update as a single "Latest update" card above the email capture form. If no updates exist, the card shall not render. **[AMENDED 2026-09-30 — Epic 18 W2:** position superseded — the card renders **below** the email capture form / how-it-works section (below the fold) per the Bare-Minimum Contract; latest-only + conditional no-render rules unchanged.**]**
 - REQ-6.15.4: The leaderboard page shall not display founder updates.
 
 ---

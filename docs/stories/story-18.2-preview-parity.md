@@ -1,6 +1,6 @@
 # Story 18.2 — Preview parity: updates slot, trust line, shared strings
 
-**Status:** ready
+**Status:** done
 **Epic:** 18 — Live Waitlist Page Redesign (Bare-Minimum Contract)
 **Depends on:** 18.0, 18.1
 **Design Refs:** — (no SVG); parity contract per W1 (preview = approximation of live: same order + copy, compact scale)

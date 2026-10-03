@@ -79,13 +79,12 @@ function pushCreateSubscriber() {
   });
 }
 
-// Phase 6: valid submission shape — consent + form-load timestamp (>=2s old)
+// Phase 6: valid submission shape — form-load timestamp (>=2s old)
 const FORM_TS = Date.now() - 5000;
 function signupBody(extra: Record<string, unknown> = {}) {
   return JSON.stringify({
     waitlist_id: "waitlist-1",
     email: "test@test.com",
-    consent: true,
     ts: FORM_TS,
     ...extra,
   });
@@ -449,7 +448,9 @@ describe("POST /api/subscribers", () => {
 
   // --- Phase 6: signup protections (revenue-lifecycle plan) ---
 
-  it("rejects signup without consent (12.2.6 AC3)", async () => {
+  it("accepts signup without a consent flag and stamps provenance (18.1 AC3)", async () => {
+    pushCreateSubscriber();
+
     const request = new NextRequest("http://localhost/api/subscribers", {
       method: "POST",
       body: JSON.stringify({
@@ -459,9 +460,14 @@ describe("POST /api/subscribers", () => {
       }),
     });
     const response = await POST(request);
-    expect(response.status).toBe(400);
-    const data = await response.json();
-    expect(data.error).toBe("Consent is required to join the waitlist");
+    expect(response.status).toBe(201);
+
+    const subInsert = eventInserts().find(
+      (r) => r.waitlist_id === "waitlist-1" && r.email === "test@test.com"
+    );
+    expect(subInsert).toBeDefined();
+    expect(subInsert!.consent_given_at).toEqual(expect.any(String));
+    expect(subInsert!.consent_ip_address).toEqual(expect.any(String));
   });
 
   it("rejects signup when the honeypot field is filled", async () => {
@@ -481,7 +487,6 @@ describe("POST /api/subscribers", () => {
       body: JSON.stringify({
         waitlist_id: "waitlist-1",
         email: "test@test.com",
-        consent: true,
       }),
     });
     expect((await POST(missing)).status).toBe(400);

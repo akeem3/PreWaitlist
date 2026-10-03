@@ -122,6 +122,15 @@ const initialState: OnboardingFormState = {
   loading: false,
 };
 
+// Server-render defaults: SSR can never see localStorage, so the server always
+// renders these values. Hydration-gating (mounted ? draft : default) must use
+// them so the first client render matches the server HTML exactly.
+export const ONBOARDING_SERVER_DEFAULTS = {
+  template: initialState.template,
+  brandColor: initialState.brandColor,
+  ctaText: initialState.ctaText,
+} as const;
+
 // ---------------------------------------------------------------------------
 // localStorage helpers (Phase A only)
 // ---------------------------------------------------------------------------

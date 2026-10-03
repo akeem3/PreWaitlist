@@ -1,6 +1,6 @@
 # Story 18.1 — Consent swap: checkbox → approved click-through line
 
-**Status:** ready
+**Status:** done
 **Epic:** 18 — Live Waitlist Page Redesign (Bare-Minimum Contract)
 **Depends on:** —
 **Design Refs:** — (form + API; no SVG)

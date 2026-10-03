@@ -1,4 +1,7 @@
-import { WaitlistTemplateContent } from "../share/waitlist-template-content";
+import {
+  WaitlistBrand,
+  WaitlistTemplateContent,
+} from "../share/waitlist-template-content";
 import { PoweredByFooter } from "../share/powered-by-footer";
 
 interface WaitlistPageContentProps {
@@ -35,11 +38,23 @@ export function WaitlistPageContent({
 
   return (
     <main
-      className={`flex min-h-screen flex-col items-center px-4 py-12 md:px-8 ${
+      className={`flex min-h-screen flex-col items-center px-4 md:px-8 ${
         isDark ? "bg-dark-template-bg" : "bg-background"
       }`}
     >
-      <div className="w-full max-w-2xl flex-1">
+      {/* Screen top-left brand lockup — sits above the centered column.
+          Guide §3: no header section when neither logo nor name exists. */}
+      {(logoUrl || productName) && (
+        <div className="w-full pt-6">
+          <WaitlistBrand
+            logoUrl={logoUrl}
+            productName={productName}
+            isDark={isDark}
+            isLive
+          />
+        </div>
+      )}
+      <div className="flex w-full max-w-2xl flex-1 flex-col justify-center">
         <WaitlistTemplateContent
           template={template}
           headline={headline ?? ""}
@@ -52,6 +67,7 @@ export function WaitlistPageContent({
           milestoneRewards={milestoneRewards}
           emailCaptureForm={emailCaptureForm}
           latestUpdateSlot={latestUpdateSlot}
+          variant="live"
         />
       </div>
       <div className="w-full max-w-2xl">

@@ -44,11 +44,6 @@ function freeTextQuestion(text: string, id = "q-1") {
   };
 }
 
-// 12.2.6: consent checkbox must be checked before submit is allowed
-async function acceptConsent(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("checkbox"));
-}
-
 describe("EmailCaptureForm", () => {
   it("renders email input with placeholder", () => {
     render(<EmailCaptureForm {...defaultProps} />);
@@ -60,6 +55,13 @@ describe("EmailCaptureForm", () => {
     expect(
       screen.getByRole("button", { name: /Join Waitlist/i })
     ).toBeDefined();
+  });
+
+  it("CTA label is semibold per guide §4 — not font-medium", () => {
+    render(<EmailCaptureForm {...defaultProps} />);
+    const button = screen.getByRole("button", { name: /Join Waitlist/i });
+    expect(button.className).toContain("font-semibold");
+    expect(button.className).not.toContain("font-medium");
   });
 
   it("displays error for invalid email", async () => {
@@ -123,7 +125,6 @@ describe("EmailCaptureForm", () => {
 
     const input = screen.getByPlaceholderText("Email address");
     await user.type(input, "test@example.com");
-    await acceptConsent(user);
     await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
 
     await waitFor(() => {
@@ -144,7 +145,6 @@ describe("EmailCaptureForm", () => {
 
     const input = screen.getByPlaceholderText("Email address");
     await user.type(input, "test@example.com");
-    await acceptConsent(user);
     await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
 
     await waitFor(() => {
@@ -166,7 +166,6 @@ describe("EmailCaptureForm", () => {
 
     const input = screen.getByPlaceholderText("Email address");
     await user.type(input, "test@example.com");
-    await acceptConsent(user);
     await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
 
     await waitFor(() => {
@@ -180,13 +179,12 @@ describe("EmailCaptureForm", () => {
     expect(body).toMatchObject({
       waitlist_id: "waitlist-1",
       email: "test@example.com",
-      consent: true,
       website: "",
     });
     expect(typeof body.ts).toBe("number");
   });
 
-  it("renders free-text questions as input fields", () => {
+  it("renders free-text questions as labelled input fields", () => {
     render(
       <EmailCaptureForm
         {...defaultProps}
@@ -197,10 +195,10 @@ describe("EmailCaptureForm", () => {
         ]}
       />
     );
-    expect(screen.getByPlaceholderText("What brings you here?")).toBeDefined();
-    expect(
-      screen.getByPlaceholderText("How did you hear about us?")
-    ).toBeDefined();
+    expect(screen.getByLabelText(/What brings you here\?/)).toBeDefined();
+    expect(screen.getByLabelText(/How did you hear about us\?/)).toBeDefined();
+    // Labels-above design: questions are no longer placeholders
+    expect(screen.queryByPlaceholderText("What brings you here?")).toBeNull();
   });
 
   it("renders multiple-choice questions as radio groups", () => {
@@ -231,7 +229,7 @@ describe("EmailCaptureForm", () => {
         questions={[freeTextQuestion("What brings you here?")]}
       />
     );
-    expect(screen.queryByPlaceholderText("What brings you here?")).toBeNull();
+    expect(screen.queryByLabelText(/What brings you here\?/)).toBeNull();
   });
 
   it("sends qual_answers keyed by question id when free-text answered", async () => {
@@ -255,10 +253,9 @@ describe("EmailCaptureForm", () => {
       "test@example.com"
     );
     await user.type(
-      screen.getByPlaceholderText("What brings you here?"),
+      screen.getByLabelText(/What brings you here\?/),
       "Friend recommendation"
     );
-    await acceptConsent(user);
     await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
 
     await waitFor(() => {
@@ -297,7 +294,6 @@ describe("EmailCaptureForm", () => {
       "test@example.com"
     );
     await user.click(screen.getByRole("radio", { name: "Pro" }));
-    await acceptConsent(user);
     await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
 
     await waitFor(() => {
@@ -328,7 +324,6 @@ describe("EmailCaptureForm", () => {
       screen.getByPlaceholderText("Email address"),
       "test@example.com"
     );
-    await acceptConsent(user);
     await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
 
     await waitFor(() => {
@@ -337,40 +332,45 @@ describe("EmailCaptureForm", () => {
     });
   });
 
-  it("blocks submit and shows the consent error when unchecked (12.2.6 AC6)", async () => {
-    const mockFetch = vi.fn();
+  it("renders approved click-through sentence with legal links, no checkbox, and submits without a consent flag (18.1)", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      status: 201,
+      json: () => Promise.resolve({ id: "1", referral_code: "abc12345" }),
+    });
     vi.stubGlobal("fetch", mockFetch);
 
     const user = userEvent.setup();
     render(<EmailCaptureForm {...defaultProps} />);
 
+    // W3: approved sentence, verbatim, with both legal links
+    const termsLink = screen.getByRole("link", { name: "Terms" });
+    const privacyLink = screen.getByRole("link", { name: "Privacy Policy" });
+    expect(termsLink.getAttribute("href")).toBe("/legal/terms");
+    expect(privacyLink.getAttribute("href")).toBe("/legal/privacy");
+    expect(termsLink.parentElement?.textContent).toBe(
+      "By joining, you agree to receive emails and accept our Terms and Privacy Policy."
+    );
+
+    // No consent checkbox anywhere
+    expect(screen.queryByRole("checkbox")).toBeNull();
+
+    // Shared trust line (18.2) renders in the live form too
+    expect(screen.getAllByText("No spam. Unsubscribe anytime.")).toHaveLength(
+      1
+    );
+
+    // Submit succeeds without clicking any consent control
     await user.type(
       screen.getByPlaceholderText("Email address"),
       "test@example.com"
     );
     await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
 
-    expect(
-      screen.getByText("You must agree to receive emails to join the waitlist.")
-    ).toBeDefined();
-    expect(mockFetch).not.toHaveBeenCalled();
-  });
-
-  it("clears the consent error once the checkbox is checked", async () => {
-    const user = userEvent.setup();
-    render(<EmailCaptureForm {...defaultProps} />);
-
-    await user.type(
-      screen.getByPlaceholderText("Email address"),
-      "test@example.com"
-    );
-    await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
-    expect(screen.getByRole("alert")).toBeDefined();
-
-    await user.click(screen.getByRole("checkbox"));
     await waitFor(() => {
-      expect(screen.queryByRole("alert")).toBeNull();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body).not.toHaveProperty("consent");
   });
 
   it("renders the honeypot field hidden from humans", () => {
@@ -379,5 +379,218 @@ describe("EmailCaptureForm", () => {
     expect(honeypot).not.toBeNull();
     expect(honeypot!.getAttribute("tabindex")).toBe("-1");
     expect(honeypot!.closest('[aria-hidden="true"]')).not.toBeNull();
+  });
+
+  // --- Phase 2: stacked form, labels-above, muted qualification fields ---
+
+  it("free-text question: question inside the field (left) + (optional) right, muted wrapper surface", () => {
+    render(
+      <EmailCaptureForm
+        {...defaultProps}
+        qualificationEnabled={true}
+        questions={[freeTextQuestion("What brings you here?", "q-1")]}
+      />
+    );
+    const input = screen.getByLabelText(
+      /What brings you here\?/
+    ) as HTMLInputElement;
+    expect(input.id).toBe("qual-q-1");
+    expect(input.className).toContain("bg-transparent");
+    expect(input.className).not.toContain("border-2");
+
+    const wrapper = input.parentElement as HTMLElement;
+    expect(wrapper.className).toContain("h-11");
+    expect(wrapper.className).toContain("bg-muted");
+    expect(wrapper.className).toContain("border");
+
+    const label = wrapper.querySelector("label") as HTMLLabelElement;
+    expect(label.tagName).toBe("LABEL");
+    expect(label.getAttribute("for")).toBe("qual-q-1");
+    // question text on the left, (optional) on the right end of the field
+    expect(label.textContent).toContain("What brings you here?");
+    expect(label.textContent).toContain("(optional)");
+    const badge = label.lastElementChild as HTMLElement;
+    expect(badge.textContent).toBe("(optional)");
+    expect(badge.className).toContain("text-muted-foreground");
+    expect(
+      !!(
+        label.compareDocumentPosition(badge) & Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
+    // label sits over the input (input first for peer variant ordering)
+    expect(
+      !!(
+        input.compareDocumentPosition(label) & Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
+  });
+
+  it("multiple-choice question: muted legend + Tally-style choice rows", () => {
+    render(
+      <EmailCaptureForm
+        {...defaultProps}
+        qualificationEnabled={true}
+        questions={[
+          {
+            id: "q-mc",
+            text: "Which plan?",
+            type: "multiple_choice",
+            options: ["Free", "Pro"],
+          },
+        ]}
+      />
+    );
+    const legend = screen.getByText(/Which plan\?/);
+    expect(legend.tagName).toBe("LEGEND");
+    expect(legend.className).toContain("text-sm");
+    expect(legend.className).toContain("text-muted-foreground");
+    const fieldset = legend.closest("fieldset") as HTMLElement;
+    expect(fieldset.className).toContain("border-0");
+    const radio = screen.getByRole("radio", { name: "Free" });
+    expect(radio.className).toContain("peer");
+    // choice row: full-width bordered card, muted question surface
+    const row = radio.closest("label")?.querySelector("span") as HTMLElement;
+    expect(row.className).toContain("rounded-[var(--input-radius)]");
+    expect(row.className).toContain("min-h-11");
+    expect(row.className).toContain("bg-muted");
+    expect(row.className).not.toContain("bg-card");
+  });
+
+  it("selected MC option gets brand-color border + filled dot", async () => {
+    const user = userEvent.setup();
+    render(
+      <EmailCaptureForm
+        {...defaultProps}
+        qualificationEnabled={true}
+        questions={[
+          {
+            id: "q-mc",
+            text: "Which plan?",
+            type: "multiple_choice",
+            options: ["Free", "Pro"],
+          },
+        ]}
+      />
+    );
+    const radio = screen.getByRole("radio", { name: "Pro" });
+    const radio2 = screen.getByRole("radio", { name: "Free" });
+    const row = radio.closest("label")?.querySelector("span") as HTMLElement;
+    const row2 = radio2.closest("label")?.querySelector("span") as HTMLElement;
+    // first span in the row is the radio circle; its child is the filled dot
+    const dotOf = (r: HTMLElement) =>
+      r.querySelector("span")?.firstElementChild;
+
+    // unselected: no brand border, no dot
+    expect(row.style.borderColor).toBe("");
+    expect(dotOf(row)).toBeNull();
+
+    await user.click(radio);
+    expect(radio).toBeChecked();
+    expect(row.style.borderColor).toBeTruthy();
+    expect(dotOf(row)).not.toBeNull();
+    // sibling option stays unselected
+    expect(row2.style.borderColor).toBe("");
+    expect(dotOf(row2)).toBeNull();
+  });
+
+  it("dark template: muted question label + visible sunken input surface", () => {
+    render(
+      <EmailCaptureForm
+        {...defaultProps}
+        template="dark"
+        qualificationEnabled={true}
+        questions={[freeTextQuestion("What brings you here?", "q-1")]}
+      />
+    );
+    const input = screen.getByLabelText(/What brings you here\?/);
+    const wrapper = input.parentElement as HTMLElement;
+    // bg-dark-template-input gives contrast against the dark page bg
+    expect(wrapper.className).toContain("bg-dark-template-input");
+    expect(wrapper.className).toContain("border-dark-template-border");
+    expect(wrapper.className).not.toContain("bg-card");
+    const label = wrapper.querySelector("label") as HTMLLabelElement;
+    expect(label.className).toContain("text-dark-template-muted");
+  });
+
+  it("form is always stacked with h-11 fields and button", () => {
+    const { container } = render(
+      <EmailCaptureForm
+        {...defaultProps}
+        qualificationEnabled={true}
+        questions={[freeTextQuestion("What brings you here?", "q-1")]}
+      />
+    );
+    const form = container.querySelector("form");
+    expect(form?.className).toContain("flex-col");
+    const email = screen.getByPlaceholderText("Email address");
+    const button = screen.getByRole("button", { name: /Join Waitlist/i });
+    const question = screen.getByLabelText(/What brings you here\?/);
+    expect(email.className).toContain("h-11");
+    expect(question.className).toContain("h-11");
+    expect(button.className).toContain("h-11");
+    expect(button.className).not.toContain("mt-4");
+    // D4: email and button never share a horizontal row
+    expect(email.parentElement).not.toBe(button.parentElement);
+  });
+
+  it("bold template: email keeps border-2, questions stay muted", () => {
+    render(
+      <EmailCaptureForm
+        {...defaultProps}
+        template="bold"
+        qualificationEnabled={true}
+        questions={[freeTextQuestion("What brings you here?", "q-1")]}
+      />
+    );
+    const email = screen.getByPlaceholderText("Email address");
+    expect(email.className).toContain("border-2");
+    const question = screen.getByLabelText(/What brings you here\?/);
+    expect(question.className).not.toContain("border-2");
+    expect((question.parentElement as HTMLElement).className).toContain(
+      "bg-muted"
+    );
+  });
+
+  // --- Round-2 founder swaps (2026-09-30) ---
+
+  it("swaps (amended 2026-09-30): button → consent line → trust line", () => {
+    const { container } = render(<EmailCaptureForm {...defaultProps} />);
+    const button = screen.getByRole("button", { name: /Join Waitlist/i });
+    const trust = screen.getByText("No spam. Unsubscribe anytime.");
+    const consent = screen.getByText(/By joining, you agree to receive emails/);
+    expect(
+      !!(
+        button.compareDocumentPosition(consent) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
+    expect(
+      !!(
+        consent.compareDocumentPosition(trust) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
+    // consent is the button's immediate successor; trust closes the form
+    expect(button.nextElementSibling).toBe(consent.closest("p"));
+    expect(consent.closest("p")?.nextElementSibling).toBe(trust.closest("p"));
+    expect(container.querySelector("form")).toBeDefined();
+  });
+
+  it("in-field question hides its label overlay once the user types", async () => {
+    const user = userEvent.setup();
+    render(
+      <EmailCaptureForm
+        {...defaultProps}
+        qualificationEnabled={true}
+        questions={[freeTextQuestion("What brings you here?", "q-1")]}
+      />
+    );
+    const input = screen.getByLabelText(/What brings you here\?/);
+    const label = input.parentElement?.querySelector(
+      "label"
+    ) as HTMLLabelElement;
+    expect(label.className).toContain("peer-placeholder-shown:visible");
+    await user.type(input, "Building a SaaS");
+    expect(label.className).toContain("invisible");
   });
 });

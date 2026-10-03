@@ -1,6 +1,6 @@
 # Story 18.4 — Settings logo upload with delete/replace
 
-**Status:** ready
+**Status:** done
 **Epic:** 18 — Live Waitlist Page Redesign (Bare-Minimum Contract)
 **Depends on:** —
 **Design Refs:** `docs/design/High-fidelity-svgs/HF 6 onboard step 3.svg` (upload control); onboarding Step 3 implementation is the functional reference

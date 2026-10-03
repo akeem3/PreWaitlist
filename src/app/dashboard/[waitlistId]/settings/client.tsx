@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { SettingsTabs } from "../../../../../components/dashboard/settings/tabs";
 import { Button } from "../../../../../components/ui/button";
 import { Input } from "../../../../../components/ui/input";
@@ -75,6 +76,9 @@ export default function WaitlistSettingsClient({
   const [questionsSaving, setQuestionsSaving] = useState(false);
   const [questionsSaved, setQuestionsSaved] = useState(false);
   const [questionsError, setQuestionsError] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const questionsSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
@@ -183,6 +187,48 @@ export default function WaitlistSettingsClient({
         clearTimeout(questionsSaveTimeoutRef.current);
     };
   }, []);
+
+  function handleLogoClick() {
+    fileInputRef.current?.click();
+  }
+
+  // Mirrors onboarding Step 3 (onboarding/3/page.tsx:103-135): client-side
+  // size check + FileReader to a data URL. Settings persists immediately via
+  // saveField (no submit button here). accept attr covers type filtering.
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("File must be under 2MB");
+      return;
+    }
+
+    setLogoFile(file);
+    setLogoUploading(true);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        setLogoUrl(dataUrl);
+        saveField("logo_url", dataUrl);
+        setLogoUploading(false);
+      };
+      reader.onerror = () => {
+        setLogoUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setLogoUploading(false);
+    }
+  }
+
+  function handleRemoveLogo() {
+    setLogoUrl("");
+    setLogoFile(null);
+    saveField("logo_url", "");
+  }
 
   async function handleArchive() {
     setArchiving(true);
@@ -296,13 +342,52 @@ export default function WaitlistSettingsClient({
                   onBlur={() => saveField("cta_text", ctaText)}
                   placeholder="Join waitlist"
                 />
-                <Input
-                  label="Logo URL"
-                  value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                  onBlur={() => saveField("logo_url", logoUrl)}
-                  placeholder="https://example.com/logo.png"
-                />
+                <div className="mb-3">
+                  {/* matches Content tab field rhythm */}
+                  <label className="mb-1 block text-xs text-muted-foreground">
+                    Logo
+                  </label>
+                  <div className="flex items-center gap-3">
+                    {logoUrl && (
+                      <Image
+                        src={logoUrl}
+                        alt="Logo"
+                        width={40}
+                        height={40}
+                        unoptimized
+                        className="h-10 w-10 rounded-md border border-border bg-card object-contain"
+                      />
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleLogoClick}
+                      disabled={saving || logoUploading}
+                      className="flex flex-1 items-center justify-center rounded-(--radius-lg) border-2 border-dashed border-border bg-card px-3 py-3 text-sm h-10 text-muted-foreground transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {logoUploading
+                        ? "Uploading..."
+                        : logoUrl || logoFile
+                          ? "Logo uploaded — click to replace"
+                          : "Click to upload logo (PNG or SVG, max 2MB)"}
+                    </button>
+                    {logoUrl && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRemoveLogo}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/svg+xml"
+                    onChange={handleLogoChange}
+                    className="hidden"
+                  />
+                </div>
                 <div>
                   <label className="mb-1.5 block text-body-sm font-medium text-foreground">
                     Brand color

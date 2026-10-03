@@ -79,13 +79,17 @@
   --heading-leading-snug: 1.25;
   --heading-leading-normal: 1.375;
 
-  /* Type Scale — Font Weights */
-  --font-light: 300;
-  --font-normal: 400;
-  --font-medium: 500;
-  --font-semibold: 600;
-  --font-bold: 700;
-  --font-extrabold: 800;
+  /* Type Scale — Font Weights
+     MUST live in the `--font-weight-*` namespace — `--font-*` is Tailwind's
+     font-FAMILY namespace and shadowed these, compiling every `font-*`
+     utility to an invalid `font-family: 500` that browsers drop (all
+     font-weight utilities dead app-wide). Fix 2026-09-30. */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
 
   /* Type Scale — Letter Spacing */
   --tracking-tighter: -0.025em;
@@ -149,7 +153,7 @@
   --button-padding-x: var(--spacing-4);
   --button-padding-y: var(--spacing-2);
   --button-font-size: var(--text-sm);
-  --button-font-weight: var(--font-medium);
+  --button-font-weight: var(--font-weight-medium);
 
   /* Design System v2.0 — Component Tokens: Input */
   --input-radius: var(--radius-md);
@@ -207,7 +211,7 @@ body {
 .text-display {
   font-size: clamp(1.75rem, 1.5rem + 1vw, 2rem); /* 28–32px fluid mobile */
   line-height: 1.1;
-  font-weight: var(--font-extrabold);
+  font-weight: var(--font-weight-extrabold);
   letter-spacing: -0.02em;
 }
 
@@ -223,7 +227,7 @@ body {
 .text-display-lg {
   font-size: var(--text-5xl);
   line-height: var(--heading-leading-tight);
-  font-weight: var(--font-extrabold);
+  font-weight: var(--font-weight-extrabold);
   letter-spacing: var(--tracking-tighter);
 }
 
@@ -231,7 +235,7 @@ body {
 .text-h1 {
   font-size: var(--text-4xl);
   line-height: 1.15;
-  font-weight: var(--font-extrabold);
+  font-weight: var(--font-weight-extrabold);
   letter-spacing: -0.02em;
 }
 
@@ -239,7 +243,7 @@ body {
 .text-h2 {
   font-size: var(--text-3xl);
   line-height: var(--heading-leading-snug);
-  font-weight: var(--font-bold);
+  font-weight: var(--font-weight-bold);
   letter-spacing: var(--tracking-tight);
 }
 
@@ -247,7 +251,7 @@ body {
 .text-h2-semibold {
   font-size: var(--text-3xl);
   line-height: var(--heading-leading-snug);
-  font-weight: var(--font-semibold);
+  font-weight: var(--font-weight-semibold);
   letter-spacing: var(--tracking-tight);
 }
 
@@ -255,21 +259,21 @@ body {
 .text-h3 {
   font-size: var(--text-2xl);
   line-height: var(--heading-leading-snug);
-  font-weight: var(--font-semibold);
+  font-weight: var(--font-weight-semibold);
 }
 
 /* Heading 4 — Card/widget titles */
 .text-h4 {
   font-size: var(--text-xl);
   line-height: var(--heading-leading-normal);
-  font-weight: var(--font-semibold);
+  font-weight: var(--font-weight-semibold);
 }
 
 /* Body Large — Lead paragraphs */
 .text-body-lg {
   font-size: var(--text-lg);
   line-height: var(--leading-normal);
-  font-weight: var(--font-semibold);
+  font-weight: var(--font-weight-semibold);
   letter-spacing: var(--tracking-normal);
 }
 
@@ -277,21 +281,21 @@ body {
 .text-body {
   font-size: var(--text-base);
   line-height: var(--leading-normal);
-  font-weight: var(--font-normal);
+  font-weight: var(--font-weight-normal);
 }
 
 /* Body Small — Secondary text, descriptions */
 .text-body-sm {
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
-  font-weight: var(--font-normal);
+  font-weight: var(--font-weight-normal);
 }
 
 /* Caption — Metadata, timestamps, helper text */
 .text-caption {
   font-size: var(--text-xs);
   line-height: var(--leading-normal);
-  font-weight: var(--font-normal);
+  font-weight: var(--font-weight-normal);
   color: var(--color-muted-foreground);
 }
 
@@ -299,7 +303,7 @@ body {
 .text-fine-print {
   font-size: var(--text-2xs);
   line-height: var(--leading-normal);
-  font-weight: var(--font-normal);
+  font-weight: var(--font-weight-normal);
   color: var(--color-muted-foreground);
 }
 
@@ -307,14 +311,14 @@ body {
 .text-label {
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
-  font-weight: var(--font-medium);
+  font-weight: var(--font-weight-medium);
 }
 
 /* Overline — Category labels, overlines */
 .text-overline {
   font-size: var(--text-xs);
   line-height: var(--leading-normal);
-  font-weight: var(--font-semibold);
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
 }
@@ -324,5 +328,5 @@ body {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
-  font-weight: var(--font-normal);
+  font-weight: var(--font-weight-normal);
 }

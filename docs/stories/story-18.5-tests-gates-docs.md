@@ -1,6 +1,6 @@
 # Story 18.5 — Tests, gates & doc amendments
 
-**Status:** ready
+**Status:** done
 **Epic:** 18 — Live Waitlist Page Redesign (Bare-Minimum Contract)
 **Depends on:** 18.0, 18.1, 18.2, 18.3, 18.4
 **Design Refs:** — (verification + docs)

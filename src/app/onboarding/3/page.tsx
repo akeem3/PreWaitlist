@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useOnboardingForm } from "../context";
+import { useOnboardingForm, ONBOARDING_SERVER_DEFAULTS } from "../context";
 import { Toggle } from "../../../../components/ui/toggle";
 import { Badge } from "../../../../components/ui/badge";
 import { cn } from "../../../../components/lib/cn";
@@ -66,11 +66,21 @@ export default function OnboardingStep3() {
   );
   const [milestoneErrors, setMilestoneErrors] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Hydration guard — draft-seeded state (brand color, toggles, logo, copy)
+  // differs from SSR's defaults; the first client render must match the server
+  // HTML exactly, then flip to draft values post-hydration.
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     form.setLoading(false);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const activeBrand = mounted
+    ? brandColor
+    : ONBOARDING_SERVER_DEFAULTS.brandColor;
 
   const handleBrandColorBlur = useCallback(() => {
     if (brandColorInput && !HEX_REGEX.test(brandColorInput)) {
@@ -385,7 +395,7 @@ export default function OnboardingStep3() {
               }}
               className={cn(
                 "h-8 w-8 rounded-lg border-2 transition-all",
-                brandColor === color.hex
+                activeBrand === color.hex
                   ? "border-white scale-110 ring-1 ring-black/20"
                   : "border-border hover:scale-105"
               )}
@@ -398,7 +408,7 @@ export default function OnboardingStep3() {
         <div className="flex items-center gap-3">
           <div
             className="h-10 w-10 shrink-0 rounded-(--radius-lg) border border-border"
-            style={{ backgroundColor: brandColor }}
+            style={{ backgroundColor: activeBrand }}
           />
           <input
             type="text"
@@ -428,7 +438,7 @@ export default function OnboardingStep3() {
             ? "Uploading..."
             : logoFile
               ? logoFile.name
-              : logoUrl
+              : mounted && logoUrl
                 ? "Logo uploaded — click to replace"
                 : "Click to upload logo (PNG or SVG, max 2MB)"}
         </button>
@@ -469,18 +479,18 @@ export default function OnboardingStep3() {
           Preview
         </label>
         <MetaPreview
-          headline={headline}
-          subheadline={subheadline}
-          ctaText={ctaText}
-          slug={form.slug}
-          brandColor={brandColor}
+          headline={mounted ? headline : ""}
+          subheadline={mounted ? subheadline : ""}
+          ctaText={mounted ? ctaText : ONBOARDING_SERVER_DEFAULTS.ctaText}
+          slug={mounted ? form.slug : ""}
+          brandColor={activeBrand}
         />
       </div>
 
       {/* Milestone Rewards */}
       <div className="mb-4 rounded-xl border border-border bg-card p-4">
         <Toggle
-          checked={milestoneEnabled}
+          checked={mounted && milestoneEnabled}
           onCheckedChange={handleMilestoneToggle}
           label="Milestone rewards"
           disabled={isSubmitting}
@@ -490,7 +500,7 @@ export default function OnboardingStep3() {
           &mdash; and any reward with &quot;skip the line&quot; moves them
           straight to #1.
         </p>
-        {milestoneEnabled && (
+        {mounted && milestoneEnabled && (
           <div className="mt-4 flex flex-col gap-3">
             {rewards.map((reward, index) => (
               <div key={index} className="flex items-end gap-2">
@@ -587,7 +597,7 @@ export default function OnboardingStep3() {
       {/* Signup Counter */}
       <div className="mb-4 rounded-xl border border-border bg-card p-4">
         <Toggle
-          checked={signupCounterEnabled}
+          checked={mounted && signupCounterEnabled}
           onCheckedChange={handleCounterToggle}
           label="Signup counter"
           disabled={isSubmitting}
@@ -596,7 +606,7 @@ export default function OnboardingStep3() {
           Show a real-time signup count on your public waitlist page for social
           proof.
         </p>
-        {signupCounterEnabled && (
+        {mounted && signupCounterEnabled && (
           <div className="mt-4 flex items-center gap-3">
             <label className="text-xs text-muted-foreground">
               Show when I have
