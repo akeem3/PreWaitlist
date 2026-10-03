@@ -4,7 +4,7 @@
 **Epic:** 17 — Broadcasting Engine Fix
 **Depends on:** —
 **Design Refs:** — (security/hygiene; preview + send body)
-**Source:** [Audit §5 broadcasting findings](../scans/engine-audit-5-engines.md#5-broadcasting--%EF%B8%8F-not-functional-verified-rescan-confidence-98), [Epic 17 Standing Decision B8](../epics/epic-17-broadcast-engine-fix.md), DOMPurify / HTML email sanitization research, Story 12.3 HTML placeholder
+**Source:** [Audit §5 broadcasting findings](../../scans/engine-audit-5-engines.md#5-broadcasting--%EF%B8%8F-not-functional-verified-rescan-confidence-98), [Epic 17 Standing Decision B8](../../epics/completed/epic-17-broadcast-engine-fix.md), DOMPurify / HTML email sanitization research, Story 12.3 HTML placeholder
 
 ## Story
 

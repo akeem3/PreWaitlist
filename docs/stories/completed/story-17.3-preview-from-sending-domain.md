@@ -4,7 +4,7 @@
 **Epic:** 17 — Broadcasting Engine Fix
 **Depends on:** —
 **Design Refs:** C3 compose preview / current preview block `client.tsx:227-248`; `docs/design/sprint-3-design-specs.md` §C3
-**Source:** [Audit §5 claim 9](../scans/engine-audit-5-engines.md#5-broadcasting--%EF%B8%8F-not-functional-verified-rescan-confidence-98), [Epic 17 Standing Decisions B6](../epics/epic-17-broadcast-engine-fix.md), [Story 12.1.8 AC3](../stories/completed/story-12.1.8-broadcast-duplicate-fixes.md), [Story 12.6 sending domain](../stories/completed/story-12.6-email-infrastructure-separation.md)
+**Source:** [Audit §5 claim 9](../../scans/engine-audit-5-engines.md#5-broadcasting--%EF%B8%8F-not-functional-verified-rescan-confidence-98), [Epic 17 Standing Decisions B6](../../epics/completed/epic-17-broadcast-engine-fix.md), [Story 12.1.8 AC3](../../stories/completed/story-12.1.8-broadcast-duplicate-fixes.md), [Story 12.6 sending domain](../../stories/completed/story-12.6-email-infrastructure-separation.md)
 
 ## Story
 

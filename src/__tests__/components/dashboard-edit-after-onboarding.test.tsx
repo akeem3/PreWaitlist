@@ -56,8 +56,17 @@ describe("Edit After Onboarding", () => {
     expect(screen.getByDisplayValue("Join us")).toBeDefined();
     expect(screen.getByDisplayValue("Be first")).toBeDefined();
     expect(screen.getByDisplayValue("Join")).toBeDefined();
+    // 18.4: the Logo URL text input was replaced by the upload control —
+    // the existing logo renders as the thumbnail (+ preview brand logo)
+    const logoImgs = screen.getAllByRole("img", { name: "Logo" });
+    expect(logoImgs.length).toBeGreaterThanOrEqual(1);
     expect(
-      screen.getByDisplayValue("https://example.com/logo.png")
+      logoImgs.every(
+        (img) => img.getAttribute("src") === "https://example.com/logo.png"
+      )
+    ).toBe(true);
+    expect(
+      screen.getByRole("button", { name: "Logo uploaded — click to replace" })
     ).toBeDefined();
   });
 

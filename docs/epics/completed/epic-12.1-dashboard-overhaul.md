@@ -1,7 +1,7 @@
 # Epic 12.1 — Dashboard Overhaul
 
 **Status:** done
-**Source:** [PRD §2b Sprint 3.1](../PRD.md#2b-sprint-31--dashboard-overhaul), [Dashboard Overhaul Plan](../dashboard-overhaul-plan.md), [Sprint Gap Analysis](../sprint-gap-analysis.md)
+**Source:** [PRD §2b Sprint 3.1](../PRD.md#2b-sprint-31--dashboard-overhaul), [Dashboard Overhaul Plan](../../completed/dashboard-overhaul-plan.md), [Sprint Gap Analysis](../../completed/sprint-gap-analysis.md)
 
 ## Design References
 

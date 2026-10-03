@@ -4,7 +4,7 @@
 **Epic:** 17 — Broadcasting Engine Fix
 **Depends on:** 17.0, 17.2
 **Design Refs:** Upgrade modal trigger #4 (`docs/design/sprint-3-design-specs.md` §S9); success card `client.tsx:103-121`; Story 12.3 AC7/AC8
-**Source:** [Audit §5 claim 10](../scans/engine-audit-5-engines.md#5-broadcasting--%EF%B8%8F-not-functional-verified-rescan-confidence-98), [Epic 17 Standing Decisions B7/B11](../epics/epic-17-broadcast-engine-fix.md), [Story 12.3 AC7/AC8](../stories/completed/story-12.3-broadcast-email.md), PRD L171 / REQ-7.1a
+**Source:** [Audit §5 claim 10](../../scans/engine-audit-5-engines.md#5-broadcasting--%EF%B8%8F-not-functional-verified-rescan-confidence-98), [Epic 17 Standing Decisions B7/B11](../../epics/completed/epic-17-broadcast-engine-fix.md), [Story 12.3 AC7/AC8](../../stories/completed/story-12.3-broadcast-email.md), PRD L171 / REQ-7.1a
 
 ## Story
 

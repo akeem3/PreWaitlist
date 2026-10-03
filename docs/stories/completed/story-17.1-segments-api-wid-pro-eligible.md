@@ -4,7 +4,7 @@
 **Epic:** 17 — Broadcasting Engine Fix
 **Depends on:** —
 **Design Refs:** — (API only; no SVG)
-**Source:** [Audit §5 Broadcasting](../scans/engine-audit-5-engines.md#5-broadcasting--%EF%B8%8F-not-functional-verified-rescan-confidence-98), [Epic 17 Standing Decisions B2/B3](../epics/epic-17-broadcast-engine-fix.md), [PRD L123 Broadcast defaults](../PRD.md), Klaviyo expected-recipient count UX
+**Source:** [Audit §5 Broadcasting](../../scans/engine-audit-5-engines.md#5-broadcasting--%EF%B8%8F-not-functional-verified-rescan-confidence-98), [Epic 17 Standing Decisions B2/B3](../../epics/completed/epic-17-broadcast-engine-fix.md), [PRD L123 Broadcast defaults](../../PRD.md), Klaviyo expected-recipient count UX
 
 ## Story
 

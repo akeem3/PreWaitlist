@@ -1,6 +1,6 @@
 # Story 16.4 — Dashboard Leaderboard Sort Fix
 
-**Status:** ready
+**Status:** done
 **Epic:** 16 — Leaderboard & Founder Updates Engine Fix
 **Depends on:** —
 **Design Refs:** Story 12.3.1 AC3 (server rank) + sortable headers in client; dashboard leaderboard has **no** HF SVG (`High-fidelity-svgs/Leaderboard.svg` does not exist — audit claim 14)

@@ -72,6 +72,7 @@ export default function OnboardingStep1() {
   const form = useOnboardingForm();
 
   const [subheadline, setSubheadline] = useState(form.subheadline);
+  const [headline, setHeadline] = useState(form.headline);
   const [slugInput, setSlugInput] = useState(form.slug);
   const [slug, setSlug] = useState(form.slug);
   const [slugStatus, setSlugStatus] = useState<SlugStatus>("idle");
@@ -124,6 +125,13 @@ export default function OnboardingStep1() {
     form.updateField("subheadline", subheadline);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subheadline]);
+
+  // 18.3: mirrors the subheadline pattern — keeps context + two-pane preview
+  // (headline={form.headline}) live while typing; submit applies the fallback chain.
+  useEffect(() => {
+    form.updateField("headline", headline);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [headline]);
 
   useEffect(() => {
     form.updateField("slug", slug);
@@ -200,10 +208,12 @@ export default function OnboardingStep1() {
     setSlugError(null);
     form.updateField("slug", fallback);
     form.updateField("productName", "My Waitlist");
-    form.updateField("headline", "My Waitlist");
+    // 18.3 AC2: keep the existing default for a skipped (empty) Headline,
+    // but honor a typed one (context already holds it via the sync effect).
+    if (!headline.trim()) form.updateField("headline", "My Waitlist");
     form.updateField("subheadline", "Join the waitlist");
     router.push("/onboarding/2");
-  }, [form, router]);
+  }, [form, router, headline]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -218,16 +228,19 @@ export default function OnboardingStep1() {
         // Store in context/localStorage only — no API call yet
         form.updateField("slug", slug);
         form.updateField("subheadline", subheadline);
-        if (!form.headline) {
-          form.updateField("headline", form.productName || slug);
-        }
+        // 18.3 AC2: field value wins; empty → Product Name → slug
+        // (non-empty invariant, no new error copy)
+        form.updateField(
+          "headline",
+          headline.trim() || form.productName || slug
+        );
         router.push("/onboarding/2");
       } catch {
         setSubmitError("Something went wrong. Please try again.");
         form.setLoading(false);
       }
     },
-    [slug, slugStatus, subheadline, form, router]
+    [slug, slugStatus, subheadline, headline, form, router]
   );
 
   const isSubmitting = form.loading;
@@ -246,6 +259,7 @@ export default function OnboardingStep1() {
     }
     // Reset local state
     form.updateField("headline", "");
+    setHeadline("");
     form.updateField("subheadline", "");
     setSlugInput("");
     setSlug("");
@@ -298,8 +312,9 @@ export default function OnboardingStep1() {
         Don&apos;t worry — you can change all of this later.
       </p>
 
-      {/* Field 1: Product Name */}
-      <div className="mb-3">
+      {/* Field 1: Product Name — internal name, visually separated from
+          the Headline/Subheadline/Subdomain copy group (18.3 AC3, W6) */}
+      <div className="mb-6 border-b border-border pb-6">
         <label
           htmlFor="productName"
           className="mb-1 block text-xs text-muted-foreground"
@@ -317,7 +332,25 @@ export default function OnboardingStep1() {
         />
       </div>
 
-      {/* Field 2: Subheadline */}
+      {/* Field 2: Headline */}
+      <div className="mb-3">
+        <label
+          htmlFor="headline"
+          className="mb-1 block text-xs text-muted-foreground"
+        >
+          Headline
+        </label>
+        <input
+          id="headline"
+          type="text"
+          value={headline}
+          onChange={(e) => setHeadline(e.target.value)}
+          disabled={isSubmitting}
+          className="flex w-full items-center rounded-(--radius-lg) border border-border bg-card px-3 py-3 text-sm h-10 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
+        />
+      </div>
+
+      {/* Field 3: Subheadline */}
       <div className="mb-3">
         <label
           htmlFor="subheadline"
@@ -336,7 +369,7 @@ export default function OnboardingStep1() {
         />
       </div>
 
-      {/* Field 3: Subdomain (slug) */}
+      {/* Field 4: Subdomain (slug) */}
       <div className="mb-3">
         <label
           htmlFor="slug"
@@ -387,7 +420,12 @@ export default function OnboardingStep1() {
         )}
         <button
           type="submit"
-          disabled={isSubmitting || !isValid}
+          /* Hydration guard: form.slug comes from localStorage (draft) on the
+             client but is always "" during SSR — without the mounted gate the
+             disabled attribute mismatches and React logs a hydration error.
+             Server HTML always has disabled (empty slug), so the first client
+             render must too; mounted flips it post-hydration. */
+          disabled={!mounted || isSubmitting || !isValid}
           className="inline-flex h-12 w-full items-center justify-center rounded-md bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50"
         >
           {isSubmitting ? (

@@ -11,7 +11,7 @@ As the system, I need new database columns and tables to support consent trackin
 
 ## Acceptance Criteria (EARS)
 
-- AC1: The `subscribers` table shall have a new column `consent_given_at timestamptz nullable` — set on signup when the consent checkbox is checked.
+- AC1: The `subscribers` table shall have a new column `consent_given_at timestamptz nullable` — set on signup when the consent checkbox is checked. **[AMENDED 2026-09-30 — Epic 18 W3:** "when the consent checkbox is checked" superseded — stamped unconditionally at signup (no checkbox).**]**
 - AC2: The `subscribers` table shall have a new column `consent_ip_address text nullable` — captures IP at signup for GDPR audit trail.
 - AC3: The `subscribers` table shall have a new column `unsubscribed_at timestamptz nullable` — set when subscriber clicks unsubscribe link.
 - AC4: The `waitlists` table shall have a new column `is_archived boolean default false` — set when founder archives the waitlist.

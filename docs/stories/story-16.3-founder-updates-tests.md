@@ -1,6 +1,6 @@
 # Story 16.3 — Founder Updates Tests
 
-**Status:** ready
+**Status:** done
 **Epic:** 16 — Leaderboard & Founder Updates Engine Fix
 **Depends on:** 16.0, 16.1, 16.2
 **Design Refs:** —

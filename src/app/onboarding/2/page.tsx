@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useOnboardingForm } from "../context";
+import { useOnboardingForm, ONBOARDING_SERVER_DEFAULTS } from "../context";
 import { cn } from "../../../../components/lib/cn";
 
 type Template = "minimal" | "bold" | "dark";
@@ -67,9 +67,15 @@ export default function OnboardingStep2() {
   const form = useOnboardingForm();
   const [selected, setSelected] = useState<Template>(form.template);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Hydration guard — selected comes from localStorage (draft) on the client
+  // but SSR always renders the default template; gate the card highlight until
+  // post-hydration so className matches the server HTML.
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     form.setLoading(false);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -119,7 +125,8 @@ export default function OnboardingStep2() {
             disabled={isSubmitting}
             className={cn(
               "flex h-[123px] w-full items-center rounded-[23px] border bg-card p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-              selected === template.id
+              (mounted ? selected : ONBOARDING_SERVER_DEFAULTS.template) ===
+                template.id
                 ? "border-2 border-accent"
                 : "border border-border"
             )}

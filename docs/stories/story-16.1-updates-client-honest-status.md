@@ -1,6 +1,6 @@
 # Story 16.1 — Updates Client Publish Flow + Honest Status
 
-**Status:** ready
+**Status:** done
 **Epic:** 16 — Leaderboard & Founder Updates Engine Fix
 **Depends on:** 16.0
 **Design Refs:** Story 12.1.4 compose layout (textarea + Publish + recent list) — no HF SVG

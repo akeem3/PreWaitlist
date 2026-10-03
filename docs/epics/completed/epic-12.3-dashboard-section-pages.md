@@ -1,7 +1,7 @@
 # Epic 12.3 — Dashboard Section Pages
 
 **Status:** done
-**Source:** [Dashboard Overhaul Plan](../dashboard-overhaul-plan.md), [Sprint Gap Analysis](../sprint-gap-analysis.md)
+**Source:** [Dashboard Overhaul Plan](../../completed/dashboard-overhaul-plan.md), [Sprint Gap Analysis](../../completed/sprint-gap-analysis.md)
 
 ## Design References
 

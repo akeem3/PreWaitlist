@@ -62,7 +62,7 @@ function pushCapCheck() {
   });
 }
 
-// Phase 6: consent + form-load timestamp (>=2s old) required by the route
+// Phase 6: form-load timestamp (>=2s old) required by the route
 const FORM_TS = Date.now() - 5000;
 
 describe("POST /api/subscribers — referral tracking", () => {
@@ -104,7 +104,6 @@ describe("POST /api/subscribers — referral tracking", () => {
         waitlist_id: "wl-1",
         email: "new@example.com",
         referral_code: "ref123",
-        consent: true,
         ts: FORM_TS,
       }),
     });
@@ -127,7 +126,6 @@ describe("POST /api/subscribers — referral tracking", () => {
         waitlist_id: "wl-1",
         email: "new@example.com",
         referral_code: "nonexistent",
-        consent: true,
         ts: FORM_TS,
       }),
     });
@@ -150,7 +148,6 @@ describe("POST /api/subscribers — referral tracking", () => {
         waitlist_id: "wl-1",
         email: "new@example.com",
         referral_code: "ref123",
-        consent: true,
         ts: FORM_TS,
       }),
     });
@@ -188,7 +185,6 @@ describe("POST /api/subscribers — referral tracking", () => {
         waitlist_id: "wl-1",
         email: "self@example.com",
         referral_code: "self123",
-        consent: true,
         ts: FORM_TS,
       }),
     });
@@ -275,7 +271,6 @@ describe("POST /api/subscribers — referral tracking", () => {
         waitlist_id: "wl-1",
         email: "new@example.com",
         referral_code: "ref123",
-        consent: true,
         ts: FORM_TS,
       }),
     });
@@ -353,7 +348,6 @@ describe("POST /api/subscribers — referral tracking", () => {
       body: JSON.stringify({
         waitlist_id: "wl-1",
         email: "direct@example.com",
-        consent: true,
         ts: FORM_TS,
       }),
     });
