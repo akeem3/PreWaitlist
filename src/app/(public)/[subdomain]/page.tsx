@@ -12,7 +12,7 @@ type Props = { params: Promise<{ subdomain: string }> };
 const WAITLIST_SELECT = `
       id, subdomain, template, headline, subheadline, cta_text,
       logo_url, product_name, brand_color, qualification_enabled, milestone_rewards_enabled,
-      signup_counter_enabled, signup_counter_threshold, is_archived,
+      signup_counter_enabled, signup_counter_threshold, is_archived, phone_mode,
       founder_profiles!inner ( tier )
     `;
 
@@ -41,12 +41,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     `${subdomain}.prewaitlist.com`;
   const description = waitlist.subheadline?.trim() || undefined;
   const url = `https://${subdomain}.prewaitlist.com`;
+  // REQ-6.8.6: share cards carry the suffix the step-3 preview promises;
+  // the document <title> stays the plain headline.
+  const ogTitle = `${title} — Join the waitlist`;
 
   return {
     title,
     ...(description ? { description } : {}),
     openGraph: {
-      title,
+      title: ogTitle,
       ...(description ? { description } : {}),
       url,
       siteName: "PreWaitlist",
@@ -54,7 +57,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: ogTitle,
       ...(description ? { description } : {}),
     },
   };
@@ -156,6 +159,12 @@ export default async function PublicSubdomainPage({ params }: Props) {
             questions={questions}
             qualificationEnabled={waitlist.qualification_enabled}
             subscriberCount={signupCount}
+            phoneMode={
+              waitlist.phone_mode === "optional" ||
+              waitlist.phone_mode === "required"
+                ? waitlist.phone_mode
+                : "off"
+            }
           />
         </Suspense>
       }

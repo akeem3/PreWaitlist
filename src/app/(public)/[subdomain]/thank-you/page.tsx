@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import type { Metadata } from "next";
 import { PoweredByFooter } from "../../../../../components/share/powered-by-footer";
 import { ReferralLink } from "../../../../../components/share/referral-link";
 import { ShareButtons } from "../../../../../components/share/share-buttons";
@@ -10,6 +11,31 @@ type Props = {
   params: Promise<{ subdomain: string }>;
   searchParams: Promise<{ subscriber_id?: string; referral_code?: string }>;
 };
+
+// Title reuses the on-page heading (founder decision 2026-10-03). Recovery
+// state keeps the root title rather than exposing "Invalid link" in tabs.
+export async function generateMetadata({
+  searchParams,
+}: Props): Promise<Metadata> {
+  const { subscriber_id, referral_code } = await searchParams;
+  if (!subscriber_id || !referral_code) return {};
+
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("subscribers")
+    .select("waitlists!inner ( headline )")
+    .eq("id", subscriber_id)
+    .eq("referral_code", referral_code)
+    .single();
+
+  const waitlists = (data?.waitlists ?? null) as unknown as {
+    headline: string;
+  } | null;
+  const headline = waitlists?.headline?.trim();
+  if (!headline) return {};
+
+  return { title: `${headline} — You're in.` };
+}
 
 /**
  * 4.6 recovery UI: stale/incomplete thank-you links render a way back

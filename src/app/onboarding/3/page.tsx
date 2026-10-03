@@ -8,6 +8,8 @@ import { Toggle } from "../../../../components/ui/toggle";
 import { Badge } from "../../../../components/ui/badge";
 import { cn } from "../../../../components/lib/cn";
 import MetaPreview from "../../../../components/onboarding/meta-preview";
+import { Select } from "../../../../components/ui/select";
+import { type PhoneMode } from "@/lib/phone";
 import { createClient } from "../../../../src/lib/supabase/client";
 
 const DEFAULT_REWARDS = [
@@ -625,6 +627,27 @@ export default function OnboardingStep3() {
             </label>
           </div>
         )}
+      </div>
+
+      {/* Signup fields */}
+      <div className="mb-4 flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
+        <div>
+          <h2 className="text-h4 font-medium text-foreground">Signup fields</h2>
+          <p className="mt-1 text-body text-muted-foreground">
+            Show a phone number field on your public signup form.
+          </p>
+        </div>
+        <Select
+          label="Phone number"
+          value={form.phoneMode}
+          onValueChange={(v) => form.updateField("phoneMode", v as PhoneMode)}
+          options={[
+            { value: "off", label: "Off" },
+            { value: "optional", label: "Optional" },
+            { value: "required", label: "Required" },
+          ]}
+          disabled={isSubmitting}
+        />
       </div>
 
       {/* Submit button */}

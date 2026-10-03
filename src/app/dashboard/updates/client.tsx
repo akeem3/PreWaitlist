@@ -8,9 +8,8 @@ interface Update {
   created_at: string;
 }
 
-// COPY GAP U6 (Epic 16): founder must approve final failure copy before release.
-const EMAIL_FAILED_COPY =
-  "TODO_COPY_GAP_U6: Update saved, but emails could not be sent.";
+// Approved 2026-10-03 (founder, former COPY GAP U6).
+const EMAIL_FAILED_COPY = "Update saved, but emails could not be sent.";
 
 interface UpdatesClientProps {
   updates: Update[];

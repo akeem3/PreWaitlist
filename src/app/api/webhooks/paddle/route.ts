@@ -1,59 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { Paddle, type EventEntity } from "@paddle/paddle-node-sdk";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { archiveSurplusWaitlists } from "@/lib/archive-surplus";
 
 const paddle = new Paddle(process.env.PADDLE_API_KEY!);
-
-/**
- * 2.5 surplus policy (founder decision 2026-09-29): when a founder downgrades
- * to Free with more than one active waitlist, all but the NEWEST ACTIVE one
- * are archived — reusing the existing `is_archived` → `/gone` public-page
- * guard, so surplus lists stop accepting signups while staying fully
- * recoverable via unarchive. Manual archive choices are preserved (we only
- * ever touch currently-active rows), and re-upgrading never auto-unarchives
- * (archive state stays founder-controlled).
- *
- * Throws on failure so the webhook 500s and Paddle retries the whole event —
- * the tier update is idempotent, the archive is not otherwise recoverable.
- */
-async function archiveSurplusWaitlists(
-  admin: ReturnType<typeof createAdminClient>,
-  userId: string
-): Promise<void> {
-  const { data: lists, error } = await admin
-    .from("waitlists")
-    .select("id, is_archived, created_at")
-    .eq("founder_id", userId)
-    .order("created_at", { ascending: false })
-    // Tiebreaker: identical created_at must still pick a deterministic
-    // "newest" across Paddle retries.
-    .order("id", { ascending: false });
-
-  if (error) {
-    throw new Error(`Surplus lookup failed: ${error.message}`);
-  }
-
-  const active = (lists ?? []).filter((l) => !l.is_archived);
-  if (active.length <= 1) return;
-
-  const toArchive = active.slice(1).map((l) => l.id);
-  const { error: archiveError } = await admin
-    .from("waitlists")
-    .update({
-      is_archived: true,
-      archived_at: new Date().toISOString(),
-    })
-    .in("id", toArchive);
-
-  if (archiveError) {
-    throw new Error(`Surplus archive failed: ${archiveError.message}`);
-  }
-  console.info("Surplus waitlists archived on downgrade", {
-    userId,
-    archived: toArchive.length,
-    kept: active[0].id,
-  });
-}
 
 const SUPPORTED_EVENTS = new Set([
   "subscription.created",
@@ -164,6 +114,45 @@ export async function POST(req: NextRequest) {
           dataId: txData.id,
           customData: txData.customData ?? null,
         });
+        return NextResponse.json({ received: true });
+      }
+
+      const { data: profile, error: profileError } = await admin
+        .from("founder_profiles")
+        .select("paddle_subscription_id, paddle_subscription_status")
+        .eq("id", txUserId)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Failed to load profile for transaction guard", {
+          userId: txUserId,
+          error: profileError.message,
+        });
+        return NextResponse.json(
+          { error: profileError.message },
+          {
+            status: 500,
+          }
+        );
+      }
+
+      // Out-of-order guard: a transaction for the SAME subscription that is
+      // already canceled must not re-upgrade the founder (late/duplicate
+      // delivery after subscription.canceled). A different subscription id is
+      // a genuine re-subscribe and still upgrades.
+      if (
+        profile?.paddle_subscription_status === "canceled" &&
+        txData.subscriptionId &&
+        txData.subscriptionId === profile.paddle_subscription_id
+      ) {
+        console.info(
+          "Ignoring transaction.completed for canceled subscription",
+          {
+            userId: txUserId,
+            transactionId: txData.id,
+            subscriptionId: txData.subscriptionId,
+          }
+        );
         return NextResponse.json({ received: true });
       }
 

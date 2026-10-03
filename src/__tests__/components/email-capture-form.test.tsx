@@ -4,6 +4,7 @@ import {
   screen,
   fireEvent,
   waitFor,
+  within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -201,7 +202,7 @@ describe("EmailCaptureForm", () => {
     expect(screen.queryByPlaceholderText("What brings you here?")).toBeNull();
   });
 
-  it("renders multiple-choice questions as radio groups", () => {
+  it("renders multiple-choice questions as a Tally-style dropdown", () => {
     render(
       <EmailCaptureForm
         {...defaultProps}
@@ -216,9 +217,35 @@ describe("EmailCaptureForm", () => {
         ]}
       />
     );
-    expect(screen.getByRole("radio", { name: "Free" })).toBeDefined();
-    expect(screen.getByRole("radio", { name: "Pro" })).toBeDefined();
+    const select = screen.getByRole("combobox", { name: /Which plan\?/ });
+    expect(within(select).getByRole("option", { name: "Free" })).toBeDefined();
+    expect(within(select).getByRole("option", { name: "Pro" })).toBeDefined();
+    expect(screen.queryByRole("radio")).toBeNull();
     expect(screen.queryByPlaceholderText("Which plan?")).toBeNull();
+  });
+
+  it("renders duplicate option values without a React duplicate-key warning", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    render(
+      <EmailCaptureForm
+        {...defaultProps}
+        qualificationEnabled={true}
+        questions={[
+          {
+            id: "q-mc",
+            text: "Which plan?",
+            type: "multiple_choice",
+            options: ["", ""],
+          },
+        ]}
+      />
+    );
+    expect(
+      screen.getByRole("combobox", { name: /Which plan\?/ })
+    ).toBeDefined();
+    const logged = errorSpy.mock.calls.flat().join(" ");
+    expect(logged).not.toContain("same key");
+    errorSpy.mockRestore();
   });
 
   it("does not render questions when qualificationEnabled is false", () => {
@@ -266,7 +293,7 @@ describe("EmailCaptureForm", () => {
     });
   });
 
-  it("sends MC answer keyed by question id when radio selected", async () => {
+  it("sends MC answer keyed by question id when option selected", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 201,
       json: () => Promise.resolve({ id: "1", referral_code: "abc12345" }),
@@ -293,7 +320,10 @@ describe("EmailCaptureForm", () => {
       screen.getByPlaceholderText("Email address"),
       "test@example.com"
     );
-    await user.click(screen.getByRole("radio", { name: "Pro" }));
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: /Which plan\?/ }),
+      "Pro"
+    );
     await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
 
     await waitFor(() => {
@@ -411,7 +441,7 @@ describe("EmailCaptureForm", () => {
     expect(label.textContent).toContain("(optional)");
     const badge = label.lastElementChild as HTMLElement;
     expect(badge.textContent).toBe("(optional)");
-    expect(badge.className).toContain("text-muted-foreground");
+    expect(badge.className).toContain("text-warning");
     expect(
       !!(
         label.compareDocumentPosition(badge) & Node.DOCUMENT_POSITION_FOLLOWING
@@ -425,7 +455,7 @@ describe("EmailCaptureForm", () => {
     ).toBe(true);
   });
 
-  it("multiple-choice question: muted legend + Tally-style choice rows", () => {
+  it("multiple-choice question: muted label above a Tally-style dropdown", () => {
     render(
       <EmailCaptureForm
         {...defaultProps}
@@ -440,23 +470,43 @@ describe("EmailCaptureForm", () => {
         ]}
       />
     );
-    const legend = screen.getByText(/Which plan\?/);
-    expect(legend.tagName).toBe("LEGEND");
-    expect(legend.className).toContain("text-sm");
-    expect(legend.className).toContain("text-muted-foreground");
-    const fieldset = legend.closest("fieldset") as HTMLElement;
-    expect(fieldset.className).toContain("border-0");
-    const radio = screen.getByRole("radio", { name: "Free" });
-    expect(radio.className).toContain("peer");
-    // choice row: full-width bordered card, muted question surface
-    const row = radio.closest("label")?.querySelector("span") as HTMLElement;
-    expect(row.className).toContain("rounded-[var(--input-radius)]");
-    expect(row.className).toContain("min-h-11");
-    expect(row.className).toContain("bg-muted");
-    expect(row.className).not.toContain("bg-card");
+    // label row: question left, warning-colored (optional) right
+    const optional = screen.getByText("(optional)");
+    const label = optional.closest("label") as HTMLLabelElement;
+    expect(label.tagName).toBe("LABEL");
+    expect(label.htmlFor).toBe("qual-q-mc");
+    expect(label.className).toContain("justify-between");
+    expect(label.className).toContain("text-sm");
+    expect(label.className).toContain("text-muted-foreground");
+    expect(optional.className).toContain("text-warning");
+    expect(optional.className).toContain("shrink-0");
+    const question = screen.getByText(/Which plan\?/);
+    expect(
+      !!(
+        question.compareDocumentPosition(optional) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
+    const select = screen.getByRole("combobox", {
+      name: /Which plan\?/,
+    }) as HTMLSelectElement;
+    expect(select.id).toBe("qual-q-mc");
+    expect(select.className).toContain("rounded-[var(--input-radius)]");
+    expect(select.className).toContain("h-11");
+    expect(select.className).toContain("appearance-none");
+    // muted question surface — never the shiny card
+    expect(select.className).toContain("bg-muted");
+    expect(select.className).not.toContain("bg-card");
+    // placeholder option + chevron present
+    expect(
+      within(select).getByRole("option", { name: "Select an option" })
+    ).toBeDefined();
+    expect(
+      select.parentElement?.querySelector("svg[aria-hidden='true']")
+    ).not.toBeNull();
   });
 
-  it("selected MC option gets brand-color border + filled dot", async () => {
+  it("selected MC option gets brand-color border", async () => {
     const user = userEvent.setup();
     render(
       <EmailCaptureForm
@@ -472,25 +522,17 @@ describe("EmailCaptureForm", () => {
         ]}
       />
     );
-    const radio = screen.getByRole("radio", { name: "Pro" });
-    const radio2 = screen.getByRole("radio", { name: "Free" });
-    const row = radio.closest("label")?.querySelector("span") as HTMLElement;
-    const row2 = radio2.closest("label")?.querySelector("span") as HTMLElement;
-    // first span in the row is the radio circle; its child is the filled dot
-    const dotOf = (r: HTMLElement) =>
-      r.querySelector("span")?.firstElementChild;
+    const select = screen.getByRole("combobox", {
+      name: /Which plan\?/,
+    }) as HTMLSelectElement;
 
-    // unselected: no brand border, no dot
-    expect(row.style.borderColor).toBe("");
-    expect(dotOf(row)).toBeNull();
+    // unselected: no brand border, placeholder showing
+    expect(select.style.borderColor).toBe("");
+    expect(select.value).toBe("");
 
-    await user.click(radio);
-    expect(radio).toBeChecked();
-    expect(row.style.borderColor).toBeTruthy();
-    expect(dotOf(row)).not.toBeNull();
-    // sibling option stays unselected
-    expect(row2.style.borderColor).toBe("");
-    expect(dotOf(row2)).toBeNull();
+    await user.selectOptions(select, "Pro");
+    expect(select.value).toBe("Pro");
+    expect(select.style.borderColor).toBeTruthy();
   });
 
   it("dark template: muted question label + visible sunken input surface", () => {
@@ -592,5 +634,120 @@ describe("EmailCaptureForm", () => {
     expect(label.className).toContain("peer-placeholder-shown:visible");
     await user.type(input, "Building a SaaS");
     expect(label.className).toContain("invisible");
+  });
+
+  // --- Phone collection (plan Phase 3) ---
+
+  it("phone field hidden when phoneMode is off (default)", () => {
+    render(<EmailCaptureForm {...defaultProps} />);
+    expect(screen.queryByPlaceholderText("Phone number")).toBeNull();
+    expect(screen.queryByLabelText("Country code")).toBeNull();
+    expect(document.getElementById("country-dial-codes")).toBeNull();
+  });
+
+  it("phone field renders with country code input when phoneMode is on", () => {
+    render(<EmailCaptureForm {...defaultProps} phoneMode="optional" />);
+    const phone = screen.getByPlaceholderText("Phone number");
+    expect(phone).toBeDefined();
+    expect(phone.getAttribute("type")).toBe("tel");
+    const country = screen.getByLabelText("Country code") as HTMLInputElement;
+    expect(country.value).toBe("+1");
+    expect(country.getAttribute("list")).toBe("country-dial-codes");
+  });
+
+  it("country datalist is present with dial options", () => {
+    render(<EmailCaptureForm {...defaultProps} phoneMode="required" />);
+    const datalist = document.getElementById(
+      "country-dial-codes"
+    ) as HTMLDataListElement | null;
+    expect(datalist).not.toBeNull();
+    const values = Array.from(datalist!.options).map((o) => o.value);
+    expect(values).toContain("+1");
+    expect(values).toContain("+44");
+  });
+
+  it("required mode: empty phone blocks submit with approved error, no fetch", async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+    const user = userEvent.setup();
+    render(<EmailCaptureForm {...defaultProps} phoneMode="required" />);
+
+    await user.type(
+      screen.getByPlaceholderText("Email address"),
+      "test@example.com"
+    );
+    await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
+
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Phone number is required"
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("invalid phone blocks submit with approved error", async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+    const user = userEvent.setup();
+    render(<EmailCaptureForm {...defaultProps} phoneMode="required" />);
+
+    await user.type(
+      screen.getByPlaceholderText("Email address"),
+      "test@example.com"
+    );
+    await user.type(screen.getByPlaceholderText("Phone number"), "abc");
+    await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
+
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Please enter a valid phone number"
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("valid phone is composed with the country code into POST body.phone", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      status: 201,
+      json: () => Promise.resolve({ id: "1", referral_code: "abc12345" }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+    const user = userEvent.setup();
+    render(<EmailCaptureForm {...defaultProps} phoneMode="required" />);
+
+    await user.type(
+      screen.getByPlaceholderText("Email address"),
+      "test@example.com"
+    );
+    await user.type(
+      screen.getByPlaceholderText("Phone number"),
+      "555 123 4567"
+    );
+    await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.phone).toBe("+15551234567");
+  });
+
+  it("optional mode: empty phone submits without phone in body", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      status: 201,
+      json: () => Promise.resolve({ id: "1", referral_code: "abc12345" }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+    const user = userEvent.setup();
+    render(<EmailCaptureForm {...defaultProps} phoneMode="optional" />);
+
+    await user.type(
+      screen.getByPlaceholderText("Email address"),
+      "test@example.com"
+    );
+    await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body).not.toHaveProperty("phone");
   });
 });

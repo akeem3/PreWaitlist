@@ -13,6 +13,8 @@ import QuestionEditor, {
   validateQuestions,
   type Question,
 } from "../../../../../components/onboarding/question-editor";
+import { Select } from "../../../../../components/ui/select";
+import { isPhoneMode, type PhoneMode } from "@/lib/phone";
 import { useUpgradeModal } from "../../shell";
 
 interface WaitlistData {
@@ -29,6 +31,7 @@ interface WaitlistData {
   tier: string;
   business_address: string | null;
   product_name: string | null;
+  phone_mode?: string | null;
 }
 
 interface WaitlistSettingsClientProps {
@@ -64,6 +67,9 @@ export default function WaitlistSettingsClient({
   );
   const [coldThreshold, setColdThreshold] = useState(
     waitlist.cold_threshold ?? 40
+  );
+  const [phoneMode, setPhoneMode] = useState<PhoneMode>(() =>
+    isPhoneMode(waitlist.phone_mode) ? waitlist.phone_mode : "off"
   );
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -108,6 +114,15 @@ export default function WaitlistSettingsClient({
       }
     },
     [waitlist.id]
+  );
+
+  const handlePhoneModeChange = useCallback(
+    (value: string) => {
+      const mode = isPhoneMode(value) ? value : "off";
+      setPhoneMode(mode);
+      void saveField("phone_mode", mode);
+    },
+    [saveField]
   );
 
   useEffect(() => {
@@ -432,6 +447,7 @@ export default function WaitlistSettingsClient({
                 logoUrl={logoUrl}
                 milestoneRewards={[]}
                 tier={waitlist.tier as "free" | "pro"}
+                phoneMode={phoneMode}
               />
             </div>
           </div>
@@ -442,6 +458,34 @@ export default function WaitlistSettingsClient({
             <h2 className="mb-4 text-h4 font-medium text-foreground">
               Qualification
             </h2>
+            <div className="mb-6 flex max-w-md flex-col gap-4">
+              <div>
+                <p className="text-body-lg font-medium text-foreground">
+                  Signup fields
+                </p>
+                <p className="mt-1 text-body-sm text-muted-foreground">
+                  Show a phone number field on your public signup form.
+                </p>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Select
+                  label="Phone number"
+                  value={phoneMode}
+                  onValueChange={handlePhoneModeChange}
+                  options={[
+                    { value: "off", label: "Off" },
+                    { value: "optional", label: "Optional" },
+                    { value: "required", label: "Required" },
+                  ]}
+                />
+                {saving && (
+                  <p className="text-xs text-muted-foreground">Saving…</p>
+                )}
+                {saved && !saving && (
+                  <p className="text-xs text-accent">Saved</p>
+                )}
+              </div>
+            </div>
             {questionsLoading ? (
               <div className="space-y-3" aria-hidden="true">
                 <div className="h-6 w-32 animate-pulse rounded-full bg-muted" />

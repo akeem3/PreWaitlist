@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Spinner } from "../ui/spinner";
 import { ConsentLine, TrustLine } from "./consent-line";
 import { getTierLimits, type Tier } from "../../src/lib/tier-gating";
+import { buildPhone, type PhoneMode } from "../../src/lib/phone";
+import { COUNTRY_OPTIONS, DEFAULT_COUNTRY_DIAL } from "../../src/lib/countries";
 
 interface Question {
   id: string;
@@ -23,6 +25,7 @@ interface EmailCaptureFormProps {
   questions: Question[];
   qualificationEnabled: boolean;
   subscriberCount?: number;
+  phoneMode?: PhoneMode;
 }
 
 const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
@@ -42,6 +45,7 @@ export function EmailCaptureForm({
   questions,
   qualificationEnabled,
   subscriberCount = 0,
+  phoneMode = "off",
 }: EmailCaptureFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -53,6 +57,9 @@ export function EmailCaptureForm({
 
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [dial, setDial] = useState(DEFAULT_COUNTRY_DIAL);
+  const [phone, setPhone] = useState("");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -84,6 +91,7 @@ export function EmailCaptureForm({
     e.preventDefault();
 
     setEmailError(null);
+    setPhoneError(null);
     setApiError(null);
 
     if (!email.trim()) {
@@ -102,6 +110,22 @@ export function EmailCaptureForm({
       return;
     }
 
+    let composedPhone: string | null = null;
+    if (phoneMode !== "off") {
+      const rawPhone = phone.trim();
+      if (phoneMode === "required" && !rawPhone) {
+        setPhoneError("Phone number is required");
+        return;
+      }
+      if (rawPhone) {
+        composedPhone = buildPhone(dial, rawPhone);
+        if (!composedPhone) {
+          setPhoneError("Please enter a valid phone number");
+          return;
+        }
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -111,6 +135,10 @@ export function EmailCaptureForm({
         website: honeypot,
         ts: loadedAtRef.current ?? Date.now(),
       };
+
+      if (composedPhone) {
+        body.phone = composedPhone;
+      }
 
       if (referralCode) {
         body.referral_code = referralCode;
@@ -184,7 +212,7 @@ export function EmailCaptureForm({
   // to the right end.
   const optionalBadge = (
     <span
-      className={`shrink-0 text-xs font-normal ${qualLabel}`}
+      className="shrink-0 text-xs font-normal text-warning"
       aria-hidden="true"
     >
       (optional)
@@ -291,76 +319,120 @@ export function EmailCaptureForm({
             )}
           </div>
 
+          {phoneMode !== "off" && (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex w-full gap-2">
+                <input
+                  list="country-dial-codes"
+                  value={dial}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (/^\+?\d{0,4}$/.test(value)) setDial(value);
+                    if (phoneError) setPhoneError(null);
+                  }}
+                  onBlur={() => {
+                    if (!dial.trim()) {
+                      setDial(DEFAULT_COUNTRY_DIAL);
+                    } else if (/^\d{1,3}$/.test(dial)) {
+                      setDial(`+${dial}`);
+                    } else if (!/^\+\d{1,3}$/.test(dial)) {
+                      setDial(DEFAULT_COUNTRY_DIAL);
+                    }
+                  }}
+                  disabled={loading}
+                  autoComplete="tel-country-code"
+                  inputMode="numeric"
+                  maxLength={4}
+                  aria-label="Country code"
+                  className={`${inputHeight} w-[4.75rem] shrink-0 rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-3 ${textSize} ${inputPlaceholder} ${focusClasses} disabled:cursor-not-allowed disabled:opacity-50`}
+                />
+                <datalist id="country-dial-codes">
+                  {COUNTRY_OPTIONS.map((c) => (
+                    <option key={c.name} value={c.dial}>
+                      {c.name}
+                    </option>
+                  ))}
+                </datalist>
+                <input
+                  type="tel"
+                  placeholder="Phone number"
+                  value={phone}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    if (phoneError) setPhoneError(null);
+                  }}
+                  disabled={loading}
+                  autoComplete="tel-national"
+                  aria-label="Phone number"
+                  aria-invalid={!!phoneError}
+                  className={`${inputHeight} min-w-0 flex-1 rounded-[var(--input-radius)] ${inputBorder} ${inputBg} ${inputText} px-[var(--input-padding-x)] py-[var(--input-padding-y)] ${textSize} ${inputPlaceholder} ${focusClasses} disabled:cursor-not-allowed disabled:opacity-50`}
+                />
+              </div>
+              {phoneError && (
+                <p className="text-xs text-destructive" role="alert">
+                  {phoneError}
+                </p>
+              )}
+            </div>
+          )}
+
           {visibleQuestions.map((q) =>
             q.type === "multiple_choice" && q.options?.length ? (
-              <fieldset
-                key={q.id}
-                className="m-0 flex flex-col gap-1.5 border-0 p-0"
-              >
-                <legend className={`p-0 text-sm font-medium ${qualLabel}`}>
-                  {withQuestionMark(q.text)}{" "}
-                  <span className="font-normal">(optional)</span>
-                </legend>
-                <div className="flex flex-col gap-2">
-                  {q.options.map((opt) => {
-                    const isSelected = answers[q.id] === opt;
-                    return (
-                      <label
-                        key={opt}
-                        className={`relative block ${
-                          loading ? "cursor-not-allowed" : "cursor-pointer"
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name={`q-${q.id}`}
-                          value={opt}
-                          checked={isSelected}
-                          onChange={() =>
-                            setAnswers((prev) => ({
-                              ...prev,
-                              [q.id]: opt,
-                            }))
-                          }
-                          disabled={loading}
-                          className="peer sr-only"
-                        />
-                        <span
-                          className={`flex min-h-11 items-center gap-3 rounded-[var(--input-radius)] border px-4 py-3 text-sm transition-colors peer-focus-visible:border-accent peer-focus-visible:ring-1 peer-focus-visible:ring-accent peer-disabled:opacity-50 ${
-                            isDark
-                              ? "border-dark-template-border bg-dark-template-input hover:bg-dark-template-border/40"
-                              : "border-border bg-muted hover:bg-border/60"
-                          } ${inputText}`}
-                          style={
-                            isSelected ? { borderColor: brandColor } : undefined
-                          }
-                        >
-                          <span
-                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
-                              isDark
-                                ? "border-dark-template-muted/60"
-                                : "border-muted-foreground/60"
-                            }`}
-                            style={
-                              isSelected
-                                ? { borderColor: brandColor }
-                                : undefined
-                            }
-                          >
-                            {isSelected && (
-                              <span
-                                className="block h-2 w-2 rounded-full"
-                                style={{ backgroundColor: brandColor }}
-                              />
-                            )}
-                          </span>
-                          {opt}
-                        </span>
-                      </label>
-                    );
-                  })}
+              <div key={q.id} className="flex flex-col gap-1.5">
+                <label
+                  htmlFor={`qual-${q.id}`}
+                  className={`flex w-full items-center justify-between gap-2 text-sm font-medium ${qualLabel}`}
+                >
+                  <span className="min-w-0 truncate">
+                    {withQuestionMark(q.text)}
+                  </span>
+                  <span className="shrink-0 text-xs font-normal text-warning">
+                    (optional)
+                  </span>
+                </label>
+                <div className="relative">
+                  <select
+                    id={`qual-${q.id}`}
+                    value={answers[q.id] || ""}
+                    onChange={(e) =>
+                      setAnswers((prev) => ({
+                        ...prev,
+                        [q.id]: e.target.value,
+                      }))
+                    }
+                    disabled={loading}
+                    style={
+                      answers[q.id] ? { borderColor: brandColor } : undefined
+                    }
+                    className={`block w-full ${inputHeight} appearance-none rounded-[var(--input-radius)] border pl-[var(--input-padding-x)] pr-10 ${textSize} disabled:cursor-not-allowed disabled:opacity-50 ${qualBorder} ${qualBg} ${focusClasses} ${
+                      answers[q.id] ? inputText : qualOverlay
+                    }`}
+                  >
+                    <option value="">Select an option</option>
+                    {q.options.map((opt, optionIndex) => (
+                      <option key={optionIndex} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 14 14"
+                    fill="none"
+                    aria-hidden="true"
+                    className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 ${qualLabel}`}
+                  >
+                    <path
+                      d="M3.5 5.25L7 8.75L10.5 5.25"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </div>
-              </fieldset>
+              </div>
             ) : (
               <div
                 key={q.id}

@@ -66,4 +66,13 @@ describe("updateSession Phase-B guard (4.2)", () => {
 
     expect(res.headers.get("location")).toContain("/signin");
   });
+
+  it("serves the og:image route to anonymous crawlers (no signin redirect)", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } });
+
+    const res = await updateSession(request("/opengraph-image"));
+
+    expect(res.headers.get("location")).toBeNull();
+    expect(res.status).toBe(200);
+  });
 });

@@ -1822,3 +1822,117 @@ canonical. The API routes (`POST /api/updates`) and auth callback logic
 - **Fake timers + `waitFor` hang** — use `vi.advanceTimersByTimeAsync` inside `act`; do not combine Vitest fake timers with RTL `waitFor`.
 - **`.sisyphus/` plan folder is untracked** — intentional; do not commit unless asked.
 - **Test baseline for full-suite runs:** 7 fixed failures (`dashboard-archive` 4 + `dashboard-subscriber-table` 3) + flaky `billing.test.ts` webhook test in full suite (passes in isolation). New failures beyond this count indicate a real regression.
+
+## Execute batch — billing guard + reconcile cron + updates fixes + social meta (2026-10-03)
+
+**Status:** Phases A–D implemented, **uncommitted**, branch `engine-fix-billing-updates-meta` (from `epic-18-waitlist-redesign` = `dev` = `c6876dc`). Source: Prompt #2 `execute [ ]` of the 2026-10-03 investigation (3 issues, 5 locked founder decisions). No SQL. No new deps/env.
+
+**Founder decisions (locked, 2026-10-03):**
+
+1. Billing hardening = **both** a `transaction.completed` guard **and** a daily reconciliation cron.
+2. U6 copy = strip TODO marker → `"Update saved, but emails could not be sent."` (approved verbatim).
+3. og:title = PRD REQ-6.8.6 suffix `"{headline} — Join the waitlist"` on **og/twitter only** — document `<title>` stays the plain headline.
+4. Sub-page titles reuse on-page headings: thank-you `"{headline} — You're in."`, leaderboard `"{headline} — Leaderboard"`.
+5. Story 16.8 stays a separate story (its Share % COPY GAP L3 untouched).
+
+**Phase A — billing (P0/P1):**
+
+- `src/lib/archive-surplus.ts` — **new**: `archiveSurplusWaitlists` extracted verbatim from the webhook route; shared by webhook + cron.
+- `src/app/api/webhooks/paddle/route.ts` — `transaction.completed` guard after `txUserId`: profile select (`paddle_subscription_id, paddle_subscription_status`, `.maybeSingle()`) → 500 on lookup error; **skip upgrade + ack** iff stored status is `canceled` AND `txData.subscriptionId === profile.paddle_subscription_id` (same canceled sub = charge-after-cancel noise; a _different_ sub id = genuine re-subscribe → upgrade).
+- `src/app/api/cron/billing-reconcile/route.ts` — **new** daily cron: `Bearer CRON_SECRET` auth (500 if unset, 401 if bad); scans pro rows (downgrade/health-heal) + free rows with a stored sub id (missed-upgrade heal) via `paddle.subscriptions.get()`; **downgrade only on API-confirmed `canceled`**; API throw → error count, **never a downgrade**; profile lookup error → 500. Returns `{checked, downgraded, upgraded, healed, skipped, errors}`.
+- `vercel.json` — added `{ "path": "/api/cron/billing-reconcile", "schedule": "30 4 * * *" }` (4th cron; Vercel plan allows ≥3 confirmed).
+- Tests: `webhook-paddle.test.ts` +3 (same-canceled-sub ignored; new sub id upgrades; guard lookup fail → 500) = 13 total; `cron-billing-reconcile.test.ts` **new, 8**. 21/21 green.
+
+**Phase B — updates engine (D4/D9iii/U6):**
+
+- `src/app/api/updates/route.ts` — subscriber select now destructures `error: subscribersError` and **throws `"Failed to load subscribers"`** (D4: read failure no longer masquerades as `"No eligible recipients"`; lands in outer catch → `emailError`); body coercion `typeof body?.body === "string"` (D9iii: non-string body → 400 validation instead of TypeError 500).
+- `src/app/dashboard/updates/client.tsx` — `EMAIL_FAILED_COPY` = `"Update saved, but emails could not be sent."` (U6 marker stripped).
+- Tests: `updates.test.ts` +2 (D4 + non-string 400) = 18; compose test literal updated. 27/27 green; repo-wide zero `TODO_COPY_GAP_U6` refs.
+
+**Phase C — social meta/OG:**
+
+- `(public)/[subdomain]/page.tsx` — `ogTitle` suffix applied to `openGraph.title` + `twitter.title` only.
+- `thank-you/page.tsx` + `leaderboard/page.tsx` — `generateMetadata` reusing on-page headings; incomplete/unknown link → `{}` (root title, no "Invalid link" leaked into tabs/shares).
+- `src/app/layout.tsx` — root `openGraph` defaults (`siteName/type/locale`) + `twitter.card = summary_large_image`.
+- `src/app/opengraph-image.tsx` — **new** branded static fallback card (existing root title/description copy only, design-token colors).
+- `alt = "PreWaitlist"` exported on both og-image routes.
+- **Middleware allowlist fix (founded during live curl):** `src/lib/supabase/middleware.ts` `updateSession` redirected ANY non-allowlisted path to `/signin` for anonymous visitors — which would have handed social crawlers HTML instead of a PNG at the new root `/opengraph-image`. Added `!pathname.startsWith("/opengraph-image")` to the redirect condition + 1 test (8/8 in `supabase-middleware.test.ts`). Subdomain og-images were never affected (subdomain hosts take the proxy rewrite branch, which skips `updateSession`).
+- Tests: `src/__tests__/api/metadata.test.ts` **new, 10** (suffix logic ×3, fallback to product_name, thank-you ×3, leaderboard ×2, alts + root defaults). Green.
+
+**Phase D — doc sync:** PRD REQ-6.8.6 annotated `[SHIPPED 2026-10-03]`; epic-16 U6 + story-16.1 U6 annotated `[RESOLVED]`; this block.
+
+**Final gates (2026-10-03):** lint **0 errors / 5 baseline warnings** · prettier clean on every file this batch touched (repo-wide unformatted files pre-existing, untouched) · full suite **894 total = 887 pass / 7 fail = exact sanctioned baseline** (dashboard-archive 4 + dashboard-subscriber-table 3, 2 files; one earlier 9-fail run was Windows worker `EPERM` flake — re-ran to baseline) · clean build (`.next` deleted first; `✓ Compiled successfully`, `ƒ Proxy (Middleware)`, root `/opengraph-image` present).
+
+**Live verification (dev server, then killed — port 3000 free):**
+
+- `/` head: `<title>PreWaitlist</title>`, `og:site_name/type/locale`, `twitter:card=summary_large_image`, `og:image=/opengraph-image` + `og:image:alt=PreWaitlist` ✓
+- `localhost:3000/opengraph-image` → **200 image/png** (after middleware fix; was 307→/signin before it) ✓
+- `quality.lvh.me:3000/` → `<title>Quality</title>` + `og:title`/`twitter:title` = `"Quality — Join the waitlist"` ✓
+- `quality.lvh.me:3000/opengraph-image-lc1qod?...` → 200 image/png (subdomain card) ✓
+- `quality.lvh.me:3000/leaderboard` → `<title>Quality — Leaderboard</title>` ✓
+- Live DB rows used: subdomains `quality`, `p`, `th`, `pr` (via publishable-key REST probe — **secret key returns 401**, use `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for ad-hoc probes).
+
+**Gotchas:**
+
+- Importing `src/app/layout.tsx` in vitest requires `vi.mock("next/font/google", ...)` — `Geist` is not callable outside the Next compiler (`TypeError: Geist is not a function`).
+- The supabase test mock has **no `.or()`** — chain builders only support `select/eq/not/is/in/order/limit/single/maybeSingle`.
+- New curl-visible og behavior: og:image PNGs are async file routes (`opengraph-image.tsx`), not `<meta>` tags — verify with `curl` for tags + direct route hit for the image.
+- Founder closed the P0 himself: Paddle **production webhook URL** updated to `https://www.prewaitlist.com/api/webhooks/paddle` (was apex → 308). Open question: Paddle **domain approval** status (checkout E2E, not code).
+
+## Phone Collection (founder-configurable phone field) — 2026-10-03
+
+**Status:** All 8 phases (0–7) implemented + tested + gated. **Uncommitted** on the current working tree (alongside the prior billing/meta batch — not mixed in code, but same branch state). Plan: `docs/phone-collection-plan.md` (locked decisions, verbatim copy, data model, test matrix, gates). SQL gate: `docs/stories/sql-writeups/phone-collection-schema.sql` — **must run in Supabase before deploy/manual test** (adds `waitlists.phone_mode` + `subscribers.phone`; SQL-first contract, no fallback on the public-page waitlist select).
+
+**What shipped:**
+
+- **Model:** `waitlists.phone_mode` (`off|optional|required`, default `off`) + `subscribers.phone` (E.164, nullable). Founder-facing config = one Select ("Phone number" → Off/Optional/Required) in two places: **onboarding Step 3 "Make it yours"** (moved from Step 4a per founder directive 2026-10-03 — same "Signup fields" card; `phone_mode` rides both Phase A POST-create bodies `flushToAPI` + `FlushGate` and the POST `/api/waitlist` insert, so the choice survives the Phase A → B boundary; 4a's section/PATCH field removed) + dashboard waitlist settings Qualification tab ("Signup fields" block, helper `Show a phone number field on your public signup form.`).
+- **Public form:** `EmailCaptureForm` gains `phoneMode` prop → grouped control (country `datalist` input `w-[4.75rem]` default `+1` + tel input, placeholder/aria `Phone number`, country aria `Country code`) after the email field; blur normalization (empty→`+1`, digits-only→`+`, invalid→`+1`); validation after honeypot (`buildPhone`); body sends `phone` E.164. Hidden entirely when mode `off`.
+- **Normalization:** `src/lib/phone.ts` (`PHONE_MODES`, `isPhoneMode`, `normalizePhoneInput`, `buildPhone` — prepends `+` to dial, `00`→`+`, fallback `+1`) + `src/lib/countries.ts` (`COUNTRY_OPTIONS` ~240, `DEFAULT_COUNTRY_DIAL = "+1"`).
+- **API:** POST `/api/subscribers` validates/stores phone (required/optional rules, E.164-ish); waitlist GET maps `phoneMode`, PATCH validates + writes `phone_mode`, **POST `/api/waitlist` validates + inserts `phone_mode` (create path, added 2026-10-03 for the Step 3 move)**; defensive fallbacks (waitlist-select retry without `phone_mode`, insert PGRST204 retry stripping `display_name`/`phone`, mode→`off`).
+- **Onboarding:** Step 1-3 local state + `FIELD_MAP.phoneMode`; FlushGate maps `phone_mode` (invalid→`off`); LivePreview `phoneMode` prop renders `PreviewPhoneGroup` (readOnly, no `list` attr) in both PreviewEmailForm and PreviewQuestionForm — parity locked by test (shared literals `placeholder="Phone number"` + `aria-label="Country code"` live in both preview and live form).
+- **Dashboard:** leaderboard page resolves `phone_mode` → `phoneEnabled` → conditional full-literal select with `phone` + PGRST204 fallback drops `phone`; client renders **Phone header (non-sortable span) directly after Email** + cell (`row.phone || "—"`), 8-col grid `grid-cols-[48px_1fr_1fr_1fr_100px_100px_120px_120px]` when on, original 7-col when off; `overflow-x-auto` + `min-w-[900px]` wrapper only when on. Subscriber detail: Phone card between Email and Referral code, gated on `phone_mode !== "off"`, empty→em-dash. CSV export: `Phone` header + cell after Name only when mode on (BASE_HEADER unchanged when off).
+- **Excluded (per plan):** public leaderboard page, `/dashboard/warmth` table, referred-subscribers mini-list, SMS/WhatsApp/OTP/analytics.
+
+**Gates (final):** lint **0 errors / 5 baseline warnings** · prettier clean on all task files · full suite **966 total = 959 pass / 7 fail = exact sanctioned baseline** (dashboard-archive 4 + dashboard-subscriber-table 3) · clean build (`.next` deleted first; `✓ Compiled successfully`, `ƒ Proxy (Middleware)`).
+
+**Tests added:** `phone.test.ts` (37) · subscribers (+8) · waitlist-multi (+GET phoneMode) · email-capture-form (+7) · leaderboard page (+4: hidden-off / header-order-after-Email / null→em-dash / non-sortable) · subscriber-detail (+2 source assertions) · csv-export (+2: Phone column after Name / off keeps BASE_HEADER + value never leaks) · live-preview-parity (+4: hidden-off, on+readOnly+no-list, question-form path, shared-literal lock) · **new** `dashboard-settings-phone-mode.test.tsx` (5: copy+options, hydrate required, invalid→off, PATCH `{waitlist_id, phone_mode}` + Saved, Saving… while pending).
+
+**Gotchas:**
+
+- **Supabase `.select()` rejects conditional template-literal columns at build time:** ``.select(`...${flag ? ", phone" : ""}`)`` → `ParserError<"Unexpected input: ...">` on row property access (export route hit it; leaderboard would too). Fix = **branch the entire select on full-literal strings per arm** (`phoneEnabled ? supabase...select("a, b, phone")... : supabase...select("a, b")...`), then normalize with a local row type/`as` cast. Plain `string` (computed `.join(",")`) stays tolerated — the parser only chokes on literal-union templates.
+- `queryByText` does NOT match placeholder attributes — use `queryByPlaceholderText` when asserting hidden inputs.
+- CSV row with empty name AND empty phone renders three consecutive commas (`email,,,2,...`) — one empty cell per field, easy to miscount in expectations.
+- Select (`components/ui/select.tsx`) auto-IDs via `useId` → `screen.getByLabelText("Phone number")` works; options are real `<option>`s → `getByRole("option", {name: "Off"})` + `userEvent.selectOptions`.
+- Settings save feedback: `saveField` sets Saving… during the PATCH promise, Saved for 2s after — resolve the fetch mock manually to assert both states (don't use fake timers + RTL `waitFor`).
+- Form test bodies still need `ts: Date.now() - 5000` (timing check) but **no** `consent` (W3 removed it).
+- Known caveat (plan-acknowledged): founder answering "No" at onboarding step 4 skips 4a → phone stays `Off` until settings.
+
+## MC Qualification Field � Tally Dropdown + Duplicate-Key Fix � 2026-10-03
+
+**Status:** Implemented (uncommitted, same working tree as the Step-4a?Step-3 phone move).
+
+**Founder directive:** multiple-choice qualification fields become a **Tally-style dropdown** � visible label above, collapsed native `<select>` showing placeholder `Select an option` (approved copy), options on open, brand-color border when answered � in **both** the onboarding preview (`PreviewQuestionForm`) and the public form (`EmailCaptureForm`). Supersedes the 2026-09-30 radio-rows/`<fieldset><legend>` spec.
+
+**Bug fixed with it:** React duplicate-key console error � both renderers keyed options with `key={opt}` (option text), while the question editor pushes `""` placeholders and 4a pushes unsanitized per-keystroke state ? two empty options ? duplicate `""` key (stack frame `PreviewQuestionForm q.options.map`). Preview no longer maps options at all (inert box); live form keys by **index**. Regression test: duplicate `["", ""]` options render with no `same key` console.error.
+
+**Design changes:**
+
+- Live: `<label htmlFor={qual-${q.id}}>` (question + `(optional)`, muted) above `appearance-none` select � `h-11`, `rounded-[var(--input-radius)]`, muted qual surface tokens (dark-safe), `pr-10` for the chevron, placeholder option text muted/70 until answered (`qualOverlay` ? `inputText`), brandColor inline border when answered, house `focusClasses`, index-keyed options.
+- Preview: label span unchanged + inert mock box (`h-11`, qualBorder/qualBg, muted/70 "Select an option" + chevron) � option strings never painted.
+
+**Docs synced:** guide �12 MC row + �13 a11y + �14 checklist rewritten to the dropdown spec; story 18.7 AC4 + Dev Notes T3 + epic 18 AC4 annotated `[AMENDED 2026-10-03]` (never silent-rewritten). Epic 14 AC8 ("radio groups **or equivalent single-select**") already covers a native select � left as-is. Parity tests lock `Select an option` as a shared literal in both files.
+
+**Gotcha:** never key rendered lists by user-entered text � empty/`""` option drafts make duplicate keys inevitable during live editing; index (or a stable per-option id) is the pattern.
+
+**Round 2 (2026-10-03, same session):** both free-text and MC question labels are **question-left / `(optional)`-right rows** (MC label = `flex justify-between` above the select; free-text already row-aligned inside the field), and `(optional)` is **warning amber `text-warning`** (token `--color-warning: #d97706`) on all four render sites � live free-text badge, live MC label, preview free-text badge, preview MC label. Use the `text-warning` utility (never `text-[--color-warning]` � `@theme inline` gotcha). Guide �4/�12/�14 + story/epic 18.7/18 AC2+AC4 annotated; parity test locks layout + color on both renderers.
+
+## Latest Update Card Restyle � 2026-10-03
+
+Founder: the public-page update card looked "dumped on the page". Restyle in `components/public/updates-feed.tsx`:
+
+- Card centered + airier: `p-5 text-center` (was `p-4`, left-aligned stack)
+- Label = `.text-overline` preset (12px/600/uppercase/wide) muted, `mb-2` � uppercase is CSS transform, copy untouched ("Latest update")
+- Body = explicit utilities `text-base font-medium text-balance` � **never pair `.text-body` with `font-medium`**: the unlayered preset sets `font-weight: 400` and beats the layered utility (same class of bug as the old `--font-*` namespace collision)
+- Date = `text-xs font-normal` + explicit color utility � dropped `.text-caption` because its unlayered `color` overrides dark-template color utilities (latent dark bug fixed while restyling)
+- Template surfaces: minimal `border-border bg-card` � bold `border-2 border-foreground bg-card` (heavy-border identity, parity with how-it-works steps) � dark unchanged
+- Guide �7.4 rewritten + type ladder rows amended (label/body weights, and the `(optional)` badge row still said "muted" � fixed to warning amber); tests +2 (`latest-update-card.test.tsx`)

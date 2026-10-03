@@ -12,6 +12,7 @@ const ACCENT = "#0F7A5E"; // --color-accent
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const revalidate = 300;
+export const alt = "PreWaitlist";
 
 const fontRegular = await readFile(
   join(process.cwd(), "public/fonts/inter-latin-400-normal.woff")

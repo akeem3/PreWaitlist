@@ -13,6 +13,7 @@ import {
 } from "@/lib/email";
 import { isEmailBounced } from "@/lib/bounces";
 import { enqueueEmailRetry, maybeWarnFounderQuota } from "@/lib/retry-queue";
+import { isPhoneMode, normalizePhoneInput, type PhoneMode } from "@/lib/phone";
 
 const BRAND_GREEN = "#0F7A5E";
 const TEXT_PRIMARY = "#1a1a1a";
@@ -429,6 +430,7 @@ export async function POST(request: NextRequest) {
   const {
     waitlist_id,
     email,
+    phone,
     referral_code: incomingRefCode,
     qual_answers,
     display_name,
@@ -500,11 +502,24 @@ export async function POST(request: NextRequest) {
   }
 
   // 500 cap check — Free tier only (waitlists has public read)
-  const { data: waitlistRow } = await supabase
+  let waitlistResult = await supabase
     .from("waitlists")
-    .select("subscriber_count, founder_profiles!inner ( tier )")
+    .select("subscriber_count, phone_mode, founder_profiles!inner ( tier )")
     .eq("id", waitlist_id)
     .single();
+
+  // Legacy schema (phone-collection SQL not run yet): the phone_mode column is
+  // missing from the schema cache — retry with the original columns so cap and
+  // tier keep working; phone collection degrades to off.
+  if (waitlistResult.error?.message?.includes("phone_mode")) {
+    waitlistResult = await supabase
+      .from("waitlists")
+      .select("subscriber_count, founder_profiles!inner ( tier )")
+      .eq("id", waitlist_id)
+      .single();
+  }
+
+  const { data: waitlistRow } = waitlistResult;
 
   let tier = "free";
   if (waitlistRow) {
@@ -521,6 +536,31 @@ export async function POST(request: NextRequest) {
             "Subscriber limit reached. Upgrade to Pro for unlimited signups.",
         },
         { status: 403 }
+      );
+    }
+  }
+
+  // Phone collection: validate against the founder's phone_mode before any
+  // writes (cap claim, insert). Mode off drops any submitted phone value.
+  const phoneMode: PhoneMode =
+    waitlistRow && isPhoneMode(waitlistRow.phone_mode)
+      ? waitlistRow.phone_mode
+      : "off";
+
+  const trimmedPhone = typeof phone === "string" ? phone.trim() : "";
+  let phoneValue: string | null = null;
+  if (phoneMode === "required" && !trimmedPhone) {
+    return NextResponse.json(
+      { error: "Phone number is required" },
+      { status: 400 }
+    );
+  }
+  if (phoneMode !== "off" && trimmedPhone) {
+    phoneValue = normalizePhoneInput(trimmedPhone);
+    if (!phoneValue) {
+      return NextResponse.json(
+        { error: "Please enter a valid phone number" },
+        { status: 400 }
       );
     }
   }
@@ -646,6 +686,9 @@ export async function POST(request: NextRequest) {
     warmth_score: "hot",
     consent_given_at: new Date().toISOString(),
     consent_ip_address: ipAddress,
+    // Key only present when a validated phone exists — mode off / empty
+    // optional never touches the phone column (legacy-schema safe).
+    ...(phoneValue ? { phone: phoneValue } : {}),
   };
 
   const insertColumns = "id, email, referral_code, position";
@@ -670,17 +713,28 @@ export async function POST(request: NextRequest) {
       .insert(row)
       .select(insertColumns)
       .single();
-    if (
-      res.error?.code === "PGRST204" &&
-      res.error?.message?.includes("display_name")
-    ) {
-      const withoutName = { ...row };
-      delete withoutName.display_name;
-      res = await admin
-        .from("subscribers")
-        .insert(withoutName)
-        .select(insertColumns)
-        .single();
+    // PGRST204 = a column in `row` is missing from the schema cache
+    // (SQL not run yet) — strip every column named in the message and retry
+    // once so signup still succeeds.
+    if (res.error?.code === "PGRST204") {
+      const missingMessage = res.error.message ?? "";
+      const withoutMissing: Record<string, unknown> = { ...row };
+      let dropped = false;
+      if (missingMessage.includes("display_name")) {
+        delete withoutMissing.display_name;
+        dropped = true;
+      }
+      if (missingMessage.includes("phone")) {
+        delete withoutMissing.phone;
+        dropped = true;
+      }
+      if (dropped) {
+        res = await admin
+          .from("subscribers")
+          .insert(withoutMissing)
+          .select(insertColumns)
+          .single();
+      }
     }
     return res;
   };

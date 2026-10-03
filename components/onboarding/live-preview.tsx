@@ -9,6 +9,7 @@ import {
 import { PoweredByFooter } from "../share/powered-by-footer";
 import { ConsentLine, TrustLine } from "../public/consent-line";
 import { LatestUpdateCard } from "../public/updates-feed";
+import { type PhoneMode } from "../../src/lib/phone";
 
 type Template = "minimal" | "bold" | "dark";
 type ViewMode = "desktop" | "mobile";
@@ -51,6 +52,7 @@ interface LivePreviewProps {
   tier?: Tier;
   slug?: string;
   isMobile?: boolean;
+  phoneMode?: PhoneMode;
 }
 
 function BrowserFrame({
@@ -180,14 +182,78 @@ function PreviewConsent({
   return <ConsentLine isDark={isDark} className={className} />;
 }
 
+function PreviewPhoneGroup({ template }: { template: Template }) {
+  const isBold = template === "bold";
+  const isDark = template === "dark";
+
+  const inputHeight = "h-11";
+  const inputBorder = isBold
+    ? "border-2 border-foreground"
+    : isDark
+      ? "border border-dark-template-border"
+      : "border border-border";
+  const inputBg = isDark ? "bg-dark-template-input" : "bg-card";
+  const inputText = isDark ? "text-dark-template-text" : "text-foreground";
+  const inputPlaceholder = isDark
+    ? "placeholder:text-dark-template-muted"
+    : "placeholder:text-muted-foreground";
+  const textSize = isBold ? "text-base" : "text-sm";
+  const focusClasses =
+    "focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent";
+
+  // Same grouped control as email-capture-form.tsx — readOnly, no list attr
+  // so the preview stays inert (plan Phase 4).
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex w-full gap-2">
+        <input
+          type="text"
+          value="+1"
+          readOnly
+          aria-label="Country code"
+          className={cn(
+            inputHeight,
+            "w-[4.75rem] shrink-0 rounded-[var(--input-radius)]",
+            inputBorder,
+            inputBg,
+            inputText,
+            "px-3",
+            textSize,
+            inputPlaceholder,
+            focusClasses
+          )}
+        />
+        <input
+          type="tel"
+          placeholder="Phone number"
+          readOnly
+          className={cn(
+            inputHeight,
+            "min-w-0 flex-1 rounded-[var(--input-radius)]",
+            inputBorder,
+            inputBg,
+            inputText,
+            "px-[var(--input-padding-x)] py-[var(--input-padding-y)]",
+            textSize,
+            inputPlaceholder,
+            focusClasses
+          )}
+        />
+      </div>
+    </div>
+  );
+}
+
 function PreviewEmailForm({
   template,
   ctaText,
   brandColor,
+  phoneMode = "off",
 }: {
   template: Template;
   ctaText: string;
   brandColor: string;
+  phoneMode?: PhoneMode;
 }) {
   const isBold = template === "bold";
   const isDark = template === "dark";
@@ -227,6 +293,7 @@ function PreviewEmailForm({
           "focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent"
         )}
       />
+      {phoneMode !== "off" && <PreviewPhoneGroup template={template} />}
       <button
         type="button"
         className={cn(
@@ -256,11 +323,13 @@ function PreviewQuestionForm({
   ctaText,
   brandColor,
   questions,
+  phoneMode = "off",
 }: {
   template: Template;
   ctaText: string;
   brandColor: string;
   questions?: Question[];
+  phoneMode?: PhoneMode;
 }) {
   const isBold = template === "bold";
   const isDark = template === "dark";
@@ -314,40 +383,61 @@ function PreviewQuestionForm({
           "focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent"
         )}
       />
+      {phoneMode !== "off" && <PreviewPhoneGroup template={template} />}
       {questionSlots.map((q, i) => (
         <div key={q.id || i} className="flex flex-col gap-1.5">
           {q.type === "multiple_choice" && q.options?.length ? (
             <>
-              <span className={`text-sm font-medium ${qualLabel}`}>
-                {q.text
-                  ? q.text.trim().endsWith("?")
-                    ? q.text.trim()
-                    : `${q.text.trim()}?`
-                  : "What are you currently using?"}{" "}
-                <span className="font-normal">(optional)</span>
+              <span
+                className={cn(
+                  "flex w-full items-center justify-between gap-2 text-sm font-medium",
+                  qualLabel
+                )}
+              >
+                <span className="min-w-0 truncate">
+                  {q.text
+                    ? q.text.trim().endsWith("?")
+                      ? q.text.trim()
+                      : `${q.text.trim()}?`
+                    : "What are you currently using?"}
+                </span>
+                <span className="shrink-0 text-xs font-normal text-warning">
+                  (optional)
+                </span>
               </span>
-              <div className="flex flex-col gap-2">
-                {q.options.map((opt) => (
-                  <span
-                    key={opt}
-                    className={cn(
-                      "flex min-h-9 items-center gap-3 rounded-[var(--input-radius)] border px-3 py-2 text-sm",
-                      qualBorder,
-                      qualBg,
-                      inputText
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border-2",
-                        isDark
-                          ? "border-dark-template-muted/60"
-                          : "border-muted-foreground/60"
-                      )}
-                    />
-                    {opt}
-                  </span>
-                ))}
+              <div
+                className={cn(
+                  "flex h-11 w-full items-center justify-between gap-2 rounded-[var(--input-radius)] px-[var(--input-padding-x)]",
+                  qualBorder,
+                  qualBg
+                )}
+              >
+                <span
+                  className={cn(
+                    `min-w-0 flex-1 truncate ${textSize}`,
+                    isDark
+                      ? "text-dark-template-muted/70"
+                      : "text-muted-foreground/70"
+                  )}
+                >
+                  Select an option
+                </span>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  aria-hidden="true"
+                  className={cn("shrink-0", qualLabel)}
+                >
+                  <path
+                    d="M3.5 5.25L7 8.75L10.5 5.25"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </div>
             </>
           ) : (
@@ -372,7 +462,7 @@ function PreviewQuestionForm({
                     : `${q.text.trim()}?`
                   : "What are you currently using?"}
               </span>
-              <span className={`shrink-0 text-xs font-normal ${qualLabel}`}>
+              <span className="shrink-0 text-xs font-normal text-warning">
                 (optional)
               </span>
             </div>
@@ -416,6 +506,7 @@ export function LivePreview({
   showQuestions,
   tier = "free",
   slug,
+  phoneMode = "off",
 }: LivePreviewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("desktop");
 
@@ -431,6 +522,7 @@ export function LivePreview({
   const deferredSlug = useDeferredValue(slug);
   const deferredQuestions = useDeferredValue(questions);
   const deferredShowQuestions = useDeferredValue(showQuestions);
+  const deferredPhoneMode = useDeferredValue(phoneMode);
 
   const isMobile = viewMode === "mobile";
 
@@ -440,12 +532,14 @@ export function LivePreview({
       ctaText={deferredCtaText}
       brandColor={deferredBrandColor}
       questions={deferredQuestions}
+      phoneMode={deferredPhoneMode}
     />
   ) : (
     <PreviewEmailForm
       template={deferredTemplate}
       ctaText={deferredCtaText}
       brandColor={deferredBrandColor}
+      phoneMode={deferredPhoneMode}
     />
   );
 

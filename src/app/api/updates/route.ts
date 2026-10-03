@@ -37,7 +37,8 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const text = (body?.body ?? "").trim();
+  // Non-string bodies must 400 on validation, not crash into a TypeError 500.
+  const text = (typeof body?.body === "string" ? body.body : "").trim();
 
   if (text.length < 10) {
     return NextResponse.json(
@@ -103,10 +104,18 @@ export async function POST(request: NextRequest) {
   let sendError: string | null = null;
 
   try {
-    const { data: subscribers } = await supabase
+    const { data: subscribers, error: subscribersError } = await supabase
       .from("subscribers")
       .select("id, email, unsubscribed_at")
       .eq("waitlist_id", waitlist.id);
+
+    // D4 (investigate 2026-10-03): a failed read must NOT masquerade as
+    // "No eligible recipients" — fail loud with the real cause. Caught by the
+    // outer catch below, which sets sendError from this message.
+    if (subscribersError) {
+      console.error("Update subscriber fetch failed", subscribersError);
+      throw new Error("Failed to load subscribers");
+    }
 
     const adminSupabase = createAdminClient();
     const eligible: { id: string; email: string }[] = [];

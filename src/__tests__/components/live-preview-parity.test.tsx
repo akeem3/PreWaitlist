@@ -185,4 +185,130 @@ describe("LivePreview parity (18.5 AC1c)", () => {
     const question = screen.getByText("Role?");
     expect(question.className).toContain("text-base");
   });
+
+  // --- Phone group parity (phone collection — Phase 4) ---
+
+  it("PreviewEmailForm — phone group hidden when phoneMode is off (default)", () => {
+    render(<LivePreview {...previewProps} />);
+    expect(screen.queryByPlaceholderText("Phone number")).toBeNull();
+    expect(screen.queryByLabelText("Country code")).toBeNull();
+  });
+
+  it("PreviewEmailForm — phone group shown when phoneMode is on, same strings as the live form", () => {
+    render(<LivePreview {...previewProps} phoneMode="required" />);
+
+    const tel = screen.getByPlaceholderText("Phone number") as HTMLInputElement;
+    expect(tel).toBeDefined();
+    expect(tel.readOnly).toBe(true);
+    expect(tel.type).toBe("tel");
+
+    const country = screen.getByLabelText("Country code") as HTMLInputElement;
+    expect(country.readOnly).toBe(true);
+    expect(country.value).toBe("+1");
+
+    // preview stays inert — no datalist binding (live form has the list attr)
+    expect(country.getAttribute("list")).toBeNull();
+    expect(tel.getAttribute("list")).toBeNull();
+  });
+
+  it("PreviewQuestionForm — phone group follows phoneMode too", () => {
+    render(
+      <LivePreview
+        {...previewProps}
+        phoneMode="optional"
+        showQuestions
+        questions={[
+          { id: "q-1", text: "Role", type: "free_text", options: null },
+        ]}
+      />
+    );
+    expect(screen.getByPlaceholderText("Phone number")).toBeDefined();
+    expect(screen.getByLabelText("Country code")).toBeDefined();
+  });
+
+  it("phone placeholder + country aria are shared string literals with the live form", () => {
+    const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
+    for (const file of [
+      "components/onboarding/live-preview.tsx",
+      "components/public/email-capture-form.tsx",
+    ]) {
+      const source = read(file);
+      expect(source).toContain('placeholder="Phone number"');
+      expect(source).toContain('aria-label="Country code"');
+    }
+  });
+
+  // --- MC dropdown parity (Tally-style — founder directive 2026-10-03) ---
+
+  it("PreviewQuestionForm — MC renders as a collapsed dropdown, options stay inside", () => {
+    render(
+      <LivePreview
+        {...previewProps}
+        showQuestions
+        questions={[
+          {
+            id: "q-1",
+            text: "Which plan",
+            type: "multiple_choice",
+            options: ["Free", "Pro"],
+          },
+        ]}
+      />
+    );
+    // label above (question auto-?d) + placeholder box, no radio rows
+    expect(screen.getByText("Which plan?")).toBeDefined();
+    expect(screen.getByText("Select an option")).toBeDefined();
+    expect(screen.queryByRole("radio")).toBeNull();
+    // collapsed — option strings are not painted as sibling rows
+    expect(screen.queryByText("Free")).toBeNull();
+    expect(screen.queryByText("Pro")).toBeNull();
+  });
+
+  it("MC dropdown placeholder is a shared string literal with the live form", () => {
+    const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
+    for (const file of [
+      "components/onboarding/live-preview.tsx",
+      "components/public/email-capture-form.tsx",
+    ]) {
+      expect(read(file)).toContain("Select an option");
+    }
+  });
+
+  it("(optional) is warning-colored and right-aligned on both question types", () => {
+    render(
+      <LivePreview
+        {...previewProps}
+        showQuestions
+        questions={[
+          {
+            id: "q-1",
+            text: "Which plan",
+            type: "multiple_choice",
+            options: ["Free", "Pro"],
+          },
+          { id: "q-2", text: "Role", type: "free_text", options: null },
+        ]}
+      />
+    );
+    const optionals = screen.getAllByText("(optional)");
+    expect(optionals).toHaveLength(2);
+    for (const el of optionals) {
+      expect(el.className).toContain("text-warning");
+      expect(el.className).toContain("shrink-0");
+      // pinned to the right end of its row
+      expect((el.parentElement as HTMLElement).className).toContain(
+        "justify-between"
+      );
+    }
+    // source lock — both renderers color (optional) from the warning token
+    const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
+    for (const file of [
+      "components/onboarding/live-preview.tsx",
+      "components/public/email-capture-form.tsx",
+    ]) {
+      const source = read(file);
+      expect(source).toContain("text-warning");
+      expect(source).toContain("(optional)");
+    }
+  });
 });

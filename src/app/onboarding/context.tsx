@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { type PhoneMode } from "@/lib/phone";
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -47,6 +48,7 @@ export interface OnboardingFormState {
   emailSubject: string;
   emailSenderName: string;
   emailBody: string;
+  phoneMode: PhoneMode;
   tier: Tier;
   loading: boolean;
 }
@@ -98,6 +100,7 @@ const FIELD_MAP: Record<string, string> = {
   emailSenderName: "email_sender_name",
   emailBody: "email_body",
   qualificationEnabled: "qualification_enabled",
+  phoneMode: "phone_mode",
 };
 
 const initialState: OnboardingFormState = {
@@ -118,6 +121,7 @@ const initialState: OnboardingFormState = {
   emailSubject: "",
   emailSenderName: "",
   emailBody: "",
+  phoneMode: "off",
   tier: "free",
   loading: false,
 };
@@ -332,6 +336,7 @@ export function LocalOnboardingProvider({
           qualification_enabled: data.qualificationEnabled ?? undefined,
           signup_counter_enabled: data.signupCounterEnabled ?? undefined,
           signup_counter_threshold: data.signupCounterThreshold || undefined,
+          phone_mode: data.phoneMode || undefined,
           questions: data.questions || undefined,
           email_subject: data.emailSubject || undefined,
           email_sender_name: data.emailSenderName || undefined,

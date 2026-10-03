@@ -67,6 +67,9 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/onboarding/3") &&
     !request.nextUrl.pathname.startsWith("/onboarding/signup") &&
     !request.nextUrl.pathname.startsWith("/onboarding/success") &&
+    // Social crawlers fetch og:image anonymously — a signin redirect here
+    // would hand them HTML instead of a PNG.
+    !request.nextUrl.pathname.startsWith("/opengraph-image") &&
     request.nextUrl.pathname !== "/"
   ) {
     const url = request.nextUrl.clone();

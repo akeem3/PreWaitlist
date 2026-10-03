@@ -6,6 +6,7 @@ import {
   AuthedOnboardingProvider,
   type OnboardingFormState,
 } from "../../app/onboarding/context";
+import { isPhoneMode } from "@/lib/phone";
 
 const STORAGE_KEY = "prewaitlist_onboarding";
 
@@ -43,6 +44,7 @@ function mapServerToState(
     emailSubject: (record.emailSubject as string) ?? "",
     emailSenderName: (record.emailSenderName as string) ?? "",
     emailBody: (record.emailBody as string) ?? "",
+    phoneMode: isPhoneMode(record.phoneMode) ? record.phoneMode : "off",
     tier: ((record.tier as string) ?? "free") as "free" | "pro",
     loading: false,
   };
@@ -129,6 +131,7 @@ export function FlushGate({ children }: { children: React.ReactNode }) {
             qualification_enabled: edits.qualificationEnabled ?? undefined,
             signup_counter_enabled: edits.signupCounterEnabled ?? undefined,
             signup_counter_threshold: edits.signupCounterThreshold ?? undefined,
+            phone_mode: edits.phoneMode || undefined,
             questions: edits.questions || undefined,
             email_subject: edits.emailSubject || undefined,
             email_sender_name: edits.emailSenderName || undefined,

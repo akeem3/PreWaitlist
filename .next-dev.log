@@ -1,0 +1,62 @@
+
+> prewaitlist@0.1.0 dev C:\Users\User\Work Projects\Product US\wait-app
+> next dev
+
+▲ Next.js 16.2.12 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.29.160.1:3000
+- Environments: .env.local
+✓ Ready in 3.9s
+
+ GET /api/dashboard/stats 200 in 46ms (next.js: 12ms, application-code: 34ms)
+ GET /api/dashboard/stats 401 in 53ms (next.js: 32ms, application-code: 21ms)
+ GET /api/dashboard/stats 200 in 117ms (next.js: 104ms, application-code: 13ms)
+ GET /api/dashboard/stats 200 in 118ms (next.js: 84ms, application-code: 34ms)
+ GET /api/dashboard/stats 200 in 119ms (next.js: 63ms, application-code: 57ms)
+ GET / 200 in 4.6s (next.js: 1235ms, proxy.ts: 293ms, application-code: 3.0s)
+✓ Compiled in 452ms
+ GET / 200 in 409ms (next.js: 113ms, proxy.ts: 77ms, application-code: 220ms)
+ GET / 200 in 228ms (next.js: 49ms, proxy.ts: 9ms, application-code: 170ms)
+ GET / 200 in 110ms (next.js: 14ms, proxy.ts: 14ms, application-code: 82ms)
+ GET / 200 in 109ms (next.js: 49ms, proxy.ts: 14ms, application-code: 47ms)
+ GET / 200 in 1656ms (next.js: 45ms, proxy.ts: 1584ms, application-code: 28ms)
+ GET / 200 in 721ms (next.js: 5ms, proxy.ts: 694ms, application-code: 23ms)
+ GET / 200 in 549ms (next.js: 12ms, proxy.ts: 502ms, application-code: 34ms)
+ GET / 200 in 515ms (next.js: 5ms, proxy.ts: 492ms, application-code: 18ms)
+✓ Compiled in 451ms
+ GET / 200 in 353ms (next.js: 131ms, proxy.ts: 67ms, application-code: 156ms)
+ GET / 200 in 203ms (next.js: 21ms, proxy.ts: 12ms, application-code: 170ms)
+ GET / 200 in 124ms (next.js: 29ms, proxy.ts: 9ms, application-code: 86ms)
+ GET / 200 in 123ms (next.js: 64ms, proxy.ts: 9ms, application-code: 50ms)
+ GET / 200 in 973ms (next.js: 13ms, proxy.ts: 936ms, application-code: 24ms)
+ GET / 200 in 505ms (next.js: 4ms, proxy.ts: 479ms, application-code: 21ms)
+ GET / 200 in 272ms (next.js: 4ms, proxy.ts: 244ms, application-code: 24ms)
+ GET / 200 in 264ms (next.js: 6ms, proxy.ts: 240ms, application-code: 18ms)
+✓ Compiled in 279ms
+ GET / 200 in 261ms (next.js: 89ms, proxy.ts: 47ms, application-code: 125ms)
+ GET / 200 in 152ms (next.js: 14ms, proxy.ts: 9ms, application-code: 128ms)
+ GET / 200 in 92ms (next.js: 8ms, proxy.ts: 7ms, application-code: 77ms)
+ GET / 200 in 93ms (next.js: 42ms, proxy.ts: 6ms, application-code: 44ms)
+ GET / 200 in 1103ms (next.js: 15ms, proxy.ts: 1064ms, application-code: 24ms)
+ GET / 200 in 466ms (next.js: 5ms, proxy.ts: 434ms, application-code: 27ms)
+ GET / 200 in 471ms (next.js: 6ms, proxy.ts: 439ms, application-code: 25ms)
+ GET / 200 in 478ms (next.js: 5ms, proxy.ts: 457ms, application-code: 16ms)
+✓ Compiled in 479ms
+ GET / 200 in 308ms (next.js: 89ms, proxy.ts: 53ms, application-code: 167ms)
+ GET / 200 in 184ms (next.js: 30ms, proxy.ts: 6ms, application-code: 149ms)
+ GET / 200 in 108ms (next.js: 34ms, proxy.ts: 6ms, application-code: 68ms)
+ GET / 200 in 110ms (next.js: 13ms, proxy.ts: 6ms, application-code: 90ms)
+ GET / 200 in 971ms (next.js: 14ms, proxy.ts: 930ms, application-code: 27ms)
+ GET / 200 in 277ms (next.js: 7ms, proxy.ts: 249ms, application-code: 21ms)
+ GET / 200 in 545ms (next.js: 5ms, proxy.ts: 520ms, application-code: 21ms)
+ GET / 200 in 330ms (next.js: 9ms, proxy.ts: 288ms, application-code: 33ms)
+ GET /api/dashboard/stats 200 in 303ms (next.js: 279ms, application-code: 24ms)
+ GET /api/dashboard/stats 200 in 306ms (next.js: 263ms, application-code: 42ms)
+ GET /api/dashboard/stats 200 in 308ms (next.js: 197ms, application-code: 111ms)
+ GET /api/dashboard/stats 200 in 431ms (next.js: 411ms, application-code: 20ms)
+ GET /api/dashboard/stats 200 in 434ms (next.js: 393ms, application-code: 41ms)
+ GET /api/dashboard/stats 200 in 34ms (next.js: 23ms, application-code: 11ms)
+ GET /api/dashboard/stats 200 in 36ms (next.js: 8ms, application-code: 28ms)
+ GET / 200 in 1390ms (next.js: 13ms, proxy.ts: 945ms, application-code: 432ms)
+ GET / 200 in 671ms (next.js: 8ms, proxy.ts: 558ms, application-code: 104ms)
+ ELIFECYCLE  Command failed with exit code 4294967295.

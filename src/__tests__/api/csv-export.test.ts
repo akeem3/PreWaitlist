@@ -181,4 +181,92 @@ describe("GET /api/subscribers/export (14.4 AC1/AC2e)", () => {
     expect(response.status).toBe(200);
     expect(await response.text()).toBe("No subscribers to export");
   });
+
+  // --- Phone column (phone collection) ---
+
+  const PHONE_HEADER = "Email,Name,Phone,Position,Referrals,Warmth,Signup Date";
+
+  it("inserts a Phone column after Name when phone_mode is enabled", async () => {
+    const created = "2026-05-01T12:00:00.000Z";
+
+    mockSupabase.__queue.push({
+      data: { id: "w-1", subdomain: "phonewl", phone_mode: "required" },
+      error: null,
+    });
+    mockSupabase.__queue.push({ data: [], error: null });
+    mockSupabase.__queue.push({
+      data: [
+        {
+          id: "s1",
+          email: "p@b.com",
+          display_name: "Pat",
+          created_at: created,
+          warmth_score: "hot",
+          qual_answers: null,
+          phone: "+15551234567",
+        },
+        {
+          id: "s2",
+          email: "none@b.com",
+          display_name: null,
+          created_at: created,
+          warmth_score: null,
+          qual_answers: null,
+          phone: null,
+        },
+      ],
+      error: null,
+    });
+    mockSupabase.__queue.push({ data: [], error: null });
+
+    const response = await GET(
+      makeGet("http://localhost/api/subscribers/export?wid=w-1")
+    );
+
+    expect(response.status).toBe(200);
+    const csv = await response.text();
+    const lines = csv.split("\n");
+    expect(lines[0]).toBe(PHONE_HEADER);
+    expect(lines[1]).toBe(
+      `p@b.com,Pat,+15551234567,1,0,hot,"${formatDate(created)}"`
+    );
+    expect(lines[2]).toBe(`none@b.com,,,2,0,,"${formatDate(created)}"`);
+  });
+
+  it("keeps the base header and cells when phone_mode is off", async () => {
+    const created = "2026-06-01T12:00:00.000Z";
+
+    mockSupabase.__queue.push({
+      data: { id: "w-1", subdomain: "offwl", phone_mode: "off" },
+      error: null,
+    });
+    mockSupabase.__queue.push({ data: [], error: null });
+    mockSupabase.__queue.push({
+      data: [
+        {
+          id: "s1",
+          email: "solo@b.com",
+          display_name: null,
+          created_at: created,
+          warmth_score: "warm",
+          qual_answers: null,
+          phone: "+15559999999",
+        },
+      ],
+      error: null,
+    });
+    mockSupabase.__queue.push({ data: [], error: null });
+
+    const response = await GET(
+      makeGet("http://localhost/api/subscribers/export?wid=w-1")
+    );
+
+    expect(response.status).toBe(200);
+    const csv = await response.text();
+    const lines = csv.split("\n");
+    // mode off → phone value never reaches the file, even if a row has one
+    expect(lines[0]).toBe(BASE_HEADER);
+    expect(lines[1]).toBe(`solo@b.com,,1,0,warm,"${formatDate(created)}"`);
+    expect(csv).not.toContain("+15559999999");
+  });
 });

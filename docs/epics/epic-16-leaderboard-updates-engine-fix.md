@@ -122,7 +122,7 @@ Stories must be executed in dependency order where listed; status workflow: `rea
 **Dev Notes:**
 
 - **Files:** `src/app/dashboard/updates/page.tsx` (currently returns `<UpdatesClient updates={...} />` without waitlist id — L51), `src/app/dashboard/updates/client.tsx` (L37 `body: JSON.stringify({ body })`, L81 hardcoded "Published!"). **Status: not started (audited 2026-09-28) — `page.tsx:51` still `<UpdatesClient updates={updates ?? []} />` (no waitlistId prop); `client.tsx:11-13` props are `{ updates }` only; `:37` body-only POST; `:48` unconditional `setSuccess(true)` + `:81` "Published!" — even though 16.0 now returns 201 `emailSent:false` on total failure, so dishonest-UX path is live.**
-- **COPY GAP U6:** candidate failure phrasing must be approved before AC3 ships; align with broadcast's honest `emailSent`/`failed` response shape (`broadcast/route.ts:156-159`) for consistency.
+- **COPY GAP U6:** candidate failure phrasing must be approved before AC3 ships; align with broadcast's honest `emailSent`/`failed` response shape (`broadcast/route.ts:156-159`) for consistency. **[RESOLVED 2026-10-03:** founder approved `"Update saved, but emails could not be sent."` — shipped as `EMAIL_FAILED_COPY` in `src/app/dashboard/updates/client.tsx`, `TODO_COPY_GAP_U6` marker removed, compose test asserts the literal.**]**
 - **Backward compat:** if API temporarily lacks `emailSent` (mid-deploy), treat missing field as `true` only when `res.ok` — or ship 16.0 before 16.1 in same release train (preferred; Story Index orders 16.0 first).
 - **No Sidebar strip:** layout already handled by `dashboard/shell.tsx` (Epic 12.3.5) — do not reintroduce Sidebar into this client.
 

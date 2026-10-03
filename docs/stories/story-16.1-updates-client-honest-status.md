@@ -90,6 +90,8 @@ if (emailSent) {
 - "Update saved. Emails could not be sent."  
   Until approved: use a module-level constant `const EMAIL_FAILED_COPY = "TODO_COPY_GAP: ..." ` or hold the branch behind approval — prefer constant + PR note so tests can assert the constant.
 
+**[RESOLVED 2026-10-03:** founder approved `"Update saved, but emails could not be sent."` — shipped as the `EMAIL_FAILED_COPY` constant in `client.tsx` (marker stripped), asserted by `dashboard-updates-compose.test.tsx`.**]**
+
 Never show both success and failure for the same response.
 
 ### T3 — preserve UX (AC5–AC6)

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { PoweredByFooter } from "../../../../../components/share/powered-by-footer";
 import { LeaderboardClient } from "./leaderboard-client";
 
@@ -9,6 +10,24 @@ type Props = {
   params: Promise<{ subdomain: string }>;
   searchParams: Promise<{ subscriber_id?: string }>;
 };
+
+// Title reuses the on-page heading (founder decision 2026-10-03). Unknown
+// subdomain keeps the root title here; the page itself still 404s.
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { subdomain } = await params;
+  const supabase = await createClient();
+
+  const { data: waitlist } = await supabase
+    .from("waitlists")
+    .select("headline")
+    .eq("subdomain", subdomain)
+    .single();
+
+  const headline = waitlist?.headline?.trim();
+  if (!headline) return {};
+
+  return { title: `${headline} — Leaderboard` };
+}
 
 function maskName(email: string): string {
   const local = email.split("@")[0];

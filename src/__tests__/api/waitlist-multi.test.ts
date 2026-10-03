@@ -59,6 +59,50 @@ describe("POST /api/waitlist (multi-waitlist)", () => {
     expect(body.id).toBe("wl-new");
   });
 
+  it("accepts phone_mode on create and inserts it", async () => {
+    // Auth (default user), profile (free tier), count (0 waitlists), insert
+    mockSupabase.__queue.push({
+      data: { id: "user-1", tier: "free" },
+      error: null,
+    });
+    mockSupabase.__queue.push({ count: 0, data: null, error: null });
+    mockSupabase.__queue.push({ data: { id: "wl-phone" }, error: null });
+
+    const response = await POST(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "POST",
+        body: { subdomain: "phone-wl", phone_mode: "optional" },
+      })
+    );
+    expect(response.status).toBe(201);
+
+    const inserts = mockSupabase.__calls.filter((c) => c.method === "insert");
+    expect(inserts.length).toBeGreaterThan(0);
+    expect(inserts[inserts.length - 1].args[0]).toMatchObject({
+      phone_mode: "optional",
+    });
+  });
+
+  it("returns 400 for an invalid phone_mode before creating the waitlist", async () => {
+    // Auth (default user), profile fetch — no waitlist insert reached
+    mockSupabase.__queue.push({
+      data: { id: "user-1", tier: "free" },
+      error: null,
+    });
+
+    const response = await POST(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "POST",
+        body: { subdomain: "bad-phone", phone_mode: "sometimes" },
+      })
+    );
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe(
+      "phone_mode must be one of: off, optional, required"
+    );
+  });
+
   it("allows Pro tier user to create additional waitlists", async () => {
     // Auth (default user), profile (pro tier), count (0 — but doesn't matter for pro), insert
     mockSupabase.__queue.push({
@@ -222,6 +266,37 @@ describe("GET /api/waitlist (multi-waitlist)", () => {
     expect(body).toEqual([]);
   });
 
+  it("returns phoneMode per waitlist (off when the column is absent)", async () => {
+    mockSupabase.__queue.push({
+      data: [
+        {
+          id: "wl-1",
+          subdomain: "acme",
+          product_name: "Acme",
+          headline: "Join Acme",
+          phone_mode: "required",
+        },
+        {
+          id: "wl-2",
+          subdomain: "globex",
+          product_name: "Globex",
+          headline: "Join Globex",
+        },
+      ],
+      error: null,
+    });
+    mockSupabase.__queue.push({ data: { tier: "free" }, error: null });
+    mockSupabase.__queue.push({ count: 0, data: null, error: null });
+    mockSupabase.__queue.push({ count: 1, data: null, error: null });
+    mockSupabase.__queue.push({ count: 0, data: null, error: null });
+
+    const response = await GET(makeRequest("http://localhost/api/waitlist"));
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body[0].phoneMode).toBe("required");
+    expect(body[1].phoneMode).toBe("off");
+  });
+
   it("returns 401 when not authenticated", async () => {
     mockSupabase.auth.getUser.mockResolvedValueOnce({
       data: { user: null },
@@ -361,5 +436,42 @@ describe("PATCH /api/waitlist (multi-waitlist)", () => {
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(body.success).toBe(true);
+  });
+
+  it("returns 400 for an invalid phone_mode value", async () => {
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: { waitlist_id: "wl-1", phone_mode: "sometimes" },
+      })
+    );
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe(
+      "phone_mode must be one of: off, optional, required"
+    );
+  });
+
+  it("accepts valid phone_mode values and writes them through", async () => {
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+    mockSupabase.__queue.push({ data: null, error: null });
+
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: { waitlist_id: "wl-1", phone_mode: "required" },
+      })
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+
+    const updates = mockSupabase.__calls.filter((c) => c.method === "update");
+    expect(updates.length).toBeGreaterThan(0);
+    expect(updates[updates.length - 1].args[0]).toMatchObject({
+      phone_mode: "required",
+    });
   });
 });

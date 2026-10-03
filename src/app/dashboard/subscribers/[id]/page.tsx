@@ -22,9 +22,9 @@ export default async function SubscriberDetailPage({ params }: Props) {
     .select(
       `
       id, email, position, referral_code, qual_answers, created_at,
-      milestones_earned,
+      milestones_earned, phone,
       waitlists!inner (
-        id, founder_id, subdomain, headline
+        id, founder_id, subdomain, headline, phone_mode
       )
     `
     )
@@ -38,6 +38,11 @@ export default async function SubscriberDetailPage({ params }: Props) {
   ) {
     notFound();
   }
+
+  const waitlistRow = subscriber.waitlists as unknown as {
+    phone_mode?: string | null;
+  };
+  const phoneEnabled = (waitlistRow.phone_mode ?? "off") !== "off";
 
   const { data: referrals } = await supabase
     .from("subscribers")
@@ -107,6 +112,17 @@ export default async function SubscriberDetailPage({ params }: Props) {
           </h3>
           <p className="text-body-sm text-foreground">{subscriber.email}</p>
         </div>
+
+        {phoneEnabled && (
+          <div className="mb-6 rounded-[var(--card-radius)] border border-border bg-card p-5">
+            <h3 className="mb-3 text-body-sm font-medium text-foreground">
+              Phone
+            </h3>
+            <p className="text-body-sm text-foreground">
+              {subscriber.phone || "\u2014"}
+            </p>
+          </div>
+        )}
 
         <div className="mb-6 rounded-[var(--card-radius)] border border-border bg-card p-5">
           <h3 className="mb-3 text-body-sm font-medium text-foreground">
