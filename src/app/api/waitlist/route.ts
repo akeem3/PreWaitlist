@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getTierLimits, type Tier } from "@/lib/tier-gating";
+import { isPhoneMode } from "@/lib/phone";
 
 type IncomingQuestion = {
   id?: string;
@@ -170,6 +171,13 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  if (body.phone_mode !== undefined && !isPhoneMode(body.phone_mode)) {
+    return NextResponse.json(
+      { error: "phone_mode must be one of: off, optional, required" },
+      { status: 400 }
+    );
+  }
+
   // Tier enforcement: free = max 1 ACTIVE waitlist, Pro = unlimited.
   // Archived lists don't consume the free slot (surplus auto-archive on
   // downgrade must not 402-deadlock a founder with 0 active lists).
@@ -204,6 +212,7 @@ export async function POST(request: NextRequest) {
     insertPayload.signup_counter_enabled = body.signup_counter_enabled;
   if (body.signup_counter_threshold !== undefined)
     insertPayload.signup_counter_threshold = body.signup_counter_threshold;
+  if (body.phone_mode !== undefined) insertPayload.phone_mode = body.phone_mode;
   if (Array.isArray(body.milestone_rewards)) {
     insertPayload.milestone_rewards_enabled = body.milestone_rewards.length > 0;
   }
@@ -386,6 +395,12 @@ export async function PATCH(request: NextRequest) {
   ) {
     return NextResponse.json(
       { error: "Sender name must be 100 characters or fewer" },
+      { status: 400 }
+    );
+  }
+  if (updates.phone_mode !== undefined && !isPhoneMode(updates.phone_mode)) {
+    return NextResponse.json(
+      { error: "phone_mode must be one of: off, optional, required" },
       { status: 400 }
     );
   }
@@ -704,6 +719,7 @@ export async function GET() {
     emailSubject: waitlist.email_subject || "",
     emailSenderName: waitlist.email_sender_name || "",
     emailBody: waitlist.email_body || "",
+    phoneMode: waitlist.phone_mode || "off",
     tier,
   }));
 

@@ -17,12 +17,13 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   const { wid } = await searchParams;
 
   // 4.4: shared resolution — ?wid (validated) else newest.
-  const waitlist = await resolveActiveWaitlistRow<{ id: string }>(
-    supabase,
-    user.id,
-    wid
-  );
+  const waitlist = await resolveActiveWaitlistRow<{
+    id: string;
+    phone_mode?: string | null;
+  }>(supabase, user.id, wid, "id, phone_mode");
   if (!waitlist) redirect("/onboarding/1");
+
+  const phoneEnabled = (waitlist.phone_mode ?? "off") !== "off";
 
   // Try with display_name; fall back without it if column doesn't exist yet
   type SubRow = {
@@ -33,15 +34,27 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     milestones_earned: unknown;
     display_name?: string;
     position_boost?: boolean | null;
+    phone?: string | null;
   };
 
   const BASE_COLS = "id, email, referral_code, created_at, milestones_earned";
-  const selectCols = `${BASE_COLS}, display_name, position_boost`;
-  let selectResult = await supabase
-    .from("subscribers")
-    .select(selectCols)
-    .eq("waitlist_id", waitlist.id)
-    .order("created_at", { ascending: true });
+  // Full-literal selects per branch — supabase's type parser rejects
+  // conditional template-literal column strings (build-time ParserError).
+  let selectResult = phoneEnabled
+    ? await supabase
+        .from("subscribers")
+        .select(
+          "id, email, referral_code, created_at, milestones_earned, display_name, position_boost, phone"
+        )
+        .eq("waitlist_id", waitlist.id)
+        .order("created_at", { ascending: true })
+    : await supabase
+        .from("subscribers")
+        .select(
+          "id, email, referral_code, created_at, milestones_earned, display_name, position_boost"
+        )
+        .eq("waitlist_id", waitlist.id)
+        .order("created_at", { ascending: true });
 
   // position_boost arrives with epic16-story6-position-boost.sql — fall back
   // gracefully (no boost sort) until the migration has run.
@@ -49,11 +62,13 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     const msg = selectResult.error.message ?? "";
     const missingBoost = msg.includes("position_boost");
     const missingName = msg.includes("display_name");
-    if (missingBoost || missingName) {
+    const missingPhone = msg.includes("phone");
+    if (missingBoost || missingName || missingPhone) {
       const fallbackCols: string = [
         BASE_COLS,
         missingName ? null : "display_name",
         missingBoost ? null : "position_boost",
+        phoneEnabled ? (missingPhone ? null : "phone") : null,
       ]
         .filter(Boolean)
         .join(", ");
@@ -120,6 +135,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
         id: s.id,
         email: s.email,
         display_name: s.display_name || null,
+        phone: s.phone || null,
         referral_count,
         quality_score:
           totalReferrals > 0
@@ -150,6 +166,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
       rows={ranked}
       totalCount={ranked.length}
       waitlistId={waitlist.id}
+      phoneEnabled={phoneEnabled}
     />
   );
 }

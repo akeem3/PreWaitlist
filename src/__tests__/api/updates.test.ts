@@ -383,5 +383,35 @@ describe("POST /api/updates", () => {
       expect(batchSend).not.toHaveBeenCalled();
       expect(sentAtUpdateCount()).toBe(0);
     });
+
+    it("D4: reports Failed to load subscribers when the subscriber read errors", async () => {
+      mockSupabase.__queue.push(
+        PROF_PRO,
+        { data: [waitlistRow("wl-1")], error: null },
+        INSERT_OK,
+        { data: null, error: { message: "read boom" } }
+      );
+
+      const response = await POST(makeRequest({ body: VALID_BODY }));
+
+      expect(response.status).toBe(201);
+      const data = await response.json();
+      expect(data.emailSent).toBe(false);
+      expect(data.emailError).toBe("Failed to load subscribers");
+      // Must NOT masquerade as an empty list
+      expect(data.emailError).not.toBe("No eligible recipients");
+      expect(batchSend).not.toHaveBeenCalled();
+      expect(sentAtUpdateCount()).toBe(0);
+    });
+
+    it("D9iii: returns 400 for a non-string body instead of crashing", async () => {
+      mockSupabase.__queue.push(PROF_PRO);
+
+      const response = await POST(makeRequest({ body: 12345 }));
+
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.error).toBe("Body must be at least 10 characters");
+    });
   });
 });

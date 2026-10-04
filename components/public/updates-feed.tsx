@@ -17,27 +17,28 @@ export function LatestUpdateCard({
 }: LatestUpdateCardProps) {
   const isDark = template === "dark";
 
+  const surface = isDark
+    ? "border-dark-template-border bg-dark-template-bg"
+    : template === "bold"
+      ? "border-2 border-foreground bg-card"
+      : "border-border bg-card";
+  const labelColor = isDark
+    ? "text-dark-template-muted"
+    : "text-muted-foreground";
+  const bodyColor = isDark ? "text-dark-template-text" : "text-foreground";
+  const timeColor = isDark
+    ? "text-dark-template-secondary"
+    : "text-muted-foreground";
+
   return (
     <div
-      className={`rounded-(--card-radius) border p-4 ${
-        isDark
-          ? "border-dark-template-border bg-dark-template-bg"
-          : "border-border bg-card"
-      }`}
+      className={`rounded-(--card-radius) border p-5 text-center ${surface}`}
     >
-      <p
-        className={`text-caption mb-1 ${isDark ? "text-dark-template-muted" : "text-muted-foreground"}`}
-      >
-        Latest update
-      </p>
-      <p
-        className={`text-body ${isDark ? "text-dark-template-text" : "text-foreground"}`}
-      >
+      <p className={`text-overline mb-2 ${labelColor}`}>Latest update</p>
+      <p className={`text-base font-medium text-balance ${bodyColor}`}>
         {update.body}
       </p>
-      <time
-        className={`text-caption mt-2 block ${isDark ? "text-dark-template-secondary" : "text-muted-foreground"}`}
-      >
+      <time className={`mt-2 block text-xs font-normal ${timeColor}`}>
         {new Date(update.created_at).toLocaleDateString("en-US", {
           year: "numeric",
           month: "long",

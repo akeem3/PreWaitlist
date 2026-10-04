@@ -7,6 +7,7 @@ type Row = {
   id: string;
   email: string;
   display_name: string | null;
+  phone?: string | null;
   referral_count: number;
   quality_score: number | null;
   rank: number;
@@ -67,14 +68,24 @@ function formatMilestone(row: Row) {
 
 const PAGE_SIZE = 10;
 
+// Single grid definition — Phone column (locked decision) appears only when
+// the waitlist collects phone numbers; otherwise the grid stays pixel-identical.
+const GRID =
+  "grid grid-cols-[48px_1fr_1fr_100px_100px_120px_120px] items-center gap-4";
+const GRID_WITH_PHONE =
+  "grid grid-cols-[48px_1fr_1fr_1fr_100px_100px_120px_120px] items-center gap-4";
+
 export default function LeaderboardClient({
   rows,
   waitlistId,
+  phoneEnabled = false,
 }: {
   rows: Row[];
   totalCount: number;
   waitlistId?: string;
+  phoneEnabled?: boolean;
 }) {
+  const gridClass = phoneEnabled ? GRID_WITH_PHONE : GRID;
   const [sortKey, setSortKey] = useState<SortKey>("rank");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [search, setSearch] = useState("");
@@ -225,109 +236,125 @@ export default function LeaderboardClient({
           )}
         </div>
 
-        {/* Column headers */}
-        <div className="grid grid-cols-[48px_1fr_1fr_100px_100px_120px_120px] items-center gap-4 border-b border-border px-5 py-3">
-          <SortHeader
-            label="Rank"
-            sortForKey="rank"
-            activeSort={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-            className="text-center"
-          />
-          <SortHeader
-            label="Name"
-            sortForKey="name"
-            activeSort={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-          />
-          <SortHeader
-            label="Email"
-            sortForKey="email"
-            activeSort={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-          />
-          <SortHeader
-            label="Referrals"
-            sortForKey="referral_count"
-            activeSort={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-            className="text-center"
-          />
-          <SortHeader
-            label="Quality"
-            sortForKey="quality_score"
-            activeSort={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-            className="text-center"
-          />
-          <span className="text-center text-xs font-medium text-muted-foreground">
-            Milestone
-          </span>
-          <SortHeader
-            label="Date"
-            sortForKey="date"
-            activeSort={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-            className="text-center"
-          />
-        </div>
+        {/* Column headers + rows share the grid; Phone widens it when on */}
+        <div className={phoneEnabled ? "overflow-x-auto" : undefined}>
+          <div className={phoneEnabled ? "min-w-[900px]" : undefined}>
+            <div className={`${gridClass} border-b border-border px-5 py-3`}>
+              <SortHeader
+                label="Rank"
+                sortForKey="rank"
+                activeSort={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+                className="text-center"
+              />
+              <SortHeader
+                label="Name"
+                sortForKey="name"
+                activeSort={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
+              <SortHeader
+                label="Email"
+                sortForKey="email"
+                activeSort={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
+              {phoneEnabled && (
+                <span className="text-xs font-medium text-muted-foreground">
+                  Phone
+                </span>
+              )}
+              <SortHeader
+                label="Referrals"
+                sortForKey="referral_count"
+                activeSort={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+                className="text-center"
+              />
+              <SortHeader
+                label="Quality"
+                sortForKey="quality_score"
+                activeSort={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+                className="text-center"
+              />
+              <span className="text-center text-xs font-medium text-muted-foreground">
+                Milestone
+              </span>
+              <SortHeader
+                label="Date"
+                sortForKey="date"
+                activeSort={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+                className="text-center"
+              />
+            </div>
 
-        {/* Rows */}
-        {sorted.length === 0 ? (
-          <div className="px-5 py-12 text-center text-body-sm text-muted-foreground">
-            {search
-              ? "No subscribers match your search."
-              : "No subscribers yet. Share your waitlist to get started."}
+            {/* Rows */}
+            {sorted.length === 0 ? (
+              <div className="px-5 py-12 text-center text-body-sm text-muted-foreground">
+                {search
+                  ? "No subscribers match your search."
+                  : "No subscribers yet. Share your waitlist to get started."}
+              </div>
+            ) : (
+              <div>
+                {visible.map((row, i) => {
+                  const displayName =
+                    row.display_name?.trim() || row.email.split("@")[0];
+                  return (
+                    <div
+                      key={row.id}
+                      className={`${gridClass} px-5 py-3 transition-colors hover:bg-muted/30 ${
+                        i < visible.length - 1
+                          ? "border-b border-border/50"
+                          : ""
+                      }`}
+                    >
+                      <span className="text-center text-body-sm text-muted-foreground">
+                        {row.rank}
+                      </span>
+                      <span className="text-body-sm font-medium text-foreground">
+                        {displayName}
+                      </span>
+                      <Link
+                        href={`/dashboard/subscribers/${row.id}`}
+                        className="text-body-sm font-medium text-accent hover:underline"
+                      >
+                        {row.email}
+                      </Link>
+                      {phoneEnabled && (
+                        <span className="text-body-sm text-muted-foreground">
+                          {row.phone || "\u2014"}
+                        </span>
+                      )}
+                      <span className="text-center text-body-sm font-semibold text-foreground">
+                        {row.referral_count || "\u2014"}
+                      </span>
+                      <span className="text-center text-body-sm text-muted-foreground">
+                        {row.quality_score !== null
+                          ? `${row.quality_score}%`
+                          : "\u2014"}
+                      </span>
+                      <span className="text-center text-body-sm text-muted-foreground">
+                        {formatMilestone(row)}
+                      </span>
+                      <span className="text-center text-body-sm text-muted-foreground">
+                        {formatDate(row.created_at)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        ) : (
-          <div>
-            {visible.map((row, i) => {
-              const displayName =
-                row.display_name?.trim() || row.email.split("@")[0];
-              return (
-                <div
-                  key={row.id}
-                  className={`grid grid-cols-[48px_1fr_1fr_100px_100px_120px_120px] items-center gap-4 px-5 py-3 transition-colors hover:bg-muted/30 ${
-                    i < visible.length - 1 ? "border-b border-border/50" : ""
-                  }`}
-                >
-                  <span className="text-center text-body-sm text-muted-foreground">
-                    {row.rank}
-                  </span>
-                  <span className="text-body-sm font-medium text-foreground">
-                    {displayName}
-                  </span>
-                  <Link
-                    href={`/dashboard/subscribers/${row.id}`}
-                    className="text-body-sm font-medium text-accent hover:underline"
-                  >
-                    {row.email}
-                  </Link>
-                  <span className="text-center text-body-sm font-semibold text-foreground">
-                    {row.referral_count || "\u2014"}
-                  </span>
-                  <span className="text-center text-body-sm text-muted-foreground">
-                    {row.quality_score !== null
-                      ? `${row.quality_score}%`
-                      : "\u2014"}
-                  </span>
-                  <span className="text-center text-body-sm text-muted-foreground">
-                    {formatMilestone(row)}
-                  </span>
-                  <span className="text-center text-body-sm text-muted-foreground">
-                    {formatDate(row.created_at)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        </div>
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-border px-5 py-3 text-xs text-muted-foreground">

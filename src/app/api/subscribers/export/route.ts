@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const wid = searchParams.get("wid");
 
-  let wlQuery = supabase.from("waitlists").select("id, subdomain");
+  let wlQuery = supabase.from("waitlists").select("id, subdomain, phone_mode");
   if (wid) {
     wlQuery = wlQuery.eq("id", wid).eq("founder_id", user.id);
   } else {
@@ -32,6 +32,10 @@ export async function GET(request: Request) {
   if (!waitlist) {
     return NextResponse.json({ error: "Waitlist not found" }, { status: 404 });
   }
+
+  const phoneEnabled =
+    ((waitlist as { phone_mode?: string | null }).phone_mode ?? "off") !==
+    "off";
 
   // 14.4 AC1: configured questions become one CSV column each
   const { data: questionsData } = await supabase
@@ -44,11 +48,34 @@ export async function GET(request: Request) {
     question_text: string;
   }[];
 
-  const { data: subscribers } = await supabase
-    .from("subscribers")
-    .select("id, email, display_name, created_at, warmth_score, qual_answers")
-    .eq("waitlist_id", waitlist.id)
-    .order("created_at", { ascending: true });
+  // Full-literal selects per branch — supabase's type parser rejects
+  // conditional template-literal column strings (build-time ParserError).
+  const subscribersResult = phoneEnabled
+    ? await supabase
+        .from("subscribers")
+        .select(
+          "id, email, display_name, created_at, warmth_score, qual_answers, phone"
+        )
+        .eq("waitlist_id", waitlist.id)
+        .order("created_at", { ascending: true })
+    : await supabase
+        .from("subscribers")
+        .select(
+          "id, email, display_name, created_at, warmth_score, qual_answers"
+        )
+        .eq("waitlist_id", waitlist.id)
+        .order("created_at", { ascending: true });
+
+  type ExportSub = {
+    id: string;
+    email: string;
+    display_name: string | null;
+    created_at: string;
+    warmth_score: string | null;
+    qual_answers: unknown;
+    phone?: string | null;
+  };
+  const subscribers = subscribersResult.data as ExportSub[] | null;
 
   if (!subscribers || subscribers.length === 0) {
     return new NextResponse("No subscribers to export", {
@@ -78,6 +105,7 @@ export async function GET(request: Request) {
   const headerCells = [
     "Email",
     "Name",
+    ...(phoneEnabled ? ["Phone"] : []),
     "Position",
     "Referrals",
     "Warmth",
@@ -97,6 +125,7 @@ export async function GET(request: Request) {
     const cells = [
       s.email,
       s.display_name || "",
+      ...(phoneEnabled ? [s.phone || ""] : []),
       String(i + 1),
       String(referrals),
       s.warmth_score || "",

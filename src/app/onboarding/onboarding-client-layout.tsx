@@ -171,6 +171,7 @@ function TwoPaneLayout({
               showQuestions={showQuestions}
               tier={form.tier}
               slug={form.slug}
+              phoneMode={form.phoneMode}
             />
           </div>
         </div>

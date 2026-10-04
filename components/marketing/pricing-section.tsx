@@ -13,20 +13,28 @@ import {
 function CheckIcon() {
   return (
     <svg
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className="mt-0.5 shrink-0"
       aria-hidden="true"
     >
+      <circle
+        cx="8"
+        cy="8"
+        r="8"
+        fill="currentColor"
+        className="text-accent/10"
+      />
       <path
-        d="M3 7L5.5 9.5L11 4"
-        stroke="#0F7A5E"
+        d="M5 8L7 10L11 6"
+        stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
+        className="text-accent"
       />
     </svg>
   );
@@ -34,7 +42,7 @@ function CheckIcon() {
 
 const tiers = [
   {
-    name: "Base",
+    name: "Free",
     priceLine: "Free \u2013 $0/month",
     features: FREE_FEATURES,
     variant: "secondary" as const,
@@ -70,12 +78,14 @@ export function PricingSection() {
                       {tier.badge}
                     </span>
                   )}
-                  <CardContent className="flex flex-1 flex-col gap-6">
-                    <div className="flex flex-col gap-1">
+                  <CardContent className="flex flex-1 flex-col gap-6 p-8">
+                    <div className="flex flex-col gap-1 border-b border-border pb-5">
                       <span className="text-body-sm font-medium text-muted-foreground">
                         {tier.name}
                       </span>
-                      <span className="text-h2">{tier.priceLine}</span>
+                      <span className="text-3xl font-semibold tracking-tight text-foreground">
+                        {tier.priceLine}
+                      </span>
                     </div>
 
                     <ul className="flex flex-col gap-2">
@@ -84,7 +94,7 @@ export function PricingSection() {
                         return (
                           <li
                             key={feature}
-                            className={`flex items-start gap-2 text-sm ${
+                            className={`flex items-start gap-2.5 text-base ${
                               isExcluded
                                 ? "text-muted-foreground"
                                 : "text-foreground"

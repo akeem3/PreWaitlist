@@ -103,4 +103,24 @@ describe("Subscriber Detail Page", () => {
     const content = fs.readFileSync(PAGE_PATH, "utf-8");
     expect(content).toContain('.split("T")[0]');
   });
+
+  // --- Phone collection ---
+
+  it("selects phone and waitlists.phone_mode", () => {
+    const content = fs.readFileSync(PAGE_PATH, "utf-8");
+    expect(content).toContain("milestones_earned, phone,");
+    expect(content).toContain("headline, phone_mode");
+  });
+
+  it("gates the Phone card on phone_mode and renders it after Email", () => {
+    const content = fs.readFileSync(PAGE_PATH, "utf-8");
+    expect(content).toContain('(waitlistRow.phone_mode ?? "off") !== "off"');
+    expect(content).toContain("phoneEnabled &&");
+    // Phone card sits between the Email card and the Referral code card
+    expect(content).toMatch(
+      /Email\s*<\/h3>[\s\S]*?Phone\s*<\/h3>[\s\S]*?Referral code\s*<\/h3>/
+    );
+    // empty phone renders an em-dash, never a blank
+    expect(content).toContain('subscriber.phone || "\\u2014"');
+  });
 });

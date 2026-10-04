@@ -137,9 +137,7 @@ describe("Updates Compose UI", () => {
 
     await publishTyped(user);
 
-    await screen.findByText(
-      "TODO_COPY_GAP_U6: Update saved, but emails could not be sent."
-    );
+    await screen.findByText("Update saved, but emails could not be sent.");
     expect(screen.queryByText("Published!")).toBeNull();
     // Update itself was saved and prepended to the list
     expect(screen.getByText("Recent updates")).toBeDefined();

@@ -28,9 +28,14 @@ export default function OnboardingStep5() {
 
     // Scaffold empty email fields with sensible defaults so founders
     // don't start from a blank page. If fields are already filled
-    // (e.g. they navigated back), leave them alone.
-    if (!form.emailSenderName && form.headline) {
-      form.updateField("emailSenderName", form.headline);
+    // (e.g. they navigated back), leave them alone — except a saved
+    // headline copy from the old prefill, which resets to the default.
+    const defaultSender = form.productName || form.headline;
+    if (
+      defaultSender &&
+      (!form.emailSenderName || form.emailSenderName === form.headline)
+    ) {
+      form.updateField("emailSenderName", defaultSender);
     }
     if (!form.emailSubject) {
       form.updateField(
@@ -109,7 +114,8 @@ export default function OnboardingStep5() {
         Your subscribers get a confirmation email
       </h1>
       <p className="mb-4 text-center text-body text-muted-foreground">
-        it includes their position and referral link automatically
+        Sent automatically when someone joins — it includes their position and
+        referral link.
       </p>
 
       {/* Free tier — comparison card + email mock */}
@@ -125,7 +131,8 @@ export default function OnboardingStep5() {
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-xs text-muted-foreground">
                   <span className="font-medium text-foreground">From:</span>{" "}
-                  {form.headline || "Your Product"} via PreWaitlist
+                  {form.emailSenderName || form.productName || "Your Product"}
+                  via PreWaitlist
                 </p>
                 <span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-2xs text-muted-foreground">
                   auto-sent
@@ -354,13 +361,17 @@ export default function OnboardingStep5() {
               <p className="text-xs text-muted-foreground">
                 Personalise what your subscribers receive after signing up
               </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Anything in curly braces like {`{{position}}`} fills in
+                automatically for each subscriber.
+              </p>
             </div>
           </div>
 
           <div className="flex flex-col gap-5">
             {/* Sender Name */}
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <label className="text-xs text-muted-foreground">
                 Sender name
               </label>
               <Input
@@ -370,14 +381,14 @@ export default function OnboardingStep5() {
                   form.updateField("emailSenderName", e.target.value)
                 }
                 disabled={isSubmitting}
-                className="h-11 rounded-xl border-border/60 bg-background px-4 text-sm focus:border-accent focus:ring-2 focus:ring-accent/10"
+                className="h-11 rounded-(--radius-lg) px-3 focus-visible:ring-1 focus-visible:ring-accent"
               />
             </div>
 
             {/* Subject */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <label className="text-xs text-muted-foreground">
                   Email subject
                 </label>
                 <VariablePicker
@@ -395,14 +406,13 @@ export default function OnboardingStep5() {
                 placeholder="Welcome to the waitlist!"
                 singleLine
                 disabled={isSubmitting}
-                className="h-11"
               />
             </div>
 
             {/* Message Body */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <label className="text-xs text-muted-foreground">
                   Message body
                 </label>
                 <VariablePicker

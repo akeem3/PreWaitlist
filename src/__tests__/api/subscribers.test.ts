@@ -591,4 +591,193 @@ describe("POST /api/subscribers", () => {
     const data = await response.json();
     expect(data.error).toBe("Display name must be 100 characters or fewer");
   });
+
+  // --- Phone collection ---
+
+  function pushWaitlist(phoneMode: string) {
+    mockSupabase.__queue.push({
+      data: {
+        subscriber_count: 10,
+        phone_mode: phoneMode,
+        founder_profiles: { tier: "free" },
+      },
+      error: null,
+    });
+  }
+
+  function subscriberInsertPayload() {
+    return eventInserts().find(
+      (r) => r.waitlist_id === "waitlist-1" && r.email === "test@test.com"
+    );
+  }
+
+  it("returns 400 'Phone number is required' when mode is required and phone missing", async () => {
+    pushWaitlist("required");
+
+    const request = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      body: signupBody(),
+    });
+    const response = await POST(request);
+
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data.error).toBe("Phone number is required");
+    expect(
+      mockAdminSupabase.__calls.filter((c) => c.method === "insert")
+    ).toHaveLength(0);
+  });
+
+  it("returns 400 for invalid phone when mode is required", async () => {
+    pushWaitlist("required");
+
+    const request = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      body: signupBody({ phone: "123" }),
+    });
+    const response = await POST(request);
+
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data.error).toBe("Please enter a valid phone number");
+  });
+
+  it("returns 400 for invalid phone when mode is optional", async () => {
+    pushWaitlist("optional");
+
+    const request = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      body: signupBody({ phone: "not-a-phone" }),
+    });
+    const response = await POST(request);
+
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data.error).toBe("Please enter a valid phone number");
+  });
+
+  it("stores a normalized E.164 phone when mode is optional", async () => {
+    pushWaitlist("optional");
+    mockAdminSupabase.__queue.push({
+      data: {
+        id: "sub-1",
+        email: "test@test.com",
+        referral_code: "abc12345",
+        position: 1,
+      },
+      error: null,
+    });
+
+    const request = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      body: signupBody({ phone: "+1 (555) 123-4567" }),
+    });
+    const response = await POST(request);
+
+    expect(response.status).toBe(201);
+    expect(subscriberInsertPayload()?.phone).toBe("+15551234567");
+  });
+
+  it("stores phone when mode is required and value provided", async () => {
+    pushWaitlist("required");
+    mockAdminSupabase.__queue.push({
+      data: {
+        id: "sub-1",
+        email: "test@test.com",
+        referral_code: "abc12345",
+        position: 1,
+      },
+      error: null,
+    });
+
+    const request = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      body: signupBody({ phone: "+442012345678" }),
+    });
+    const response = await POST(request);
+
+    expect(response.status).toBe(201);
+    expect(subscriberInsertPayload()?.phone).toBe("+442012345678");
+  });
+
+  it("drops the phone value when mode is off", async () => {
+    pushWaitlist("off");
+    mockAdminSupabase.__queue.push({
+      data: {
+        id: "sub-1",
+        email: "test@test.com",
+        referral_code: "abc12345",
+        position: 1,
+      },
+      error: null,
+    });
+
+    const request = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      body: signupBody({ phone: "+15551234567" }),
+    });
+    const response = await POST(request);
+
+    expect(response.status).toBe(201);
+    expect(subscriberInsertPayload()).toBeDefined();
+    expect(subscriberInsertPayload()).not.toHaveProperty("phone");
+  });
+
+  it("stores no phone when mode is optional and phone left empty", async () => {
+    pushWaitlist("optional");
+    mockAdminSupabase.__queue.push({
+      data: {
+        id: "sub-1",
+        email: "test@test.com",
+        referral_code: "abc12345",
+        position: 1,
+      },
+      error: null,
+    });
+
+    const request = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      body: signupBody(),
+    });
+    const response = await POST(request);
+
+    expect(response.status).toBe(201);
+    expect(subscriberInsertPayload()).not.toHaveProperty("phone");
+  });
+
+  it("falls back to legacy waitlist columns when phone_mode is missing from schema", async () => {
+    mockSupabase.__queue.push({
+      data: null,
+      error: {
+        message:
+          "Could not find the 'phone_mode' column of 'waitlists' in the schema cache",
+        code: "PGRST204",
+      },
+    });
+    mockSupabase.__queue.push({
+      data: {
+        subscriber_count: 10,
+        founder_profiles: { tier: "free" },
+      },
+      error: null,
+    });
+    mockAdminSupabase.__queue.push({
+      data: {
+        id: "sub-1",
+        email: "test@test.com",
+        referral_code: "abc12345",
+        position: 1,
+      },
+      error: null,
+    });
+
+    const request = new NextRequest("http://localhost/api/subscribers", {
+      method: "POST",
+      body: signupBody({ phone: "+15551234567" }),
+    });
+    const response = await POST(request);
+
+    expect(response.status).toBe(201);
+    expect(subscriberInsertPayload()).not.toHaveProperty("phone");
+  });
 });

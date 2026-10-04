@@ -443,4 +443,97 @@ describe("Dashboard Leaderboard Client", () => {
     ).toBeDefined();
     expect(screen.getByRole("button", { name: /Previous/ })).toBeDisabled();
   });
+
+  // --- Phone column (phone collection — locked decision 1) ---
+
+  const makePhoneRows = () => {
+    const base = makeRows(3);
+    return [
+      {
+        ...base[0],
+        display_name: "Ann",
+        phone: "+15551234567",
+        referral_count: 3,
+        quality_score: 10,
+        milestone_next: { threshold: 5, label: "Early access" },
+      },
+      {
+        ...base[1],
+        display_name: "Bob",
+        phone: null as string | null,
+        referral_count: 2,
+        quality_score: 10,
+        milestone_next: { threshold: 5, label: "Early access" },
+      },
+      {
+        ...base[2],
+        display_name: "Cara",
+        phone: "+447911123456",
+        referral_count: 1,
+        quality_score: 10,
+        milestone_next: { threshold: 5, label: "Early access" },
+      },
+    ];
+  };
+
+  function headerOrder() {
+    const email = screen.getByRole("button", { name: /^Email/ });
+    const phone = screen.getByText("Phone");
+    const referrals = screen.getByRole("button", { name: /^Referrals/ });
+    const before = (a: Element, b: Element) =>
+      !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    return { email, phone, referrals, before };
+  }
+
+  it("hides the Phone header and values when phoneEnabled is omitted (mode off)", () => {
+    render(<LeaderboardClient rows={makePhoneRows()} totalCount={3} />);
+    expect(screen.queryByText("Phone")).toBeNull();
+    expect(screen.queryByText("+15551234567")).toBeNull();
+    expect(screen.queryByText("+447911123456")).toBeNull();
+    // off layout keeps the original 7-column grid
+    const email = screen.getByRole("button", { name: /^Email/ });
+    expect(email.parentElement?.className).toContain(
+      "grid-cols-[48px_1fr_1fr_100px_100px_120px_120px]"
+    );
+    expect(email.parentElement?.className).not.toContain(
+      "grid-cols-[48px_1fr_1fr_1fr_100px"
+    );
+  });
+
+  it("renders Phone header after Email with phone values when phoneEnabled", () => {
+    render(
+      <LeaderboardClient rows={makePhoneRows()} totalCount={3} phoneEnabled />
+    );
+
+    const { email, phone, referrals, before } = headerOrder();
+    // locked decision: Phone column sits directly after Email
+    expect(before(email, phone)).toBe(true);
+    expect(before(phone, referrals)).toBe(true);
+
+    expect(screen.getByText("+15551234567")).toBeDefined();
+    expect(screen.getByText("+447911123456")).toBeDefined();
+
+    // 8-column grid while on
+    expect(email.parentElement?.className).toContain(
+      "grid-cols-[48px_1fr_1fr_1fr_100px_100px_120px_120px]"
+    );
+  });
+
+  it("shows em-dash for a subscriber without a phone when enabled", () => {
+    render(
+      <LeaderboardClient rows={makePhoneRows()} totalCount={3} phoneEnabled />
+    );
+    const row = screen.getByText("user1@example.com").closest("div");
+    expect(row).not.toBeNull();
+    // only the Phone cell is empty in this row (quality + milestone present)
+    expect(within(row as HTMLElement).getAllByText("\u2014")).toHaveLength(1);
+  });
+
+  it("Phone header is a plain label, not a sort button", () => {
+    render(
+      <LeaderboardClient rows={makePhoneRows()} totalCount={3} phoneEnabled />
+    );
+    const phone = screen.getByText("Phone");
+    expect(phone.closest("button")).toBeNull();
+  });
 });

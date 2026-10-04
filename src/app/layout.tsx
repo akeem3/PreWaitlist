@@ -25,6 +25,16 @@ export const metadata: Metadata = {
   ),
   title: "PreWaitlist",
   description: "Pre-launch waitlist builder",
+  // Site-wide social defaults; pages with their own openGraph object override
+  // per field, and opengraph-image.tsx files supply the images.
+  openGraph: {
+    siteName: "PreWaitlist",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({

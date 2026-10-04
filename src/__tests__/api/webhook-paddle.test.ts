@@ -242,4 +242,78 @@ describe("POST /api/webhooks/paddle — Phase 2 billing correctness", () => {
     const res = await POST(paddleRequest());
     expect(res.status).toBe(401);
   });
+
+  // --- transaction.completed out-of-order guard (2026-10-03) ---
+
+  function txEvent(overrides: Record<string, unknown> = {}) {
+    return {
+      eventType: "transaction.completed",
+      eventId: "evt-tx",
+      data: {
+        id: "tx-1",
+        customerId: "cus-1",
+        customData: { user_id: "user-1", waitlist_id: "wl-1" },
+        subscriptionId: "sub-1",
+        ...overrides,
+      },
+    };
+  }
+
+  it("transaction.completed for the SAME already-canceled subscription is ignored", async () => {
+    mockUnmarshal.mockResolvedValueOnce(txEvent());
+    // Guard's profile select: status canceled, same sub id
+    mockAdminSupabase.__queue.push({
+      data: {
+        paddle_subscription_id: "sub-1",
+        paddle_subscription_status: "canceled",
+      },
+      error: null,
+    });
+
+    const res = await POST(paddleRequest());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.received).toBe(true);
+    // Only the guard select ran — no tier update touched the database
+    expect(updatePayloads()).toHaveLength(0);
+    expect(
+      mockAdminSupabase.__calls.filter((c) => c.method === "update")
+    ).toHaveLength(0);
+  });
+
+  it("transaction.completed with a NEW subscription id after cancel still upgrades", async () => {
+    mockUnmarshal.mockResolvedValueOnce(txEvent({ subscriptionId: "sub-9" }));
+    mockAdminSupabase.__queue.push(
+      {
+        data: {
+          paddle_subscription_id: "sub-1",
+          paddle_subscription_status: "canceled",
+        },
+        error: null,
+      },
+      OK
+    );
+
+    const res = await POST(paddleRequest());
+    expect(res.status).toBe(200);
+
+    const updates = updatePayloads();
+    expect(updates).toHaveLength(1);
+    expect(updates[0]).toMatchObject({
+      tier: "pro",
+      paddle_subscription_id: "sub-9",
+    });
+  });
+
+  it("transaction.completed returns 500 when the guard profile lookup fails", async () => {
+    mockUnmarshal.mockResolvedValueOnce(txEvent());
+    mockAdminSupabase.__queue.push({
+      data: null,
+      error: { message: "profile read boom" },
+    });
+
+    const res = await POST(paddleRequest());
+    expect(res.status).toBe(500);
+    expect(updatePayloads()).toHaveLength(0);
+  });
 });
