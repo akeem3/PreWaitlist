@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  forwardRef,
-  useCallback,
-  useImperativeHandle,
-  useRef,
-  type CSSProperties,
-} from "react";
+import { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
 import {
   MentionsInput,
   Mention,
@@ -24,101 +18,6 @@ const VARIABLE_DATA = [
   { id: "total_signups", display: "Total Signups" },
   { id: "spots_moved", display: "Spots Moved" },
 ];
-
-type MentionStyleKeys =
-  | "control"
-  | "input"
-  | "highlighter"
-  | "suggestions"
-  | "suggestionsList"
-  | "suggestionItem"
-  | "suggestionItemFocused"
-  | "suggestionDisplay";
-
-type MentionStyles = Record<MentionStyleKeys, CSSProperties>;
-
-const MENTION_STYLES: MentionStyles = {
-  control: {
-    minHeight: "80px",
-    fontSize: "14px",
-    lineHeight: "1.5",
-  },
-  input: {
-    width: "100%",
-    minHeight: "80px",
-    padding: "12px",
-    fontSize: "14px",
-    lineHeight: "1.5",
-    fontFamily: "inherit",
-    color: "var(--color-foreground)",
-    backgroundColor: "var(--color-card)",
-    border: "1px solid var(--color-border)",
-    borderRadius: "var(--input-radius, 8px)",
-    outline: "none",
-    resize: "vertical" as const,
-  },
-  highlighter: {
-    padding: "12px",
-    fontSize: "14px",
-    lineHeight: "1.5",
-    fontFamily: "inherit",
-    overflow: "hidden",
-    position: "absolute" as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    pointerEvents: "none" as const,
-    whiteSpace: "pre-wrap" as const,
-    wordBreak: "break-word" as const,
-  },
-  suggestions: {
-    borderRadius: "var(--input-radius, 8px)",
-    border: "1px solid var(--color-border)",
-    backgroundColor: "var(--color-background)",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-    overflow: "hidden",
-  },
-  suggestionsList: {
-    margin: 0,
-    padding: 0,
-    listStyle: "none",
-  },
-  suggestionItem: {
-    padding: "8px 12px",
-    cursor: "pointer",
-    fontSize: "13px",
-    borderBottom: "1px solid var(--color-border)",
-    color: "var(--color-foreground)",
-  },
-  suggestionItemFocused: {
-    backgroundColor: "var(--color-accent)",
-    color: "var(--color-accent-foreground)",
-  },
-  suggestionDisplay: {
-    fontWeight: 500,
-  },
-};
-
-const SINGLE_LINE_STYLES: MentionStyles = {
-  ...MENTION_STYLES,
-  control: {
-    minHeight: "40px",
-    fontSize: "14px",
-    lineHeight: "1.5",
-  },
-  input: {
-    ...MENTION_STYLES.input,
-    minHeight: "40px",
-    resize: "none" as const,
-    overflow: "hidden" as const,
-  },
-  highlighter: {
-    ...MENTION_STYLES.highlighter,
-    whiteSpace: "nowrap" as const,
-    overflow: "hidden" as const,
-  },
-};
 
 interface EmailTokenEditorProps {
   value: string;
@@ -168,10 +67,6 @@ export const EmailTokenEditor = forwardRef<
     [onChange]
   );
 
-  const styles = (singleLine
-    ? SINGLE_LINE_STYLES
-    : MENTION_STYLES) as unknown as CSSProperties;
-
   return (
     <div className={cn("relative", className)}>
       <MentionsInput
@@ -181,28 +76,44 @@ export const EmailTokenEditor = forwardRef<
         placeholder={placeholder}
         disabled={disabled}
         singleLine={singleLine}
+        autoResize={!singleLine}
         rows={singleLine ? undefined : rows}
-        style={styles}
+        className={cn(
+          "text-sm leading-6",
+          singleLine ? "h-11" : undefined,
+          disabled && "pointer-events-none opacity-50"
+        )}
         classNames={{
-          control: "email-token-control",
-          highlighter: "email-token-highlighter",
-          input: "email-token-input",
-          suggestions: "email-token-suggestions",
-          suggestionsList: "email-token-suggestions-list",
-          suggestionItem: "email-token-suggestion-item",
-          suggestionItemFocused: "email-token-suggestion-item-focused",
-          suggestionDisplay: "email-token-suggestion-display",
+          control: cn(
+            "rounded-(--radius-lg) border border-border bg-card transition-colors",
+            "focus-within:border-accent focus-within:ring-1 focus-within:ring-accent",
+            singleLine && "h-11"
+          ),
+          input: cn(
+            "text-sm leading-6 text-foreground placeholder:text-muted-foreground",
+            singleLine ? "h-full px-3" : "px-3 py-3",
+            "disabled:cursor-not-allowed disabled:opacity-50"
+          ),
+          highlighter: cn(
+            "text-sm leading-6 px-3",
+            singleLine ? "flex h-full items-center" : "py-3"
+          ),
+          suggestions:
+            "rounded-lg border border-border bg-card shadow-[var(--shadow-float)] overflow-hidden z-50",
+          suggestionsList: "m-0 p-0 list-none",
+          suggestionItem:
+            "px-3 py-2 text-sm text-foreground cursor-pointer border-b border-border last:border-b-0",
+          suggestionItemFocused: "bg-accent text-accent-foreground",
+          suggestionDisplay: "font-medium",
         }}
       >
         <Mention
           trigger="{{"
           data={VARIABLE_DATA}
           markup="{{__id__}}"
-          displayTransform={(id, display) =>
-            id === "position" ? `#${display || id}` : `{{${display || id}}}`
-          }
+          displayTransform={(id) => `{{${id}}}`}
           appendSpaceOnAdd
-          className="rounded-sm bg-accent/15 text-accent font-semibold"
+          className="bg-accent/15"
         />
       </MentionsInput>
     </div>

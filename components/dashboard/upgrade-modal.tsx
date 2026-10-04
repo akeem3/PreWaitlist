@@ -196,35 +196,56 @@ export function UpgradeModal({
       onClick={handleBackdropClick}
       className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/50"
     >
-      <div className="mx-4 w-full max-w-[480px] rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-float)]">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-h3 font-semibold text-foreground">
-            Upgrade to Pro
-          </h2>
-          <button
-            type="button"
-            onClick={handleDismiss}
-            aria-label="Close"
-            className="rounded-lg p-1 text-muted-foreground hover:text-foreground"
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <div className="relative mx-4 w-full max-w-[520px] rounded-xl border border-border bg-card p-8 shadow-[var(--shadow-float)]">
+        <button
+          type="button"
+          onClick={handleDismiss}
+          aria-label="Close"
+          className="absolute right-4 top-4 rounded-lg p-1 text-muted-foreground hover:text-foreground"
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path
+              d="M5 5L15 15M15 5L5 15"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+
+        <div className="mb-5 flex justify-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full border border-accent/20 bg-accent/10">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              className="text-accent"
+              aria-hidden="true"
+            >
               <path
-                d="M5 5L15 15M15 5L5 15"
+                d="M4 13L8.5 8.5L11.5 11.5L16 7M16 7H12M16 7V11"
                 stroke="currentColor"
                 strokeWidth="1.5"
                 strokeLinecap="round"
+                strokeLinejoin="round"
               />
             </svg>
-          </button>
+          </div>
         </div>
 
-        <p className="mb-4 text-body text-muted-foreground">{headline}</p>
+        <div className="mb-6 text-center">
+          <h2 className="text-h3 font-semibold text-foreground">
+            Upgrade to Pro
+          </h2>
+          <p className="mt-2 text-base text-muted-foreground">{headline}</p>
+        </div>
 
-        <ul className="mb-6 space-y-2">
+        <ul className="mb-6 space-y-2.5">
           {PRO_FEATURES.map((f) => (
             <li
               key={f}
-              className="flex items-center gap-2 text-body-sm text-foreground"
+              className="flex items-center gap-2.5 text-base text-foreground"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <circle
@@ -248,12 +269,12 @@ export function UpgradeModal({
           ))}
         </ul>
 
-        <div className="mb-4 flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-foreground">$15</span>
-          <span className="text-body-sm text-muted-foreground">/month</span>
+        <div className="mb-1 flex items-baseline justify-center gap-2">
+          <span className="text-3xl font-bold text-foreground">$15</span>
+          <span className="text-base text-muted-foreground">/month</span>
         </div>
 
-        <p className="mb-4 text-caption text-muted-foreground">
+        <p className="mb-5 text-center text-caption text-muted-foreground">
           Cancel anytime
         </p>
 
@@ -261,7 +282,7 @@ export function UpgradeModal({
           type="button"
           onClick={handleUpgrade}
           disabled={!paddle}
-          className="w-full rounded-lg bg-accent px-4 py-3 text-body-sm font-medium text-accent-foreground hover:bg-accent-hover disabled:opacity-50"
+          className="w-full rounded-lg bg-accent px-4 py-3.5 text-base font-medium text-accent-foreground hover:bg-accent-hover disabled:opacity-50"
         >
           Upgrade to Pro
         </button>
@@ -275,7 +296,7 @@ export function UpgradeModal({
         <button
           type="button"
           onClick={handleDismiss}
-          className="mt-2 w-full rounded-lg px-4 py-2 text-body-sm text-muted-foreground hover:text-foreground"
+          className="mt-3 w-full rounded-lg px-4 py-1.5 text-center text-base text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
         >
           Maybe later
         </button>

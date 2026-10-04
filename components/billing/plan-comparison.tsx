@@ -56,13 +56,13 @@ export function PlanComparison({
                 </span>
               )}
 
-              <div className="mb-3">
+              <div className="mb-4 border-b border-border pb-4">
                 <p className="text-body-sm font-medium text-muted-foreground">
                   {plan.name}
                 </p>
-                <p className="text-h3 font-semibold text-foreground">
+                <p className="text-3xl font-semibold tracking-tight text-foreground">
                   {plan.price}
-                  <span className="text-body-sm text-muted-foreground">
+                  <span className="text-base text-muted-foreground">
                     {plan.period}
                   </span>
                 </p>
@@ -74,25 +74,33 @@ export function PlanComparison({
                   return (
                     <li
                       key={feature}
-                      className={`flex items-start gap-2 text-sm ${
+                      className={`flex items-start gap-2.5 text-base ${
                         excluded ? "text-muted-foreground" : "text-foreground"
                       }`}
                     >
                       {!excluded && (
                         <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 14 14"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 16 16"
                           fill="none"
                           className="mt-0.5 shrink-0"
                           aria-hidden="true"
                         >
+                          <circle
+                            cx="8"
+                            cy="8"
+                            r="8"
+                            fill="currentColor"
+                            className="text-accent/10"
+                          />
                           <path
-                            d="M3 7L5.5 9.5L11 4"
-                            stroke="#0F7A5E"
+                            d="M5 8L7 10L11 6"
+                            stroke="currentColor"
                             strokeWidth="1.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
+                            className="text-accent"
                           />
                         </svg>
                       )}

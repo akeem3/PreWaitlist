@@ -58,7 +58,7 @@
 | 9.0   | Dashboard Layout Shell — left sidebar (268px, 8 nav items), active state (green pill), locked items, mobile hamburger, upgrade CTA            |
 | 9.1   | Stat Cards with Real Data — Total Signups, Referral %, Today, Warmth (locked), em-dash for empty                                              |
 | 9.2   | Subscriber Table Design Alignment — 4-column table (#, Email, Date, Referrals), search, sort, row click, empty state                          |
-| 9.3   | CSV Export (Pro Tier) — client-side generation, correct filename, 7 headers                                                                   |
+| 9.3   | CSV Export (Free on all tiers) — client-side generation, correct filename, 7 headers                                                          |
 | 9.4   | Subscriber Detail Page — auth check, back button, position/email/grid, referral code, referred list, qual answers, 404                        |
 | 9.5   | Epic 9 Tests — 8 test files (sidebar, stat-cards, subscriber-table, csv-export, subscriber-detail, chart, qualification-panel, warmth)        |
 | 9.6   | Dashboard Remediation — MVP Gap Fill — chart, qual breakdown, quality scores, top referrers, warmth distribution, table enhancements (32 ACs) |

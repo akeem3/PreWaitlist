@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* react-mentions-ts ships Tailwind utility classes in its markup; without
+   scanning its dist those utilities (text-transparent, whitespace parity,
+   etc.) never compile and the email token editor renders ghosted text. */
+@source "../../node_modules/react-mentions-ts/dist";
+
 @source not "../../docs";
 @source not "../../.memory";
 
