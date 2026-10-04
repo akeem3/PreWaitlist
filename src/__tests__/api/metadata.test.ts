@@ -60,6 +60,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 }));
 
 import { generateMetadata as publicGenerateMetadata } from "@/app/(public)/[subdomain]/page";
+import { generateMetadata as subdomainLayoutGenerateMetadata } from "@/app/(public)/[subdomain]/layout";
 import { generateMetadata as thankYouGenerateMetadata } from "@/app/(public)/[subdomain]/thank-you/page";
 import { generateMetadata as leaderboardGenerateMetadata } from "@/app/(public)/[subdomain]/leaderboard/page";
 import { alt as publicOgAlt } from "@/app/(public)/[subdomain]/opengraph-image";
@@ -142,6 +143,17 @@ describe("social metadata", () => {
       const metadata = await publicGenerateMetadata(props());
 
       expect(metadata).toEqual({});
+    });
+  });
+
+  describe("subdomain layout — metadataBase (og:image origin)", () => {
+    it("resolves file-convention og:image against the subdomain host", async () => {
+      const metadata = await subdomainLayoutGenerateMetadata(props());
+
+      expect(metadata.metadataBase).toBeInstanceOf(URL);
+      expect(metadata.metadataBase?.origin).toBe(
+        "https://acme.prewaitlist.com"
+      );
     });
   });
 

@@ -1936,3 +1936,23 @@ Founder: the public-page update card looked "dumped on the page". Restyle in `co
 - Date = `text-xs font-normal` + explicit color utility � dropped `.text-caption` because its unlayered `color` overrides dark-template color utilities (latent dark bug fixed while restyling)
 - Template surfaces: minimal `border-border bg-card` � bold `border-2 border-foreground bg-card` (heavy-border identity, parity with how-it-works steps) � dark unchanged
 - Guide �7.4 rewritten + type ladder rows amended (label/body weights, and the `(optional)` badge row still said "muted" � fixed to warning amber); tests +2 (`latest-update-card.test.tsx`)
+
+## Twitter/X card og:image fix � Prompt #8 investigation (2026-10-04)
+
+**Symptom:** pasting `https://bat.prewaitlist.com` on X showed no preview image.
+
+**Root cause:** `og:image` for subdomain pages composed from the root `metadataBase` (`https://www.prewaitlist.com`) ? X fetched `https://www.prewaitlist.com/bat/opengraph-image-lc1qod?�` ? `updateSession` anon redirect (`middleware.ts` allowlist only matched paths **starting** with `/opengraph-image`, not `/{subdomain}/opengraph-image-*`) ? **307 `/signin` ? HTML, not PNG**. Subdomain host was always fine (`proxy.ts` subdomain branch never runs `updateSession` ? `200 image/png`).
+
+**Fix (2 files + 2 tests):**
+
+- NEW `src/app/(public)/[subdomain]/layout.tsx` � segment `generateMetadata` returns `metadataBase: new URL(`https://${subdomain}.prewaitlist.com`)`. Covers **all three** routes (main/thank-you/leaderboard inherit the same file-convention image � proven empirically); deeper-segment metadataBase beats root (verified in prod-mode).
+- `src/lib/supabase/middleware.ts` allowlist ? `pathname.includes("/opengraph-image")` (root + nested, any host).
+- Tests: metadata.test.ts layout metadataBase origin; supabase-middleware.test.ts nested path anon no-redirect.
+
+**Gates:** lint 0/5 � targeted 20/20 � full suite **976 = 969 pass / 7 fail = exact baseline** � clean build � prod-mode local probes: main+leaderboard og/twitter:image = `https://bat.prewaitlist.com/bat/opengraph-image-lc1qod?�`, nested+root anon ? `200 image/png`, `/dashboard` anon ? `307` (redirect intact).
+
+**Gotchas:**
+
+- **Dev server IGNORES metadataBase for file-based og:image URLs** (always `localhost:3000`, vercel/next.js#49859) � verify metadataBase fixes with `pnpm build && pnpm start`, not `pnpm dev`.
+- **Production is running OLDER code than the repo (deploy lag):** prod `/opengraph-image` (root) ? `307 /signin` (current code allowlists it) and prod `og:title` lacks the REQ-6.8.6 ` � Join the waitlist` suffix. Founder: push/deploy to fix root card + suffix.
+- `robots.txt` = 404 on both hosts (no crawl restrictions). X caches cards ~24h�7d; changed image URL is the re-scrape hammer; test in tweet composer (validator retired).

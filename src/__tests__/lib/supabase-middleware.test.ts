@@ -75,4 +75,15 @@ describe("updateSession Phase-B guard (4.2)", () => {
     expect(res.headers.get("location")).toBeNull();
     expect(res.status).toBe(200);
   });
+
+  it("serves nested /{subdomain}/opengraph-image routes without a signin redirect", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } });
+
+    const res = await updateSession(
+      request("/bat/opengraph-image-lc1qod?4869dfc4c98cc4ec")
+    );
+
+    expect(res.headers.get("location")).toBeNull();
+    expect(res.status).toBe(200);
+  });
 });
