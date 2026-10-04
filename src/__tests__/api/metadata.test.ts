@@ -63,7 +63,10 @@ import { generateMetadata as publicGenerateMetadata } from "@/app/(public)/[subd
 import { generateMetadata as subdomainLayoutGenerateMetadata } from "@/app/(public)/[subdomain]/layout";
 import { generateMetadata as thankYouGenerateMetadata } from "@/app/(public)/[subdomain]/thank-you/page";
 import { generateMetadata as leaderboardGenerateMetadata } from "@/app/(public)/[subdomain]/leaderboard/page";
-import { alt as publicOgAlt } from "@/app/(public)/[subdomain]/opengraph-image";
+import {
+  alt as publicOgAlt,
+  showPoweredBy,
+} from "@/app/(public)/[subdomain]/opengraph-image";
 import { alt as rootOgAlt } from "@/app/opengraph-image";
 import { metadata as rootMetadata } from "@/app/layout";
 
@@ -224,6 +227,16 @@ describe("social metadata", () => {
     it("exports alt on both og image routes", () => {
       expect(publicOgAlt).toBe("PreWaitlist");
       expect(rootOgAlt).toBe("PreWaitlist");
+    });
+  });
+
+  describe("opengraph-image powered-by tier gate", () => {
+    it("shows attribution for free tier only", () => {
+      expect(showPoweredBy("free")).toBe(true);
+      expect(showPoweredBy("pro")).toBe(false);
+      expect(showPoweredBy("growth")).toBe(false);
+      expect(showPoweredBy(null)).toBe(false);
+      expect(showPoweredBy(undefined)).toBe(false);
     });
   });
 
