@@ -10,7 +10,7 @@ const ACCENT = "#0F7A5E"; // --color-accent
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const revalidate = 300;
+export const revalidate = 86400;
 export const alt = "PreWaitlist";
 
 const fontRegular = await readFile(
@@ -33,59 +33,44 @@ export default async function Image() {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        justifyContent: "space-between",
+        justifyContent: "center",
         backgroundColor: BG,
-        padding: "72px 80px",
+        padding: "72px 96px",
         fontFamily: "Inter",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <div
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            backgroundColor: ACCENT,
-          }}
-        />
-      </div>
       <div
         style={{
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <div
-          style={{
-            fontSize: 72,
-            fontWeight: 600,
-            color: FG,
-            lineHeight: 1.12,
-            letterSpacing: -1.5,
-          }}
-        >
-          PreWaitlist
-        </div>
-        <div
-          style={{
-            display: "flex",
-            fontSize: 32,
-            color: MUTED,
-            marginTop: 24,
-          }}
-        >
-          Pre-launch waitlist builder
-        </div>
-      </div>
-      <div
-        style={{
-          display: "flex",
-          width: 160,
+          width: 56,
           height: 8,
-          borderRadius: 4,
+          borderRadius: 9999,
           backgroundColor: ACCENT,
         }}
       />
+      <div
+        style={{
+          fontSize: 76,
+          fontWeight: 600,
+          color: FG,
+          lineHeight: 1.12,
+          letterSpacing: -1.5,
+          marginTop: 32,
+          maxWidth: 1000,
+        }}
+      >
+        PreWaitlist
+      </div>
+      <div
+        style={{
+          display: "flex",
+          fontSize: 34,
+          color: MUTED,
+          marginTop: 24,
+          maxWidth: 1000,
+        }}
+      >
+        Pre-launch waitlist builder
+      </div>
     </div>,
     {
       ...size,
