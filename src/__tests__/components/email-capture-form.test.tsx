@@ -10,19 +10,21 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EmailCaptureForm } from "../../../components/public/email-capture-form";
 
-// Mock next/navigation
+// Mock next/navigation — `ref` param is controllable per test (19.3 F1)
+const navState = vi.hoisted(() => ({ ref: null as string | null }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: vi.fn(),
   }),
   useSearchParams: () => ({
-    get: vi.fn(() => null),
+    get: (key: string) => (key === "ref" ? navState.ref : null),
   }),
 }));
 
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  navState.ref = null;
 });
 
 const defaultProps = {
@@ -749,5 +751,158 @@ describe("EmailCaptureForm", () => {
     });
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(body).not.toHaveProperty("phone");
+  });
+
+  // --- 19.3 T2 fixes: stale ?ref= retry + server error copy ---
+
+  it("drops a stale 8-hex ?ref= and retries uncredited when the server rejects it (19.3 F1)", async () => {
+    navState.ref = "deadbeef";
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve({ error: "Invalid referral code" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: () => Promise.resolve({ id: "1", referral_code: "abc12345" }),
+      });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const user = userEvent.setup();
+    render(<EmailCaptureForm {...defaultProps} />);
+
+    await user.type(
+      screen.getByPlaceholderText("Email address"),
+      "test@example.com"
+    );
+    await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+    const firstBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+    const secondBody = JSON.parse(mockFetch.mock.calls[1][1].body);
+    expect(firstBody.referral_code).toBe("deadbeef");
+    expect(secondBody).not.toHaveProperty("referral_code");
+    // retry succeeded → no error surfaced
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("retries exactly once — a second failure surfaces its own copy, never loops (19.3 F1+F2)", async () => {
+    navState.ref = "deadbeef";
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve({ error: "Invalid referral code" }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve({ error: "Invalid email format" }),
+      });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const user = userEvent.setup();
+    render(<EmailCaptureForm {...defaultProps} />);
+
+    await user.type(
+      screen.getByPlaceholderText("Email address"),
+      "test@example.com"
+    );
+    await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeDefined();
+    });
+    // exactly two calls — never loops
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    // second failure surfaces the server's copy (19.3 F2)
+    expect(screen.getByRole("alert").textContent).toBe("Invalid email format");
+  });
+
+  it("surfaces the server's curated error copy instead of the generic fallback (19.3 F2)", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: () =>
+        Promise.resolve({
+          error:
+            "Subscriber limit reached. Upgrade to Pro for unlimited signups.",
+        }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const user = userEvent.setup();
+    render(<EmailCaptureForm {...defaultProps} />);
+
+    await user.type(
+      screen.getByPlaceholderText("Email address"),
+      "test@example.com"
+    );
+    await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "Subscriber limit reached. Upgrade to Pro for unlimited signups."
+        )
+      ).toBeDefined();
+    });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to the generic message when the error body has no copy (19.3 F2)", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({}),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const user = userEvent.setup();
+    render(<EmailCaptureForm {...defaultProps} />);
+
+    await user.type(
+      screen.getByPlaceholderText("Email address"),
+      "test@example.com"
+    );
+    await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Something went wrong. Please try again.")
+      ).toBeDefined();
+    });
+  });
+
+  it("does not retry a 400 that is unrelated to referral (19.3 F1 guard)", async () => {
+    navState.ref = "deadbeef";
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: () => Promise.resolve({ error: "Invalid email format" }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const user = userEvent.setup();
+    render(<EmailCaptureForm {...defaultProps} />);
+
+    await user.type(
+      screen.getByPlaceholderText("Email address"),
+      "test@example.com"
+    );
+    await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeDefined();
+    });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.referral_code).toBe("deadbeef");
   });
 });

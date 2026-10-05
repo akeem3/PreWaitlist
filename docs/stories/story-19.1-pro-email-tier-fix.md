@@ -1,6 +1,6 @@
 # Story 19.1 — Pro Email Tier Fix (P0)
 
-**Status:** ready
+**Status:** done
 **Epic:** 19 — Product Fixes & Polish
 **Depends on:** —
 **Design Refs:** - (no new UI; fixes/audits/docs only)
@@ -46,15 +46,17 @@ As a Pro founder, I want my confirmation and moved-up emails to omit the "Powere
 
 ## Files to Create/Modify
 
-| File                                                     | Change                                                    |
-| -------------------------------------------------------- | --------------------------------------------------------- |
-| `src/app/api/subscribers/route.ts`                       | Fix tier reads at `:890-893` + `:1065-1070` (T1)          |
-| `src/app/dashboard/broadcast/client.tsx`                 | Remove hardcoded preview "powered by" line at `:288` (T2) |
-| `src/lib/milestones.ts`                                  | Tier-conditional footer (T3)                              |
-| `src/__tests__/api/subscribers-referral.test.ts`         | Regression test: object/array embed → correct footer (T5) |
-| `src/app/(public)/[subdomain]/waitlist-page-content.tsx` | Verify only — Powered-by for free tier (T4)               |
-| `src/app/(public)/[subdomain]/thank-you/page.tsx`        | Verify only (T4)                                          |
-| `src/app/(public)/[subdomain]/leaderboard/page.tsx`      | Verify only (T4)                                          |
+| File                                                | Change                                                    |
+| --------------------------------------------------- | --------------------------------------------------------- |
+| `src/app/api/subscribers/route.ts`                  | Fix tier reads at `:890-893` + `:1065-1070` (T1)          |
+| `src/app/dashboard/broadcast/client.tsx`            | Remove hardcoded preview "powered by" line at `:288` (T2) |
+| `src/lib/milestones.ts`                             | Tier-conditional footer (T3)                              |
+| `src/__tests__/api/subscribers.test.ts`             | Regression test: object/array embed → correct footer (T5) |
+| `src/__tests__/api/subscribers-referral.test.ts`    | Regression test: object/array embed → correct footer (T5) |
+| `src/__tests__/lib/milestones.test.ts`              | Regression test: milestone tier-conditional footer (T5)   |
+| `components/public/waitlist-page-content.tsx`       | Verify only — Powered-by for free tier (T4)               |
+| `src/app/(public)/[subdomain]/thank-you/page.tsx`   | Verify only (T4)                                          |
+| `src/app/(public)/[subdomain]/leaderboard/page.tsx` | Verify only (T4)                                          |
 
 ## Risk
 

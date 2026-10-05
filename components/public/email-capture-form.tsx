@@ -151,13 +151,32 @@ export function EmailCaptureForm({
         body.qual_answers = filledAnswers;
       }
 
-      const res = await fetch("/api/subscribers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      const doSignup = async () => {
+        const res = await fetch("/api/subscribers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        return { res, data };
+      };
 
-      const data = await res.json();
+      let { res, data } = await doSignup();
+
+      // Stale 8-hex ?ref= (unknown or cross-waitlist code) is rejected with
+      // 400 while it stays in the URL — drop it and retry once uncredited so
+      // a dead referral link can never block signup. Server validation
+      // (Story 8.2 AC4/AC6) is unchanged; this only stops replaying a
+      // request that can never succeed.
+      if (
+        !res.ok &&
+        res.status === 400 &&
+        referralCode &&
+        data?.error === "Invalid referral code"
+      ) {
+        delete body.referral_code;
+        ({ res, data } = await doSignup());
+      }
 
       if (res.status === 409) {
         setApiError("This email is already on the waitlist");
@@ -165,7 +184,14 @@ export function EmailCaptureForm({
       }
 
       if (!res.ok) {
-        setApiError("Something went wrong. Please try again.");
+        // Server error strings are all curated user copy (validation, cap,
+        // referral, generic fallback — DB messages are never echoed), so
+        // surface the real cause instead of discarding it.
+        setApiError(
+          typeof data?.error === "string" && data.error
+            ? data.error
+            : "Something went wrong. Please try again."
+        );
         return;
       }
 

@@ -887,10 +887,18 @@ export async function POST(request: NextRequest) {
         .eq("id", waitlist_id)
         .single();
 
-      const tier =
-        (
-          waitlistWithTier?.founder_profiles as unknown as { tier: string }[]
-        )?.[0]?.tier || "free";
+      // 19.1 AC1: PostgREST returns the to-one founder_profiles embed as an
+      // OBJECT (many-to-one), not an array — indexing [0] yielded undefined
+      // and forced tier to "free" on every email. Array branch kept as the
+      // defensive shape (same pattern as the cap-check tier read above).
+      const confirmationFounderProfile = Array.isArray(
+        waitlistWithTier?.founder_profiles
+      )
+        ? (waitlistWithTier.founder_profiles as { tier: string }[])[0]
+        : (waitlistWithTier?.founder_profiles as unknown as {
+            tier: string;
+          } | null);
+      const tier = confirmationFounderProfile?.tier || "free";
 
       if (tierError) {
         console.error("Tier query failed:", tierError.message);
@@ -1062,12 +1070,16 @@ export async function POST(request: NextRequest) {
             .eq("id", waitlist_id)
             .single();
 
-        const tier =
-          (
-            waitlistWithTier?.founder_profiles as unknown as {
+        // 19.1 AC2: same to-one embed fix as the confirmation path — object
+        // shape in production, array shape kept as defensive fallback.
+        const movedUpFounderProfile = Array.isArray(
+          waitlistWithTier?.founder_profiles
+        )
+          ? (waitlistWithTier.founder_profiles as { tier: string }[])[0]
+          : (waitlistWithTier?.founder_profiles as unknown as {
               tier: string;
-            }[]
-          )?.[0]?.tier || "free";
+            } | null);
+        const tier = movedUpFounderProfile?.tier || "free";
 
         if (movedUpTierError) {
           console.error(

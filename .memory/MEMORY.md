@@ -2003,3 +2003,38 @@ Founder: the public-page update card looked "dumped on the page". Restyle in `co
 - Proof method that ended the spiral: `[int][char]` codes of the row from **disk** (42 = `*`) vs **prettier stdout** (95 = `_`) in the same command, plus a `MARKER-XYZ` canary appended to the file proving prettier read the same path.
 - Fix: escape the asterisks — `19.\*, 20.\*, 21.7` in both `sprint-4-plan.md` L543 and `epic-21…md` L31. Escapes are emphasis-node-free (literal text), survive `--write` (verified twice, `(unchanged)`), render as `19.*, 20.*, 21.7`, `--check` exit 0 across all 4 epic files.
 - Diagnostic gotchas learned: (1) PS `-notmatch 'MARKER'` is **case-insensitive** → false positive from the prose word "markers"; use `[regex]::Matches($t,'MARKER-XYZ')` for contamination. (2) A `-replace`/string building blunder appended a `MARKER-XYZ-8472` canary line that had to be scrubbed (cleaned + verified). (3) Batched same-file `Edit` calls in one message silently write stale snapshots — for docs under active churn prefer `[IO.File]::ReadAllText/WriteAllText` (`UTF8Encoding($false)`) and verify after every write. (4) Never conclude "prettier corrupts content" without char-code comparison — it normalizes markdown ASTs, it doesn't edit text.
+
+## Execute batch — Epic 19.1 + 19.2 (Prompt #1 scan + Prompt #2 execute, 2026-10-04)
+
+**Status:** Both stories implemented + gated, **uncommitted**, current branch (working tree alongside prior batches). Scanned first (Prompt #1), two founder questions asked BEFORE executing, both answered, then executed in full (Prompt #2).
+
+**Founder decisions (locked, 2026-10-04):**
+
+1. **OWASP CSV formula injection: FOLDED INTO 19.2 now** (was a flagged founder gate in sprint-4-plan L206 / epic-19 Dev Notes) — new **19.2 AC8**.
+2. **Quality column = referral-quality %** (dashboard parity), NOT warmth-derived — 19.2 AC2 amended in both epic-19 and sprint-4-plan (annotated, never silently rewritten; the warmth-worded Dev Note struck through as SUPERSEDED).
+
+**19.1 Pro Email Tier Fix (P0) — what shipped:**
+
+- Root cause: PostgREST `founder_profiles!inner(tier)` from `waitlists` is a **to-one OBJECT**, code cast to array + `[0]` → `undefined` → every confirmation/moved-up/milestone email forced `tier="free"` in production (tests passed only because fixtures used array shape).
+- `src/app/api/subscribers/route.ts` — both tier reads (confirmation ~:894, moved-up ~:1073) now `Array.isArray` ternary (same pattern as the pre-existing cap-check read at :526); object → correct tier, array → defensive branch, `|| "free"` fallback kept. TS gotcha: false branch narrows to `undefined` → needs `as unknown as {tier} | null` (single-step cast fails type check).
+- `src/lib/milestones.ts` — SAME bug fixed at founderTier read (embed hoisted to `milestoneProfileEmbed` first, then ternary) + footer now tier-conditional: `founderTier === "free"` → `buildFreeEmailFooter` else `buildEmailFooter` (was unconditional non-free). Side-effect note: pro custom sender (`senderName`/`sendingDomain` gates) now actually fires in production on this path too.
+- `src/app/dashboard/broadcast/client.tsx` (AC3) — removed preview's `{displayName} — powered by PreWaitlist` line + orphaned `<hr>` + now-unused `displayName` const (only usage).
+- AC6 page footers verified already-correct (no change): waitlist-page-content:74 prop-fed; public page :78-81, thank-you :106-109, leaderboard :61-64 all `Array.isArray` + `tier === "free"` gate.
+- AC7 regression lock: **object-shape → pro → non-free footer** + array-shape same + free → Powered-by (iff) — across `subscribers.test.ts` (+3), `subscribers-referral.test.ts` (+2, moved-up AC2), `milestones.test.ts` (+3). Helper `pushConfirmationSenderQueue` / `pushMovedUpReferralQueueWithSender` gained optional `embedShape: "object"|"array" = "array"` param (default keeps legacy fixtures).
+
+**19.2 CSV Quality Column — what shipped:**
+
+- `src/app/api/subscribers/export/route.ts` — Quality header adjacent to Warmth (`..., Warmth, Quality, Signup Date`); value = dashboard formula `totalReferrals > 0 ? Math.round((referrals / totalReferrals) * 100) : null` rendered `"N%"` / `""` — from the existing `referralCounts` batch map (zero new queries, per amended AC2). Denominator = **totalReferrals** (sum of all referral counts), matching `dashboard/leaderboard/page.tsx:140-143` exactly — NOT total signups.
+- **AC8 hardening in `escapeCsvCell`:** prefix `'` when cell matches `/^[=+\-@\t\r]/` UNLESS pure number `/^[+-]?\d+(\.\d+)?$/` (E.164 phones like `+15551234567` exempt — evaluate as numbers, never commands); harden BEFORE RFC4180 quoting.
+- AC5 verified: CSV in `FREE_FEATURES` (pricing-features:15), filename logic untouched.
+- Tests: `csv-export.test.ts` 7→10 (all baseline rows gained the Quality cell — exact-match style; +3 new: 67%/33% % rendering + order lock, empty-on-null, OWASP 3-vector incl. harden-before-quote `"'=IF(1,2,3)"`).
+
+**Gates:** lint **0 errors / 5 baseline warnings** · prettier clean on all 10 touched files · clean build (`.next` deleted first, `ƒ Proxy (Middleware)`) · full suite **988 = 981 pass / 7 fail = exact sanctioned baseline** (dashboard-archive 4 + dashboard-subscriber-table 3). Second full run showed +billing 1 +broadcast-client 1 — both known/load flakes (broadcast-client 8/8 in isolation; billing flake documented).
+
+**Files touched (10):** epic-19 + sprint-4-plan docs · export/route · subscribers/route · broadcast/client · milestones/lib · csv-export, subscribers, subscribers-referral, milestones tests.
+
+**Gotchas learned:**
+
+- CSV row comma-counting by eye is error-prone — build expected rows as `` `fixed,parts,` + quotedDate `` (variable holds the quoted dynamic field) instead of one giant template; let vitest adjudicate.
+- `vi.mock("@/lib/email")` factories must stay in sync with real-module imports — adding `buildFreeEmailFooter` to `milestones.ts` crashed nothing only because `milestones.test.ts` mock was updated in the same change; sweep with `Select-String` across test dirs for the module path when adding imports.
+- Full-suite under load flakes beyond the 7-baseline (billing, broadcast-client) — always re-run / isolate before declaring regression (MEMORY rule confirmed again).
