@@ -85,10 +85,14 @@ export function UpgradeModal({
   const router = useRouter();
   const backdropRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  // Story 19.4 row 55: checkout POST needs a busy indicator — the button was
+  // only disabled on missing SDK, so rapid clicks could double-fire checkout.
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
 
   const handleUpgrade = useCallback(() => {
-    if (!paddle) return;
+    if (!paddle || checkoutBusy) return;
     setError(null);
+    setCheckoutBusy(true);
 
     fetch("/api/billing/checkout", {
       method: "POST",
@@ -144,8 +148,11 @@ export function UpgradeModal({
       })
       .catch(() => {
         setError("Something went wrong. Please try again.");
+      })
+      .finally(() => {
+        setCheckoutBusy(false);
       });
-  }, [paddle, triggerSource, onOpenChange, router, successPath]);
+  }, [paddle, checkoutBusy, triggerSource, onOpenChange, router, successPath]);
 
   const handleDismiss = useCallback(() => {
     suppress(triggerSource);
@@ -281,10 +288,14 @@ export function UpgradeModal({
         <button
           type="button"
           onClick={handleUpgrade}
-          disabled={!paddle}
+          disabled={!paddle || checkoutBusy}
           className="w-full rounded-lg bg-accent px-4 py-3.5 text-base font-medium text-accent-foreground hover:bg-accent-hover disabled:opacity-50"
         >
-          Upgrade to Pro
+          {checkoutBusy ? (
+            <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          ) : (
+            "Upgrade to Pro"
+          )}
         </button>
 
         {error && (

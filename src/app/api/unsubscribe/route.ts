@@ -42,11 +42,22 @@ export async function POST(req: NextRequest) {
 
   const adminSupabase = createAdminClient();
 
-  // Idempotent: set unsubscribed_at (even if already set)
-  await adminSupabase
+  // Idempotent: set unsubscribed_at (even if already set).
+  // Story 19.4 H7: the update result was ignored — returning 200 when the
+  // suppression didn't persist is a compliance failure (RFC 8058 senders
+  // treat 2xx as "stop sending"). Fail with non-2xx so they retry.
+  const { error: unsubError } = await adminSupabase
     .from("subscribers")
     .update({ unsubscribed_at: new Date().toISOString() })
     .eq("id", subscriberId);
+
+  if (unsubError) {
+    console.error("[API POST /unsubscribe] update failed:", unsubError.message);
+    return NextResponse.json(
+      { error: "Something went wrong. Please try again." },
+      { status: 500 }
+    );
+  }
 
   // RFC 8058: return 200 with blank body
   return new NextResponse(null, { status: 200 });

@@ -167,6 +167,7 @@ describe("DELETE /api/profile", () => {
     const res = await DELETE();
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.error).toContain("Failed to delete account");
+    // Story 19.4 M7: raw DB messages are never echoed — curated generic only
+    expect(body.error).toBe("Something went wrong. Please try again.");
   });
 });

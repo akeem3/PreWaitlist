@@ -52,22 +52,41 @@ function ChartBody({
   waitlistId?: string;
 }) {
   const [data, setData] = useState<ChartData[] | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     const widParam = waitlistId ? `&waitlist_id=${waitlistId}` : "";
     fetch(`/api/dashboard/chart?range=${range}${widParam}`)
-      .then((res) => res.json())
+      .then((res) => {
+        // Story 19.4 row 24: a failed load must not render as
+        // "No signups in this period".
+        if (!res.ok) throw new Error("load failed");
+        return res.json();
+      })
       .then((json) => {
-        if (!cancelled) setData(json.days || []);
+        if (!cancelled) {
+          setLoadError(false);
+          setData(json.days || []);
+        }
       })
       .catch(() => {
-        if (!cancelled) setData([]);
+        if (!cancelled) setLoadError(true);
       });
     return () => {
       cancelled = true;
     };
   }, [range, subdomain, waitlistId]);
+
+  if (loadError) {
+    return (
+      <div className="flex h-50 items-center justify-center">
+        <p role="alert" className="text-body-sm text-destructive">
+          Something went wrong. Please try again.
+        </p>
+      </div>
+    );
+  }
 
   if (data === null) {
     const heights = [40, 65, 30, 80, 55, 45, 70, 35, 60, 50, 75, 42, 58, 68];

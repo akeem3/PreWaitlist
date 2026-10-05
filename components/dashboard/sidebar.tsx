@@ -23,6 +23,8 @@ interface SidebarProps {
   tier?: string;
   isArchived?: boolean;
   onUnarchive?: () => void;
+  unarchiveError?: string | null;
+  unarchivePending?: boolean;
   onUpgradeClick?: (triggerSource: string) => void;
 }
 
@@ -249,6 +251,8 @@ export function Sidebar({
   tier = "free",
   isArchived,
   onUnarchive,
+  unarchiveError,
+  unarchivePending,
   onUpgradeClick,
 }: SidebarProps) {
   const pathname = usePathname();
@@ -288,10 +292,16 @@ export function Sidebar({
             <button
               type="button"
               onClick={onUnarchive}
-              className="text-xs font-medium text-amber-900 underline"
+              disabled={unarchivePending}
+              className="text-xs font-medium text-amber-900 underline disabled:opacity-50"
             >
               Unarchive
             </button>
+            {unarchiveError && (
+              <p role="alert" className="mt-1 text-xs text-destructive">
+                {unarchiveError}
+              </p>
+            )}
           </div>
         )}
 

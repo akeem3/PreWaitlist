@@ -18,6 +18,7 @@ export default function OnboardingStep5() {
   const form = useOnboardingForm();
   const upgrade = useOnboardingUpgrade();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const subjectEditorRef = useRef<EmailTokenEditorHandle>(null);
   const bodyEditorRef = useRef<EmailTokenEditorHandle>(null);
 
@@ -58,6 +59,7 @@ export default function OnboardingStep5() {
       if (isSubmitting) return;
 
       setIsSubmitting(true);
+      setSubmitError(null);
       form.setLoading(true);
 
       try {
@@ -87,12 +89,20 @@ export default function OnboardingStep5() {
           }),
         });
 
+        // Story 19.4 C5: a failed launch must surface — not fail silently.
         if (!res.ok) {
-          throw new Error("Failed to launch waitlist");
+          const data = await res.json().catch(() => null);
+          setSubmitError(
+            data?.error || "Something went wrong. Please try again."
+          );
+          setIsSubmitting(false);
+          form.setLoading(false);
+          return;
         }
 
         router.push("/onboarding/success");
       } catch {
+        setSubmitError("Something went wrong. Please try again.");
         setIsSubmitting(false);
         form.setLoading(false);
       }
@@ -467,6 +477,12 @@ export default function OnboardingStep5() {
             </>
           )}
         </button>
+
+        {submitError && (
+          <p role="alert" className="text-center text-body-sm text-destructive">
+            {submitError}
+          </p>
+        )}
 
         <Link
           href="/onboarding/4"

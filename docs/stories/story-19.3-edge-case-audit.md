@@ -1,6 +1,6 @@
 # Story 19.3 — Edge-Case Audit
 
-**Status:** in-progress
+**Status:** done
 **Epic:** 19 — Product Fixes & Polish
 **Depends on:** —
 **Design Refs:** - (no new UI; fixes/audits/docs only)
@@ -80,7 +80,7 @@ As the maintainer, I want every documented edge case exercised and either handle
 
 ### T3 Defer Log
 
-Findings intentionally deferred (AC3 — **awaiting founder sign-off**):
+Findings intentionally deferred (AC3 — founder sign-off recorded 2026-10-05, see below):
 
 | #   | Row                   | What                                                                                                                                                                                                                                                                                            | Why deferred                                                                                                                                                                 |
 | --- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -88,4 +88,16 @@ Findings intentionally deferred (AC3 — **awaiting founder sign-off**):
 | D2  | 8 — slug race         | The API's 400 body contains the raw Postgres insert message alongside the curated error string. It is **never rendered** (FlushGate shows its own generic copy), so no user ever sees it; risk is limited to future consumers that might surface `data` naively.                                | No dead-end today; stripping raw PG messages from all API error bodies is a wider API-hygiene change beyond 19.3's matrix rows. Suggest folding into 19.6/19.x hygiene work. |
 | N1  | 7 — at-cap            | Story AC1 said "at-cap signup (free 500)" and the scan noted status **500**; actual server behavior is **403** (`route.ts:532-538` claim + `:647-654`) with curated copy — a _stronger_ implementation than specced, not a defect. Recorded as pass with the status correction; no change made. | Not a defect — documentation note only.                                                                                                                                      |
 
-**Sign-off:** _pending — founder to approve D1, D2 (and N1 as a wording correction) before AC3 closes._
+**Sign-off (recorded 2026-10-05, founder):** D1 approved (defer custom 404) · N1 approved (403-vs-500 wording correction) · **D2 withdrawn from defers — fixed now** via Story 19.4 H9 (slug-race raw-PG echo → curated string). AC3 closed.
+
+### Prompt #3 Audit (2026-10-05)
+
+| AC  | Verdict | Independent re-verification                                                                                                                                                                                                                                                                                                                                                                                                           |
+| --- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AC1 | ✅ pass | 13/13 rows recorded with evidence; sample re-checked at source: row 1 `auth/callback/route.ts:102` → `auth-code-error/page.tsx:12,20` copy + "Back to sign in" CTA · row 3 `[subdomain]/page.tsx:75` `/gone` · row 5 `dashboard/layout.tsx:39` bounce · row-count note (AC1 enumerates 13, not 16) correct.                                                                                                                           |
+| AC2 | ✅ pass | F1+F2 live at `email-capture-form.tsx:154-196`. Adversarial re-review: single-retry (no loop — condition needs the 8-hex `referralCode` + exact error string) · 409 precedence unaffected · retry reuses validated `ts`/honeypot/phone body · second failure surfaces its own copy. All `POST /api/subscribers` response `error:` strings confirmed curated via grep (GENERIC/400/403/409 only; internal Supabase vars never echoed). |
+| AC3 | ✅ pass | Defer log (D1, D2, N1) recorded with founder sign-off **2026-10-05**: D1 approved (defer) · N1 approved (correction) · **D2 withdrawn — fixed now via Story 19.4 H9** (slug-race raw-PG echo → curated `"Already taken"` / generic).                                                                                                                                                                                                  |
+| AC4 | ✅ pass | 5 tests lock the fixes (`email-capture-form.test.tsx`: stale-ref retry uncredited · exactly-one-retry · curated 403 copy verbatim · generic fallback · unrelated-400 guard). File re-run at audit: **37/37 pass**.                                                                                                                                                                                                                    |
+| AC5 | ✅ pass | `pnpm lint` → **0 errors / 5 baseline warnings** · clean `pnpm build` (route table + `ƒ Proxy (Middleware)`) · work committed at `ee31901`, tree clean.                                                                                                                                                                                                                                                                               |
+
+**Audit confidence:** AC1/AC2/AC4/AC5 = 100% (code pointers re-read, tests re-run, gates re-executed). AC3 = 100% — sign-off recorded 2026-10-05 and D2's fix verified in Story 19.4 H9 (`waitlist/route.ts` → 409 `"Already taken"`, generic 500, no raw PG echo; gates re-run at 19.4 closure: lint 0/5 · suite 986/993 = 7 sanctioned baseline failures · clean build). **Story complete.**

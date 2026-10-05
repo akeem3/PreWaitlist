@@ -108,7 +108,14 @@ export async function PATCH(request: NextRequest, { params }: Props) {
     .eq("id", id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    console.error(
+      "[API PATCH /subscribers/:id] display_name save failed:",
+      error.message
+    );
+    return NextResponse.json(
+      { error: "Something went wrong. Please try again." },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ success: true });

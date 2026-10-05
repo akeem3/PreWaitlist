@@ -63,16 +63,27 @@ export default function BroadcastClient({
   );
 
   useEffect(() => {
+    let cancelled = false;
     async function fetchCounts() {
-      const res = await fetch(
-        `/api/dashboard/broadcast/segments?wid=${waitlistId}`
-      );
-      if (res.ok) {
+      // Story 19.4 C3: a failed counts load must surface — a silent zero
+      // would read as "Send to 0 subscribers".
+      try {
+        const res = await fetch(
+          `/api/dashboard/broadcast/segments?wid=${waitlistId}`
+        );
+        if (!res.ok) throw new Error("load failed");
         const data = await res.json();
-        setCounts(data);
+        if (!cancelled) setCounts(data);
+      } catch {
+        if (!cancelled) {
+          setError("Something went wrong. Please try again.");
+        }
       }
     }
     fetchCounts();
+    return () => {
+      cancelled = true;
+    };
   }, [waitlistId]);
 
   const activeCount =

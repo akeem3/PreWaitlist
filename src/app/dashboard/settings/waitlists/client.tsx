@@ -28,6 +28,7 @@ export default function WaitlistListClient({
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [confirmText, setConfirmText] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const activeWaitlists = waitlists.filter((wl) => !wl.is_archived);
@@ -45,10 +46,13 @@ export default function WaitlistListClient({
 
   async function handleArchive(waitlistId: string) {
     setArchiving(waitlistId);
+    setActionError(null);
     try {
       const wl = waitlists.find((w) => w.id === waitlistId);
       const isArchived = wl?.is_archived;
-      await fetch("/api/waitlist", {
+      // Story 19.4 C8: a failed archive/unarchive must not refresh as if it
+      // succeeded — surface the server error instead.
+      const res = await fetch("/api/waitlist", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -57,8 +61,18 @@ export default function WaitlistListClient({
           archived_at: isArchived ? null : new Date().toISOString(),
         }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setActionError(
+          data?.error || "Something went wrong. Please try again."
+        );
+        setOpenMenu(null);
+        return;
+      }
       setOpenMenu(null);
       router.refresh();
+    } catch {
+      setActionError("Something went wrong. Please try again.");
     } finally {
       setArchiving(null);
     }
@@ -66,6 +80,7 @@ export default function WaitlistListClient({
 
   async function handleDelete(waitlistId: string) {
     setDeleting(waitlistId);
+    setActionError(null);
     try {
       const res = await fetch("/api/waitlist", {
         method: "DELETE",
@@ -75,7 +90,14 @@ export default function WaitlistListClient({
       if (res.ok) {
         setConfirmDelete(null);
         router.refresh();
+      } else {
+        const data = await res.json().catch(() => null);
+        setActionError(
+          data?.error || "Something went wrong. Please try again."
+        );
       }
+    } catch {
+      setActionError("Something went wrong. Please try again.");
     } finally {
       setDeleting(null);
     }
@@ -153,6 +175,12 @@ export default function WaitlistListClient({
           Select a waitlist to configure.
         </p>
       </div>
+
+      {actionError && (
+        <p role="alert" className="mb-3 text-body-sm text-destructive">
+          {actionError}
+        </p>
+      )}
 
       <div className="space-y-3">
         {activeWaitlists.map((wl) => (
@@ -400,12 +428,18 @@ export default function WaitlistListClient({
               placeholder='Type "delete" to confirm'
               className="mb-4 w-full rounded-lg border border-border bg-card px-3 py-2 text-body-sm text-foreground placeholder:text-muted-foreground focus:border-destructive focus:outline-none focus:ring-1 focus:ring-destructive"
             />
+            {actionError && (
+              <p role="alert" className="mb-3 text-body-sm text-destructive">
+                {actionError}
+              </p>
+            )}
             <div className="flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => {
                   setConfirmDelete(null);
                   setConfirmText("");
+                  setActionError(null);
                 }}
                 className="rounded-lg px-4 py-2 text-body-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >

@@ -14,12 +14,14 @@ export function ThankYouNameInput({
   const [displayName, setDisplayName] = useState("");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   async function save() {
     const trimmed = displayName.trim();
     if (!trimmed || saved) return;
 
     setSaving(true);
+    setSaveError(null);
     try {
       const res = await fetch(`/api/subscribers/${subscriberId}`, {
         method: "PATCH",
@@ -29,9 +31,16 @@ export function ThankYouNameInput({
           referral_code: referralCode,
         }),
       });
-      if (res.ok) setSaved(true);
+      if (res.ok) {
+        setSaved(true);
+      } else {
+        // Story 19.4 C7: surface the failure — the input stays editable for
+        // retry, but silence read as "nothing happened".
+        const data = await res.json().catch(() => null);
+        setSaveError(data?.error || "Something went wrong. Please try again.");
+      }
     } catch {
-      // Silent — input stays editable for retry
+      setSaveError("Something went wrong. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -62,6 +71,14 @@ export function ThankYouNameInput({
         aria-label="First name"
         className="h-10 w-full rounded-[var(--input-radius)] border border-border bg-card px-[var(--input-padding-x)] py-[var(--input-padding-y)] text-body-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
       />
+      {saveError && (
+        <p
+          role="alert"
+          className="mt-1.5 text-center text-body-sm text-destructive"
+        >
+          {saveError}
+        </p>
+      )}
     </div>
   );
 }

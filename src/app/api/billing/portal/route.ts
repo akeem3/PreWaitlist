@@ -27,10 +27,22 @@ export async function POST() {
     );
   }
 
-  const session = await paddle.customerPortalSessions.create(
-    profile.paddle_customer_id,
-    [profile.paddle_subscription_id]
-  );
+  // Story 19.4 M32: the SDK call was unguarded — a Paddle failure would
+  // surface as a default Next 500 page instead of a JSON error the modal
+  // can display.
+  let session: Awaited<ReturnType<Paddle["customerPortalSessions"]["create"]>>;
+  try {
+    session = await paddle.customerPortalSessions.create(
+      profile.paddle_customer_id,
+      [profile.paddle_subscription_id]
+    );
+  } catch (err) {
+    console.error("[API POST /billing/portal] portal session failed:", err);
+    return NextResponse.json(
+      { error: "Something went wrong. Please try again." },
+      { status: 502 }
+    );
+  }
 
   return NextResponse.json({ url: session.urls.general.overview });
 }

@@ -14,6 +14,7 @@ function VerifyEmailContent() {
   const [cooldown, setCooldown] = useState(0);
   const [resending, setResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
+  const [resendError, setResendError] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -27,18 +28,26 @@ function VerifyEmailContent() {
 
     setResending(true);
     setResendSuccess(false);
+    setResendError(null);
 
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email,
-    });
+    try {
+      // Story 19.4 C6: a failed resend must surface, not silently no-op.
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+      });
 
-    if (!error) {
-      setResendSuccess(true);
-      setCooldown(60);
+      if (!error) {
+        setResendSuccess(true);
+        setCooldown(60);
+      } else {
+        setResendError("Something went wrong. Please try again.");
+      }
+    } catch {
+      setResendError("Something went wrong. Please try again.");
+    } finally {
+      setResending(false);
     }
-
-    setResending(false);
   }
 
   return (
@@ -97,6 +106,12 @@ function VerifyEmailContent() {
         {resendSuccess && (
           <p className="mb-4 text-sm text-[#0F7A5E]">
             Verification email sent! Check your inbox.
+          </p>
+        )}
+
+        {resendError && (
+          <p role="alert" className="mb-4 text-sm text-destructive">
+            {resendError}
           </p>
         )}
 

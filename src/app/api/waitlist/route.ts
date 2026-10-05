@@ -120,7 +120,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object") {
+    return NextResponse.json(
+      { error: "Missing required fields" },
+      { status: 400 }
+    );
+  }
 
   // Ensure founder_profiles exists (required FK for waitlists table)
   const { data: profile, error: profileError } = await supabase
@@ -138,10 +144,8 @@ export async function POST(request: NextRequest) {
     if (insertProfileError) {
       console.error("Failed to create founder profile:", insertProfileError);
       return NextResponse.json(
-        {
-          error: `Failed to create founder profile: ${insertProfileError.message}`,
-        },
-        { status: 400 }
+        { error: "Something went wrong. Please try again." },
+        { status: 500 }
       );
     }
   }
@@ -182,11 +186,24 @@ export async function POST(request: NextRequest) {
   // Archived lists don't consume the free slot (surplus auto-archive on
   // downgrade must not 402-deadlock a founder with 0 active lists).
   // Requires the is_archived backfill (revenue-phase2-is-archived-backfill.sql).
-  const { count } = await supabase
+  const { count, error: activeCountError } = await supabase
     .from("waitlists")
     .select("id", { count: "exact", head: true })
     .eq("founder_id", user.id)
     .eq("is_archived", false);
+
+  // Fail closed (Story 19.4 M14): a failed count would otherwise read as 0
+  // and let free founders bypass the one-waitlist limit.
+  if (activeCountError) {
+    console.error(
+      "[API POST] active waitlist count failed:",
+      activeCountError.message
+    );
+    return NextResponse.json(
+      { error: "Something went wrong. Please try again." },
+      { status: 500 }
+    );
+  }
 
   if (tier === "free" && (count ?? 0) >= 1) {
     return NextResponse.json(
@@ -224,14 +241,37 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
+    // Story 19.4 H9: never echo DB/driver messages — a unique violation on
+    // subdomain is the founder-facing "Already taken" race, everything else
+    // is a server fault (log keeps the raw detail).
     console.error("Failed to create waitlist:", error);
+    if (error.code === "23505") {
+      return NextResponse.json({ error: "Already taken" }, { status: 409 });
+    }
     return NextResponse.json(
-      { error: error.message, details: error.details, hint: error.hint },
-      { status: 400 }
+      { error: "Something went wrong. Please try again." },
+      { status: 500 }
     );
   }
 
   const waitlistId = data.id;
+
+  // Story 19.4 H5: a partial create (child-table write failed) must not ship
+  // a waitlist missing its configured rewards/questions — cascade-delete the
+  // fresh row (children cascade) so the founder's retry starts clean.
+  const rollbackFreshWaitlist = async (context: string) => {
+    const { error: rollbackError } = await supabase
+      .from("waitlists")
+      .delete()
+      .eq("id", waitlistId)
+      .eq("founder_id", user.id);
+    if (rollbackError) {
+      console.error(
+        `[API POST] rollback after ${context} failure also failed:`,
+        rollbackError.message
+      );
+    }
+  };
 
   // Insert milestone_rewards if provided
   if (
@@ -253,6 +293,11 @@ export async function POST(request: NextRequest) {
         "[API POST] Failed to insert milestone_rewards:",
         JSON.stringify(rewardsError, null, 2)
       );
+      await rollbackFreshWaitlist("milestone_rewards insert");
+      return NextResponse.json(
+        { error: "Something went wrong. Please try again." },
+        { status: 500 }
+      );
     }
   }
 
@@ -273,9 +318,10 @@ export async function POST(request: NextRequest) {
         "[API POST] Failed to insert qualification_questions:",
         questionsError.message
       );
+      await rollbackFreshWaitlist("qualification_questions insert");
       return NextResponse.json(
-        { error: questionsError.message },
-        { status: 400 }
+        { error: "Something went wrong. Please try again." },
+        { status: 500 }
       );
     }
   }
@@ -295,7 +341,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => ({}));
   const { waitlist_id, milestone_rewards, questions, ...updates } = body;
 
   if (!waitlist_id) {
@@ -434,7 +480,11 @@ export async function PATCH(request: NextRequest) {
     .eq("founder_id", user.id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    console.error("[API PATCH] waitlists update failed:", error.message);
+    return NextResponse.json(
+      { error: "Something went wrong. Please try again." },
+      { status: 500 }
+    );
   }
 
   // Save qualification_questions if provided (14.0 AC5 validation;
@@ -451,8 +501,8 @@ export async function PATCH(request: NextRequest) {
     if (existingQuestionsError) {
       console.error("Failed to load questions:", existingQuestionsError);
       return NextResponse.json(
-        { error: existingQuestionsError.message },
-        { status: 400 }
+        { error: "Something went wrong. Please try again." },
+        { status: 500 }
       );
     }
 
@@ -496,8 +546,8 @@ export async function PATCH(request: NextRequest) {
       if (updateError) {
         console.error("Failed to update questions:", updateError);
         return NextResponse.json(
-          { error: updateError.message },
-          { status: 400 }
+          { error: "Something went wrong. Please try again." },
+          { status: 500 }
         );
       }
     }
@@ -510,8 +560,8 @@ export async function PATCH(request: NextRequest) {
       if (insertError) {
         console.error("Failed to save questions:", insertError);
         return NextResponse.json(
-          { error: insertError.message },
-          { status: 400 }
+          { error: "Something went wrong. Please try again." },
+          { status: 500 }
         );
       }
     }
@@ -528,8 +578,8 @@ export async function PATCH(request: NextRequest) {
       if (deleteQuestionsError) {
         console.error("Failed to delete questions:", deleteQuestionsError);
         return NextResponse.json(
-          { error: deleteQuestionsError.message },
-          { status: 400 }
+          { error: "Something went wrong. Please try again." },
+          { status: 500 }
         );
       }
     }
@@ -543,9 +593,16 @@ export async function PATCH(request: NextRequest) {
       .delete()
       .eq("waitlist_id", waitlist_id);
     if (deleteError) {
+      // Story 19.4 H6: stop before the insert — proceeding would mix old and
+      // new reward rows when the delete failed (and a later success-only
+      // insert response would hide it).
       console.error(
         "[API PATCH] Failed to delete milestone_rewards:",
         JSON.stringify(deleteError, null, 2)
+      );
+      return NextResponse.json(
+        { error: "Something went wrong. Please try again." },
+        { status: 500 }
       );
     }
 
@@ -569,8 +626,8 @@ export async function PATCH(request: NextRequest) {
           JSON.stringify(rewardsError, null, 2)
         );
         return NextResponse.json(
-          { error: rewardsError.message },
-          { status: 400 }
+          { error: "Something went wrong. Please try again." },
+          { status: 500 }
         );
       }
     }
@@ -599,7 +656,11 @@ export async function GET() {
     .order("created_at", { ascending: true });
 
   if (waitlistError) {
-    return NextResponse.json({ error: waitlistError.message }, { status: 400 });
+    console.error("[API GET] waitlists list failed:", waitlistError.message);
+    return NextResponse.json(
+      { error: "Something went wrong. Please try again." },
+      { status: 500 }
+    );
   }
 
   if (!waitlists || waitlists.length === 0) {
@@ -738,7 +799,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { waitlist_ids } = await request.json();
+  const { waitlist_ids } = await request.json().catch(() => ({}));
 
   if (!Array.isArray(waitlist_ids) || waitlist_ids.length === 0) {
     return NextResponse.json(
@@ -755,7 +816,11 @@ export async function DELETE(request: NextRequest) {
     .in("id", waitlist_ids);
 
   if (lookupError) {
-    return NextResponse.json({ error: lookupError.message }, { status: 400 });
+    console.error("[API DELETE] ownership lookup failed:", lookupError.message);
+    return NextResponse.json(
+      { error: "Something went wrong. Please try again." },
+      { status: 500 }
+    );
   }
 
   const ownedIds = (owned || []).map((w) => w.id);
@@ -774,7 +839,11 @@ export async function DELETE(request: NextRequest) {
     .in("id", ownedIds);
 
   if (deleteError) {
-    return NextResponse.json({ error: deleteError.message }, { status: 500 });
+    console.error("[API DELETE] waitlists delete failed:", deleteError.message);
+    return NextResponse.json(
+      { error: "Something went wrong. Please try again." },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ deleted: ownedIds.length, ids: ownedIds });

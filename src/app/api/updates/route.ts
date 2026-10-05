@@ -36,7 +36,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: tierCheck.reason }, { status: 403 });
   }
 
-  const body = await request.json();
+  // Story 19.4 M10: malformed JSON must not throw a raw SyntaxError — null
+  // falls through to the existing body validation below (400 + string).
+  const body = await request.json().catch(() => null);
   // Non-string bodies must 400 on validation, not crash into a TypeError 500.
   const text = (typeof body?.body === "string" ? body.body : "").trim();
 
@@ -90,13 +92,10 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (insertError) {
+    console.error("[API POST /updates] insert failed:", insertError.message);
     return NextResponse.json(
-      {
-        error: insertError.message,
-        details: insertError.details,
-        hint: insertError.hint,
-      },
-      { status: 400 }
+      { error: "Something went wrong. Please try again." },
+      { status: 500 }
     );
   }
 
