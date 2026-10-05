@@ -46,7 +46,14 @@ export async function POST(req: Request) {
         .eq("id", user.id)
         .maybeSingle();
       if (!retried) {
-        return NextResponse.json({}, { status: 500 });
+        console.error(
+          "[API POST /billing/checkout] founder_profile create failed:",
+          insertProfileError.message
+        );
+        return NextResponse.json(
+          { error: "Something went wrong. Please try again." },
+          { status: 500 }
+        );
       }
     }
   }

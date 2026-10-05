@@ -426,7 +426,13 @@ export async function POST(request: NextRequest) {
   // Public signup path uses service-role client with explicit column lists.
   const admin = createAdminClient();
 
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object") {
+    return NextResponse.json(
+      { error: "Missing required fields" },
+      { status: 400 }
+    );
+  }
   const {
     waitlist_id,
     email,
@@ -519,6 +525,16 @@ export async function POST(request: NextRequest) {
       .single();
   }
 
+  // Fail closed: a read error here would otherwise skip the cap check and
+  // tier detection, letting signups through unchecked (Story 19.4 H8).
+  if (waitlistResult.error) {
+    console.error(
+      "[subscribers] waitlist lookup failed:",
+      waitlistResult.error.message
+    );
+    return genericSignupError(500);
+  }
+
   const { data: waitlistRow } = waitlistResult;
 
   let tier = "free";
@@ -602,10 +618,20 @@ export async function POST(request: NextRequest) {
   // 14.1 AC11: validate qual_answers keys against waitlist question IDs — drop unknown keys
   let sanitizedQualAnswers: Record<string, string> | null = null;
   if (qual_answers && Object.keys(qual_answers).length > 0) {
-    const { data: questionRows } = await admin
+    const { data: questionRows, error: questionsError } = await admin
       .from("qualification_questions")
       .select("id")
       .eq("waitlist_id", waitlist_id);
+
+    // Fail closed (Story 19.4 M2): a read error would otherwise drop every
+    // answer silently — abort before the insert instead (nothing persisted yet).
+    if (questionsError) {
+      console.error(
+        "[subscribers] qualification questions lookup failed:",
+        questionsError.message
+      );
+      return genericSignupError(500);
+    }
 
     const validIds = new Set(
       (questionRows || []).map((q: { id: string }) => q.id)
@@ -800,8 +826,17 @@ export async function POST(request: NextRequest) {
   }
 
   // AC5: Synchronous recalculate — must complete before response returns
-  // SECURITY DEFINER RPC — works with any client; pass admin for consistency
-  const updates = await recalculatePositions(waitlist_id, admin);
+  // SECURITY DEFINER RPC — works with any client; pass admin for consistency.
+  // Story 19.4 H1: the subscriber already exists at this point — a recalc
+  // failure must not turn into a 500 that tells the user signup failed
+  // (their retry would hit the 409 already-on-list path). Log and continue
+  // with an empty update list; the next signup or cron run recalculates.
+  let updates: Awaited<ReturnType<typeof recalculatePositions>> = [];
+  try {
+    updates = await recalculatePositions(waitlist_id, admin);
+  } catch (recalcErr) {
+    console.error("[subscribers] recalculatePositions failed:", recalcErr);
+  }
   const subscriberUpdate = getPositionUpdate(updates, data.id);
   const correctedPosition = subscriberUpdate?.new_position ?? data.position;
   // The moved-up email is about the REFFERRER's rank gain (Story 12.2 AC1/AC4),
@@ -887,10 +922,18 @@ export async function POST(request: NextRequest) {
         .eq("id", waitlist_id)
         .single();
 
-      const tier =
-        (
-          waitlistWithTier?.founder_profiles as unknown as { tier: string }[]
-        )?.[0]?.tier || "free";
+      // 19.1 AC1: PostgREST returns the to-one founder_profiles embed as an
+      // OBJECT (many-to-one), not an array — indexing [0] yielded undefined
+      // and forced tier to "free" on every email. Array branch kept as the
+      // defensive shape (same pattern as the cap-check tier read above).
+      const confirmationFounderProfile = Array.isArray(
+        waitlistWithTier?.founder_profiles
+      )
+        ? (waitlistWithTier.founder_profiles as { tier: string }[])[0]
+        : (waitlistWithTier?.founder_profiles as unknown as {
+            tier: string;
+          } | null);
+      const tier = confirmationFounderProfile?.tier || "free";
 
       if (tierError) {
         console.error("Tier query failed:", tierError.message);
@@ -1062,12 +1105,16 @@ export async function POST(request: NextRequest) {
             .eq("id", waitlist_id)
             .single();
 
-        const tier =
-          (
-            waitlistWithTier?.founder_profiles as unknown as {
+        // 19.1 AC2: same to-one embed fix as the confirmation path — object
+        // shape in production, array shape kept as defensive fallback.
+        const movedUpFounderProfile = Array.isArray(
+          waitlistWithTier?.founder_profiles
+        )
+          ? (waitlistWithTier.founder_profiles as { tier: string }[])[0]
+          : (waitlistWithTier?.founder_profiles as unknown as {
               tier: string;
-            }[]
-          )?.[0]?.tier || "free";
+            } | null);
+        const tier = movedUpFounderProfile?.tier || "free";
 
         if (movedUpTierError) {
           console.error(

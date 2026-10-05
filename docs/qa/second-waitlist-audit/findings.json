@@ -1,0 +1,173 @@
+{
+  "story": "19.6",
+  "title": "Second-waitlist flow audit",
+  "ranAt": "2026-10-05T18:15:15.266Z",
+  "ok": true,
+  "fatal": null,
+  "steps": [
+    {
+      "name": "login",
+      "ok": true,
+      "detail": "signed in as qa-test@prewaitlist.com",
+      "screenshot": null
+    },
+    {
+      "name": "baseline tier",
+      "ok": true,
+      "detail": "already free",
+      "screenshot": null
+    },
+    {
+      "name": "list A present",
+      "ok": true,
+      "detail": "slug=qa-mobile subscriberCount=5 headline=\"QA Mobile Audit\"",
+      "screenshot": null
+    },
+    {
+      "name": "AC2 — free: header add button",
+      "ok": true,
+      "detail": "upgrade modal opened, heading: \"Upgrade to Pro\"",
+      "screenshot": "docs\\qa\\screenshots\\19.6-free-attempt-header-modal.png"
+    },
+    {
+      "name": "AC2 — free: switcher add button",
+      "ok": true,
+      "detail": "upgrade modal opened, heading: \"Upgrade to Pro\"",
+      "screenshot": "docs\\qa\\screenshots\\19.6-free-attempt-switcher-modal.png"
+    },
+    {
+      "name": "AC2 — free: API POST second list",
+      "ok": true,
+      "detail": "status 402: {\"error\":\"Upgrade to Pro to create more waitlists\"}",
+      "screenshot": null
+    },
+    {
+      "name": "AC2 — tier flip",
+      "ok": true,
+      "detail": "founder_profiles.tier = pro",
+      "screenshot": null
+    },
+    {
+      "name": "AC1 — wizard creates list B",
+      "ok": true,
+      "detail": "slug=qa2: Step 1→4 completed, FlushGate picked up the new list",
+      "screenshot": "docs\\qa\\screenshots\\19.6-wizard-created-step4.png"
+    },
+    {
+      "name": "AC1 — B appears in settings hub",
+      "ok": true,
+      "detail": "qa2 listed alongside qa-mobile",
+      "screenshot": "docs\\qa\\screenshots\\19.6-settings-hub-two-lists.png"
+    },
+    {
+      "name": "setup — isolation fixtures",
+      "ok": true,
+      "detail": "B subscribers=2; A update present=true",
+      "screenshot": null
+    },
+    {
+      "name": "AC1 — ?wid switches active list",
+      "ok": true,
+      "detail": "dashboard?wid=ef23deb1-df69-45bc-907f-d380e3151d0b renders switcher labelled \"QA Second\"",
+      "screenshot": null
+    },
+    {
+      "name": "AC1 — switcher switches active list",
+      "ok": true,
+      "detail": "A → B via dropdown; URL keeps wid=ef23deb1-df69-45bc-907f-d380e3151d0b",
+      "screenshot": "docs\\qa\\screenshots\\19.6-switcher-two-lists.png"
+    },
+    {
+      "name": "AC3 — stat cards isolate per list",
+      "ok": true,
+      "detail": "Total signups: B=2 (expect 2), A=5 (expect 5)",
+      "screenshot": null
+    },
+    {
+      "name": "AC3 — leaderboard rows disjoint",
+      "ok": true,
+      "detail": "B footer has \"of 2\"=true, A footer has \"of 5\"=true; anonymized names carry no domain (assertion uses pagination totals)",
+      "screenshot": "docs\\qa\\screenshots\\19.6-leaderboard-A.png | docs\\qa\\screenshots\\19.6-leaderboard-B.png"
+    },
+    {
+      "name": "AC3 — updates feed isolated",
+      "ok": true,
+      "detail": "A shows update=true, B shows update=false",
+      "screenshot": null
+    },
+    {
+      "name": "AC3 — warmth totals isolated",
+      "ok": true,
+      "detail": "B warmth total=2, A warmth total=5",
+      "screenshot": "docs\\qa\\screenshots\\19.6-warmth-B.png"
+    },
+    {
+      "name": "AC3 — broadcast page per list",
+      "ok": true,
+      "detail": "B chars=278, A chars=284; no A-update content on B broadcast page",
+      "screenshot": "docs\\qa\\screenshots\\19.6-broadcast-B.png"
+    },
+    {
+      "name": "AC1 — settings edit persists per list",
+      "ok": true,
+      "detail": "B headline=\"QA Second B updated\" after reload; A headline unchanged=true",
+      "screenshot": "docs\\qa\\screenshots\\19.6-settings-persist-after-reload.png"
+    },
+    {
+      "name": "AC1 — archive hides B",
+      "ok": true,
+      "detail": "Archived (1) section shows the archived list",
+      "screenshot": "docs\\qa\\screenshots\\19.6-archived-section.png"
+    },
+    {
+      "name": "AC1 — active list archived → banner",
+      "ok": true,
+      "detail": "active stays on archived B with banner \"This waitlist is archived.\" + Unarchive link",
+      "screenshot": "docs\\qa\\screenshots\\19.6-archived-active-banner.png"
+    },
+    {
+      "name": "AC1 — switcher marks archived list",
+      "ok": true,
+      "detail": "Archived badge visible in dropdown",
+      "screenshot": null
+    },
+    {
+      "name": "AC1 — archived list is gone / not accepting signups",
+      "ok": true,
+      "detail": "leaderboard → /qa2/gone; signup email inputs on main page=0",
+      "screenshot": "docs\\qa\\screenshots\\19.6-archived-main-page.png"
+    },
+    {
+      "name": "AC1 — unarchive restores B",
+      "ok": true,
+      "detail": "B back in the active list",
+      "screenshot": "docs\\qa\\screenshots\\19.6-unarchived-active.png"
+    }
+  ],
+  "findings": [
+    {
+      "id": "F3",
+      "ac": "AC1",
+      "severity": "observation",
+      "detail": "Settings hub (/dashboard/settings/waitlists) has no 'create/add' button when ≥1 list exists; second-list creation entry points are the header + switcher buttons. List DOES appear in the hub after creation.",
+      "disposition": "as-designed"
+    },
+    {
+      "id": "F11",
+      "ac": "AC2",
+      "severity": "P2",
+      "detail": "Free 'Add new waitlist' opens the upgrade modal with headline \"Upgrade to Pro\" — off-context for a create-more-lists action (copy gate: cannot change without founder approval).",
+      "verbatim": "Upgrade to Pro",
+      "disposition": "deferred"
+    }
+  ],
+  "evidence": {
+    "verbatim": {
+      "freeHeaderModalHeading": "Upgrade to Pro",
+      "freeSwitcherModalHeading": "Upgrade to Pro",
+      "freeApiStatus": 402,
+      "freeApiBody": "{\"error\":\"Upgrade to Pro to create more waitlists\"}"
+    },
+    "tierFlips": ["tier → pro (200)", "tier → free (200)"]
+  }
+}

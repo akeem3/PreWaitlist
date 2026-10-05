@@ -3,11 +3,21 @@ import { createClient } from "../../../../lib/supabase/server";
 
 // RFC 4180: fields containing commas, double quotes, or line breaks must be
 // enclosed in double quotes; embedded double quotes are doubled.
+// OWASP WSTG-INPV-21 (19.2 founder decision 2026-10-04): a cell beginning
+// with =, +, -, @ (or tab/CR) is executed as a formula by spreadsheet apps —
+// subscriber-controlled free text (qual answers, names) is the vector. Prefix
+// an apostrophe to force text. Pure numerics (e.g. E.164 phones like
+// +15551234567) are exempt: they evaluate as numbers, never as commands.
+const FORMULA_LEAD = /^[=+\-@\t\r]/;
+const PURE_NUMBER = /^[+-]?\d+(?:\.\d+)?$/;
+
 function escapeCsvCell(value: string): string {
-  if (/[",\r\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
+  const safe =
+    FORMULA_LEAD.test(value) && !PURE_NUMBER.test(value) ? `'${value}` : value;
+  if (/[",\r\n]/.test(safe)) {
+    return `"${safe.replace(/"/g, '""')}"`;
   }
-  return value;
+  return safe;
 }
 
 export async function GET(request: Request) {
@@ -102,6 +112,15 @@ export async function GET(request: Request) {
     });
   }
 
+  // 19.2 AC1 + AC4: Quality sits adjacent to Warmth (order locked by AC6
+  // tests). AC2 amended 2026-10-04 (founder): Quality = referral-quality %
+  // matching the dashboard formula (leaderboard/page.tsx) — computed from the
+  // referralCounts map already fetched above, so still zero new queries.
+  const totalReferrals = subscribers.reduce(
+    (sum, s) => sum + (referralCounts.get(s.id) || 0),
+    0
+  );
+
   const headerCells = [
     "Email",
     "Name",
@@ -109,6 +128,7 @@ export async function GET(request: Request) {
     "Position",
     "Referrals",
     "Warmth",
+    "Quality",
     "Signup Date",
     ...questions.map((q) => q.question_text),
   ];
@@ -116,6 +136,10 @@ export async function GET(request: Request) {
 
   const csvRows = subscribers.map((s, i) => {
     const referrals = referralCounts.get(s.id) || 0;
+    const quality =
+      totalReferrals > 0
+        ? `${Math.round((referrals / totalReferrals) * 100)}%`
+        : "";
     const date = new Date(s.created_at).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -129,6 +153,7 @@ export async function GET(request: Request) {
       String(i + 1),
       String(referrals),
       s.warmth_score || "",
+      quality,
       date,
       ...questions.map((q) => {
         const value = answers?.[q.id];

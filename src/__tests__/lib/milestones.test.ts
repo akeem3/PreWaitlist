@@ -12,6 +12,9 @@ vi.mock("@/lib/supabase/admin", () => ({
 vi.mock("@/lib/email", () => ({
   sendEmail: vi.fn().mockResolvedValue({ ok: true }),
   buildEmailFooter: vi.fn(() => "<footer>"),
+  // 19.1 AC5: milestone footer is tier-conditional — distinct markers let
+  // tests prove which footer the email actually shipped with.
+  buildFreeEmailFooter: vi.fn(() => "<free-footer>"),
   isUnsubscribed: vi.fn().mockResolvedValue(false),
 }));
 
@@ -357,5 +360,73 @@ describe("checkAndFulfillMilestones", () => {
     expect(vi.mocked(sendEmail)).toHaveBeenCalledWith(
       expect.objectContaining({ senderName: null, sendingDomain: null })
     );
+  });
+
+  // --- 19.1 AC5: tier-conditional milestone footer ---
+
+  it("uses the non-Powered-by footer for Pro with an object-shaped embed (19.1 AC5)", async () => {
+    mock.__queue.push(
+      {
+        data: [{ tier_referrals: 3, reward_label: EARLY_ACCESS_LABEL }],
+        error: null,
+      },
+      { data: subscriberRow(), error: null },
+      {
+        data: { ...baseWaitlist, founder_profiles: { tier: "pro" } },
+        error: null,
+      },
+      { data: null, error: null }
+    );
+
+    await checkAndFulfillMilestones("sub-1", "wl-1", 3);
+
+    expect(vi.mocked(sendEmail)).toHaveBeenCalledTimes(1);
+    const html = vi.mocked(sendEmail).mock.calls[0][0]?.html;
+    expect(html).toContain("<footer>");
+    expect(html).not.toContain("<free-footer>");
+  });
+
+  it("uses the Powered-by footer for Free with an object-shaped embed (19.1 AC5)", async () => {
+    mock.__queue.push(
+      {
+        data: [{ tier_referrals: 3, reward_label: EARLY_ACCESS_LABEL }],
+        error: null,
+      },
+      { data: subscriberRow(), error: null },
+      {
+        data: { ...baseWaitlist, founder_profiles: { tier: "free" } },
+        error: null,
+      },
+      { data: null, error: null }
+    );
+
+    await checkAndFulfillMilestones("sub-1", "wl-1", 3);
+
+    expect(vi.mocked(sendEmail)).toHaveBeenCalledTimes(1);
+    const html = vi.mocked(sendEmail).mock.calls[0][0]?.html;
+    expect(html).toContain("<free-footer>");
+    expect(html).not.toContain("<footer>");
+  });
+
+  it("19.1 AC7 defensive branch: array-shaped embed resolves the same tier (pro → non-free footer)", async () => {
+    mock.__queue.push(
+      {
+        data: [{ tier_referrals: 3, reward_label: EARLY_ACCESS_LABEL }],
+        error: null,
+      },
+      { data: subscriberRow(), error: null },
+      {
+        data: { ...baseWaitlist, founder_profiles: [{ tier: "pro" }] },
+        error: null,
+      },
+      { data: null, error: null }
+    );
+
+    await checkAndFulfillMilestones("sub-1", "wl-1", 3);
+
+    expect(vi.mocked(sendEmail)).toHaveBeenCalledTimes(1);
+    const html = vi.mocked(sendEmail).mock.calls[0][0]?.html;
+    expect(html).toContain("<footer>");
+    expect(html).not.toContain("<free-footer>");
   });
 });

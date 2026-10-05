@@ -52,9 +52,13 @@ export async function GET() {
       msg.includes("bio");
 
     if (!missingProfileColumns) {
+      console.error(
+        "[API GET /profile] select failed:",
+        fullSelect.error.message
+      );
       return NextResponse.json(
-        { error: fullSelect.error.message },
-        { status: 400 }
+        { error: "Something went wrong. Please try again." },
+        { status: 500 }
       );
     }
 
@@ -66,9 +70,13 @@ export async function GET() {
       .maybeSingle();
 
     if (coreSelect.error) {
+      console.error(
+        "[API GET /profile] core select failed:",
+        coreSelect.error.message
+      );
       return NextResponse.json(
-        { error: coreSelect.error.message },
-        { status: 400 }
+        { error: "Something went wrong. Please try again." },
+        { status: 500 }
       );
     }
     profile = coreSelect.data;
@@ -126,7 +134,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => ({}));
   const updates: Record<string, string> = {};
 
   if (typeof body.display_name === "string") {
@@ -172,14 +180,30 @@ export async function PATCH(request: NextRequest) {
     .eq("id", user.id);
 
   if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 400 });
+    console.error("[API PATCH /profile] update failed:", updateError.message);
+    return NextResponse.json(
+      { error: "Something went wrong. Please try again." },
+      { status: 500 }
+    );
   }
 
   if (typeof body.business_address === "string") {
-    await supabase
+    // Story 19.4 H4: the address write result was ignored — a failure would
+    // still return success:true and silently drop the CAN-SPAM address.
+    const { error: addressError } = await supabase
       .from("waitlists")
       .update({ business_address: body.business_address.trim() })
       .eq("founder_id", user.id);
+    if (addressError) {
+      console.error(
+        "[API PATCH /profile] business_address update failed:",
+        addressError.message
+      );
+      return NextResponse.json(
+        { error: "Something went wrong. Please try again." },
+        { status: 500 }
+      );
+    }
   }
 
   return NextResponse.json({ success: true });
@@ -199,12 +223,25 @@ export async function DELETE() {
 
   const admin = createAdminClient();
 
-  // Cancel active Paddle subscription first so deletion never leaves billing running
-  const { data: profile } = await admin
+  // Cancel active Paddle subscription first so deletion never leaves billing running.
+  // Story 19.4 M8: a failed read here must abort before deleteUser — proceeding
+  // with null would delete the account while billing keeps running.
+  const { data: profile, error: profileReadError } = await admin
     .from("founder_profiles")
     .select("paddle_subscription_id")
     .eq("id", user.id)
     .maybeSingle();
+
+  if (profileReadError) {
+    console.error(
+      "[API DELETE /profile] subscription lookup failed:",
+      profileReadError.message
+    );
+    return NextResponse.json(
+      { error: "Something went wrong. Please try again." },
+      { status: 500 }
+    );
+  }
 
   const subscriptionId = profile?.paddle_subscription_id as string | null;
   const paddle = getPaddle();
@@ -231,8 +268,12 @@ export async function DELETE() {
   const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
 
   if (deleteError) {
+    console.error(
+      "[API DELETE /profile] deleteUser failed:",
+      deleteError.message
+    );
     return NextResponse.json(
-      { error: "Failed to delete account: " + deleteError.message },
+      { error: "Something went wrong. Please try again." },
       { status: 500 }
     );
   }

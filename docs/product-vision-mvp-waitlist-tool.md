@@ -424,6 +424,8 @@ Execution order: Epic 11 → Epic 12 → Epic 12.1 → Epic 12.2 → Epic 13. Da
 
 **[UPDATED — 2026-09-13]** Items moved to Sprint 3.2: archive waitlist, edit after onboarding, legal pages (Privacy Policy, Terms of Service), consent tracking, unsubscribe mechanism, bounce suppression. These were originally Sprint 4 scope but are now required before billing (Epic 13) ships.
 
+**[AMENDED — 2026-10-04]** Referral tree + traffic summary deferred to v1.1 (founder decision 2026-10-04; the Appendix Master Scope Ledger wins over the bullet above). The six 👑 additions are tracked in Epics 20–21 (see [sprint-4-plan](epics/sprint-4-plan.md)).
+
 **What gets built:**
 
 - Full analytics dashboard view (referral tree, traffic summary — basic)

@@ -1157,7 +1157,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 **Phase 5 — Growth surfaces (all 3 founder gates resolved):**
 
-- 5.1 **Dynamic per-subdomain PNG og:image** — `src/app/(public)/[subdomain]/opengraph-image.tsx` (1200×630 `ImageResponse`, headline/subheadline/brand colour from waitlists row, 300s revalidate) + `generateMetadata` (og:title/description/twitter) in `page.tsx:30`.
+- 5.1 **Dynamic per-subdomain PNG og:image** — `src/app/(public)/[subdomain]/opengraph-image.tsx` (1200×630 `ImageResponse`, headline/subheadline/brand colour from waitlists row, 86400s revalidate) + `generateMetadata` (og:title/description/twitter) in `page.tsx:30`. **[AMENDED 2026-10-04:** revalidate 300s → 86400; card redesigned + "Powered by" tier-gated (Free only) — see "og:image card redesign" block at file end.**]**
 - 5.2 Success buttons → shared `ShareButtons` only (no platform tabs).
 - 5.3 **Namespace split:** `?ref=` = subscriber credit (8-hex only, client `/^[0-9a-f]{8}$/i` filter) · `?src=powered-by` = attribution/hero (footer brand links, tightened hero trigger).
 
@@ -1954,5 +1954,132 @@ Founder: the public-page update card looked "dumped on the page". Restyle in `co
 **Gotchas:**
 
 - **Dev server IGNORES metadataBase for file-based og:image URLs** (always `localhost:3000`, vercel/next.js#49859) � verify metadataBase fixes with `pnpm build && pnpm start`, not `pnpm dev`.
-- **Production is running OLDER code than the repo (deploy lag):** prod `/opengraph-image` (root) ? `307 /signin` (current code allowlists it) and prod `og:title` lacks the REQ-6.8.6 ` � Join the waitlist` suffix. Founder: push/deploy to fix root card + suffix.
+- **Production is running OLDER code than the repo (deploy lag):** prod `/opengraph-image` (root) ? `307 /signin` (current code allowlists it) and prod `og:title` lacks the REQ-6.8.6 ` � Join the waitlist` suffix. Founder: push/deploy to fix root card + suffix. **[RESOLVED 2026-10-04:** `a3c768d` deployed root card + suffix, `7c56cb5` deployed the card redesign — both verified live by polling the og:image URL hash.**]**
 - `robots.txt` = 404 on both hosts (no crawl restrictions). X caches cards ~24h�7d; changed image URL is the re-scrape hammer; test in tweet composer (validator retired).
+
+## og:image card redesign — tier gate + centered layout (2026-10-04)
+
+**Status:** ✅ shipped — `9073c3b` (dev) → merged `7c56cb5` → main, deployed, prod-verified. Prompt #8 investigation → web research → Prompt #2 execute (founder brief: "basic but works and user friendly", "find if there are more").
+
+**Founder complaints (X composer screenshot, quality = Pro):** "Powered by PreWaitlist" on a Pro account · CTA pill floating top-left · content "all over the place" / unnecessary spacing · slow load.
+
+**Root causes + extras found (all card-only — quality's page HTML had 0 "Powered by" occurrences; page footer gate was already correct):**
+
+1. `src/app/(public)/[subdomain]/opengraph-image.tsx` hardcoded the footer and its select never fetched tier → attribution shown to every tier (the Pro complaint).
+2. Root `justifyContent: "space-between"` over 3 one-liners scattered content into corners.
+3. Pill text `"Join the waitlist!"` hardcoded — didn't match DB `cta_text` ("Join Waitlist") + copy-gate violation.
+4. Root `src/app/opengraph-image.tsx` had the same scattered pattern (36px corner logo top-left).
+5. Headline 140 chars @72px with no length cap → multi-line overflow of the 630px canvas.
+6. Fallback card showed the domain twice (title = `x.prewaitlist.com`, subtitle = `x`).
+7. `revalidate 300` → fresh ~2.7s Satori render every 5 min (the "slow load" — file itself was only 40KB, well under X's 5MB limit).
+
+**Fix (3 files):**
+
+- Subdomain card: `.select("…, founder_profiles!inner(tier)")` (FK verified `docs/stories/sql-writeups/epic0.story03-supabase-schema.sql:22`) → exported `showPoweredBy(tier)` = `tier === "free"` only (unknown/fallback hidden) · pill deleted · centered block (`flex:1` + `justify-content:center`: 56×8 brand-color bar → headline → subtitle), padding `72px 96px` (safe zone) · headline size tiers 76/56/40 by length (≤40/≤90/else chars) · subtitle dropped when empty or === title · `revalidate = 86400`.
+- Root card: same centered treatment, corner logo removed, copy verbatim ("PreWaitlist" / "Pre-launch waitlist builder"), `revalidate = 86400`.
+- Test: `showPoweredBy` assertions (+1) in `src/__tests__/api/metadata.test.ts` (free → true; pro/growth/null/undefined → false).
+
+**Research (2 searches — og-image.org guides + Next.js ImageResponse docs):** keep 1200×630 PNG <5MB · title ≥48px / secondary ≥24px readable at phone thumbnail · one focal point · safe zone ≈ center 80% (≈120px sides → padding 96) · file-based og images render at request time, `revalidate` = cache window · X caches cards 24h–7d; deploy changes the image URL hash = automatic re-scrape.
+
+**Gates:** lint 0/5 · prettier clean · targeted 21/21 · full suite **977 = 970 pass / 7 fail = exact baseline +1 new test** (dashboard-archive 4 + dashboard-subscriber-table 3) · clean build (`Revalidate 1d` in route table) · prod pixel-scan after deploy: brown brand bar 104px, **green total = 0** (no attribution on the Pro card, live).
+
+**Verification workaround — Read tool media glitch:** fresh PNG reads started returning stale/wrong attachments (even re-served the founder's original screenshot for a just-written file) → verified via **System.Drawing pixel scan + row profiling**: count exact token-color pixels per y-band (brand bar / accent-green footer) → pro card zero green, free card footer rows 534–551, centered margins 220/222. Decisive without eyeballs.
+
+**Gotchas:**
+
+- PS 5.1 PNG dimension parsing: decode IHDR bytes 16..23 as big-endian hex (`[Convert]::ToInt32($hex,16)`) — naive `-shl` chains silently misreported 1200×630 as 176×118.
+- Poll the live page's `og:image` URL to detect deploy completion — the `?hash` suffix changes per build.
+- Prod-mode verification server: `cmd.exe /c "pnpm start > log"` **blocks the shell** → launch detached via `Start-Process cmd.exe` or it times out and dies.
+- `og:image:alt` / `twitter:image:alt` remain `"PreWaitlist"` (static `export const alt` — cannot vary per subdomain). Open founder question: accept, or approve a new static string.
+
+## Sprint 4 Epic Documentation — create-epic [19]/[20]/[21] (2026-10-04)
+
+**Status:** All three Prompt #5 runs complete. `docs/epics/sprint-4-plan.md` (approved master plan) + `docs/epics/epic-19-product-fixes-polish.md` (8 stories/47 ACs) + `docs/epics/epic-20-feedback-onboarding-growth-tooling.md` (5 stories) + `docs/epics/epic-21-full-app-scan-test-case-suite.md` (8 stories/45 ACs) — all Phase 4 verified, prettier-clean, idempotent. Epic docs follow template field order (`Tasks → Out of scope → Dev Notes`), per-story Design Refs, research Dev Notes (driver.js/Tally/PostHog/Playwright screenshots/manual-test-template). Implementation blocked until founder instructs. Still open: story files (`docs/stories/story-21.*` etc. — no create-story prompt exists) + founder gates (CSV formula-injection decision, env keys, PH/Tally/Dub accounts).
+
+**THE prettier `19._` mystery — root cause (cost hours, do not re-diagnose):**
+
+- Symptom: dependency cell `19.*, 20.*, 21.7` kept "reverting" to `19._, 20._, 21.7` after every `pnpm prettier --write`; suspected async reverter / stale Edit-tool model / file cache — **all wrong**.
+- Root cause: **CommonMark parses `19.*, 20.*` as an emphasis node** (first `*` = opener after `.` punctuation-flanking rules, second `*` = closer) and **prettier's markdown printer reprints emphasis with `_` delimiters** → `19._, 20._`. Idempotent thereafter (prettier round-trips its own output). A single unmatched `19.*` (21.7 row) is safe — no pair, no emphasis.
+- Proof method that ended the spiral: `[int][char]` codes of the row from **disk** (42 = `*`) vs **prettier stdout** (95 = `_`) in the same command, plus a `MARKER-XYZ` canary appended to the file proving prettier read the same path.
+- Fix: escape the asterisks — `19.\*, 20.\*, 21.7` in both `sprint-4-plan.md` L543 and `epic-21…md` L31. Escapes are emphasis-node-free (literal text), survive `--write` (verified twice, `(unchanged)`), render as `19.*, 20.*, 21.7`, `--check` exit 0 across all 4 epic files.
+- Diagnostic gotchas learned: (1) PS `-notmatch 'MARKER'` is **case-insensitive** → false positive from the prose word "markers"; use `[regex]::Matches($t,'MARKER-XYZ')` for contamination. (2) A `-replace`/string building blunder appended a `MARKER-XYZ-8472` canary line that had to be scrubbed (cleaned + verified). (3) Batched same-file `Edit` calls in one message silently write stale snapshots — for docs under active churn prefer `[IO.File]::ReadAllText/WriteAllText` (`UTF8Encoding($false)`) and verify after every write. (4) Never conclude "prettier corrupts content" without char-code comparison — it normalizes markdown ASTs, it doesn't edit text.
+
+## Execute batch — Epic 19.1 + 19.2 (Prompt #1 scan + Prompt #2 execute, 2026-10-04)
+
+**Status:** Both stories implemented + gated, **uncommitted**, current branch (working tree alongside prior batches). Scanned first (Prompt #1), two founder questions asked BEFORE executing, both answered, then executed in full (Prompt #2).
+
+**Founder decisions (locked, 2026-10-04):**
+
+1. **OWASP CSV formula injection: FOLDED INTO 19.2 now** (was a flagged founder gate in sprint-4-plan L206 / epic-19 Dev Notes) — new **19.2 AC8**.
+2. **Quality column = referral-quality %** (dashboard parity), NOT warmth-derived — 19.2 AC2 amended in both epic-19 and sprint-4-plan (annotated, never silently rewritten; the warmth-worded Dev Note struck through as SUPERSEDED).
+
+**19.1 Pro Email Tier Fix (P0) — what shipped:**
+
+- Root cause: PostgREST `founder_profiles!inner(tier)` from `waitlists` is a **to-one OBJECT**, code cast to array + `[0]` → `undefined` → every confirmation/moved-up/milestone email forced `tier="free"` in production (tests passed only because fixtures used array shape).
+- `src/app/api/subscribers/route.ts` — both tier reads (confirmation ~:894, moved-up ~:1073) now `Array.isArray` ternary (same pattern as the pre-existing cap-check read at :526); object → correct tier, array → defensive branch, `|| "free"` fallback kept. TS gotcha: false branch narrows to `undefined` → needs `as unknown as {tier} | null` (single-step cast fails type check).
+- `src/lib/milestones.ts` — SAME bug fixed at founderTier read (embed hoisted to `milestoneProfileEmbed` first, then ternary) + footer now tier-conditional: `founderTier === "free"` → `buildFreeEmailFooter` else `buildEmailFooter` (was unconditional non-free). Side-effect note: pro custom sender (`senderName`/`sendingDomain` gates) now actually fires in production on this path too.
+- `src/app/dashboard/broadcast/client.tsx` (AC3) — removed preview's `{displayName} — powered by PreWaitlist` line + orphaned `<hr>` + now-unused `displayName` const (only usage).
+- AC6 page footers verified already-correct (no change): waitlist-page-content:74 prop-fed; public page :78-81, thank-you :106-109, leaderboard :61-64 all `Array.isArray` + `tier === "free"` gate.
+- AC7 regression lock: **object-shape → pro → non-free footer** + array-shape same + free → Powered-by (iff) — across `subscribers.test.ts` (+3), `subscribers-referral.test.ts` (+2, moved-up AC2), `milestones.test.ts` (+3). Helper `pushConfirmationSenderQueue` / `pushMovedUpReferralQueueWithSender` gained optional `embedShape: "object"|"array" = "array"` param (default keeps legacy fixtures).
+
+**19.2 CSV Quality Column — what shipped:**
+
+- `src/app/api/subscribers/export/route.ts` — Quality header adjacent to Warmth (`..., Warmth, Quality, Signup Date`); value = dashboard formula `totalReferrals > 0 ? Math.round((referrals / totalReferrals) * 100) : null` rendered `"N%"` / `""` — from the existing `referralCounts` batch map (zero new queries, per amended AC2). Denominator = **totalReferrals** (sum of all referral counts), matching `dashboard/leaderboard/page.tsx:140-143` exactly — NOT total signups.
+- **AC8 hardening in `escapeCsvCell`:** prefix `'` when cell matches `/^[=+\-@\t\r]/` UNLESS pure number `/^[+-]?\d+(\.\d+)?$/` (E.164 phones like `+15551234567` exempt — evaluate as numbers, never commands); harden BEFORE RFC4180 quoting.
+- AC5 verified: CSV in `FREE_FEATURES` (pricing-features:15), filename logic untouched.
+- Tests: `csv-export.test.ts` 7→10 (all baseline rows gained the Quality cell — exact-match style; +3 new: 67%/33% % rendering + order lock, empty-on-null, OWASP 3-vector incl. harden-before-quote `"'=IF(1,2,3)"`).
+
+**Gates:** lint **0 errors / 5 baseline warnings** · prettier clean on all 10 touched files · clean build (`.next` deleted first, `ƒ Proxy (Middleware)`) · full suite **988 = 981 pass / 7 fail = exact sanctioned baseline** (dashboard-archive 4 + dashboard-subscriber-table 3). Second full run showed +billing 1 +broadcast-client 1 — both known/load flakes (broadcast-client 8/8 in isolation; billing flake documented).
+
+**Files touched (10):** epic-19 + sprint-4-plan docs · export/route · subscribers/route · broadcast/client · milestones/lib · csv-export, subscribers, subscribers-referral, milestones tests.
+
+**Gotchas learned:**
+
+- CSV row comma-counting by eye is error-prone — build expected rows as `` `fixed,parts,` + quotedDate `` (variable holds the quoted dynamic field) instead of one giant template; let vitest adjudicate.
+- `vi.mock("@/lib/email")` factories must stay in sync with real-module imports — adding `buildFreeEmailFooter` to `milestones.ts` crashed nothing only because `milestones.test.ts` mock was updated in the same change; sweep with `Select-String` across test dirs for the module path when adding imports.
+- Full-suite under load flakes beyond the 7-baseline (billing, broadcast-client) — always re-run / isolate before declaring regression (MEMORY rule confirmed again).
+
+## Epic 19 — Stories 19.5 + 19.6 audits + F8 compliance fix (2026-10-05)
+
+**Status:** both stories implemented + gated. **[SUPERSEDED 2026-10-05: founder closed Epic 19 — flipped to `done`; see "Epic 19 Complete" block below.]**
+
+**19.6 (second-waitlist audit):** spec GREEN 23/23 (`tests/e2e/second-waitlist-audit.spec.ts`, report `docs/qa/second-waitlist-audit/findings.json`) — includes fresh wizard creation (qa2 deleted first via REST so creation evidence is real, then recreated by the final run). Zero code fixes required. Results in `docs/stories/story-19.6-second-waitlist-flow-audit.md`. **Founder pending:** F3 (settings hub has no add-waitlist button; entry = header + switcher — as-designed), F11 (P2, "Upgrade to Pro" headline off-context), F12 (P2 edge path: free founder at onboarding/3 → flush 402 → silent push to /onboarding/4). Spec gotchas: sign-in hangs >30s intermittently → 3-attempt login retry; two `Unarchive` buttons exist when the archived banner shows → scope to `page.getByRole("main")`; force `?wid=A` before the switcher step (stored wid may be archived).
+
+**19.5 (mobile audit):** 31 screens × 2 viewports = 62 captures. P1s **F1–F4 fixed, existing utilities only:** onboarding/4 `w-full md:w-114.5` · leaderboard `overflow-x-auto` unconditional (kept `min-w-[900px]` phone-only) · upgrade modal card `max-h-[calc(100dvh-2rem)] overflow-y-auto` · shell `<main>` `pt-14 lg:pt-0` (hamburger clearance, zero desktop change). **Final harness run:** 528 auto = 524 small-target + 4 overflow (= F5 only), fixedOverlaps 0 (was 23), clippedOverlays 0 (was 2), 0 console errors → F1/F2/F3/F4 cleared, F6 cleared as F4 side effect. **P2 for founder:** F5 (two-pane @768 overflow: steps 1–3 = 835px, 4a = 950px), F7 (~524 small-target rows, incl. hamburger 38×38). Remaining 4xx: 2× `400 POST /api/waitlist` during onboarding-4a captures = harness `DRAFT` fixture (`waitlistId: null`) failing FlushGate flush — pre-existing fixture noise, capture identity passed.
+
+**F8 — compliance bug found via run-health `badResponses` (FIXED in this batch):** anon root-host `/legal/terms`, `/legal/privacy`, `/unsubscribe?token` were **307 → /signin** (anon-redirect allowlist in `src/lib/supabase/middleware.ts` omits them) and subdomain hosts **404**'d `/legal*` (`src/proxy.ts` prefixes every path → `/quality/legal/terms` → no route). Impact: legal links dead on every public waitlist page (consent line + footers) and the CAN-SPAM unsubscribe page unreachable for recipients (16 CFR §316.5 forbids login-walling an opt-out; research confirmed). Fix: allowlist `!startsWith("/legal")` + `!startsWith("/unsubscribe")` in `middleware.ts`, plus `isSharedPublicPath` passthrough in `proxy.ts` (no subdomain prefix for `/legal*`, `/unsubscribe*`). `/api/*` unaffected (matcher `proxy.ts:36`). Tests: middleware +4 (13 total), new `src/__tests__/lib/proxy.test.ts` 5. Live probes after rebuild: all six fixed surfaces 200; anon `/dashboard` → 307 `/signin` and anon `/onboarding/4` → 307 `/onboarding/signup` intact; subdomain `/leaderboard` still rewrites `/quality/leaderboard`.
+
+**Gates:** lint 0 errors / 5 baseline warnings · prettier clean (code + both story docs) · full suite **1002 = 995 pass / 7 fail = exact baseline** (+9 new) · clean build (`ƒ Proxy (Middleware)`) · dev server restarted on the new build · harness final run green (3.7m, 62/62 ok).
+
+**Gotchas:**
+
+- `curl.exe -o $null -w "%{http_code}"` is broken in this PowerShell env (body leaks to stdout → fake "codes" like `/signin` or HTML blobs). Always `-o <tempfile>` for probes.
+- happy-dom/undici drops `Host` from `NextRequest` init (forbidden header) → proxy unit tests must `Object.defineProperty(req, "headers", { value: new Headers({ host }) })` or `getSubdomain` sees null and falls into the apex/`updateSession` branch.
+- Vitest full-suite `kill EPERM` crash (Windows) — rerun; not a test failure.
+- `next/font` build can fail on transient `Failed to fetch Inter from Google Fonts` — rerun the build.
+
+## Epic 19 Complete — all 8 stories done, merged to main (2026-10-05)
+
+**Status:** ✅ EPIC 19 DONE — founder directive 2026-10-05 ("safe to say we are done with epic 19"). Flipped to `done`: epic doc `docs/epics/epic-19-product-fixes-polish.md` (header Status + Story Index rows + all 8 per-story Status lines), story files `story-19.0`–`story-19.7`, and the `docs/epics/sprint-4-plan.md` Story Index rows. `commit-push` + `merge-clean` to `main` run in the same session immediately after this write (Vercel auto-deploys from `main`).
+
+| Story | Status  | Summary                                                                                                                                              |
+| ----- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 19.0  | ✅ done | Doc debt — PRD Sprint 4 section added, stale planning tables corrected                                                                               |
+| 19.1  | ✅ done | P0 Pro email tier fix — PostgREST embed object-vs-array cast forced every confirmation/moved-up/milestone email to `tier="free"`                     |
+| 19.2  | ✅ done | CSV Quality column (referral-quality %, dashboard formula) + OWASP formula-injection hardening (AC8)                                                 |
+| 19.3  | ✅ done | Edge-case audit — matrix executed, broken rows fixed, deferrals logged (`ee31901`)                                                                   |
+| 19.4  | ✅ done | Error & loading states audit — error handling across API routes + dashboard components (`f766c9e`)                                                   |
+| 19.5  | ✅ done | Mobile audit — 31 screens × 2 viewports, P1 F1–F4 + F8 fixed, harness final run 62/62 green                                                          |
+| 19.6  | ✅ done | Second-waitlist flow — spec GREEN 23/23 ×2, zero code fixes required                                                                                 |
+| 19.7  | ✅ done | Email deliverability — live DNS capture vs Resend requirements + code-side sender audit; Prompt #3 audit (5 doc defects found → fixed → re-verified) |
+
+**Accepted as non-blocking follow-ups at epic close (re-open as new stories if any needs doing):**
+
+1. **19.5 P2s:** F5 (768 two-pane overflow: steps 1–3 = 835px, 4a = 950px), F7 (~524 small-target rows, incl. hamburger 38×38).
+2. **19.6:** F3 (settings hub has no add-waitlist button — entry = header + switcher; as-designed), F11 (P2 `"Upgrade to Pro"` headline — copy gate), F12 (P2 free-founder `/onboarding/3` → flush 402 → silent push edge path).
+3. **19.7 AC2:** founder Resend dashboard run (R1–R4, script in story §4) — **do before launch**; includes DKIM dashboard-value match (R2) + webhook `www` URL confirmation (R3). Optional: G1 (add `rua=` to `_dmarc` TXT), G6 (Supabase Auth sender-domain check).
+4. **F8 legal/unsubscribe compliance fix** reached production with this merge (was only locally probe-verified before).
+
+**Gates at close:** lint 0 errors / 5 baseline warnings · prettier clean (epic + story docs + sprint-4-plan + MEMORY) · full suite **1002 = 995 pass / 7 fail = exact sanctioned baseline** (run during 19.5/19.6 close; docs-only changes after) · clean build `ƒ Proxy (Middleware)` · 19.7 Prompt #3 audit re-ran lint + build green after its fixes.
+
+**19.7 audit facts (live DNS, re-verified twice):** SPF (`send` TXT), MX (`send`), DKIM (`resend._domainkey` TXT), DMARC (`_dmarc` TXT) all **TTL 60** at Vercel DNS (`ns1/ns2.vercel-dns.com`) · DMARC = `v=DMARC1; p=none;` (no `rua=`) · apex has no SPF/MX (correct-by-omission) · local `RESEND_API_KEY` is send-only (`restricted_api_key` → domains API 401, so dashboard status is founder-only) · every send path resolves through `src/lib/from-address.ts:20-44` (all call sites line-verified: subscribers ×3, milestones, retry-queue ×2, broadcast, updates, compose preview).

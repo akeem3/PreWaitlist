@@ -14,16 +14,23 @@ export function BillingDetails({
   const [address, setAddress] = useState(businessAddress);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
     setSaved(false);
+    setSaveError(null);
     try {
       await onAddressSave(address);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch {
-      // silent
+    } catch (err) {
+      // Story 19.4 C2: a failed save surfaces the error instead of silence.
+      setSaveError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Something went wrong. Please try again."
+      );
     } finally {
       setSaving(false);
     }
@@ -63,6 +70,11 @@ export function BillingDetails({
         </button>
 
         {saved && <p className="text-xs text-accent">Address saved</p>}
+        {saveError && (
+          <p role="alert" className="text-xs text-destructive">
+            {saveError}
+          </p>
+        )}
       </div>
     </div>
   );

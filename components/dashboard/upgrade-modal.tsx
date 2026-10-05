@@ -85,10 +85,14 @@ export function UpgradeModal({
   const router = useRouter();
   const backdropRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  // Story 19.4 row 55: checkout POST needs a busy indicator — the button was
+  // only disabled on missing SDK, so rapid clicks could double-fire checkout.
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
 
   const handleUpgrade = useCallback(() => {
-    if (!paddle) return;
+    if (!paddle || checkoutBusy) return;
     setError(null);
+    setCheckoutBusy(true);
 
     fetch("/api/billing/checkout", {
       method: "POST",
@@ -144,8 +148,11 @@ export function UpgradeModal({
       })
       .catch(() => {
         setError("Something went wrong. Please try again.");
+      })
+      .finally(() => {
+        setCheckoutBusy(false);
       });
-  }, [paddle, triggerSource, onOpenChange, router, successPath]);
+  }, [paddle, checkoutBusy, triggerSource, onOpenChange, router, successPath]);
 
   const handleDismiss = useCallback(() => {
     suppress(triggerSource);
@@ -196,7 +203,7 @@ export function UpgradeModal({
       onClick={handleBackdropClick}
       className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/50"
     >
-      <div className="relative mx-4 w-full max-w-[520px] rounded-xl border border-border bg-card p-8 shadow-[var(--shadow-float)]">
+      <div className="relative mx-4 max-h-[calc(100dvh-2rem)] w-full max-w-[520px] overflow-y-auto rounded-xl border border-border bg-card p-8 shadow-[var(--shadow-float)]">
         <button
           type="button"
           onClick={handleDismiss}
@@ -281,10 +288,14 @@ export function UpgradeModal({
         <button
           type="button"
           onClick={handleUpgrade}
-          disabled={!paddle}
+          disabled={!paddle || checkoutBusy}
           className="w-full rounded-lg bg-accent px-4 py-3.5 text-base font-medium text-accent-foreground hover:bg-accent-hover disabled:opacity-50"
         >
-          Upgrade to Pro
+          {checkoutBusy ? (
+            <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          ) : (
+            "Upgrade to Pro"
+          )}
         </button>
 
         {error && (

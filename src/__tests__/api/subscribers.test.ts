@@ -40,11 +40,12 @@ vi.mock("@/lib/positions", () => ({
   getPositionUpdate: vi.fn().mockReturnValue(null),
 }));
 
-// Mock email utilities
+// Mock email utilities — distinct footer markers so tests can prove which
+// tier's footer actually shipped (19.1 AC4/AC7).
 vi.mock("@/lib/email", () => ({
   sendEmail: vi.fn().mockResolvedValue({ ok: true }),
-  buildEmailFooter: vi.fn().mockReturnValue(""),
-  buildFreeEmailFooter: vi.fn().mockReturnValue(""),
+  buildEmailFooter: vi.fn().mockReturnValue("<pro-footer>"),
+  buildFreeEmailFooter: vi.fn().mockReturnValue("<free-footer>"),
   isUnsubscribed: vi.fn().mockResolvedValue(false),
 }));
 
@@ -274,7 +275,10 @@ describe("POST /api/subscribers", () => {
   function pushConfirmationSenderQueue(
     tier: string,
     senderName: string | null,
-    sendingDomain: string | null
+    sendingDomain: string | null,
+    // 19.1 AC7: "object" mirrors the production PostgREST to-one embed shape;
+    // default "array" exercises the defensive branch (legacy test fixture).
+    embedShape: "object" | "array" = "array"
   ) {
     // insert
     mockAdminSupabase.__queue.push({
@@ -315,7 +319,9 @@ describe("POST /api/subscribers", () => {
     mockAdminSupabase.__queue.push({ data: [], error: null });
     // confirmation IIFE: founder tier
     mockAdminSupabase.__queue.push({
-      data: { founder_profiles: [{ tier }] },
+      data: {
+        founder_profiles: embedShape === "object" ? { tier } : [{ tier }],
+      },
       error: null,
     });
   }
@@ -370,6 +376,65 @@ describe("POST /api/subscribers", () => {
       senderName: null,
       sendingDomain: null,
     });
+  });
+
+  // --- 19.1 AC7: tier-resolution regression lock ---
+
+  it("19.1 AC1/AC7: object-shaped embed (production) resolves pro → non-free footer", async () => {
+    mockSupabase.__queue.push({
+      data: {
+        subscriber_count: 10,
+        founder_profiles: { tier: "free" },
+      },
+      error: null,
+    });
+    pushConfirmationSenderQueue("pro", "Ada", "ada.com", "object");
+
+    const response = await postDirectSignup();
+    expect(response.status).toBe(201);
+
+    expect(mockedSendEmail).toHaveBeenCalledTimes(1);
+    const html = mockedSendEmail.mock.calls[0][0]?.html;
+    expect(html).toContain("<pro-footer>");
+    expect(html).not.toContain("<free-footer>");
+  });
+
+  it("19.1 AC7 defensive branch: array-shaped embed resolves pro → non-free footer", async () => {
+    mockSupabase.__queue.push({
+      data: {
+        subscriber_count: 10,
+        founder_profiles: { tier: "free" },
+      },
+      error: null,
+    });
+    pushConfirmationSenderQueue("pro", null, null, "array");
+
+    const response = await postDirectSignup();
+    expect(response.status).toBe(201);
+
+    expect(mockedSendEmail).toHaveBeenCalledTimes(1);
+    const html = mockedSendEmail.mock.calls[0][0]?.html;
+    expect(html).toContain("<pro-footer>");
+    expect(html).not.toContain("<free-footer>");
+  });
+
+  it("19.1 AC4: free tier gets the Powered-by footer (iff tier is free)", async () => {
+    mockSupabase.__queue.push({
+      data: {
+        subscriber_count: 10,
+        founder_profiles: { tier: "free" },
+      },
+      error: null,
+    });
+    pushConfirmationSenderQueue("free", null, null, "object");
+
+    const response = await postDirectSignup();
+    expect(response.status).toBe(201);
+
+    expect(mockedSendEmail).toHaveBeenCalledTimes(1);
+    const html = mockedSendEmail.mock.calls[0][0]?.html;
+    expect(html).toContain("<free-footer>");
+    expect(html).not.toContain("<pro-footer>");
   });
 
   // --- Quota failure paths (3.1c) ---

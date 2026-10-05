@@ -436,14 +436,26 @@ export function AuthedOnboardingProvider({
     if (Object.keys(pendingRef.current).length === 0) return;
     const payload = { ...pendingRef.current, waitlist_id: state.waitlistId };
     pendingRef.current = {};
+
+    // Story 19.4 row 5: a failed auto-save must restore its fields so the
+    // next flush retries them (the old comment claimed retry, but the payload
+    // was dropped pre-await). Keys re-written during the await win.
+    const restorePending = () => {
+      for (const [key, value] of Object.entries(payload)) {
+        if (key === "waitlist_id") continue;
+        if (!(key in pendingRef.current)) pendingRef.current[key] = value;
+      }
+    };
+
     try {
-      await fetch("/api/waitlist", {
+      const res = await fetch("/api/waitlist", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      if (!res.ok) restorePending();
     } catch {
-      // Silent fail — will retry on next update
+      restorePending();
     }
   }, [state.waitlistId]);
 

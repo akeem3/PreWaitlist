@@ -304,10 +304,17 @@ export default function DashboardShell({
     [router]
   );
 
+  // Story 19.4 C19 row: unarchive must not refresh as if it succeeded, and
+  // the banner button needs pending + error states (was silent).
+  const [unarchiveError, setUnarchiveError] = useState<string | null>(null);
+  const [unarchivePending, setUnarchivePending] = useState(false);
+
   async function handleUnarchive() {
     if (!effectiveId) return;
+    setUnarchivePending(true);
+    setUnarchiveError(null);
     try {
-      await fetch("/api/waitlist", {
+      const res = await fetch("/api/waitlist", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -316,9 +323,18 @@ export default function DashboardShell({
           archived_at: null,
         }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setUnarchiveError(
+          data?.error || "Something went wrong. Please try again."
+        );
+        return;
+      }
       router.refresh();
     } catch {
-      // silent
+      setUnarchiveError("Something went wrong. Please try again.");
+    } finally {
+      setUnarchivePending(false);
     }
   }
 
@@ -345,6 +361,8 @@ export default function DashboardShell({
         tier={tier}
         isArchived={activeWaitlist?.is_archived ?? false}
         onUnarchive={handleUnarchive}
+        unarchiveError={unarchiveError}
+        unarchivePending={unarchivePending}
         onUpgradeClick={handleUpgradeClick}
       />
 
@@ -369,7 +387,10 @@ export default function DashboardShell({
         </svg>
       </button>
 
-      <main className="min-h-screen lg:ml-67">
+      {/* pt-14 below lg clears the fixed hamburger zone (top-4 left-4 →
+          bottom edge y=54): page headings/back-links start below it instead
+          of under it. lg:pt-0 keeps desktop layout unchanged (no hamburger). */}
+      <main className="min-h-screen pt-14 lg:pt-0 lg:ml-67">
         <QuotaWarningBanner />
         <DashboardContext.Provider value={contextValue}>
           {children}

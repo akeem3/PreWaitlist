@@ -51,7 +51,6 @@ export default function BroadcastClient({
   const [segment, setSegment] = useState<"all" | "hot_warm" | "cold">("all");
   const [counts, setCounts] = useState({ all: 0, hot_warm: 0, cold: 0 });
 
-  const displayName = senderName || productName || "PreWaitlist";
   // Story 17.3 AC2-AC3: preview From must equal the send path's `from`
   // (route.ts calls the same helper) — including the verified sending
   // domain. Never hand-build the local-part.
@@ -64,16 +63,27 @@ export default function BroadcastClient({
   );
 
   useEffect(() => {
+    let cancelled = false;
     async function fetchCounts() {
-      const res = await fetch(
-        `/api/dashboard/broadcast/segments?wid=${waitlistId}`
-      );
-      if (res.ok) {
+      // Story 19.4 C3: a failed counts load must surface — a silent zero
+      // would read as "Send to 0 subscribers".
+      try {
+        const res = await fetch(
+          `/api/dashboard/broadcast/segments?wid=${waitlistId}`
+        );
+        if (!res.ok) throw new Error("load failed");
         const data = await res.json();
-        setCounts(data);
+        if (!cancelled) setCounts(data);
+      } catch {
+        if (!cancelled) {
+          setError("Something went wrong. Please try again.");
+        }
       }
     }
     fetchCounts();
+    return () => {
+      cancelled = true;
+    };
   }, [waitlistId]);
 
   const activeCount =
@@ -283,10 +293,6 @@ export default function BroadcastClient({
                 className="prose prose-sm max-w-none text-foreground"
                 dangerouslySetInnerHTML={{ __html: sanitizeEmailHtml(body) }}
               />
-              <hr className="border-border my-4" />
-              <p className="text-caption text-muted-foreground">
-                {displayName} — powered by PreWaitlist
-              </p>
             </div>
           )}
         </CardContent>

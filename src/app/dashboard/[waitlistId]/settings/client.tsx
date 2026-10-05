@@ -73,6 +73,9 @@ export default function WaitlistSettingsClient({
   );
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [archiving, setArchiving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -82,6 +85,9 @@ export default function WaitlistSettingsClient({
   const [questionsSaving, setQuestionsSaving] = useState(false);
   const [questionsSaved, setQuestionsSaved] = useState(false);
   const [questionsError, setQuestionsError] = useState<string | null>(null);
+  const [questionsLoadError, setQuestionsLoadError] = useState<string | null>(
+    null
+  );
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -98,17 +104,27 @@ export default function WaitlistSettingsClient({
     async (field: string, value: string | number | null) => {
       setSaving(true);
       setSaved(false);
+      setSaveError(null);
       try {
-        await fetch("/api/waitlist", {
+        const res = await fetch("/api/waitlist", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ waitlist_id: waitlist.id, [field]: value }),
         });
+        // Story 19.4 C1: never report Saved on a failed write — surface the
+        // server's curated error (falls back to the approved generic).
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          setSaveError(
+            data?.error || "Something went wrong. Please try again."
+          );
+          return;
+        }
         setSaved(true);
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = setTimeout(() => setSaved(false), 2000);
       } catch {
-        // silent
+        setSaveError("Something went wrong. Please try again.");
       } finally {
         setSaving(false);
       }
@@ -145,7 +161,11 @@ export default function WaitlistSettingsClient({
           : null;
         if (!cancelled) setQuestions(mine?.questions ?? []);
       } catch {
-        // leave empty — founder can still add questions
+        // Story 19.4 C13: a failed load must not masquerade as "No
+        // qualification questions configured" — hide the list and alert.
+        if (!cancelled) {
+          setQuestionsLoadError("Something went wrong. Please try again.");
+        }
       } finally {
         if (!cancelled) setQuestionsLoading(false);
       }
@@ -247,8 +267,9 @@ export default function WaitlistSettingsClient({
 
   async function handleArchive() {
     setArchiving(true);
+    setArchiveError(null);
     try {
-      await fetch("/api/waitlist", {
+      const res = await fetch("/api/waitlist", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -257,9 +278,17 @@ export default function WaitlistSettingsClient({
           archived_at: new Date().toISOString(),
         }),
       });
+      // Story 19.4 C8: a failed archive must not refresh as if it succeeded.
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setArchiveError(
+          data?.error || "Something went wrong. Please try again."
+        );
+        return;
+      }
       router.refresh();
     } catch {
-      // silent
+      setArchiveError("Something went wrong. Please try again.");
     } finally {
       setArchiving(false);
     }
@@ -267,8 +296,9 @@ export default function WaitlistSettingsClient({
 
   async function handleUnarchive() {
     setArchiving(true);
+    setArchiveError(null);
     try {
-      await fetch("/api/waitlist", {
+      const res = await fetch("/api/waitlist", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -277,9 +307,16 @@ export default function WaitlistSettingsClient({
           archived_at: null,
         }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setArchiveError(
+          data?.error || "Something went wrong. Please try again."
+        );
+        return;
+      }
       router.refresh();
     } catch {
-      // silent
+      setArchiveError("Something went wrong. Please try again.");
     } finally {
       setArchiving(false);
     }
@@ -287,6 +324,7 @@ export default function WaitlistSettingsClient({
 
   async function handleDelete() {
     setDeleting(true);
+    setDeleteError(null);
     try {
       const res = await fetch("/api/waitlist", {
         method: "DELETE",
@@ -295,7 +333,14 @@ export default function WaitlistSettingsClient({
       });
       if (res.ok) {
         router.push("/dashboard/settings/waitlists");
+      } else {
+        const data = await res.json().catch(() => null);
+        setDeleteError(
+          data?.error || "Something went wrong. Please try again."
+        );
       }
+    } catch {
+      setDeleteError("Something went wrong. Please try again.");
     } finally {
       setDeleting(false);
     }
@@ -430,6 +475,11 @@ export default function WaitlistSettingsClient({
               {saved && !saving && (
                 <p className="mt-3 text-xs text-accent">Saved</p>
               )}
+              {saveError && !saving && (
+                <p role="alert" className="mt-3 text-xs text-destructive">
+                  {saveError}
+                </p>
+              )}
             </div>
             <div className="rounded-xl border border-border bg-card p-6">
               <p className="mb-3 text-overline text-muted-foreground">
@@ -484,6 +534,11 @@ export default function WaitlistSettingsClient({
                 {saved && !saving && (
                   <p className="text-xs text-accent">Saved</p>
                 )}
+                {saveError && !saving && (
+                  <p role="alert" className="text-xs text-destructive">
+                    {saveError}
+                  </p>
+                )}
               </div>
             </div>
             {questionsLoading ? (
@@ -492,6 +547,10 @@ export default function WaitlistSettingsClient({
                 <div className="h-24 rounded-xl bg-muted" />
                 <div className="h-10 w-48 animate-pulse rounded-xl bg-muted" />
               </div>
+            ) : questionsLoadError ? (
+              <p role="alert" className="mb-4 text-body-sm text-destructive">
+                {questionsLoadError}
+              </p>
             ) : (
               <>
                 {questions.length === 0 && (
@@ -563,6 +622,11 @@ export default function WaitlistSettingsClient({
             {saved && !saving && (
               <p className="mt-3 text-xs text-accent">Saved</p>
             )}
+            {saveError && !saving && (
+              <p role="alert" className="mt-3 text-xs text-destructive">
+                {saveError}
+              </p>
+            )}
           </div>
         )}
 
@@ -617,6 +681,11 @@ export default function WaitlistSettingsClient({
             )}
             {saved && !saving && (
               <p className="mt-3 text-xs text-accent">Saved</p>
+            )}
+            {saveError && !saving && (
+              <p role="alert" className="mt-3 text-xs text-destructive">
+                {saveError}
+              </p>
             )}
           </div>
         )}
@@ -677,6 +746,14 @@ export default function WaitlistSettingsClient({
                       >
                         {archiving ? "Archiving…" : "Archive waitlist"}
                       </Button>
+                    )}
+                    {archiveError && (
+                      <p
+                        role="alert"
+                        className="mt-3 text-body-sm text-destructive"
+                      >
+                        {archiveError}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -769,12 +846,18 @@ export default function WaitlistSettingsClient({
               placeholder='Type "delete" to confirm'
               className="mb-4 w-full rounded-lg border border-border bg-card px-3 py-2 text-body-sm text-foreground placeholder:text-muted-foreground focus:border-destructive focus:outline-none focus:ring-1 focus:ring-destructive"
             />
+            {deleteError && (
+              <p role="alert" className="mb-3 text-body-sm text-destructive">
+                {deleteError}
+              </p>
+            )}
             <div className="flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => {
                   setConfirmDelete(false);
                   setConfirmText("");
+                  setDeleteError(null);
                 }}
                 className="rounded-lg px-4 py-2 text-body-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >

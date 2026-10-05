@@ -1,5 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendEmail, buildEmailFooter, isUnsubscribed } from "@/lib/email";
+import {
+  sendEmail,
+  buildEmailFooter,
+  buildFreeEmailFooter,
+  isUnsubscribed,
+} from "@/lib/email";
 import { isEmailBounced } from "@/lib/bounces";
 
 interface MilestoneTier {
@@ -16,10 +21,16 @@ function buildMilestoneEmailHTML(
     headline: string | null;
     business_address?: string | null;
   } | null,
-  referralLink?: string | null
+  referralLink?: string | null,
+  founderTier?: string
 ): string {
   const name = waitlist?.product_name || waitlist?.headline || "the waitlist";
-  const footerHtml = buildEmailFooter(waitlist?.business_address);
+  // 19.1 AC5: tier-conditional footer — free gets Powered-by attribution,
+  // pro does not (the inverse of the old unconditional buildEmailFooter).
+  const footerHtml =
+    founderTier === "free"
+      ? buildFreeEmailFooter(waitlist?.business_address)
+      : buildEmailFooter(waitlist?.business_address);
   const shareButtonHtml = referralLink
     ? `<p style="margin: 24px 0 0 0;">
             <a href="${referralLink}" target="_blank" style="background-color: #0F7A5E; border: 1px solid #0F7A5E; border-radius: 8px; font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: bold; line-height: 16px; text-decoration: none; padding: 14px 28px; color: #ffffff; display: block;">
@@ -163,12 +174,17 @@ export async function checkAndFulfillMilestones(
 
         // 2.5 rule B: custom sender identity is Pro-only — tier rides along
         // with the queued email (join comes free on the waitlist select).
-        const founderTier =
-          (
-            waitlist as unknown as {
-              founder_profiles?: { tier: string }[];
-            } | null
-          )?.founder_profiles?.[0]?.tier || "free";
+        // 19.1 AC5: PostgREST returns this to-one embed as an OBJECT, so the
+        // old `founder_profiles?.[0]` always fell through to "free" (custom
+        // sender never fired AND footer choice was wrong for pro). Array
+        // branch kept as the defensive shape — same pattern as route.ts.
+        const milestoneProfileEmbed = (
+          waitlist as { founder_profiles?: unknown } | null
+        )?.founder_profiles;
+        const milestoneFounderProfile = Array.isArray(milestoneProfileEmbed)
+          ? (milestoneProfileEmbed[0] as { tier: string } | undefined)
+          : (milestoneProfileEmbed as { tier: string } | null | undefined);
+        const founderTier = milestoneFounderProfile?.tier || "free";
 
         emailsToSend.push({
           tier: { tier_referrals: threshold, reward_label: tier.reward_label },
@@ -225,7 +241,8 @@ export async function checkAndFulfillMilestones(
             email.tier,
             referralCount,
             email.waitlist,
-            referralLink
+            referralLink,
+            email.founderTier
           ),
           stream: "transactional",
           senderName:

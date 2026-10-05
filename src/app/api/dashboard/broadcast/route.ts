@@ -48,8 +48,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: tierCheck.reason }, { status: 403 });
   }
 
-  const body = await req.json();
-  const { subject, body: emailBody, segment, waitlist_id } = body;
+  // Story 19.4 M19: malformed JSON must not throw a raw SyntaxError — null
+  // falls through to the existing waitlist_id validation (400 + string).
+  const body = await req.json().catch(() => null);
+  const { subject, body: emailBody, segment, waitlist_id } = body ?? {};
 
   if (!waitlist_id) {
     return NextResponse.json(
@@ -120,10 +122,23 @@ export async function POST(req: NextRequest) {
   const adminSupabase = createAdminClient();
   const eligible: { id: string; email: string; referral_code: string }[] = [];
 
-  const { data: bouncedRows } = await adminSupabase
+  // Story 19.4 M21: fail closed — sending when the bounce-suppression read
+  // failed would email hard-bounced addresses (deliverability + compliance).
+  const { data: bouncedRows, error: bouncedError } = await adminSupabase
     .from("bounced_emails")
     .select("email, bounce_type, created_at")
     .eq("waitlist_id", waitlist.id);
+
+  if (bouncedError) {
+    console.error(
+      "[API POST /broadcast] bounced_emails read failed:",
+      bouncedError.message
+    );
+    return NextResponse.json(
+      { error: "Something went wrong. Please try again." },
+      { status: 500 }
+    );
+  }
 
   const softCutoff = Date.now() - 24 * 60 * 60 * 1000;
   const bouncedSet = new Set(

@@ -65,6 +65,7 @@ export default function OnboardingStep4() {
   const form = useOnboardingForm();
   const [selected, setSelected] = useState<Choice>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     form.setLoading(false);
@@ -77,6 +78,7 @@ export default function OnboardingStep4() {
       if (!selected || isSubmitting) return;
 
       setIsSubmitting(true);
+      setSubmitError(null);
       form.setLoading(true);
 
       try {
@@ -96,11 +98,15 @@ export default function OnboardingStep4() {
           }),
         });
 
+        // Story 19.4 C4: a failed save must surface — not just console.error.
         if (!res.ok) {
-          const error = await res.json();
-          throw new Error(
-            error.error || "Failed to save qualification decision"
+          const data = await res.json().catch(() => null);
+          setSubmitError(
+            data?.error || "Something went wrong. Please try again."
           );
+          setIsSubmitting(false);
+          form.setLoading(false);
+          return;
         }
 
         form.updateField("qualificationEnabled", selected === "yes");
@@ -112,6 +118,7 @@ export default function OnboardingStep4() {
         }
       } catch (err) {
         console.error("Qualification decision error:", err);
+        setSubmitError("Something went wrong. Please try again.");
         setIsSubmitting(false);
         form.setLoading(false);
       }
@@ -191,7 +198,7 @@ export default function OnboardingStep4() {
         <button
           type="submit"
           disabled={!selected || isSubmitting}
-          className="inline-flex h-14.75 w-114.5 items-center justify-center rounded-(--radius-md) bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex h-14.75 w-full items-center justify-center rounded-(--radius-md) bg-accent text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50 md:w-114.5"
         >
           {isSubmitting ? (
             <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -199,6 +206,15 @@ export default function OnboardingStep4() {
             <span>Next →</span>
           )}
         </button>
+
+        {submitError && (
+          <p
+            role="alert"
+            className="mt-3 text-center text-body-sm text-destructive"
+          >
+            {submitError}
+          </p>
+        )}
 
         <Link
           href="/onboarding/3"

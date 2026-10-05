@@ -179,14 +179,21 @@ function PanelBody({
   variant: Variant;
 }) {
   const [data, setData] = useState<QualificationData | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     const widParam = waitlistId ? `?waitlist_id=${waitlistId}` : "";
     fetch(`/api/dashboard/qualification${widParam}`)
-      .then((res) => res.json())
+      .then((res) => {
+        // Story 19.4 row 25: a failed load must not render as
+        // "No qualification questions configured" / "No responses yet".
+        if (!res.ok) throw new Error("load failed");
+        return res.json();
+      })
       .then((json) => {
         if (!cancelled) {
+          setLoadError(false);
           setData({
             questions: json.questions || [],
             respondentTotal: json.respondentTotal || 0,
@@ -194,7 +201,7 @@ function PanelBody({
         }
       })
       .catch(() => {
-        if (!cancelled) setData({ questions: [], respondentTotal: 0 });
+        if (!cancelled) setLoadError(true);
       });
     return () => {
       cancelled = true;
@@ -209,6 +216,29 @@ function PanelBody({
       View all &rarr;
     </Link>
   );
+
+  if (loadError) {
+    if (variant === "overview") {
+      return (
+        <Panel title="Qualification Breakdown" action={viewAllLink}>
+          <p
+            role="alert"
+            className="py-6 text-center text-body-sm text-destructive"
+          >
+            Something went wrong. Please try again.
+          </p>
+        </Panel>
+      );
+    }
+
+    return (
+      <div className={panelChrome}>
+        <p role="alert" className="text-body-sm text-destructive">
+          Something went wrong. Please try again.
+        </p>
+      </div>
+    );
+  }
 
   if (data === null) {
     if (variant === "overview") {

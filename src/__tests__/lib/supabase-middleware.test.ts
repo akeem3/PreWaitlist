@@ -86,4 +86,25 @@ describe("updateSession Phase-B guard (4.2)", () => {
     expect(res.headers.get("location")).toBeNull();
     expect(res.status).toBe(200);
   });
+
+  it.each(["/legal/terms", "/legal/privacy", "/unsubscribe?token=abc123"])(
+    "serves public compliance route %s to anonymous visitors",
+    async (path) => {
+      mockGetUser.mockResolvedValue({ data: { user: null } });
+
+      const res = await updateSession(request(path));
+
+      expect(res.headers.get("location")).toBeNull();
+      expect(res.status).toBe(200);
+    }
+  );
+
+  it("still redirects anonymous visitors away from private routes", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } });
+
+    for (const path of ["/dashboard", "/settings", "/updates"]) {
+      const res = await updateSession(request(path));
+      expect(res.headers.get("location")).toContain("/signin");
+    }
+  });
 });

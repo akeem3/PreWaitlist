@@ -34,10 +34,12 @@ vi.mock("@/lib/positions", () => ({
   getPositionUpdate: vi.fn().mockReturnValue(null),
 }));
 
+// Mock email utilities — distinct footer markers so tests can prove which
+// tier's footer actually shipped (19.1 AC2/AC7).
 vi.mock("@/lib/email", () => ({
   sendEmail: vi.fn().mockResolvedValue({ ok: true }),
-  buildEmailFooter: vi.fn().mockReturnValue(""),
-  buildFreeEmailFooter: vi.fn().mockReturnValue(""),
+  buildEmailFooter: vi.fn().mockReturnValue("<pro-footer>"),
+  buildFreeEmailFooter: vi.fn().mockReturnValue("<free-footer>"),
   isUnsubscribed: vi.fn().mockResolvedValue(false),
 }));
 
@@ -363,7 +365,10 @@ describe("POST /api/subscribers — referral tracking", () => {
   function pushMovedUpReferralQueueWithSender(
     tier: string,
     senderName: string | null,
-    sendingDomain: string | null
+    sendingDomain: string | null,
+    // 19.1 AC7: "object" mirrors the production PostgREST to-one embed shape;
+    // default "array" exercises the defensive branch (legacy test fixture).
+    embedShape: "object" | "array" = "array"
   ) {
     mockAdminSupabase.__queue.push({
       data: { id: "referrer-1", waitlist_id: "wl-1" },
@@ -411,7 +416,9 @@ describe("POST /api/subscribers — referral tracking", () => {
       error: null,
     });
     mockAdminSupabase.__queue.push({
-      data: { founder_profiles: [{ tier }] },
+      data: {
+        founder_profiles: embedShape === "object" ? { tier } : [{ tier }],
+      },
       error: null,
     });
   }
@@ -448,5 +455,39 @@ describe("POST /api/subscribers — referral tracking", () => {
       senderName: null,
       sendingDomain: null,
     });
+  });
+
+  // --- 19.1 AC2/AC7: moved-up tier-resolution regression lock ---
+
+  it("19.1 AC2/AC7: object-shaped embed (production) resolves pro → non-free footer on moved-up", async () => {
+    pushCapCheck();
+    pushMovedUpReferralQueueWithSender("pro", "Ada", "ada.com", "object");
+    mockedGetPositionUpdate.mockImplementation((_updates, id) =>
+      id === "referrer-1" ? movedUpReferrerUpdate : null
+    );
+
+    const response = await postReferralSignup();
+    expect(response.status).toBe(201);
+
+    expect(mockedSendEmail).toHaveBeenCalledTimes(1);
+    const html = mockedSendEmail.mock.calls[0][0]?.html;
+    expect(html).toContain("<pro-footer>");
+    expect(html).not.toContain("<free-footer>");
+  });
+
+  it("19.1 AC2: free tier gets the Powered-by footer on moved-up (iff tier is free)", async () => {
+    pushCapCheck();
+    pushMovedUpReferralQueueWithSender("free", null, null, "object");
+    mockedGetPositionUpdate.mockImplementation((_updates, id) =>
+      id === "referrer-1" ? movedUpReferrerUpdate : null
+    );
+
+    const response = await postReferralSignup();
+    expect(response.status).toBe(201);
+
+    expect(mockedSendEmail).toHaveBeenCalledTimes(1);
+    const html = mockedSendEmail.mock.calls[0][0]?.html;
+    expect(html).toContain("<free-footer>");
+    expect(html).not.toContain("<pro-footer>");
   });
 });

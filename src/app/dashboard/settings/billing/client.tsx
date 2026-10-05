@@ -134,11 +134,13 @@ export default function BillingClient() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ business_address: address }),
     });
-    if (res.ok) {
-      setProfile((prev) =>
-        prev ? { ...prev, businessAddress: address } : prev
-      );
+    // Story 19.4 C2: throw on failure so BillingDetails never reports a
+    // false "Address saved" (errors surface inline in the child).
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      throw new Error(data?.error || "Something went wrong. Please try again.");
     }
+    setProfile((prev) => (prev ? { ...prev, businessAddress: address } : prev));
   }, []);
 
   // 2.3: portal errors surfaced inline per-button (was silent), with pending

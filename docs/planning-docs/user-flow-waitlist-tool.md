@@ -1,5 +1,7 @@
 # Pre-Launch Waitlist Tool — Complete User Flow
 
+> **HISTORICAL — OUTDATED (marked 2026-10-05):** This document (v4.3, written pre-Epic 12–18) is retained for historical reference only. It is not a source of truth for build or QA work: it is superseded by `docs/qa/manual-test-cases.md` (Epic 21, once created). Epic 21 derives test cases from the actual app, screenshots, and source-of-truth docs — see [sprint-4-plan](../epics/sprint-4-plan.md).
+
 **Version:** 4.3 — Part Four (Diagram Layout Instructions) removed. Part Three fully audited (v4.2). All 14 gaps closed. 57 nodes total.
 **Prepared by:** Abdul-Hakeem Hassan
 **Document type:** Textual User Flow (Excalidraw Build Guide)
@@ -320,7 +322,7 @@ Milestone rewards (optional panel):
 Progress bar: ●●●○○
 ```
 
-**Notes:** Gap 3a closed (social meta tags), Gap 14 closed ("Powered by" footer visible during setup — first upgrade trigger moment), and milestone rewards configuration added here per field research Findings 9 and 13. The og: preview is graded 🔵 Core. The milestone rewards configuration is graded 🟢 Should — if founder skips it, thank-you page shows referral link and share buttons without the milestone display. If configured, the milestone display appears above share buttons, giving subscribers a specific reason to share before the share ask is made. **[VERIFIED 2026-09-30 (revenue plan Phase 5.1):** social meta tags now actually ship — per-subdomain `generateMetadata` (og:title/og:description/Twitter card) at `src/app/(public)/[subdomain]/page.tsx:30` plus a dynamic 1200×630 og:image PNG (`opengraph-image.tsx`, rendered from headline/subheadline/brand colour, 300s revalidate). The onboarding panel is the PRD REQ-6.8.6 Meta Preview — an OG-card mock (browser chrome + headline/subheadline/domain), **not** a rendering of the og:image thumbnail; it is source data for the tags. `Waitlist__User_Flow_Diagram_.md` is a raw Excalidraw export of this flow and is left unannotated by design.**]**
+**Notes:** Gap 3a closed (social meta tags), Gap 14 closed ("Powered by" footer visible during setup — first upgrade trigger moment), and milestone rewards configuration added here per field research Findings 9 and 13. The og: preview is graded 🔵 Core. The milestone rewards configuration is graded 🟢 Should — if founder skips it, thank-you page shows referral link and share buttons without the milestone display. If configured, the milestone display appears above share buttons, giving subscribers a specific reason to share before the share ask is made. **[VERIFIED 2026-09-30 (revenue plan Phase 5.1):** social meta tags now actually ship — per-subdomain `generateMetadata` (og:title/og:description/Twitter card) at `src/app/(public)/[subdomain]/page.tsx:30` plus a dynamic 1200×630 og:image PNG (`opengraph-image.tsx`, rendered from headline/subheadline/brand colour, revalidate 86400 since 2026-10-04 [was 300s]; card centered + "Powered by" tier-gated to Free only). The onboarding panel is the PRD REQ-6.8.6 Meta Preview — an OG-card mock (browser chrome + headline/subheadline/domain), **not** a rendering of the og:image thumbnail; it is source data for the tags. `Waitlist__User_Flow_Diagram_.md` is a raw Excalidraw export of this flow and is left unannotated by design.**]**
 
 **Arrow:** Node F-C3 → Node F-C4 `(Next →)`
 
