@@ -236,8 +236,10 @@ export default function LeaderboardClient({
           )}
         </div>
 
-        {/* Column headers + rows share the grid; Phone widens it when on */}
-        <div className={phoneEnabled ? "overflow-x-auto" : undefined}>
+        {/* Column headers + rows share the grid; Phone widens it when on.
+            The scroll container is unconditional so a narrow viewport (375)
+            scrolls inside the card instead of expanding the document. */}
+        <div className="overflow-x-auto">
           <div className={phoneEnabled ? "min-w-[900px]" : undefined}>
             <div className={`${gridClass} border-b border-border px-5 py-3`}>
               <SortHeader

@@ -203,7 +203,7 @@ export function UpgradeModal({
       onClick={handleBackdropClick}
       className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/50"
     >
-      <div className="relative mx-4 w-full max-w-[520px] rounded-xl border border-border bg-card p-8 shadow-[var(--shadow-float)]">
+      <div className="relative mx-4 max-h-[calc(100dvh-2rem)] w-full max-w-[520px] overflow-y-auto rounded-xl border border-border bg-card p-8 shadow-[var(--shadow-float)]">
         <button
           type="button"
           onClick={handleDismiss}

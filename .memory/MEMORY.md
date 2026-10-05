@@ -2038,3 +2038,48 @@ Founder: the public-page update card looked "dumped on the page". Restyle in `co
 - CSV row comma-counting by eye is error-prone — build expected rows as `` `fixed,parts,` + quotedDate `` (variable holds the quoted dynamic field) instead of one giant template; let vitest adjudicate.
 - `vi.mock("@/lib/email")` factories must stay in sync with real-module imports — adding `buildFreeEmailFooter` to `milestones.ts` crashed nothing only because `milestones.test.ts` mock was updated in the same change; sweep with `Select-String` across test dirs for the module path when adding imports.
 - Full-suite under load flakes beyond the 7-baseline (billing, broadcast-client) — always re-run / isolate before declaring regression (MEMORY rule confirmed again).
+
+## Epic 19 — Stories 19.5 + 19.6 audits + F8 compliance fix (2026-10-05)
+
+**Status:** both stories implemented + gated. **[SUPERSEDED 2026-10-05: founder closed Epic 19 — flipped to `done`; see "Epic 19 Complete" block below.]**
+
+**19.6 (second-waitlist audit):** spec GREEN 23/23 (`tests/e2e/second-waitlist-audit.spec.ts`, report `docs/qa/second-waitlist-audit/findings.json`) — includes fresh wizard creation (qa2 deleted first via REST so creation evidence is real, then recreated by the final run). Zero code fixes required. Results in `docs/stories/story-19.6-second-waitlist-flow-audit.md`. **Founder pending:** F3 (settings hub has no add-waitlist button; entry = header + switcher — as-designed), F11 (P2, "Upgrade to Pro" headline off-context), F12 (P2 edge path: free founder at onboarding/3 → flush 402 → silent push to /onboarding/4). Spec gotchas: sign-in hangs >30s intermittently → 3-attempt login retry; two `Unarchive` buttons exist when the archived banner shows → scope to `page.getByRole("main")`; force `?wid=A` before the switcher step (stored wid may be archived).
+
+**19.5 (mobile audit):** 31 screens × 2 viewports = 62 captures. P1s **F1–F4 fixed, existing utilities only:** onboarding/4 `w-full md:w-114.5` · leaderboard `overflow-x-auto` unconditional (kept `min-w-[900px]` phone-only) · upgrade modal card `max-h-[calc(100dvh-2rem)] overflow-y-auto` · shell `<main>` `pt-14 lg:pt-0` (hamburger clearance, zero desktop change). **Final harness run:** 528 auto = 524 small-target + 4 overflow (= F5 only), fixedOverlaps 0 (was 23), clippedOverlays 0 (was 2), 0 console errors → F1/F2/F3/F4 cleared, F6 cleared as F4 side effect. **P2 for founder:** F5 (two-pane @768 overflow: steps 1–3 = 835px, 4a = 950px), F7 (~524 small-target rows, incl. hamburger 38×38). Remaining 4xx: 2× `400 POST /api/waitlist` during onboarding-4a captures = harness `DRAFT` fixture (`waitlistId: null`) failing FlushGate flush — pre-existing fixture noise, capture identity passed.
+
+**F8 — compliance bug found via run-health `badResponses` (FIXED in this batch):** anon root-host `/legal/terms`, `/legal/privacy`, `/unsubscribe?token` were **307 → /signin** (anon-redirect allowlist in `src/lib/supabase/middleware.ts` omits them) and subdomain hosts **404**'d `/legal*` (`src/proxy.ts` prefixes every path → `/quality/legal/terms` → no route). Impact: legal links dead on every public waitlist page (consent line + footers) and the CAN-SPAM unsubscribe page unreachable for recipients (16 CFR §316.5 forbids login-walling an opt-out; research confirmed). Fix: allowlist `!startsWith("/legal")` + `!startsWith("/unsubscribe")` in `middleware.ts`, plus `isSharedPublicPath` passthrough in `proxy.ts` (no subdomain prefix for `/legal*`, `/unsubscribe*`). `/api/*` unaffected (matcher `proxy.ts:36`). Tests: middleware +4 (13 total), new `src/__tests__/lib/proxy.test.ts` 5. Live probes after rebuild: all six fixed surfaces 200; anon `/dashboard` → 307 `/signin` and anon `/onboarding/4` → 307 `/onboarding/signup` intact; subdomain `/leaderboard` still rewrites `/quality/leaderboard`.
+
+**Gates:** lint 0 errors / 5 baseline warnings · prettier clean (code + both story docs) · full suite **1002 = 995 pass / 7 fail = exact baseline** (+9 new) · clean build (`ƒ Proxy (Middleware)`) · dev server restarted on the new build · harness final run green (3.7m, 62/62 ok).
+
+**Gotchas:**
+
+- `curl.exe -o $null -w "%{http_code}"` is broken in this PowerShell env (body leaks to stdout → fake "codes" like `/signin` or HTML blobs). Always `-o <tempfile>` for probes.
+- happy-dom/undici drops `Host` from `NextRequest` init (forbidden header) → proxy unit tests must `Object.defineProperty(req, "headers", { value: new Headers({ host }) })` or `getSubdomain` sees null and falls into the apex/`updateSession` branch.
+- Vitest full-suite `kill EPERM` crash (Windows) — rerun; not a test failure.
+- `next/font` build can fail on transient `Failed to fetch Inter from Google Fonts` — rerun the build.
+
+## Epic 19 Complete — all 8 stories done, merged to main (2026-10-05)
+
+**Status:** ✅ EPIC 19 DONE — founder directive 2026-10-05 ("safe to say we are done with epic 19"). Flipped to `done`: epic doc `docs/epics/epic-19-product-fixes-polish.md` (header Status + Story Index rows + all 8 per-story Status lines), story files `story-19.0`–`story-19.7`, and the `docs/epics/sprint-4-plan.md` Story Index rows. `commit-push` + `merge-clean` to `main` run in the same session immediately after this write (Vercel auto-deploys from `main`).
+
+| Story | Status  | Summary                                                                                                                                              |
+| ----- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 19.0  | ✅ done | Doc debt — PRD Sprint 4 section added, stale planning tables corrected                                                                               |
+| 19.1  | ✅ done | P0 Pro email tier fix — PostgREST embed object-vs-array cast forced every confirmation/moved-up/milestone email to `tier="free"`                     |
+| 19.2  | ✅ done | CSV Quality column (referral-quality %, dashboard formula) + OWASP formula-injection hardening (AC8)                                                 |
+| 19.3  | ✅ done | Edge-case audit — matrix executed, broken rows fixed, deferrals logged (`ee31901`)                                                                   |
+| 19.4  | ✅ done | Error & loading states audit — error handling across API routes + dashboard components (`f766c9e`)                                                   |
+| 19.5  | ✅ done | Mobile audit — 31 screens × 2 viewports, P1 F1–F4 + F8 fixed, harness final run 62/62 green                                                          |
+| 19.6  | ✅ done | Second-waitlist flow — spec GREEN 23/23 ×2, zero code fixes required                                                                                 |
+| 19.7  | ✅ done | Email deliverability — live DNS capture vs Resend requirements + code-side sender audit; Prompt #3 audit (5 doc defects found → fixed → re-verified) |
+
+**Accepted as non-blocking follow-ups at epic close (re-open as new stories if any needs doing):**
+
+1. **19.5 P2s:** F5 (768 two-pane overflow: steps 1–3 = 835px, 4a = 950px), F7 (~524 small-target rows, incl. hamburger 38×38).
+2. **19.6:** F3 (settings hub has no add-waitlist button — entry = header + switcher; as-designed), F11 (P2 `"Upgrade to Pro"` headline — copy gate), F12 (P2 free-founder `/onboarding/3` → flush 402 → silent push edge path).
+3. **19.7 AC2:** founder Resend dashboard run (R1–R4, script in story §4) — **do before launch**; includes DKIM dashboard-value match (R2) + webhook `www` URL confirmation (R3). Optional: G1 (add `rua=` to `_dmarc` TXT), G6 (Supabase Auth sender-domain check).
+4. **F8 legal/unsubscribe compliance fix** reached production with this merge (was only locally probe-verified before).
+
+**Gates at close:** lint 0 errors / 5 baseline warnings · prettier clean (epic + story docs + sprint-4-plan + MEMORY) · full suite **1002 = 995 pass / 7 fail = exact sanctioned baseline** (run during 19.5/19.6 close; docs-only changes after) · clean build `ƒ Proxy (Middleware)` · 19.7 Prompt #3 audit re-ran lint + build green after its fixes.
+
+**19.7 audit facts (live DNS, re-verified twice):** SPF (`send` TXT), MX (`send`), DKIM (`resend._domainkey` TXT), DMARC (`_dmarc` TXT) all **TTL 60** at Vercel DNS (`ns1/ns2.vercel-dns.com`) · DMARC = `v=DMARC1; p=none;` (no `rua=`) · apex has no SPF/MX (correct-by-omission) · local `RESEND_API_KEY` is send-only (`restricted_api_key` → domains API 401, so dashboard status is founder-only) · every send path resolves through `src/lib/from-address.ts:20-44` (all call sites line-verified: subscribers ×3, milestones, retry-queue ×2, broadcast, updates, compose preview).

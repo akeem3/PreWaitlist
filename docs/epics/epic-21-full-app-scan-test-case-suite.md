@@ -93,6 +93,7 @@ Every story moves `ready` -> `in-progress` -> `done` (or `blocked`), and is only
 - Naming: `NN-page-state-viewport.png` (e.g., `01-waitlist-populated-desktop.png`).
 - Official Playwright screenshots-doc findings for the script (researched 2026-10-04): `page.screenshot({ path, fullPage: true })` for full-scroll pages (or viewport-only for dashboard shots — record the choice per row in the manifest); `scale: "css"` (not device DPR) keeps PNGs small and aids the AC4 <5 MB target; `page.mouse.move(-1, -1)` before capture so hover states don't vary between runs; note that `expect(page).toHaveScreenshot()` visual-regression diffing is a separate Playwright capability = deliberately out of scope per Out of scope.
 - If Playwright webServer + seed proves too flaky for CI-style capture, fallback: manual capture via browser during founder QA session — record choice in manifest. Do not silently skip AC1.
+- **Capture tooling (decision 2026-10-05):** screenshots will be taken by the agent via Playwright's `page.screenshot()` in the capture script — the same tooling proven in the 19.5 mobile audit (62 shots in ~4 min) and the 19.6 second-waitlist audit (`19.6-*.png` in `docs/qa/screenshots/`). Agent-side re-viewing of PNGs is unreliable (known read-tool image glitch) — the agent verifies captures by file existence, dimensions, and byte size; the founder eyeballs the PNGs at triage. Manifest citations in 21.5 are written for founder review.
 
 ---
 

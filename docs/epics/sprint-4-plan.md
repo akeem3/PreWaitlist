@@ -116,11 +116,11 @@ Pro founders' emails carry no "Powered by" branding and free founders' do (corre
 | 19.0 | Doc Debt: PRD Sprint 4 + Stale Tables | —          | done   |
 | 19.1 | Pro Email Tier Fix (P0)               | —          | done   |
 | 19.2 | CSV Export Polish (Quality Column)    | —          | done   |
-| 19.3 | Edge-Case Audit                       | —          | ready  |
-| 19.4 | Error & Loading States Audit          | —          | ready  |
-| 19.5 | Mobile Responsiveness Audit           | —          | ready  |
-| 19.6 | Second-Waitlist Flow Audit            | —          | ready  |
-| 19.7 | Email Deliverability Audit            | 19.1       | ready  |
+| 19.3 | Edge-Case Audit                       | —          | done   |
+| 19.4 | Error & Loading States Audit          | —          | done   |
+| 19.5 | Mobile Responsiveness Audit           | —          | done   |
+| 19.6 | Second-Waitlist Flow Audit            | —          | done   |
+| 19.7 | Email Deliverability Audit            | 19.1       | done   |
 
 ---
 

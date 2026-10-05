@@ -67,6 +67,12 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/onboarding/3") &&
     !request.nextUrl.pathname.startsWith("/onboarding/signup") &&
     !request.nextUrl.pathname.startsWith("/onboarding/success") &&
+    // Public compliance routes: legal pages are linked from every public
+    // waitlist page (consent line + footers) and /unsubscribe is the CAN-SPAM
+    // opt-out landing path — both must work signed-out (16 CFR 316.5 forbids
+    // putting a login wall in front of an opt-out mechanism).
+    !request.nextUrl.pathname.startsWith("/legal") &&
+    !request.nextUrl.pathname.startsWith("/unsubscribe") &&
     // Social crawlers fetch og:image anonymously — a signin redirect here
     // would hand them HTML instead of a PNG. Covers the root route and the
     // nested /{subdomain}/opengraph-image-* route (og:image may be resolved

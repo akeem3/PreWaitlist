@@ -387,7 +387,10 @@ export default function DashboardShell({
         </svg>
       </button>
 
-      <main className="min-h-screen lg:ml-67">
+      {/* pt-14 below lg clears the fixed hamburger zone (top-4 left-4 →
+          bottom edge y=54): page headings/back-links start below it instead
+          of under it. lg:pt-0 keeps desktop layout unchanged (no hamburger). */}
+      <main className="min-h-screen pt-14 lg:pt-0 lg:ml-67">
         <QuotaWarningBanner />
         <DashboardContext.Provider value={contextValue}>
           {children}

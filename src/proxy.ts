@@ -119,9 +119,19 @@ export async function proxy(request: NextRequest) {
 
   const url = request.nextUrl.clone();
   const path = url.pathname === "/" ? "" : url.pathname.replace(/\/$/, "");
-  url.pathname = path.startsWith(`/${subdomain}`)
-    ? path
-    : `/${subdomain}${path}`;
+  // Shared compliance routes exist only at the root (there are no
+  // per-subdomain legal/unsubscribe pages). Legal links on public waitlist
+  // pages are host-relative, so a subdomain host would otherwise rewrite
+  // /legal/terms to /{subdomain}/legal/terms and 404. Serve the root route.
+  const isSharedPublicPath =
+    path === "/legal" ||
+    path.startsWith("/legal/") ||
+    path === "/unsubscribe" ||
+    path.startsWith("/unsubscribe/");
+  url.pathname =
+    path.startsWith(`/${subdomain}`) || isSharedPublicPath
+      ? path
+      : `/${subdomain}${path}`;
   const rewriteResponse = NextResponse.rewrite(url);
   // Preserve acquisition attribution on subdomain rewrites — previously
   // this branch discarded the capture response and dropped the cookie.

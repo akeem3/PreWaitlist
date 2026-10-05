@@ -1,6 +1,6 @@
 # Epic 19 — Product Fixes & Polish
 
-**Status:** ready
+**Status:** done
 **Source:** [MVP Vision Sprint 4](../product-vision-mvp-waitlist-tool.md#sprint-4--polish-qa-edge-cases-analytics-product-hunt-prep) (`:420-440`), founder report "Pro account emails still display Powered by"
 
 ## Design References
@@ -24,11 +24,11 @@ Pro founders' emails carry no "Powered by" branding and free founders' do (corre
 | 19.0 | Doc Debt: PRD Sprint 4 + Stale Tables | —          | done   |
 | 19.1 | Pro Email Tier Fix (P0)               | —          | done   |
 | 19.2 | CSV Export Polish (Quality Column)    | —          | done   |
-| 19.3 | Edge-Case Audit                       | —          | ready  |
-| 19.4 | Error & Loading States Audit          | —          | ready  |
-| 19.5 | Mobile Responsiveness Audit           | —          | ready  |
-| 19.6 | Second-Waitlist Flow Audit            | —          | ready  |
-| 19.7 | Email Deliverability Audit            | 19.1       | ready  |
+| 19.3 | Edge-Case Audit                       | —          | done   |
+| 19.4 | Error & Loading States Audit          | —          | done   |
+| 19.5 | Mobile Responsiveness Audit           | —          | done   |
+| 19.6 | Second-Waitlist Flow Audit            | —          | done   |
+| 19.7 | Email Deliverability Audit            | 19.1       | done   |
 
 Stories are ordered by dependency: 19.0-19.6 are independent and may run in parallel; 19.7 depends on 19.1 so deliverability verification runs against the fixed footer code. Every story moves `ready` -> `in-progress` -> `done` (or `blocked`), and is only marked `done` when its lint/test/build gates pass. See `docs/epics/sprint-4-plan.md` for sprint-level context.
 
@@ -125,7 +125,7 @@ Stories are ordered by dependency: 19.0-19.6 are independent and may run in para
 
 ### Story 19.3 — Edge-Case Audit
 
-**Status:** ready
+**Status:** done
 **Design Refs:** - (no new UI; fixes/audits/docs only)
 **Story:** As the maintainer, I want every documented edge case exercised and either handled or deferred so that no flow dead-ends in production.
 
@@ -151,7 +151,7 @@ Stories are ordered by dependency: 19.0-19.6 are independent and may run in para
 
 ### Story 19.4 — Error & Loading States Audit
 
-**Status:** ready
+**Status:** done
 **Design Refs:** - (no new UI; fixes/audits/docs only)
 **Story:** As a user, I want every async operation to show a loading state and a recoverable error state so that failures never present as a blank or frozen screen.
 
@@ -177,7 +177,7 @@ Stories are ordered by dependency: 19.0-19.6 are independent and may run in para
 
 ### Story 19.5 — Mobile Responsiveness Audit
 
-**Status:** ready
+**Status:** done
 **Design Refs:** - (no new UI; fixes/audits/docs only)
 **Story:** As a visitor on a phone, I want every public and dashboard screen usable so that mobile traffic isn't lost.
 
@@ -204,7 +204,7 @@ Stories are ordered by dependency: 19.0-19.6 are independent and may run in para
 
 ### Story 19.6 — Second-Waitlist Flow Audit
 
-**Status:** ready
+**Status:** done
 **Design Refs:** - (no new UI; fixes/audits/docs only)
 **Story:** As a Pro founder, I want the multi-waitlist experience (switcher, create-second-list, per-waitlist settings) verified so that the feature shipped in Epic 12.2 works end-to-end.
 
@@ -229,7 +229,7 @@ Stories are ordered by dependency: 19.0-19.6 are independent and may run in para
 
 ### Story 19.7 — Email Deliverability Audit
 
-**Status:** ready
+**Status:** done
 **Design Refs:** - (no new UI; fixes/audits/docs only)
 **Story:** As the maintainer, I want SPF/DKIM/DMARC for our sending domains verified so that launch emails land in inboxes.
 
