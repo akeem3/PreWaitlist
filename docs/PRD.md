@@ -1,10 +1,10 @@
 # Product Requirements Document
 
 **Product:** Pre-Launch Waitlist Tool ("PreWaitlist")
-**Sprints:** 5 total — Sprint 1 (Foundation) ✅ Complete, Sprint 2 (Public Page & Dashboard) ✅ Complete, Sprint 3 (Email, Warmth & Billing), Sprint 3.1 (Dashboard Overhaul), Sprint 3.2 (Gap Fixes)
+**Sprints:** 6 total — Sprint 1 (Foundation) ✅ Complete, Sprint 2 (Public Page & Dashboard) ✅ Complete, Sprint 3 (Email, Warmth & Billing) ✅ Complete, Sprint 3.1 (Dashboard Overhaul) ✅ Complete, Sprint 3.2 (Gap Fixes) ✅ Complete, Sprint 4 (Polish, QA & Launch Prep) — active
 **Prepared by:** Abdul-Hakeem Hassan, with Claude
 **Date:** July 2026 (v3 — multi-sprint scalable structure)
-**Status:** Sprint 1 complete, Sprint 2 active
+**Status:** Sprints 1–3.2 complete (Epics 0–18 shipped), Sprint 4 active
 **Traces back to:** Problem Brief v2, User Profile v2, JTBD v2, Product Vision & MVP v4.2, Marketing Strategy v3.0, User Flow (diagram export), Design System v2.0, Onboarding Steps 1–3 Reference Guide, the finished Sprint 1 Figma files, and v1 of this PRD
 
 ---
@@ -193,6 +193,22 @@ A pre-launch waitlist tool for bootstrapped indie hackers, solo founders, and ea
 - Advanced fraud detection
 - CSV import
 - Email nurture sequences
+
+---
+
+## 2d. Sprint 4 — Polish, QA & Launch Prep (Active)
+
+**Goal:** The product is stable, tested across all paths, and ready for a public launch. Every known defect is fixed, the feedback/observation loop is live, and a complete founder-executable test suite proves it.
+
+**Exit condition:** Every path in the user flow works without errors. The product is deployed to production on Vercel. The founder can sign up, build a waitlist, collect signups, track warmth, send a broadcast, and export their data without encountering a single broken state.
+
+**Status:** 🟡 Active — 2026-10-05 → 2026-10-12 (target). Sprint-wide gates, execution order, and constraints live in the [sprint-4-plan](epics/sprint-4-plan.md) — this section is pointer-style only.
+
+**Scope (detail sources: [sprint-4-plan](epics/sprint-4-plan.md) → per-epic docs):**
+
+- **Fixes & audits:** [Epic 19 — Product Fixes & Polish](epics/epic-19-product-fixes-polish.md) — 8 stories: P0 email-tier footer fix, CSV Quality column, and audits of edge cases, error/loading states, mobile, second-waitlist, and deliverability
+- **Tooling additions:** [Epic 20 — Feedback, Onboarding & Growth Tooling](epics/epic-20-feedback-onboarding-growth-tooling.md) — 5 stories: PostHog instrumentation, first-subscriber walkthrough, feedback surfaces, founder marketing links, Product Hunt prep
+- **QA suite:** [Epic 21 — Full App Scan & Test Case Suite](epics/epic-21-full-app-scan-test-case-suite.md) — 8 stories: app inventory, screenshot set, behavior matrix, validation audit, manual test document, fix pass, QA execution, launch verification
 
 ---
 

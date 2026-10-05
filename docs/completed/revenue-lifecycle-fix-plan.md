@@ -76,7 +76,7 @@
 
 ## Phase 5 — Growth surfaces (DONE 2026-09-30 — uncommitted)
 
-- [x] 5.1 Per-subdomain `generateMetadata` (og:title/description + twitter card) from waitlist row. **GATE RESOLVED (founder): dynamic per-subdomain PNG** — `src/app/(public)/[subdomain]/opengraph-image.tsx` (1200×630 `ImageResponse`, headline/subheadline/brand colour from the waitlists row, 300s revalidate) + `generateMetadata` in `page.tsx:30`.
+- [x] 5.1 Per-subdomain `generateMetadata` (og:title/description + twitter card) from waitlist row. **GATE RESOLVED (founder): dynamic per-subdomain PNG** — `src/app/(public)/[subdomain]/opengraph-image.tsx` (1200×630 `ImageResponse`, headline/subheadline/brand colour from the waitlists row, 300s revalidate) + `generateMetadata` in `page.tsx:30`. **[AMENDED 2026-10-04:** revalidate 300s → **86400** (founder-approved after load-time complaint); card redesigned — centered composition (brand-color bar → headline → subtitle), headline length tiers 76/56/40, padding 96 safe zone; **"Powered by PreWaitlist" tier-gated to Free only** via `founder_profiles!inner(tier)` join (founder bug report: Pro card showed attribution); hardcoded "Join the waitlist!" pill removed (mismatched `cta_text`); root card `src/app/opengraph-image.tsx` matched to the same layout; `showPoweredBy` test +1. Shipped `9073c3b`/`7c56cb5`.**]**
 - [x] 5.2 Success buttons → shared `ShareButtons`. **GATE RESOLVED (founder): reuse ShareButtons only** — no platform tabs (deferred).
 - [x] 5.3 Footer absolute `www` URL with identifying param on both links; hero trigger tightened; **GATE RESOLVED (founder): namespace split** — `?ref=` = subscriber credit, `?src=powered-by` = attribution/hero. Client filter `/^[0-9a-f]{8}$/i` keeps attribution params from 400ing signup.
 

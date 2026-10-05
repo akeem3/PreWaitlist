@@ -1157,7 +1157,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 **Phase 5 — Growth surfaces (all 3 founder gates resolved):**
 
-- 5.1 **Dynamic per-subdomain PNG og:image** — `src/app/(public)/[subdomain]/opengraph-image.tsx` (1200×630 `ImageResponse`, headline/subheadline/brand colour from waitlists row, 300s revalidate) + `generateMetadata` (og:title/description/twitter) in `page.tsx:30`.
+- 5.1 **Dynamic per-subdomain PNG og:image** — `src/app/(public)/[subdomain]/opengraph-image.tsx` (1200×630 `ImageResponse`, headline/subheadline/brand colour from waitlists row, 86400s revalidate) + `generateMetadata` (og:title/description/twitter) in `page.tsx:30`. **[AMENDED 2026-10-04:** revalidate 300s → 86400; card redesigned + "Powered by" tier-gated (Free only) — see "og:image card redesign" block at file end.**]**
 - 5.2 Success buttons → shared `ShareButtons` only (no platform tabs).
 - 5.3 **Namespace split:** `?ref=` = subscriber credit (8-hex only, client `/^[0-9a-f]{8}$/i` filter) · `?src=powered-by` = attribution/hero (footer brand links, tightened hero trigger).
 
@@ -1954,5 +1954,52 @@ Founder: the public-page update card looked "dumped on the page". Restyle in `co
 **Gotchas:**
 
 - **Dev server IGNORES metadataBase for file-based og:image URLs** (always `localhost:3000`, vercel/next.js#49859) � verify metadataBase fixes with `pnpm build && pnpm start`, not `pnpm dev`.
-- **Production is running OLDER code than the repo (deploy lag):** prod `/opengraph-image` (root) ? `307 /signin` (current code allowlists it) and prod `og:title` lacks the REQ-6.8.6 ` � Join the waitlist` suffix. Founder: push/deploy to fix root card + suffix.
+- **Production is running OLDER code than the repo (deploy lag):** prod `/opengraph-image` (root) ? `307 /signin` (current code allowlists it) and prod `og:title` lacks the REQ-6.8.6 ` � Join the waitlist` suffix. Founder: push/deploy to fix root card + suffix. **[RESOLVED 2026-10-04:** `a3c768d` deployed root card + suffix, `7c56cb5` deployed the card redesign — both verified live by polling the og:image URL hash.**]**
 - `robots.txt` = 404 on both hosts (no crawl restrictions). X caches cards ~24h�7d; changed image URL is the re-scrape hammer; test in tweet composer (validator retired).
+
+## og:image card redesign — tier gate + centered layout (2026-10-04)
+
+**Status:** ✅ shipped — `9073c3b` (dev) → merged `7c56cb5` → main, deployed, prod-verified. Prompt #8 investigation → web research → Prompt #2 execute (founder brief: "basic but works and user friendly", "find if there are more").
+
+**Founder complaints (X composer screenshot, quality = Pro):** "Powered by PreWaitlist" on a Pro account · CTA pill floating top-left · content "all over the place" / unnecessary spacing · slow load.
+
+**Root causes + extras found (all card-only — quality's page HTML had 0 "Powered by" occurrences; page footer gate was already correct):**
+
+1. `src/app/(public)/[subdomain]/opengraph-image.tsx` hardcoded the footer and its select never fetched tier → attribution shown to every tier (the Pro complaint).
+2. Root `justifyContent: "space-between"` over 3 one-liners scattered content into corners.
+3. Pill text `"Join the waitlist!"` hardcoded — didn't match DB `cta_text` ("Join Waitlist") + copy-gate violation.
+4. Root `src/app/opengraph-image.tsx` had the same scattered pattern (36px corner logo top-left).
+5. Headline 140 chars @72px with no length cap → multi-line overflow of the 630px canvas.
+6. Fallback card showed the domain twice (title = `x.prewaitlist.com`, subtitle = `x`).
+7. `revalidate 300` → fresh ~2.7s Satori render every 5 min (the "slow load" — file itself was only 40KB, well under X's 5MB limit).
+
+**Fix (3 files):**
+
+- Subdomain card: `.select("…, founder_profiles!inner(tier)")` (FK verified `docs/stories/sql-writeups/epic0.story03-supabase-schema.sql:22`) → exported `showPoweredBy(tier)` = `tier === "free"` only (unknown/fallback hidden) · pill deleted · centered block (`flex:1` + `justify-content:center`: 56×8 brand-color bar → headline → subtitle), padding `72px 96px` (safe zone) · headline size tiers 76/56/40 by length (≤40/≤90/else chars) · subtitle dropped when empty or === title · `revalidate = 86400`.
+- Root card: same centered treatment, corner logo removed, copy verbatim ("PreWaitlist" / "Pre-launch waitlist builder"), `revalidate = 86400`.
+- Test: `showPoweredBy` assertions (+1) in `src/__tests__/api/metadata.test.ts` (free → true; pro/growth/null/undefined → false).
+
+**Research (2 searches — og-image.org guides + Next.js ImageResponse docs):** keep 1200×630 PNG <5MB · title ≥48px / secondary ≥24px readable at phone thumbnail · one focal point · safe zone ≈ center 80% (≈120px sides → padding 96) · file-based og images render at request time, `revalidate` = cache window · X caches cards 24h–7d; deploy changes the image URL hash = automatic re-scrape.
+
+**Gates:** lint 0/5 · prettier clean · targeted 21/21 · full suite **977 = 970 pass / 7 fail = exact baseline +1 new test** (dashboard-archive 4 + dashboard-subscriber-table 3) · clean build (`Revalidate 1d` in route table) · prod pixel-scan after deploy: brown brand bar 104px, **green total = 0** (no attribution on the Pro card, live).
+
+**Verification workaround — Read tool media glitch:** fresh PNG reads started returning stale/wrong attachments (even re-served the founder's original screenshot for a just-written file) → verified via **System.Drawing pixel scan + row profiling**: count exact token-color pixels per y-band (brand bar / accent-green footer) → pro card zero green, free card footer rows 534–551, centered margins 220/222. Decisive without eyeballs.
+
+**Gotchas:**
+
+- PS 5.1 PNG dimension parsing: decode IHDR bytes 16..23 as big-endian hex (`[Convert]::ToInt32($hex,16)`) — naive `-shl` chains silently misreported 1200×630 as 176×118.
+- Poll the live page's `og:image` URL to detect deploy completion — the `?hash` suffix changes per build.
+- Prod-mode verification server: `cmd.exe /c "pnpm start > log"` **blocks the shell** → launch detached via `Start-Process cmd.exe` or it times out and dies.
+- `og:image:alt` / `twitter:image:alt` remain `"PreWaitlist"` (static `export const alt` — cannot vary per subdomain). Open founder question: accept, or approve a new static string.
+
+## Sprint 4 Epic Documentation — create-epic [19]/[20]/[21] (2026-10-04)
+
+**Status:** All three Prompt #5 runs complete. `docs/epics/sprint-4-plan.md` (approved master plan) + `docs/epics/epic-19-product-fixes-polish.md` (8 stories/47 ACs) + `docs/epics/epic-20-feedback-onboarding-growth-tooling.md` (5 stories) + `docs/epics/epic-21-full-app-scan-test-case-suite.md` (8 stories/45 ACs) — all Phase 4 verified, prettier-clean, idempotent. Epic docs follow template field order (`Tasks → Out of scope → Dev Notes`), per-story Design Refs, research Dev Notes (driver.js/Tally/PostHog/Playwright screenshots/manual-test-template). Implementation blocked until founder instructs. Still open: story files (`docs/stories/story-21.*` etc. — no create-story prompt exists) + founder gates (CSV formula-injection decision, env keys, PH/Tally/Dub accounts).
+
+**THE prettier `19._` mystery — root cause (cost hours, do not re-diagnose):**
+
+- Symptom: dependency cell `19.*, 20.*, 21.7` kept "reverting" to `19._, 20._, 21.7` after every `pnpm prettier --write`; suspected async reverter / stale Edit-tool model / file cache — **all wrong**.
+- Root cause: **CommonMark parses `19.*, 20.*` as an emphasis node** (first `*` = opener after `.` punctuation-flanking rules, second `*` = closer) and **prettier's markdown printer reprints emphasis with `_` delimiters** → `19._, 20._`. Idempotent thereafter (prettier round-trips its own output). A single unmatched `19.*` (21.7 row) is safe — no pair, no emphasis.
+- Proof method that ended the spiral: `[int][char]` codes of the row from **disk** (42 = `*`) vs **prettier stdout** (95 = `_`) in the same command, plus a `MARKER-XYZ` canary appended to the file proving prettier read the same path.
+- Fix: escape the asterisks — `19.\*, 20.\*, 21.7` in both `sprint-4-plan.md` L543 and `epic-21…md` L31. Escapes are emphasis-node-free (literal text), survive `--write` (verified twice, `(unchanged)`), render as `19.*, 20.*, 21.7`, `--check` exit 0 across all 4 epic files.
+- Diagnostic gotchas learned: (1) PS `-notmatch 'MARKER'` is **case-insensitive** → false positive from the prose word "markers"; use `[regex]::Matches($t,'MARKER-XYZ')` for contamination. (2) A `-replace`/string building blunder appended a `MARKER-XYZ-8472` canary line that had to be scrubbed (cleaned + verified). (3) Batched same-file `Edit` calls in one message silently write stale snapshots — for docs under active churn prefer `[IO.File]::ReadAllText/WriteAllText` (`UTF8Encoding($false)`) and verify after every write. (4) Never conclude "prettier corrupts content" without char-code comparison — it normalizes markdown ASTs, it doesn't edit text.

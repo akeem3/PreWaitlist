@@ -92,7 +92,9 @@ A founder on the free tier who hits the 500-signup cap sees the upgrade modal. A
 
 ---
 
-## What's NOT Built (Sprint 4 scope)
+## What's NOT Built (originally "Sprint 4 scope" — reclassified 2026-10-04)
+
+> **[AMENDED — 2026-10-04]** None of these items are in Sprint 4. Sprint 4 = Epics 19–21 (fixes, tooling, QA) per [sprint-4-plan](sprint-4-plan.md). Each row below carries its actual target — v1.1 (custom domain mapping) or post-MVP. "Multiple waitlists (Pro)" was also moved out of Sprint 4 scope and shipped in Epic 12.2 (see the scope note above the Epic Index).
 
 | Feature                                                                  | Notes                                   |
 | ------------------------------------------------------------------------ | --------------------------------------- |
