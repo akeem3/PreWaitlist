@@ -23,7 +23,7 @@ PostHog is capturing the core funnel events and 2–3 behavior-triggered surveys
 | ---- | ----------------------------------------------- | ---------- | ------ |
 | 20.1 | PostHog Instrumentation + Surveys               | —          | done   |
 | 20.2 | First-Subscriber Dashboard Walkthrough          | —          | done   |
-| 20.3 | Feedback Surfaces (Tally Button + Founder Link) | —          | ready  |
+| 20.3 | Feedback Surfaces (Tally Button + Founder Link) | —          | done   |
 | 20.4 | Founder Marketing Links (Dub + UTM Playbook)    | —          | ready  |
 | 20.5 | Product Hunt Prep                               | 19.*       | ready  |
 
@@ -110,7 +110,7 @@ Every story moves `ready` -> `in-progress` -> `done` (or `blocked`), and is only
 
 ### Story 20.3 — Feedback Surfaces (Tally Button + Founder Link)
 
-**Status:** ready
+**Status:** done
 **Design Refs:** - (no new UI; spec = feedback doc §7 categories + §8 founder contact, not SVG)
 **Story:** As a user, I want an always-available feedback button and a direct way to reach the founder so that problems I hit are cheap to report.
 

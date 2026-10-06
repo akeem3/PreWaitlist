@@ -2131,3 +2131,39 @@ Founder: the public-page update card looked "dumped on the page". Restyle in `co
 - Test mock pattern: `mockDriver` records the config at `.mock.calls[last][0]`; `mockDestroy` mirrors driver.js by invoking `onDestroyed` synchronously — that's what makes the StrictMode/unmount/Skip flag assertions real.
 
 **Gates:** lint 0 errors / 5 baseline warnings · prettier clean (7 code files + 3 docs) · full suite **1033 = 1026 pass / 7 fail = exact sanctioned baseline** (dashboard-archive 4 + dashboard-subscriber-table 3; +13 new) · clean build (`.next` deleted first; `✓ Compiled successfully`, `ƒ Proxy (Middleware)`).
+
+## Epic 20.3 — Feedback Surfaces (Tally Button + Founder Link) — 2026-10-05
+
+**Status:** ✅ story done — code + all gates green; **2 founder setup gates open** (create Tally form → set its URL in `NEXT_PUBLIC_TALLY_FORM_URL`; set `NEXT_PUBLIC_FOUNDER_CONTACT_URL`; surfaces stay hidden until set). Uncommitted (no commit requested). Story AS-BUILT section + epic-20 + sprint-4-plan flipped `done`.
+
+**What shipped:** `components/dashboard/feedback-button.tsx` (client) — fixed bottom-right stack `fixed right-6 bottom-6 z-30` (under UpgradeModal z-50 / sidebar z-40): founder link pill "Talk to the founder" (`target=_blank rel=noopener noreferrer`, href = env) + icon-only chat-bubble FAB (`rounded-full bg-accent text-accent-foreground shadow-[var(--shadow-float)]`, aria-label/title = "Feedback"). Mounted in `shell.tsx` after `UpgradeModal` → all `/dashboard/*` only (AC4 by construction). Lazy-load: `tally.so/widgets/embed.js` injected into `<head>` **on first click** (module-level idempotent promise) → `Tally.openPopup(formId, { layout: "modal" })`; formId parsed from `/r/{slug}` share URL. Fallback → `window.open(url, "_blank", "noopener,noreferrer")` on non-`/r/` URL, script load failure, or missing `window.Tally`. Env gating: both new `NEXT_PUBLIC_*` vars (AC7-approved) in `.env.example`; each surface hides independently; both unset → renders `null`.
+
+**Locked decisions (founder, 2026-10-05):** §8 link text = **"Talk to the founder"** (not "Something feels wrong? Tell me."); FAB = **icon-only + aria "Feedback"** (zero visible copy — §7 prescribes no button label). **AC2 = Tally form options (zero code)** — 6 §7 categories + "Tell me what happened." + "Can I follow up with you?" live in the founder-hosted form; no in-app picker, no hiddenFields (widget auto-forwards page path anyway).
+
+**Gates:** lint 0 errors / 5 baseline warnings · prettier clean · full suite **1044 = 1037 pass / 7 fail = exact sanctioned baseline** (+11 tests: `dashboard-feedback-button.test.tsx`) · clean build (`ƒ Proxy (Middleware)`).
+
+**Gotchas:**
+
+- **happy-dom disables JS file loading** → appending `embed.js` fires `error` synchronously → loader promise rejects immediately → tests exercise the `window.open` fallback path; popup wiring tested by pre-setting `window.Tally` first (loader short-circuits, skips injection). Never assert `openPopup` after dispatching a manual `load` event in this env — the promise is already settled as rejected.
+- Vitest test file with JSX must be `.tsx` (`.ts` → oxc parse error `Expected > but found /`).
+- Full-suite run flake confirmed again: first run 8 fails/3 files, re-runs 7 fails/2 files = baseline.
+- `screen` must be imported from RTL (wrote `screen()` helper by mistake once).
+
+## Epic 20 audit — Prompt #3 re-audit + design redirection research (2026-10-05)
+
+**Status:** audit of 20.1 + 20.2 + 20.3 complete — **1 finding (F1) found, fixed, mutation-verified**; design-redirection research done (6 searches + driver.js source read); gates green. Uncommitted (no commit requested).
+
+**F1 (fixed) — tour stacked over UpgradeModal on `?upgrade=cap`:** deep link opens the Pro modal at shell mount while the tour poll auto-starts >=400ms later with no modal check; driver.js popover `z-index:1000000000` + `.driver-active *{pointer-events:none}` made the modal (z-50) unclickable until the tour was dismissed (and dismissal burned the one-time flag). Fix: `DashboardTour` prop `interruptOpen` (shell passes `upgradeModal.open`); gates in `startTour` + `attemptAutoStart`; effect deps `[pathname, interruptOpen]` — close resumes same visit, open-mid-tour destroys via cleanup with `unmountingRef` guard (no flag). +3 tests in `dashboard-tour.test.tsx` (16 total), mutation-verified (gate removal = 3 failures).
+
+**Audit note (no code):** tour `setSurveySuppressed(true)` only gates `surveyTrigger` captures (`cancel_intent`); `dashboard_viewed` (Survey 1 trigger) is an AC2 funnel event that must fire — Survey 1's first-visit absence rests on identify timing, not the flag; driver popover z-index beats PostHog's anyway. Annotated in story 20.2 AS-BUILT.
+
+**Design-redirection findings (research-backed):**
+
+- **PostHog surveys default bottom-right** (`z-index:1000`) = directly under story 20.3's Feedback FAB stack (`fixed right-6 bottom-6 z-30`). Fix is founder config: **popover position bottom-left** for both surveys — annotated in story 20.1 setup sections.
+- Tour: 6 steps = AC cap (research favors 3-5; 72% completion at 3 vs 16% at 7) — kept (AC + approved copy). Auto-start at first-subscriber = usage-threshold trigger (research-endorsed); opt-in would be better but AC1 mandates start. driver.js defaults verified from shipped source: ESC/ArrowLeft/ArrowRight (`allowKeyboardControl ?? true`), `role=dialog` + aria-labelledby/describedby, focus moves into popover, Tab-trapped, Previous button shown by default with `showProgress` — no a11y redirect needed.
+- FAB: 48x48 (h-12 w-12) meets M3 touch target; white-on-accent contrast ~5.3:1 (>=3:1); aria-label/title "Feedback"; transient `disabled` only while script loads. All pass.
+- Step copy all <=93 chars (140 best practice) ✓. Tour funnel events (start/finish/skip) not in 20.1's event list — follow-up story if wanted.
+
+**Gates:** lint 0 errors / 5 baseline warnings · prettier clean (code + both story docs) · full suite **1047 = 1040 pass / 7 fail = exact sanctioned baseline** (dashboard-archive 4 + dashboard-subscriber-table 3; +3 tests) · clean build (`(next) deleted first, f Proxy (Middleware)`).
+
+**Gotcha:** mutation-testing a specific line via `-replace` can silently nuke adjacent gates (`if (countRef.current < 1)` went with it) — after any mutation, re-read the file and restore every gate, not just the mutated one.

@@ -69,7 +69,13 @@ function lastConfig(): TourDriverConfig {
   return calls[calls.length - 1][0] as TourDriverConfig;
 }
 
-function TourFixture({ count = 3 }: { count?: number }) {
+function TourFixture({
+  count = 3,
+  interrupt = false,
+}: {
+  count?: number;
+  interrupt?: boolean;
+}) {
   return (
     <>
       <div data-tour="dashboard-header" />
@@ -78,7 +84,7 @@ function TourFixture({ count = 3 }: { count?: number }) {
       <div data-tour="warmth-panel" />
       <div data-tour="qualification-panel" />
       <div data-tour="dashboard-sidebar" />
-      <DashboardTour subscriberCount={count} />
+      <DashboardTour subscriberCount={count} interruptOpen={interrupt} />
     </>
   );
 }
@@ -286,5 +292,32 @@ describe("DashboardTour", () => {
       window.dispatchEvent(new CustomEvent(TOUR_REPLAY_EVENT));
     });
     expect(mocks.mockDriver).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not start while the upgrade modal is open (?upgrade=cap)", () => {
+    render(<TourFixture interrupt />);
+    expect(mocks.mockDriver).not.toHaveBeenCalled();
+    expect(mockSetSurveySuppressed).not.toHaveBeenCalled();
+  });
+
+  it("starts after the interrupt clears", () => {
+    const { rerender } = render(<TourFixture interrupt />);
+    expect(mocks.mockDriver).not.toHaveBeenCalled();
+
+    rerender(<TourFixture interrupt={false} />);
+    expect(mocks.mockDriver).toHaveBeenCalledTimes(1);
+    expect(mocks.mockDrive).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets an interrupting modal destroy the active tour without the flag", () => {
+    const { rerender } = render(<TourFixture />);
+    expect(mocks.mockDriver).toHaveBeenCalledTimes(1);
+
+    rerender(<TourFixture interrupt />);
+    // cleanup destroyed the tour; unmounting guard must skip the flag so the
+    // tour can still run on a later visit once the modal is gone.
+    expect(mocks.mockDestroy).toHaveBeenCalledTimes(1);
+    expect(window.localStorage.getItem(TOUR_FLAG_KEY)).toBeNull();
+    expect(mockSetSurveySuppressed).toHaveBeenLastCalledWith(false);
   });
 });

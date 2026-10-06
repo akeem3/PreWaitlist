@@ -1,6 +1,6 @@
 # Story 20.3 — Feedback Surfaces (Tally Button + Founder Link)
 
-**Status:** ready
+**Status:** done
 **Epic:** 20 — Feedback, Onboarding & Growth Tooling
 **Depends on:** —
 **Design Refs:** - (no new UI; spec = feedback doc §7 categories + §8 founder contact, not SVG)
@@ -59,3 +59,27 @@ As a user, I want an always-available feedback button and a direct way to reach 
 - Copy gate (AC5): §7/§8 strings verbatim; the §8 headline choice is founder's pick at execution — flag, don't write a third option.
 - Z-index/placement: FAB must sit below `UpgradeModal` (Dev Notes) or checkout overlays get blocked — check `shadow-float` stacking when placing.
 - AC2 implementation choice (Tally options vs in-app picker) must be documented in Dev Notes after the pick — don't leave both paths half-built.
+
+---
+
+## AS-BUILT (2026-10-05)
+
+**AC2 choice (documented as required):** **Tally form options — zero code.** The 6 §7 categories ("Tell me what happened." + "Can I follow up with you?" likewise) live as fields in the founder-hosted Tally form; the app opens the popup with no in-app category picker and no `hiddenFields`. The Tally widget already auto-forwards the host page path/query. The picker/hidden-field path was NOT built.
+
+**AC3 founder pick:** link text **"Talk to the founder"** (§8 option A — founder selected 2026-10-05). FAB label: **icon-only**, `aria-label`/`title` = **"Feedback"** (§7's own word; §7 prescribes no button copy — founder confirmed 2026-10-05).
+
+**AC1/AC4:** `FeedbackButton` mounted in `src/app/dashboard/shell.tsx` (sibling of `UpgradeModal`, after it) — covers every `/dashboard/*` route; public subscriber-facing pages never render the shell. Fixed bottom-right stack `fixed right-6 bottom-6 z-30` (below UpgradeModal `z-50` and sidebar drawer `z-40` per Dev Notes placement).
+
+**AC5 (copy gate):** only visible in-app string is "Talk to the founder", verbatim from §8. FAB is an icon (chat-bubble SVG, `currentColor`) with no visible text. All §7 field copy lives in the hosted Tally form (founder creates it — see Dev Notes).
+
+**AC6 (lazy-load):** `https://tally.so/widgets/embed.js` is injected into `<head>` **on first click only** (module-level idempotent promise — injected once per page lifetime), then `Tally.openPopup(formId, { layout: "modal" })`. No inline iframe, no layout impact, zero new npm deps. `formId` parsed from the share URL path (`/r/{slug}`). Fallback chain → `window.open(url, "_blank", "noopener,noreferrer")` when: URL is not a `/r/` slug, embed.js fails to load, or `window.Tally` is missing after load.
+
+**AC7 (env):** `NEXT_PUBLIC_TALLY_FORM_URL` + `NEXT_PUBLIC_FOUNDER_CONTACT_URL` added to `.env.example` (explicitly approved by AC7). Each surface hides when its own var is unset; both unset → component returns `null`. Founder swaps URLs without code changes.
+
+**AC8 gates:** lint 0 errors / 5 baseline warnings · prettier clean · full suite **1044 = 1037 pass / 7 fail = exact sanctioned baseline** (dashboard-archive 4 + dashboard-subscriber-table 3; **+11 new tests**) · clean build (`.next` deleted first, `ƒ Proxy (Middleware)`).
+
+**Tests:** `src/__tests__/components/dashboard-feedback-button.test.tsx` (11) — env gating ×4, verbatim copy + link attrs, icon-only aria, no-script-before-click, embed.js injection on click (once), openPopup `("abc123", { layout: "modal" })`, non-`/r/` fallback, script-failure fallback.
+
+**Founder setup gates (open — surfaces stay hidden until done):** (1) create ONE Tally form per Dev Notes (category MC with the 6 §7 labels, "Tell me what happened." long text, "Can I follow up with you?" yes/no, email optional — visible-vs-hidden is founder's call) and put its share URL in `NEXT_PUBLIC_TALLY_FORM_URL`; (2) set `NEXT_PUBLIC_FOUNDER_CONTACT_URL`; (3) redeploy.
+
+**Gotcha:** happy-dom disables third-party script loading — appending `embed.js` fires `error` synchronously and rejects the loader promise, so tests exercise the `window.open` fallback path directly; popup wiring is tested by pre-setting `window.Tally` (loader short-circuits). Real browsers load the script async → `onload` → popup.

@@ -71,8 +71,17 @@ const STEPS: TourStepSpec[] = [
 
 export function DashboardTour({
   subscriberCount,
+  interruptOpen = false,
 }: {
   subscriberCount: number;
+  /**
+   * True while the UpgradeModal owns the UI (e.g. the ?upgrade=cap email
+   * deep link mounts both at once). The tour must yield: driver.js gives the
+   * active popover z-index 1000000000 and `.driver-active *{pointer-events:none}`
+   * makes the modal underneath unclickable. Gating auto-start and toggling
+   * the effect on this prop means modal-close resumes the tour same visit.
+   */
+  interruptOpen?: boolean;
 }) {
   const pathname = usePathname();
   const driverRef = useRef<Driver | null>(null);
@@ -105,6 +114,7 @@ export function DashboardTour({
     const startTour = (force: boolean) => {
       if (driverRef.current?.isActive()) return;
       if (countRef.current < 1) return;
+      if (interruptOpen) return;
       if (!force && window.localStorage.getItem(TOUR_FLAG_KEY)) return;
 
       const config: Config = {
@@ -148,6 +158,9 @@ export function DashboardTour({
       if (cancelled) return;
       if (countRef.current < 1) return;
       if (window.localStorage.getItem(TOUR_FLAG_KEY)) return;
+      // Upgrade modal open: stop polling for now — the effect re-runs when
+      // the prop flips back to false and starts a fresh attempt.
+      if (interruptOpen) return;
       if (document.querySelector(FIRST_TARGET)) {
         startTour(false);
         return;
@@ -169,10 +182,12 @@ export function DashboardTour({
       window.removeEventListener(TOUR_REPLAY_EVENT, onReplay);
       unmountingRef.current = true;
       setSurveySuppressed(false);
+      // Covers interrupt-toggle destroys (modal opened mid-tour): the
+      // unmounting guard makes onDestroyed skip the completion flag.
       driverRef.current?.destroy();
       driverRef.current = null;
     };
-  }, [pathname]);
+  }, [pathname, interruptOpen]);
 
   return null;
 }

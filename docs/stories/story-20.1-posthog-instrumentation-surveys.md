@@ -99,6 +99,7 @@ Code ships the SDK + suppression gating; the surveys themselves live in the Post
 - Type: in-app survey, single **open text** question.
 - Question (verbatim, `waitlist_feedback_system.md` §6): `Did seeing the first signup give you the signal you expected?`
 - Display conditions (ALL must match): **User sent event** `dashboard_viewed` — with the event-repeat option set to **Just once**; **person property** `subscriber_count` greater than or equal to `1`; (optional belt) URL contains `/dashboard`.
+- Appearance position: **bottom-left** popover (bottom-right sits directly under the dashboard's Feedback FAB stack from story 20.3 — both fixed to `bottom-6 right-6`).
 - Why event-based, not URL-based: `subscriber_received` fires in the _subscriber's_ browser, not the founder's — so eligibility rides the founder's next dashboard visit, and PostHog's default "once per person until dismissed/completed" plus **Just once** satisfies AC5's once-per-founder-per-trigger limit.
 - Signed-in founders only: `/dashboard` auth-redirects anonymous visitors, and `identify()` (shell) only ever runs for signed-in founders — so person properties exist only for them.
 - Known accepted edge: a `?upgrade=cap` email deep link mounts dashboard + modal together; PostHog may show Survey 1 over the modal on that single visit (rare, dismissible-on-both).
@@ -109,6 +110,7 @@ Code ships the SDK + suppression gating; the surveys themselves live in the Post
 - Question (verbatim, §6): `What made you decide this wasn't worth continuing?`
 - Trigger: **User sent event** `cancel_intent` (captured on the billing page's first "Cancel subscription" click, `cancellation-flow.tsx`) — event-repeat option **Just once** (AC5 rate limit).
 - Extra display condition (belt): URL contains `/dashboard/settings/billing`.
+- Appearance position: **bottom-left** popover (same Feedback FAB overlap as Survey 1 — the FAB renders on every `/dashboard/*` page).
 - Suppression: `cancel_intent` is sent with `surveyTrigger: true`, so the wrapper holds it back while the UpgradeModal owns the UI (D7) — the upgrade modal is never stacked by Survey 2.
 
 **Verification**

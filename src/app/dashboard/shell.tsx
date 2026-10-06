@@ -16,6 +16,7 @@ import { STORAGE_KEY } from "../../../components/dashboard/waitlist-switcher";
 import { resolveActiveWaitlist } from "../../lib/active-waitlist";
 import { capture, identifyFounder, registerContext } from "@/lib/analytics";
 import { DashboardTour } from "../../../components/dashboard/tour";
+import { FeedbackButton } from "../../../components/dashboard/feedback-button";
 
 interface WaitlistRow {
   id: string;
@@ -416,6 +417,10 @@ export default function DashboardShell({
         triggerSource={upgradeModal.triggerSource}
       />
 
+      {/* AC4: feedback surfaces live in the dashboard shell only — public
+          subscriber-facing pages never render this component. */}
+      <FeedbackButton />
+
       <button
         type="button"
         onClick={() => setIsSidebarOpen(true)}
@@ -440,9 +445,12 @@ export default function DashboardShell({
           {children}
         </DashboardContext.Provider>
         {/* Renders null; children effects (page captures) run before the
-            tour's effect so Survey 1 eligibility sees dashboard_viewed. */}
+            tour's effect so Survey 1 eligibility sees dashboard_viewed.
+            interruptOpen: the ?upgrade=cap deep link mounts the Pro modal
+            with the tour eligible — the tour must yield to the modal. */}
         <DashboardTour
           subscriberCount={activeWaitlist?.subscriber_count ?? 0}
+          interruptOpen={upgradeModal.open}
         />
       </main>
     </div>
