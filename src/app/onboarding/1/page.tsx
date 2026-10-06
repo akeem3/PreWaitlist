@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOnboardingForm, hasStaleDraft } from "../context";
+import { capture } from "../../../lib/analytics";
 
 type SlugStatus = "idle" | "checking" | "available" | "unavailable" | "error";
 
@@ -104,6 +105,12 @@ export default function OnboardingStep1() {
       }
     }
     setMounted(true);
+  }, []);
+
+  // Story 20.1 AC2 — funnel step 2 of 4 (fires on every step-1 visit;
+  // PostHog funnels count unique persons, so no once-per-session dedupe).
+  useEffect(() => {
+    capture("onboarding_started");
   }, []);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);

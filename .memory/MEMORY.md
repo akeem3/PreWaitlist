@@ -2083,3 +2083,51 @@ Founder: the public-page update card looked "dumped on the page". Restyle in `co
 **Gates at close:** lint 0 errors / 5 baseline warnings · prettier clean (epic + story docs + sprint-4-plan + MEMORY) · full suite **1002 = 995 pass / 7 fail = exact sanctioned baseline** (run during 19.5/19.6 close; docs-only changes after) · clean build `ƒ Proxy (Middleware)` · 19.7 Prompt #3 audit re-ran lint + build green after its fixes.
 
 **19.7 audit facts (live DNS, re-verified twice):** SPF (`send` TXT), MX (`send`), DKIM (`resend._domainkey` TXT), DMARC (`_dmarc` TXT) all **TTL 60** at Vercel DNS (`ns1/ns2.vercel-dns.com`) · DMARC = `v=DMARC1; p=none;` (no `rua=`) · apex has no SPF/MX (correct-by-omission) · local `RESEND_API_KEY` is send-only (`restricted_api_key` → domains API 401, so dashboard status is founder-only) · every send path resolves through `src/lib/from-address.ts:20-44` (all call sites line-verified: subscribers ×3, milestones, retry-queue ×2, broadcast, updates, compose preview).
+
+## Epic 20.1 — PostHog Instrumentation + Surveys (Prompt #1 scan + Prompt #2 execute, 2026-10-04)
+
+**Status:** ✅ story done — code + all gates green; **3 founder gates open** (below). Uncommitted (no commit requested). Story/epic/sprint-4-plan all flipped `done`.
+
+**What shipped:** zero-dep `posthog-js@1.436.1` · `src/instrumentation-client.ts` (official Next 15.3+/16 init pattern) + `src/lib/analytics.ts` wrapper (key-guard no-op so local dev never errors, capture + D7 suppression, identify/register) · all 13 AC2 events wired at the touchpoints below · shell `identify()` with person props `tier`/`waitlist_id`/`subscriber_count` · autocapture kept ON, pinned via `defaults: "2026-05-30"` (AC4 rationale recorded in story Dev Notes) · AC5 survey spec with verbatim §6 copy in story "## PostHog Dashboard Setup" · `.env.example` +2 vars (AC6).
+
+**Founder decisions D1–D7 (locked during scan, all honored):**
+
+- D1 `account_created` = signup form success only (email path; `method:"email"`) — OAuth accounts not captured, documented; no `posthog-node`.
+- D2 `subscription_started`/`cancelled` = client tier-flips: shell `recordTierFlip` in BOTH applyTier and the server-prop sync (webhook flips take the server-prop path while tab open); onboarding poll = `source:"onboarding"`, shell = `source:"dashboard"` (contexts mutually exclusive — no double-fire). Portal-cancel with no dashboard tab open = accepted blind spot.
+- D3 `subscriber_received` = EmailCaptureForm success branch (fires once; 409 duplicates return before it), `waitlist_id` only.
+- D4 autocapture default ON (rationale in story).
+- D6 identify in shell — `founderId` is an **optional** prop (layout passes `user.id`; tests render without it) + layout now also selects `subscriber_count`.
+- D7 suppression: UpgradeModal open effect sets the flag (cleanup releases it); wrapper drops only `surveyTrigger`-flagged captures (currently `cancel_intent` = Survey 2 trigger) — funnel events never dropped; walkthrough (20.2) adds its flag later.
+
+**Deviations from the scan-era plan (all annotated AS-BUILT in the story Files table):** `upgrade_triggered` lives in the UpgradeModal open effect (one point covering dashboard + onboarding + `?upgrade=cap`, co-located with suppression — not the shell `triggerUpgrade` hook); `cancelled` lives in the shell tier-flip, while `cancellation-flow.tsx` emits the NEW `cancel_intent` event; dashboard/warmth events live in the `*client.tsx` components (page.tsx files are server); scan's thank-you-page guess for `subscriber_received` superseded by D3.
+
+**AC5 surveys (external = founder config):** Survey 1 "After first subscriber" = event `dashboard_viewed` + person prop `subscriber_count ≥ 1` + **Just once** (NOT URL-display — `subscriber_received` fires in the subscriber's browser, so eligibility rides the founder's next dashboard visit); Survey 2 "Before cancellation" = event `cancel_intent` + **Just once**. PostHog docs verified: surveys default to once-per-person; event surveys need the "Just once" repeat option for AC5's once-per-trigger limit.
+
+**Tests:** +14 → `analytics.test.ts` (7: no-key no-op, init shape incl. defaults preset, host override, idempotent init, forwarding, suppression gating) · `upgrade-modal.test.tsx` +2 (upgrade_triggered + suppression lifecycle; cooldown-suppressed open captures nothing) · `dashboard-tier-refresh.test.tsx` +5 (free→pro = subscription_started, pro→free = cancelled, no-flip = no capture, identify/register props, no founderId = no analytics).
+
+**Prompt #3 audit (2026-10-04): 1 finding, fixed.** F1 — `use-paddle-upgrade.ts` poll could fire `subscription_started {source:"onboarding"}` + `onTierChanged` from an in-flight tick resumed after unmount/`cancel()` (racing the shell's flip capture; broke D2's "no double-fire" claim). Guard `if (!pollingRef.current) return;` placed **after the last `await`** (`res.json()`) — placement matters: a guard before the json await still loses the race. Locked by new `src/__tests__/hooks/use-paddle-upgrade.test.ts` (4 tests: active capture, free-then-flip, unmount-mid-flight, cancel-mid-flight) — **mutation-verified**: removing the guard fails exactly the 2 in-flight tests. Everything else passed on first pass (all 13 events code-visible, placements match the story's AS-BUILT table, verbatim §6 survey copy, PII-free props, `.env.example`, AC4 rationale).
+
+**Gates (post-audit):** lint **0 errors / 5 baseline warnings** · targeted 50/50 · full suite **1020 = 1013 pass / 7 fail = exact sanctioned baseline** (dashboard-archive 4 + dashboard-subscriber-table 3; billing flake clean this run) · clean build exit 0 · prettier clean.
+
+**Founder gates (all recorded in the story setup section):** (1) create PostHog project + set `NEXT_PUBLIC_POSTHOG_KEY`/`NEXT_PUBLIC_POSTHOG_HOST` in Vercel + redeploy; (2) configure the two surveys per the story spec (verbatim §6 copy, targeting, Just once); (3) set a $0 billing limit on the free tier.
+
+**Gotchas:** `defaults: "2026-05-30"` is a typed union (`ConfigDefaults` in @posthog/types `posthog-config.d.ts:405`) — no cast needed · person props must stay fresh for Survey 1, so the shell re-identifies (same distinct_id = supported person update) on tier/wid/layout refresh · `.env.example` has no prettier parser — exclude it from `prettier --write` lists · module-level wrapper state (`initialized`/`enabled`) needs `vi.resetModules()` + dynamic import per test · `vi.hoisted` for mock fns referenced by `vi.mock` factories.
+
+## Epic 20.2 — First-Subscriber Dashboard Walkthrough (Prompt #1 scan + Prompt #2 execute, 2026-10-05)
+
+**Status:** ✅ story done — code + all gates green; **copy gate closed** (founder approved the 6 step drafts verbatim via question tool, 2026-10-04, "Approve drafts as written"). Uncommitted (no commit requested). Story file + epic-20 (index row + section) + sprint-4-plan flipped `done`.
+
+**What shipped:** `driver.js@1.9.0` (research covered 1.8.0 — API verified from shipped `driver.js.d.ts`; `./dist/driver.css` is a declared export) · `components/dashboard/tour.tsx` (gate + 6 approved steps + driver lifecycle + Skip + flags + replay listener) · `data-tour` attrs: header/stat-cards/signup-chart in `client.tsx`, sidebar `<aside>`, warmth BOTH roots (free-tier button + pro `Panel`), qualification all 4 overview `Panel` returns via new `Panel` `dataTour` prop · `shell.tsx` mounts tour after `{children}` (page captures run first) · **Replay tour** button in `client.tsx` header right cluster gated `!isEmpty` → dispatches exported `TOUR_REPLAY_EVENT` (`prewaitlist-tour-replay`) · 13 tests in `src/__tests__/components/dashboard-tour.test.tsx` incl. verbatim copy lock.
+
+**AC7 choice (documented):** below `lg` (1024px) the sidebar step is **omitted** (5 steps highlight real elements); `skipMissingElement: true` + `waitForElement: 3000` are the belt for slow chunks. Subscriber table is NOT on `/dashboard` (it lives on `/dashboard/leaderboard`; multi-page out of scope) — tour uses real overview elements instead; flagged in scan report, accepted.
+
+**Key mechanics (do not regress):**
+
+- Flag `founder-dashboard-tour-complete` written ONLY in `onDestroyed` (Skip / Done / close X); cleanup-triggered destroy guarded by `unmountingRef` → StrictMode double-invoke and navigation never write it (reversing this = dev self-blocks instantly).
+- Trigger: single effect keyed `[pathname]`, count read via `countRef` (mid-tour `subscriber_count` refresh must NOT restart the tour), 400ms poll up to 15s for `[data-tour="dashboard-header"]` (absent during `loading.tsx`) → silent give-up, retries next visit.
+- Surveys (20.1 D7): `setSurveySuppressed(true)` before `drive()`, `false` on destroy/unmount; `dashboard_viewed` funnel untouched; residual multi-tab edge accepted like 20.1's `?upgrade=cap` edge (single-tab sequencing: Survey 1 lands on visit >=2).
+- Replay: force-start bypasses the flag but still requires `subscriber_count >= 1`; `isActive()` guard = no double-start while active.
+- happy-dom `matchMedia("(min-width: 1024px)")` returns `matches: true` → tests take the desktop path (6 steps) by default; mobile test stubs `matches: false` (asserts 5 steps).
+- Test mock pattern: `mockDriver` records the config at `.mock.calls[last][0]`; `mockDestroy` mirrors driver.js by invoking `onDestroyed` synchronously — that's what makes the StrictMode/unmount/Skip flag assertions real.
+
+**Gates:** lint 0 errors / 5 baseline warnings · prettier clean (7 code files + 3 docs) · full suite **1033 = 1026 pass / 7 fail = exact sanctioned baseline** (dashboard-archive 4 + dashboard-subscriber-table 3; +13 new) · clean build (`.next` deleted first; `✓ Compiled successfully`, `ƒ Proxy (Middleware)`).

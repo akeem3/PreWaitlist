@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useDashboardTier, useUpgradeModal } from "./shell";
+import { capture } from "@/lib/analytics";
+import { TOUR_REPLAY_EVENT } from "../../../components/dashboard/tour";
 
 const SignupChart = dynamic(
   () => import("../../../components/dashboard/signup-chart"),
@@ -182,6 +184,13 @@ export default function DashboardClient({
     refreshData();
   }, []);
 
+  // Story 20.1 AC2 — dashboard opened. Mount-only on purpose: the
+  // visibilitychange/60s refresh effects below re-run data fetches and
+  // must NOT re-fire this event.
+  useEffect(() => {
+    capture("dashboard_viewed");
+  }, []);
+
   // Track mounted state to prevent router.refresh() firing during navigation
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -225,7 +234,10 @@ export default function DashboardClient({
 
   return (
     <>
-      <div className="border-b border-border bg-background px-6 py-4">
+      <div
+        className="border-b border-border bg-background px-6 py-4"
+        data-tour="dashboard-header"
+      >
         <div className="flex items-center justify-between">
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-body-sm font-medium text-accent">
@@ -257,6 +269,17 @@ export default function DashboardClient({
           </div>
 
           <div className="flex items-center gap-3">
+            {!isEmpty && (
+              <button
+                type="button"
+                onClick={() =>
+                  window.dispatchEvent(new CustomEvent(TOUR_REPLAY_EVENT))
+                }
+                className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
+              >
+                Replay tour
+              </button>
+            )}
             {tier === "pro" ? (
               <Link
                 href="/onboarding/1"
@@ -387,7 +410,10 @@ export default function DashboardClient({
           <h1 className="mb-6 text-h2 text-foreground">Overview</h1>
         )}
 
-        <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div
+          className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4"
+          data-tour="stat-cards"
+        >
           <Link
             href={`/dashboard/leaderboard${waitlistId ? `?wid=${waitlistId}` : ""}`}
             className="rounded-[var(--card-radius)] border border-border bg-card px-4 py-3 text-center transition-colors hover:bg-muted/30"
@@ -512,7 +538,7 @@ export default function DashboardClient({
               />
             </div>
 
-            <div className="mb-6">
+            <div className="mb-6" data-tour="signup-chart">
               <SignupChart subdomain={subdomain} waitlistId={waitlistId} />
             </div>
 

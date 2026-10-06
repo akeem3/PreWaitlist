@@ -22,6 +22,7 @@ interface PanelProps {
   title?: ReactNode;
   action?: ReactNode;
   className?: string;
+  dataTour?: string;
   children: ReactNode;
 }
 
@@ -29,10 +30,11 @@ export default function Panel({
   title,
   action,
   className,
+  dataTour,
   children,
 }: PanelProps) {
   return (
-    <div className={cn(panelChrome, className)}>
+    <div className={cn(panelChrome, className)} data-tour={dataTour}>
       {title != null && <PanelHeader title={title} action={action} />}
       {children}
     </div>

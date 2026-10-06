@@ -21,8 +21,8 @@ PostHog is capturing the core funnel events and 2–3 behavior-triggered surveys
 
 | ID   | Title                                           | Depends on | Status |
 | ---- | ----------------------------------------------- | ---------- | ------ |
-| 20.1 | PostHog Instrumentation + Surveys               | —          | ready  |
-| 20.2 | First-Subscriber Dashboard Walkthrough          | —          | ready  |
+| 20.1 | PostHog Instrumentation + Surveys               | —          | done   |
+| 20.2 | First-Subscriber Dashboard Walkthrough          | —          | done   |
 | 20.3 | Feedback Surfaces (Tally Button + Founder Link) | —          | ready  |
 | 20.4 | Founder Marketing Links (Dub + UTM Playbook)    | —          | ready  |
 | 20.5 | Product Hunt Prep                               | 19.*       | ready  |
@@ -35,7 +35,7 @@ Every story moves `ready` -> `in-progress` -> `done` (or `blocked`), and is only
 
 ### Story 20.1 — PostHog Instrumentation + Surveys
 
-**Status:** ready
+**Status:** done
 **Design Refs:** - (no new UI; spec = feedback doc §6 surveys + §16 event list, not SVG)
 **Story:** As the founder, I want product analytics and a few behavior-triggered feedback surveys so that I can see where founders drop off and ask the right question at the right moment.
 
@@ -78,7 +78,7 @@ Every story moves `ready` -> `in-progress` -> `done` (or `blocked`), and is only
 
 ### Story 20.2 — First-Subscriber Dashboard Walkthrough
 
-**Status:** ready
+**Status:** done
 **Design Refs:** - (no new UI; spec = founder brief "first visit to active dashboard after first subscriber", not SVG)
 **Story:** As a founder seeing my dashboard with a real subscriber for the first time, I want a short guided walkthrough so that I know what to do next.
 

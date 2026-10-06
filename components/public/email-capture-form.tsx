@@ -7,6 +7,7 @@ import { ConsentLine, TrustLine } from "./consent-line";
 import { getTierLimits, type Tier } from "../../src/lib/tier-gating";
 import { buildPhone, type PhoneMode } from "../../src/lib/phone";
 import { COUNTRY_OPTIONS, DEFAULT_COUNTRY_DIAL } from "../../src/lib/countries";
+import { capture } from "../../src/lib/analytics";
 
 interface Question {
   id: string;
@@ -195,6 +196,12 @@ export function EmailCaptureForm({
         return;
       }
 
+      // Story 20.1 AC2 / D3 — new subscriber succeeded (409 duplicates
+      // return above). Fires in the subscriber's browser at the exact
+      // signup moment; properties carry waitlist context only, never
+      // email (AC3).
+      capture("subscriber_received", { waitlist_id: waitlistId });
+
       router.push(
         `/${subdomain}/thank-you?subscriber_id=${data.id}&referral_code=${data.referral_code}`
       );
@@ -260,7 +267,7 @@ export function EmailCaptureForm({
     <div className="w-full">
       {capReached ? (
         <div
-          className={`rounded-[var(--input-radius)] border px-4 py-6 text-center ${
+          className={`rounded-(--input-radius) border px-4 py-6 text-center ${
             isDark
               ? "border-dark-template-border bg-dark-template-input"
               : "border-border bg-card"

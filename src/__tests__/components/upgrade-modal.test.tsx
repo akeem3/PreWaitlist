@@ -11,6 +11,19 @@ vi.mock("../../../src/hooks/use-paddle", () => ({
   })),
 }));
 
+const { mockCapture, mockSetSurveySuppressed } = vi.hoisted(() => ({
+  mockCapture: vi.fn(),
+  mockSetSurveySuppressed: vi.fn(),
+}));
+
+vi.mock("@/lib/analytics", () => ({
+  capture: mockCapture,
+  setSurveySuppressed: mockSetSurveySuppressed,
+  identifyFounder: vi.fn(),
+  registerContext: vi.fn(),
+  initAnalytics: vi.fn(),
+}));
+
 const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
@@ -187,6 +200,39 @@ describe("UpgradeModal", () => {
       ).toBeInTheDocument();
     }
   );
+
+  // Story 20.1 AC2 + D7 — the open effect captures the funnel event, raises
+  // the survey-suppression flag for as long as the modal owns the UI, and
+  // releases it via cleanup on close.
+  it("captures upgrade_triggered and toggles survey suppression with open state", () => {
+    const { rerender } = render(<UpgradeModal {...defaultProps} />);
+    expect(mockCapture).toHaveBeenCalledWith("upgrade_triggered", {
+      trigger_source: "sidebar",
+    });
+    expect(mockSetSurveySuppressed).toHaveBeenCalledWith(true);
+
+    rerender(<UpgradeModal {...defaultProps} open={false} />);
+    expect(mockSetSurveySuppressed).toHaveBeenCalledWith(false);
+  });
+
+  // A cooldown-suppressed open auto-closes before doing anything else —
+  // it must not report a trigger that never showed to the founder.
+  it("does not capture upgrade_triggered when the trigger is cooldown-suppressed", () => {
+    const onOpenChange = vi.fn();
+    localStorageMock.setItem(
+      "upgrade-dismissed-sidebar",
+      JSON.stringify({ dismissedAt: Date.now() })
+    );
+    render(
+      <UpgradeModal
+        {...defaultProps}
+        triggerSource="sidebar"
+        onOpenChange={onOpenChange}
+      />
+    );
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(mockCapture).not.toHaveBeenCalled();
+  });
 });
 
 describe("isSuppressed (cooldown)", () => {

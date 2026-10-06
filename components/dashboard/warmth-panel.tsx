@@ -122,6 +122,7 @@ export default function WarmthPanel({
       <button
         type="button"
         onClick={onUpgradeClick}
+        data-tour="warmth-panel"
         className={cn(
           panelChrome,
           "flex w-full flex-col text-left transition-colors hover:bg-muted/30"
@@ -155,6 +156,7 @@ export default function WarmthPanel({
 
   return (
     <Panel
+      dataTour="warmth-panel"
       className="group relative flex flex-col transition-colors hover:bg-muted/30"
       title={
         <Link

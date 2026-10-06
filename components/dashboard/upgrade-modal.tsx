@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePaddle } from "@/hooks/use-paddle";
 import { PRO_FEATURES } from "@/lib/pricing-features";
+import { capture, setSurveySuppressed } from "@/lib/analytics";
 
 interface UpgradeModalProps {
   open: boolean;
@@ -143,6 +144,11 @@ export function UpgradeModal({
             },
           });
           window.dispatchEvent(new CustomEvent("paddle-checkout-opened"));
+          // Story 20.1 AC2 — Paddle checkout opened (both entry points:
+          // here + use-paddle-upgrade).
+          capture("checkout_started", {
+            trigger_source: triggerSource,
+          });
           onOpenChange(false);
         }
       })
@@ -183,14 +189,22 @@ export function UpgradeModal({
   // Enforced here so every opener (sidebar, gates, billing) honors it —
   // except explicit-intent deep links, which must survive a prior dismissal
   // or they flicker shut and the arrival pay intent is lost.
+  // Story 20.1: while the modal is open it also captures upgrade_triggered
+  // (not for cooldown-suppressed opens) and raises the survey-suppression
+  // flag (D7) so survey popups never stack on the modal — released by this
+  // effect's cleanup when the modal closes.
   useEffect(() => {
+    if (!open) return;
     if (
-      open &&
       !COOLDOWN_EXEMPT_TRIGGERS.has(triggerSource) &&
       isSuppressed(triggerSource)
     ) {
       onOpenChange(false);
+      return;
     }
+    capture("upgrade_triggered", { trigger_source: triggerSource });
+    setSurveySuppressed(true);
+    return () => setSurveySuppressed(false);
   }, [open, triggerSource, onOpenChange]);
 
   if (!open) return null;

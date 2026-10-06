@@ -16,6 +16,7 @@ import {
   resolvePostAuthPath,
   writeAuthRedirectCookie,
 } from "../../../../src/lib/auth-redirect";
+import { capture } from "@/lib/analytics";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_SUBMIT_ATTEMPTS = 5;
@@ -133,6 +134,11 @@ function SignupPageContent() {
       setLoading(false);
       return;
     }
+
+    // Story 20.1 AC2 — account created at the email-signup moment.
+    // D1: Google-OAuth-created accounts are not captured here (server
+    // callback has no client moment) — gap recorded in the story Dev Notes.
+    capture("account_created", { method: "email" });
 
     router.push(
       `/verify-email?email=${encodeURIComponent(email)}${dest ? `&next=${encodeURIComponent(dest)}` : ""}`

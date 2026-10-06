@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useOnboardingForm } from "../context";
 import { useOnboardingUpgrade } from "../onboarding-client-layout";
 import { isPro as checkIsPro } from "../../../lib/tier-gating";
+import { capture } from "../../../lib/analytics";
 import { Input } from "../../../../components/ui/input";
 import {
   EmailTokenEditor,
@@ -99,6 +100,9 @@ export default function OnboardingStep5() {
           form.setLoading(false);
           return;
         }
+
+        // Story 20.1 AC2 — launch succeeded (waitlist is now live).
+        capture("waitlist_published", { waitlist_id: waitlistId });
 
         router.push("/onboarding/success");
       } catch {

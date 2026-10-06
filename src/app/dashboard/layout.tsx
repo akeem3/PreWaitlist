@@ -8,6 +8,7 @@ interface WaitlistRow {
   product_name: string | null;
   logo_url: string | null;
   is_archived: boolean;
+  subscriber_count: number | null;
 }
 
 export default async function DashboardLayout({
@@ -27,7 +28,9 @@ export default async function DashboardLayout({
 
   const { data: waitlists, error: waitlistError } = await supabase
     .from("waitlists")
-    .select("id, subdomain, product_name, logo_url, is_archived")
+    .select(
+      "id, subdomain, product_name, logo_url, is_archived, subscriber_count"
+    )
     .eq("founder_id", user.id)
     .order("created_at", { ascending: true });
 
@@ -49,6 +52,7 @@ export default async function DashboardLayout({
     <DashboardShell
       waitlists={(waitlists ?? []) as WaitlistRow[]}
       tier={profile?.tier ?? "free"}
+      founderId={user.id}
     >
       {children}
     </DashboardShell>

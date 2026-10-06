@@ -42,6 +42,20 @@ vi.mock("../../../components/dashboard/upgrade-modal", () => ({
   UpgradeModal: () => null,
 }));
 
+const { mockCapture, mockIdentify, mockRegister } = vi.hoisted(() => ({
+  mockCapture: vi.fn(),
+  mockIdentify: vi.fn(),
+  mockRegister: vi.fn(),
+}));
+
+vi.mock("@/lib/analytics", () => ({
+  capture: mockCapture,
+  identifyFounder: mockIdentify,
+  registerContext: mockRegister,
+  setSurveySuppressed: vi.fn(),
+  initAnalytics: vi.fn(),
+}));
+
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
@@ -73,9 +87,13 @@ function TierProbe() {
   );
 }
 
-function renderShell(serverTier = "free") {
+function renderShell(serverTier = "free", founderId?: string) {
   return render(
-    <DashboardShell waitlists={waitlists} tier={serverTier}>
+    <DashboardShell
+      waitlists={waitlists}
+      tier={serverTier}
+      founderId={founderId}
+    >
       <TierProbe />
     </DashboardShell>
   );
@@ -267,5 +285,77 @@ describe("Dashboard tier refresh", () => {
 
     clearIntervalSpy.mockRestore();
     removeSpy.mockRestore();
+  });
+
+  // Story 20.1 AC2 + D2 — client-side tier flips record the funnel events.
+  it("captures subscription_started when the tier flips free → pro", () => {
+    renderShell("free");
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent("tier-changed", { detail: { tier: "pro" } })
+      );
+    });
+
+    expect(mockCapture).toHaveBeenCalledWith("subscription_started", {
+      source: "dashboard",
+    });
+    expect(mockCapture).not.toHaveBeenCalledWith(
+      "cancelled",
+      expect.anything()
+    );
+  });
+
+  it("captures cancelled when the tier flips pro → free", () => {
+    renderShell("pro");
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent("tier-changed", { detail: { tier: "free" } })
+      );
+    });
+
+    expect(mockCapture).toHaveBeenCalledWith("cancelled", {
+      source: "tier_flip",
+    });
+    expect(mockCapture).not.toHaveBeenCalledWith(
+      "subscription_started",
+      expect.anything()
+    );
+  });
+
+  it("does not capture tier-flip events when the tier is unchanged", () => {
+    renderShell("free");
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent("tier-changed", { detail: { tier: "free" } })
+      );
+    });
+
+    expect(mockCapture).not.toHaveBeenCalled();
+  });
+
+  // Story 20.1 D6 — identify + person/super props from the shell.
+  it("identifies the founder with tier, waitlist_id and subscriber_count", () => {
+    renderShell("free", "founder-1");
+
+    expect(mockIdentify).toHaveBeenCalledWith("founder-1", {
+      tier: "free",
+      waitlist_id: "wl-1",
+      subscriber_count: 0,
+    });
+    expect(mockRegister).toHaveBeenCalledWith({
+      tier: "free",
+      waitlist_id: "wl-1",
+      subscriber_count: 0,
+    });
+  });
+
+  it("does not touch analytics without a founderId", () => {
+    renderShell("free");
+
+    expect(mockIdentify).not.toHaveBeenCalled();
+    expect(mockRegister).not.toHaveBeenCalled();
   });
 });

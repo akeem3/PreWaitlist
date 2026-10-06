@@ -220,7 +220,11 @@ function PanelBody({
   if (loadError) {
     if (variant === "overview") {
       return (
-        <Panel title="Qualification Breakdown" action={viewAllLink}>
+        <Panel
+          title="Qualification Breakdown"
+          action={viewAllLink}
+          dataTour="qualification-panel"
+        >
           <p
             role="alert"
             className="py-6 text-center text-body-sm text-destructive"
@@ -243,7 +247,11 @@ function PanelBody({
   if (data === null) {
     if (variant === "overview") {
       return (
-        <Panel title="Qualification Breakdown" action={viewAllLink}>
+        <Panel
+          title="Qualification Breakdown"
+          action={viewAllLink}
+          dataTour="qualification-panel"
+        >
           <div className="space-y-3">
             <div className="h-3 w-3/4 animate-pulse rounded-full bg-muted" />
             <div className="h-3 w-1/2 animate-pulse rounded-full bg-muted" />
@@ -271,7 +279,11 @@ function PanelBody({
   if (questions.length === 0) {
     if (variant === "overview") {
       return (
-        <Panel title="Qualification Breakdown" action={viewAllLink}>
+        <Panel
+          title="Qualification Breakdown"
+          action={viewAllLink}
+          dataTour="qualification-panel"
+        >
           <EmptyState />
         </Panel>
       );
@@ -300,7 +312,11 @@ function PanelBody({
     const isGrid = questions.length >= 3;
     const answerCap = questions.length >= 5 ? 1 : 2;
     return (
-      <Panel title="Qualification Breakdown" action={viewAllLink}>
+      <Panel
+        title="Qualification Breakdown"
+        action={viewAllLink}
+        dataTour="qualification-panel"
+      >
         {meta}
         <div className="@container">
           <div

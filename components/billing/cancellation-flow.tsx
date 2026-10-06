@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { capture } from "../../src/lib/analytics";
 
 interface CancellationFlowProps {
   isPro: boolean;
@@ -32,7 +33,13 @@ export function CancellationFlow({
       {!confirming ? (
         <button
           type="button"
-          onClick={() => setConfirming(true)}
+          onClick={() => {
+            // Story 20.1 AC5 — Survey 2's event trigger (first cancel click,
+            // not the confirmation step). surveyTrigger (D7) lets the wrapper
+            // hold this back while the upgrade modal owns the UI.
+            capture("cancel_intent", undefined, { surveyTrigger: true });
+            setConfirming(true);
+          }}
           className="rounded-lg border border-destructive/30 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/5"
         >
           Cancel subscription
