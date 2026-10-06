@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useEffect } from "react";
 import { usePaddle } from "./use-paddle";
+import { capture } from "@/lib/analytics";
 
 interface UsePaddleUpgradeOptions {
   onTierChanged?: (tier: string) => void;
@@ -41,9 +42,18 @@ export function usePaddleUpgrade({
         const res = await fetch("/api/profile");
         if (res.ok) {
           const data = await res.json();
+          // Audit fix (Story 20.1 D2) — guard AFTER the last await: if the
+          // poll was cleared while this tick was in flight (unmount cleanup
+          // or cancel()), a late response must not fire subscription_started
+          // or onTierChanged once the dashboard shell owns the flip (the
+          // story's "contexts are mutually exclusive — no double-fire" claim).
+          if (!pollingRef.current) return;
           if (data.tier === "pro") {
-            if (pollingRef.current) clearInterval(pollingRef.current);
+            clearInterval(pollingRef.current);
             pollingRef.current = null;
+            // Story 20.1 D2 — tier flip to pro detected by the onboarding
+            // checkout poll (the dashboard shell owns the other context).
+            capture("subscription_started", { source: "onboarding" });
             onTierChanged?.("pro");
           }
         }
@@ -80,6 +90,9 @@ export function usePaddleUpgrade({
             successUrl: `${window.location.origin}/dashboard/settings/billing?upgraded=1`,
           },
         });
+        // Story 20.1 AC2 — checkout opened (second entry point; the modal's
+        // own handleUpgrade covers dashboard-side opens).
+        capture("checkout_started", { trigger_source: triggerSource });
         startPolling();
       }
     } catch (err) {

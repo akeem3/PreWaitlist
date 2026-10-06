@@ -268,6 +268,7 @@ export function Sidebar({
       )}
 
       <aside
+        data-tour="dashboard-sidebar"
         className={cn(
           "fixed top-0 left-0 z-50 flex h-full w-67 flex-col border-r border-border bg-background",
           "transition-transform duration-200 lg:translate-x-0",

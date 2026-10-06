@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   TierIcon,
   type TierKind,
 } from "../../../../components/dashboard/tier-icon";
+import { capture } from "@/lib/analytics";
 
 interface Subscriber {
   id: string;
@@ -100,6 +101,11 @@ export default function WarmthClient({
   const [sortField, setSortField] = useState<SortField>("warmth_score");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [filter, setFilter] = useState<FilterTier>("all");
+
+  // Story 20.1 AC2 — warmth page viewed (mount-only).
+  useEffect(() => {
+    capture("warmth_viewed");
+  }, []);
 
   const filtered = useMemo(() => {
     let result = subscribers;

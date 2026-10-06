@@ -353,9 +353,9 @@ PostHog is capturing the core funnel events and 2–3 behavior-triggered surveys
 
 | ID   | Title                                           | Depends on | Status |
 | ---- | ----------------------------------------------- | ---------- | ------ |
-| 20.1 | PostHog Instrumentation + Surveys               | —          | ready  |
-| 20.2 | First-Subscriber Dashboard Walkthrough          | —          | ready  |
-| 20.3 | Feedback Surfaces (Tally Button + Founder Link) | —          | ready  |
+| 20.1 | PostHog Instrumentation + Surveys               | —          | done   |
+| 20.2 | First-Subscriber Dashboard Walkthrough          | —          | done   |
+| 20.3 | Feedback Surfaces (Tally Button + Founder Link) | —          | done   |
 | 20.4 | Founder Marketing Links (Dub + UTM Playbook)    | —          | ready  |
 | 20.5 | Product Hunt Prep                               | 19.*       | ready  |
 
@@ -365,7 +365,7 @@ PostHog is capturing the core funnel events and 2–3 behavior-triggered surveys
 
 ### Story 20.1 — PostHog Instrumentation + Surveys
 
-**Status:** ready
+**Status:** done
 **Story:** As the founder, I want product analytics and a few behavior-triggered feedback surveys so that I can see where founders drop off and ask the right question at the right moment.
 
 **Acceptance Criteria (EARS):**
@@ -407,7 +407,7 @@ PostHog is capturing the core funnel events and 2–3 behavior-triggered surveys
 
 ### Story 20.2 — First-Subscriber Dashboard Walkthrough
 
-**Status:** ready
+**Status:** done
 **Story:** As a founder seeing my dashboard with a real subscriber for the first time, I want a short guided walkthrough so that I know what to do next.
 
 **Acceptance Criteria (EARS):**
@@ -437,7 +437,7 @@ PostHog is capturing the core funnel events and 2–3 behavior-triggered surveys
 
 ### Story 20.3 — Feedback Surfaces (Tally Button + Founder Link)
 
-**Status:** ready
+**Status:** done
 **Story:** As a user, I want an always-available feedback button and a direct way to reach the founder so that problems I hit are cheap to report.
 
 **Acceptance Criteria (EARS):**

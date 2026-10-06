@@ -14,6 +14,9 @@ import { QuotaWarningBanner } from "../../../components/dashboard/quota-warning-
 import { useRouter, useSearchParams } from "next/navigation";
 import { STORAGE_KEY } from "../../../components/dashboard/waitlist-switcher";
 import { resolveActiveWaitlist } from "../../lib/active-waitlist";
+import { capture, identifyFounder, registerContext } from "@/lib/analytics";
+import { DashboardTour } from "../../../components/dashboard/tour";
+import { FeedbackButton } from "../../../components/dashboard/feedback-button";
 
 interface WaitlistRow {
   id: string;
@@ -21,6 +24,21 @@ interface WaitlistRow {
   product_name: string | null;
   logo_url: string | null;
   is_archived: boolean;
+  // Optional: dashboard-layout select includes it for analytics person props
+  // (Story 20.1 D6); test fixtures predate the column and stay valid.
+  subscriber_count?: number | null;
+}
+
+// Story 20.1 D2 — client-side tier-flip captures for the dashboard context
+// (the onboarding checkout poll owns its own via use-paddle-upgrade).
+// Known limitation, recorded in the story Dev Notes: a Paddle-portal
+// cancellation with no dashboard tab open is never observed here.
+function recordTierFlip(prev: string, next: string): void {
+  if (next === "pro") {
+    capture("subscription_started", { source: "dashboard" });
+  } else if (prev === "pro") {
+    capture("cancelled", { source: "tier_flip" });
+  }
 }
 
 interface DashboardContextValue {
@@ -65,6 +83,9 @@ interface DashboardShellProps {
   children: React.ReactNode;
   waitlists: WaitlistRow[];
   tier: string;
+  /** Story 20.1 D6 — signed-in founder id for PostHog identify; optional so
+   *  tests can render the shell without analytics. */
+  founderId?: string;
 }
 
 function getStoredId(waitlists: WaitlistRow[]): string | null {
@@ -83,6 +104,7 @@ export default function DashboardShell({
   children,
   waitlists,
   tier: serverTier,
+  founderId,
 }: DashboardShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [upgradeModal, setUpgradeModal] = useState<{
@@ -100,18 +122,24 @@ export default function DashboardShell({
   const pollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const applyTier = useCallback((next: string) => {
-    if (tierRef.current === next) return;
+    const prev = tierRef.current;
+    if (prev === next) return;
     tierRef.current = next;
     setTierState(next);
+    recordTierFlip(prev, next);
   }, []);
 
   // Accept server-prop updates (router.refresh / navigation). Client-applied
   // values already match the DB when we set them, so this is a no-op in the
   // common case and catches external refreshes (e.g. overview visibility).
+  // Story 20.1: also records tier flips — this is the path a webhook-driven
+  // change takes while the tab is open (applyTier is bypassed here).
   useEffect(() => {
     if (serverTier !== tierRef.current) {
+      const prev = tierRef.current;
       tierRef.current = serverTier;
       setTierState(serverTier);
+      recordTierFlip(prev, serverTier);
     }
   }, [serverTier]);
 
@@ -293,6 +321,23 @@ export default function DashboardShell({
 
   const activeWaitlist = waitlists.find((w) => w.id === effectiveId);
 
+  // Story 20.1 D6 — identify the signed-in founder and keep person props +
+  // event super-properties current (tier flips, waitlist switches, refreshed
+  // subscriber_count). identify with the same distinct_id is PostHog's
+  // supported way to update a person — no duplicate profiles. Fresh person
+  // props matter: Survey 1 ("after first subscriber") targets subscriber_count.
+  // founderId optional so tests can render the shell without analytics.
+  useEffect(() => {
+    if (!founderId) return;
+    const props = {
+      tier,
+      waitlist_id: effectiveId || null,
+      subscriber_count: activeWaitlist?.subscriber_count ?? 0,
+    };
+    registerContext(props);
+    identifyFounder(founderId, props);
+  }, [founderId, tier, effectiveId, activeWaitlist]);
+
   const handleSelectWaitlist = useCallback(
     (waitlistId: string) => {
       setActiveWaitlistId(waitlistId);
@@ -372,6 +417,10 @@ export default function DashboardShell({
         triggerSource={upgradeModal.triggerSource}
       />
 
+      {/* AC4: feedback surfaces live in the dashboard shell only — public
+          subscriber-facing pages never render this component. */}
+      <FeedbackButton />
+
       <button
         type="button"
         onClick={() => setIsSidebarOpen(true)}
@@ -395,6 +444,14 @@ export default function DashboardShell({
         <DashboardContext.Provider value={contextValue}>
           {children}
         </DashboardContext.Provider>
+        {/* Renders null; children effects (page captures) run before the
+            tour's effect so Survey 1 eligibility sees dashboard_viewed.
+            interruptOpen: the ?upgrade=cap deep link mounts the Pro modal
+            with the tour eligible — the tour must yield to the modal. */}
+        <DashboardTour
+          subscriberCount={activeWaitlist?.subscriber_count ?? 0}
+          interruptOpen={upgradeModal.open}
+        />
       </main>
     </div>
   );

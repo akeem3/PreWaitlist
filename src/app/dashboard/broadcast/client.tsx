@@ -17,6 +17,7 @@ import {
 } from "@/lib/broadcast-limits";
 import { resolveFromAddress } from "@/lib/from-address";
 import { sanitizeEmailHtml } from "@/lib/sanitize";
+import { capture } from "@/lib/analytics";
 
 // COPY GAP B7 — interim honest wording ("sent", not "delivered"): Batch API
 // accept/queue is not inbox delivery; real delivery is the Epic 11
@@ -61,6 +62,11 @@ export default function BroadcastClient({
     "broadcast",
     sendingDomain
   );
+
+  // Story 20.1 AC2 — broadcast page opened (mount-only).
+  useEffect(() => {
+    capture("broadcast_started");
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -138,6 +144,14 @@ export default function BroadcastClient({
         );
         return;
       }
+
+      // Story 20.1 AC2 — broadcast sent (after the API's honest status
+      // checks: HTTP error + ok:false both return above).
+      capture("broadcast_sent", {
+        waitlist_id: waitlistId,
+        segment,
+        recipient_count: data?.recipient_count ?? 0,
+      });
 
       setSent(true);
       setSentCount(data?.recipient_count ?? 0);

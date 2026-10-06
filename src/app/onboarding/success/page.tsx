@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useOnboardingForm } from "../context";
 import MetaPreview from "../../../../components/onboarding/meta-preview";
 import { ShareButtons } from "../../../../components/share/share-buttons";
+import { capture } from "../../../lib/analytics";
 
 export default function OnboardingSuccess() {
   const form = useOnboardingForm();
@@ -15,6 +16,7 @@ export default function OnboardingSuccess() {
     if ("clearPersisted" in form) {
       form.clearPersisted();
     }
+    capture("onboarding_completed");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

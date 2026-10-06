@@ -29,7 +29,7 @@ export default function OnboardingLoading() {
       </div>
 
       {/* Submit */}
-      <div className="mt-8 h-14 w-full animate-pulse rounded-(--radius-md) bg-muted" />
+      <div className="mt-8 h-14 w-full animate-pulse rounded-md bg-muted" />
 
       {/* Back link */}
       <div className="mt-4 h-4 w-16 animate-pulse rounded bg-muted" />

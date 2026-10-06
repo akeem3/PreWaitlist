@@ -1,6 +1,6 @@
 # Story 20.2 — First-Subscriber Dashboard Walkthrough
 
-**Status:** ready
+**Status:** done
 **Epic:** 20 — Feedback, Onboarding & Growth Tooling
 **Depends on:** —
 **Design Refs:** - (no new UI; spec = founder brief "first visit to active dashboard after first subscriber", not SVG)
@@ -59,3 +59,26 @@ As a founder seeing my dashboard with a real subscriber for the first time, I wa
 - `react-hooks/set-state-in-effect` lint rule bites here (Dev Notes) — follow the lazy-init/ref pattern or T6 gates fail on lint.
 - Copy gate (AC5): tour strings must come from the feedback doc/existing copy — new strings need founder approval before merge; don't draft step titles ad hoc.
 - Survey/walkthrough collision with 20.1 — share the suppression flag; the two stories must coordinate or modals stack.
+
+## AS-BUILT (executed 2026-10-05)
+
+**Status:** T1-T6 done. Gates: lint 0 errors / 5 baseline warnings · prettier clean · full suite **1033 = 1026 pass / 7 fail = exact sanctioned baseline** (+13 tests in `dashboard-tour.test.tsx`) · clean build (`ƒ Proxy (Middleware)`). Dependency pinned: `driver.js@1.9.0` (newer than the researched 1.8.0; API verified against shipped types).
+
+**Files (actual):** `package.json` · `components/dashboard/tour.tsx` (new — gate, 6 steps, driver lifecycle, Skip, flags, replay listener) · `components/dashboard/panel.tsx` (`dataTour` prop pass-through) · `components/dashboard/warmth-panel.tsx` + `qualification-panel.tsx` + `sidebar.tsx` (`data-tour` attrs — warmth has TWO roots: free-tier button + pro Panel; qualification has 4 overview returns, all tagged) · `src/app/dashboard/client.tsx` (header/stat-cards/signup-chart attrs + **Replay tour** button in header right cluster, gated `!isEmpty`) · `src/app/dashboard/shell.tsx` (mount after `{children}` — page captures run first) · `src/__tests__/components/dashboard-tour.test.tsx` (new, 13 tests).
+
+**AC5 — copy:** founder approved the six step drafts verbatim (question tool, 2026-10-04, "Approve drafts as written"). Button labels = driver.js defaults + AC-quoted "Skip" and "Replay tour" (no gate). Step titles: Your waitlist is live · Overview · Signups Over Time · Warmth Distribution · Qualification Breakdown · Your toolkit. Order: header → stat cards → chart → warmth → qualification → sidebar. Subscriber table is NOT on `/dashboard` (it lives on `/dashboard/leaderboard`; multi-page tours out of scope) — tour highlights the real overview elements instead; flagged in the scan report.
+
+**AC7 — mobile choice (documented):** below `lg` (1024px) the sidebar drawer is off-canvas, so the sidebar step is **omitted** (5 steps) and remaining steps highlight real elements; `skipMissingElement: true` + `waitForElement: 3000` cover slow dynamic chunks.
+
+**AC1/AC6 — trigger:** single effect gated on `pathname === "/dashboard"`; count read via ref (a mid-tour `subscriber_count` refresh must not restart the tour); polls 400ms up to 15s for `[data-tour="dashboard-header"]` (absent while `loading.tsx` renders), then gives up silently — retries on the next `/dashboard` visit.
+
+**AC3 — flag:** written only from `onDestroyed` (Skip / Done / close X). Cleanup-triggered destroy is guarded by `unmountingRef`, so StrictMode double-invoke and navigation never write the flag (dev never self-blocks; navigating away is not a dismissal).
+
+**Survey coordination (20.1):** `setSurveySuppressed(true)` before `drive()`, `false` on destroy/unmount. `dashboard_viewed` (funnel) untouched. Residual multi-tab edge documented like 20.1's accepted `?upgrade=cap` edge: single-tab sequencing lands Survey 1 on visit >=2 (flag set, suppression released).
+
+**Replay (AC4):** window CustomEvent `prewaitlist-tour-replay` (exported `TOUR_REPLAY_EVENT`); listener live whenever on `/dashboard`; force-start bypasses the completion flag but still requires `subscriber_count >= 1`; replay while active is a no-op (`isActive` guard).
+
+**Prompt #3 audit (2026-10-05) — 1 finding, F1 fixed:**
+
+- **F1 — tour stacked over the UpgradeModal on the `?upgrade=cap` deep link.** The cap-email deep link mounts the Pro modal at shell mount (`shell.tsx` `?upgrade=cap` effect) while the tour's poll auto-starts ≥400ms later with no modal awareness — driver.js gives the popover `z-index:1000000000` and `.driver-active *{pointer-events:none}`, so the modal (z-50) became unclickable until the tour was dismissed (a revenue moment behind an education moment; dismissing also burned the one-time flag). Fix: `DashboardTour` gains `interruptOpen` prop (shell passes `upgradeModal.open`); `startTour`/`attemptAutoStart` gate on it and the effect dep list is `[pathname, interruptOpen]` — modal-close resumes a fresh attempt same visit, modal-open mid-tour destroys via cleanup with the existing `unmountingRef` guard (no flag written). Locked by 3 new tests (no-start while open · starts after clear · interrupt destroy writes no flag), mutation-verified (3 failures with `startTour` gate removed). Gates re-run: lint 0/5 · full suite **1047 = 1040 pass / 7 fail = exact baseline** (+3 tests) · clean build.
+- **Audit note (no code change) — survey suppression scope:** the tour's `setSurveySuppressed(true)` only gates `surveyTrigger`-flagged captures (currently `cancel_intent`); `dashboard_viewed` (Survey 1's trigger) is a funnel event AC2 requires to fire, so Survey 1's absence during the first-visit tour rests on identify/person-prop timing (identify runs after `dashboard_viewed` on visit 1), not on the flag. driver.js's `z-index:1000000000` popover would visually beat a PostHog popover (`z-index:1000`) anyway, and any survey left standing appears only after the tour is dismissed. Verify with PostHog's "why didn't my survey show" tool per the Verification steps; if Survey 1 ever shows mid-tour, change its trigger event or position (see story 20.1 setup).
