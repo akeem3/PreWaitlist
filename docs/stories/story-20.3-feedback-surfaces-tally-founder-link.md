@@ -82,4 +82,6 @@ As a user, I want an always-available feedback button and a direct way to reach 
 
 **Founder setup gates (open — surfaces stay hidden until done):** (1) create ONE Tally form per Dev Notes (category MC with the 6 §7 labels, "Tell me what happened." long text, "Can I follow up with you?" yes/no, email optional — visible-vs-hidden is founder's call) and put its share URL in `NEXT_PUBLIC_TALLY_FORM_URL`; (2) set `NEXT_PUBLIC_FOUNDER_CONTACT_URL`; (3) redeploy.
 
+**Deferred (founder decision 2026-10-07):** all three setup gates above are **postponed until Epic 20 is complete** (20.4 + 20.5 done). Execute as one batch at epic close, together with the deferred 20.1 manual steps.
+
 **Gotcha:** happy-dom disables third-party script loading — appending `embed.js` fires `error` synchronously and rejects the loader promise, so tests exercise the `window.open` fallback path directly; popup wiring is tested by pre-setting `window.Tally` (loader short-circuits). Real browsers load the script async → `onload` → popup.

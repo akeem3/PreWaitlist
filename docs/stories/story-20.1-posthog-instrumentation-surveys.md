@@ -88,6 +88,8 @@ As the founder, I want product analytics and a few behavior-triggered feedback s
 
 Code ships the SDK + suppression gating; the surveys themselves live in the PostHog dashboard (external account — founder step, verified against PostHog survey docs 2026-10-04).
 
+**Deferred (founder decision 2026-10-07):** all manual steps below — event-flow verification, billing limit, both survey configs, survey preview checks — are **postponed until Epic 20 is complete** (20.4 + 20.5 done). Do not execute them piecemeal; run them as one batch at epic close.
+
 **One-time setup**
 
 1. Create a project at `app.posthog.com` → copy the **Project API key** (`phc_…`).

@@ -24,8 +24,8 @@ PostHog is capturing the core funnel events and 2–3 behavior-triggered surveys
 | 20.1 | PostHog Instrumentation + Surveys               | —          | done   |
 | 20.2 | First-Subscriber Dashboard Walkthrough          | —          | done   |
 | 20.3 | Feedback Surfaces (Tally Button + Founder Link) | —          | done   |
-| 20.4 | Founder Marketing Links (Dub + UTM Playbook)    | —          | ready  |
-| 20.5 | Product Hunt Prep                               | 19.*       | ready  |
+| 20.4 | Founder Marketing Links (Dub + UTM Playbook)    | —          | done   |
+| 20.5 | Product Hunt Prep                               | 19.*       | done   |
 
 **Parallelism:** 20.1 first (events underpin everything). 20.2 and 20.3 are independent and can run in parallel. 20.4 is founder-setup + doc. 20.5 runs last within the epic (prep for launch after product is stable).
 
@@ -143,7 +143,7 @@ Every story moves `ready` -> `in-progress` -> `done` (or `blocked`), and is only
 
 ### Story 20.4 — Founder Marketing Links (Dub + UTM Playbook)
 
-**Status:** ready
+**Status:** done
 **Design Refs:** - (no new UI; doc-only playbook — vision Sprint 4 + founder brief, not SVG)
 **Story:** As the founder running my own marketing, I want distinct links per social channel so that I can trace which channel drives signups.
 
@@ -165,12 +165,13 @@ Every story moves `ready` -> `in-progress` -> `done` (or `blocked`), and is only
 - Existing attribution that already works: `?src=powered-by` footer links, acquisition cookie capture in proxy.ts (Story 3.0), `?ref=` (subscriber referrals — different system, don't confuse: `ref` = subscriber's referral code, NOT channel attribution).
 - PostHog free tier captures utm params on pageviews by default (autocapture/pageview properties) — AC3 verification is realistic without extra wiring.
 - Founder account creation for Dub is his step (ask-first satisfied by prior approval).
+- **[AUDIT 2026-10-07]** Prompt #3 audit found a UTM-pass bug (AC4's sanctioned fix task): fresh signups have no `founder_profiles` row at callback → acquisition `.update()` no-opped + cookie discarded → UTM lost. Fixed with atomic `upsert(onConflict:"id")` in `src/app/auth/callback/route.ts` + 6 tests (`auth-callback-acquisition.test.ts`, mutation-verified). Playbook §3 gotcha #2 + verification steps corrected in the same audit. Full record: story file "Prompt #3 audit" section + MEMORY 20.4 block.
 
 ---
 
 ### Story 20.5 — Product Hunt Prep
 
-**Status:** ready (copy gated on founder)
+**Status:** done
 **Design Refs:** - (no new UI; doc-only checklist — vision Sprint 4 `:437`, not SVG)
 **Story:** As the founder preparing a Product Hunt launch, I want a prep checklist and asset inventory so that launch day isn't improvised.
 
