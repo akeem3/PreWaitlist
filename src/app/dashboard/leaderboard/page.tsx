@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../../lib/supabase/server";
 import { resolveActiveWaitlistRow } from "../../../lib/active-waitlist";
+import { getStoredWaitlistPref } from "../../../lib/waitlist-pref";
 import LeaderboardClient from "./client";
 
 interface PageProps {
@@ -16,11 +17,12 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
 
   const { wid } = await searchParams;
 
-  // 4.4: shared resolution — ?wid (validated) else newest.
+  // 4.4: shared resolution — ?wid (validated) else preference cookie else newest.
+  const storedId = await getStoredWaitlistPref();
   const waitlist = await resolveActiveWaitlistRow<{
     id: string;
     phone_mode?: string | null;
-  }>(supabase, user.id, wid, "id, phone_mode");
+  }>(supabase, user.id, wid, "id, phone_mode", storedId);
   if (!waitlist) redirect("/onboarding/1");
 
   const phoneEnabled = (waitlist.phone_mode ?? "off") !== "off";

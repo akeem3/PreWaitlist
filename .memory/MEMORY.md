@@ -2208,3 +2208,23 @@ Founder: the public-page update card looked "dumped on the page". Restyle in `co
 **Research (2 searches, 2026-10-07):** official PH prep guide (field specs, 70%-of-POTD first-comment stat) + PH promotion rule (never ask for upvotes — visit+comment only) + 2026 community guides (smollaunch, makerhunt, phlaunchkit, awesome-product-hunt kit). "Badge ask" resolved: compliant ask wording for a top-5/featured finish; never the word "upvote".
 
 **Founder pre-launch gates (in doc §1, not story tasks):** 21.8 launch verification must pass before submission · verify pricing + legal live on production · og:image unfurl check · author the three copy slots.
+
+## Waitlist switcher mismatch fix — preference cookie (Prompt #8, 2026-10-08)
+
+**Symptom:** plain `/dashboard` (no `?wid`) rendered the NEWEST waitlist server-side while the switcher dropdown showed the stored localStorage preference — content and dropdown disagreed until the dropdown was clicked or a `?wid` navigation happened.
+
+**Root cause:** two resolvers that couldn't see each other — server pages resolved `?wid > newest` (localStorage invisible to Server Components); the client shell resolved `?wid > localStorage > newest` and corrected only the dropdown label; nothing reconciled the content.
+
+**Fix (uncommitted, branch `dev`):**
+
+- **Cookie bridge** `active_waitlist_id` (1 year, `samesite=lax`) mirrors the localStorage preference so BOTH sides resolve the same precedence: `?wid > preference > newest`.
+  - `src/lib/waitlist-pref-core.ts` (NEW) — client-safe constants + `document.cookie` read/write (shared by shell and server; shell cannot import `next/headers`).
+  - `src/lib/waitlist-pref.ts` (NEW, server-only) — `getStoredWaitlistPref()` via `await cookies()`.
+- **Server:** `resolveActiveWaitlistRow(supabase, founderId, wid?, columns, storedId?)` validates the preference against ownership (falls through on foreign/stale). All 6 dashboard section pages + `layout.tsx` pass `getStoredWaitlistPref()`; layout passes new optional `defaultWaitlistId` prop to shell (first-paint switcher label = cookie value, zero hydration flip in steady state).
+- **Client (`shell.tsx`):** `getStoredId` falls back to the cookie when localStorage is missing/invalid (keeps client resolution identical to server). Sync effect writes BOTH stores to the resolved id (migrates legacy localStorage-only prefs; materializes pref on fresh browsers) and does a **one-shot `router.refresh()`** (ref-guarded per resolved id) only when the server rendered from a stale/missing cookie. `handleSelectWaitlist` writes the cookie alongside localStorage.
+- New-waitlist creation still lands correctly: onboarding success links `/dashboard?wid=<new id>` → wid wins + effect rewrites both stores.
+- Accepted behavior: viewing via shared `?wid` link updates the preference to the viewed waitlist (preference = last viewed, founder rule).
+
+**Tests:** `src/__tests__/components/dashboard-waitlist-preference.test.tsx` (7: steady no-refresh, legacy migration refresh-once, cookie-only restore, fresh default, ?wid sync no-refresh, invalid pref fallthrough, dropdown writes both stores) + `active-waitlist.test.ts` 4→9 (preference beats newest, wid outranks preference, invalid/foreign fallthrough, null pref single query). **Gates:** lint 0 errors/5 baseline warnings · prettier clean · clean build · full suite **1064 = 1057 pass / 7 fail = exact sanctioned baseline**.
+
+**Gotchas:** supabase-mock `__calls` does NOT record `maybeSingle` (it's a bare `vi.fn`) — count `select` calls instead; `getStoredId` reusing the cookie fallback would prevent restoring localStorage from cookie-only state (read `localStorage.getItem` directly in the sync-effect check).

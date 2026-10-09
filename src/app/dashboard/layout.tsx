@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../lib/supabase/server";
+import { resolveActiveWaitlist } from "../../lib/active-waitlist";
+import { getStoredWaitlistPref } from "../../lib/waitlist-pref";
 import DashboardShell from "./shell";
 
 interface WaitlistRow {
@@ -48,11 +50,21 @@ export default async function DashboardLayout({
     .eq("id", user.id)
     .maybeSingle();
 
+  // First-paint agreement: seed the shell with the same resolution the page
+  // uses (preference cookie > newest) so the switcher label is correct in the
+  // server-rendered HTML — no dropdown flip after hydration. An explicit
+  // ?wid still wins later via the shell's sync effect (layouts never see
+  // searchParams).
+  const storedId = await getStoredWaitlistPref();
+  const defaultWaitlistId =
+    resolveActiveWaitlist(waitlists ?? [], { storedId: storedId })?.id ?? "";
+
   return (
     <DashboardShell
       waitlists={(waitlists ?? []) as WaitlistRow[]}
       tier={profile?.tier ?? "free"}
       founderId={user.id}
+      defaultWaitlistId={defaultWaitlistId}
     >
       {children}
     </DashboardShell>
