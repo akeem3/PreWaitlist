@@ -14,7 +14,7 @@ As a user, I want an always-available feedback button and a direct way to reach 
 
 - AC1: The dashboard shall include a feedback entry point (floating action button or fixed sidebar/footer control) that opens the founder's Tally feedback form.
 - AC2: The form flow per feedback doc §7 shall be supported: category selection (🐛 Bug, 😕 Confusing, 💡 Idea, ❤️ Love this, ❌ Something is missing, 💬 Other) then free-text ("Tell me what happened."), optional follow-up consent ("Can I follow up with you?"). Implementation: categories are Tally form options (preferred, zero code) OR an in-app picker that passes category via Tally hidden field — choose one, document in Dev Notes.
-- AC3: A "Talk to the founder" surface per §8 ("Something feels wrong? Tell me.") shall be present, linking to the founder-provided contact/social URL (constant, single location).
+- AC3: A "Talk to the founder" surface per §8 ("Something feels wrong? Tell me.") shall be present, linking to the founder-provided contact/social URL (constant, single location). **[SUPERSEDED 2026-10-09 by Story 20.6 for the contact surface only — single-URL link replaced by Instagram + Email popup; Tally/FAB parts of this story unchanged.]**
 - AC4: Feedback surfaces shall be available on all founder-authenticated dashboard pages and NOT on public subscriber-facing pages (public users are subscribers, not founder users).
 - AC5: Copy strings shall be verbatim from `docs/waitlist_feedback_system.md` §7/§8 — no paraphrasing (copy-gate).
 - AC6: The Tally embed shall not block dashboard interactivity (lazy-load on open; popup/overlay rather than inline iframe occupying layout).
@@ -64,7 +64,7 @@ As a user, I want an always-available feedback button and a direct way to reach 
 
 ## AS-BUILT (2026-10-05)
 
-**AC2 choice (documented as required):** **Tally form options — zero code.** The 6 §7 categories ("Tell me what happened." + "Can I follow up with you?" likewise) live as fields in the founder-hosted Tally form; the app opens the popup with no in-app category picker and no `hiddenFields`. The Tally widget already auto-forwards the host page path/query. The picker/hidden-field path was NOT built.
+**AC2 choice (documented as required):** **Tally form options — zero code.** The 6 §7 categories ("Tell me what happened." + "Can I follow up with you?" likewise) live as fields in the founder-hosted Tally form; the app opens the popup with no in-app category picker and no `hiddenFields`. The Tally widget already auto-forwards the host page path/query. The picker/hidden-field path was NOT built. Founder-approved form copy (2026-10-09): category question label `What best describes your feedback?`, submission message `Thanks — I read every response personally.`, form title `Talk to the founder` (reuses §8).
 
 **AC3 founder pick:** link text **"Talk to the founder"** (§8 option A — founder selected 2026-10-05). FAB label: **icon-only**, `aria-label`/`title` = **"Feedback"** (§7's own word; §7 prescribes no button copy — founder confirmed 2026-10-05).
 
@@ -80,6 +80,8 @@ As a user, I want an always-available feedback button and a direct way to reach 
 
 **Tests:** `src/__tests__/components/dashboard-feedback-button.test.tsx` (11) — env gating ×4, verbatim copy + link attrs, icon-only aria, no-script-before-click, embed.js injection on click (once), openPopup `("abc123", { layout: "modal" })`, non-`/r/` fallback, script-failure fallback.
 
-**Founder setup gates (open — surfaces stay hidden until done):** (1) create ONE Tally form per Dev Notes (category MC with the 6 §7 labels, "Tell me what happened." long text, "Can I follow up with you?" yes/no, email optional — visible-vs-hidden is founder's call) and put its share URL in `NEXT_PUBLIC_TALLY_FORM_URL`; (2) set `NEXT_PUBLIC_FOUNDER_CONTACT_URL`; (3) redeploy.
+**Founder setup gates (open — surfaces stay hidden until done):** (1) create ONE Tally form per Dev Notes (category MC with the 6 §7 labels, "Tell me what happened." long text, "Can I follow up with you?" yes/no, email optional — visible-vs-hidden is founder's call) and put its share URL in `NEXT_PUBLIC_TALLY_FORM_URL`; (2) set contact channels per Story 20.6 (`NEXT_PUBLIC_FOUNDER_INSTAGRAM_URL` + `NEXT_PUBLIC_FOUNDER_EMAIL` — SUPERSEDED 2026-10-09: single `NEXT_PUBLIC_FOUNDER_CONTACT_URL` removed); (3) redeploy.
+
+**Deferred (founder decision 2026-10-07):** all three setup gates above are **postponed until Epic 20 is complete** (20.4 + 20.5 done). Execute as one batch at epic close, together with the deferred 20.1 manual steps.
 
 **Gotcha:** happy-dom disables third-party script loading — appending `embed.js` fires `error` synchronously and rejects the loader promise, so tests exercise the `window.open` fallback path directly; popup wiring is tested by pre-setting `window.Tally` (loader short-circuits). Real browsers load the script async → `onload` → popup.

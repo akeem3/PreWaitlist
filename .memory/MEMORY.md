@@ -2167,3 +2167,82 @@ Founder: the public-page update card looked "dumped on the page". Restyle in `co
 **Gates:** lint 0 errors / 5 baseline warnings · prettier clean (code + both story docs) · full suite **1047 = 1040 pass / 7 fail = exact sanctioned baseline** (dashboard-archive 4 + dashboard-subscriber-table 3; +3 tests) · clean build (`(next) deleted first, f Proxy (Middleware)`).
 
 **Gotcha:** mutation-testing a specific line via `-replace` can silently nuke adjacent gates (`if (countRef.current < 1)` went with it) — after any mutation, re-read the file and restore every gate, not just the mutated one.
+
+## Epic 20 manual tasks deferred to epic close (founder decision 2026-10-07)
+
+**Decision:** all founder-executed manual steps for 20.1 (event verification, billing limit, Survey 1 + Survey 2 config, preview checks), 20.2 (live tour verification), and 20.3 (Tally form + 2 Vercel env vars + redeploy + surface check) are **postponed until Epic 20 is complete** (20.4 + 20.5 done). Rationale: run them as one batch at epic close instead of piecemeal. Annotated in story-20.1 (setup section), story-20.2 (AS-BUILT tail), story-20.3 (setup gates). Next story: **20.4 Founder Marketing Links (Dub + UTM Playbook)** — `docs/stories/story-20.4-founder-marketing-links-dub-utm.md`, status `ready`, zero code (AC4), needs a Dub account (founder step at execution).
+
+## Epic 20.4 — Founder Marketing Links (Dub + UTM Playbook) — 2026-10-07
+
+**Status:** ✅ story done — Prompt #1 scan rerun + Prompt #2 execute, no questions asked (founder directive). Uncommitted (no commit requested). Story + epic-20 + sprint-4-plan flipped done.
+
+**Deliverable:** docs/playbooks/founder-marketing-links.md (new docs/playbooks/ folder — path picked once per Risk note) — §1 UTM convention (closed lists: source twitter/linkedin/reddit/ph/indiehackers/newsletter/site; medium social|launch|email; campaign {initiative}-{year}; lowercase/hyphen/no-PII rules; 5 worked examples; _\*?ref= vs ?src= vs utm_* disambiguation table_*) · §2 Dub setup (free tier 25 links/mo, 1K clicks/mo, 30-day analytics, 3 domains — verified 2026-10-04; account + link builder steps from dub.co/help, UTM builder U shortcut + templates, per-link analytics + share-dashboard read paths) · §3 end-to-end attribution verification (7 steps + success-criteria table; _*two PostHog gotchas: (a) latest-touch utm_* person props NOT backfilled after anonymous→identify — verify via landing $pageview event props or $initial_utm_source; (b) account_created fires on the /signup page at form submit (email path only, OAuth skips it) — NOT the auth-callback and NOT the UTM URL; standard journey = same session as landing → PostHog session super-props merge utm_* into account_created + onboarding_started event props (AC3); resumed-in-new-tab = session boundary → fall back to $initial_utm_*/landing $pageview_*) · §4 scope notes.
+
+**AC4 bug hunt result (scan):** no UTM-pass bug found at scan time — proxy.ts:39-92 captures all 5 params on / only (cookie mw_acquisition, 30d, ?ref= wins over ?src=) → auth/callback:42-60 persists utm_source/medium/campaign to founder_profiles. **Gotcha recorded in playbook: capture fires only on pathname / — UTM links must land on the homepage, not a subpage.** **[AUDIT AMENDMENT 2026-10-07 — the Prompt #3 audit found the bug the scan missed:** fresh signup has NO founder_profiles row at callback time (rows are created lazily at waitlist creation api/waitlist/route.ts:141 or checkout billing/checkout/route.ts:37), so the callback's `.update().eq("id")` was a 0-row silent no-op (PostgREST returns empty + error null) and callback:97 then deleted the mw_acquisition cookie → UTM permanently lost → playbook §3 step 5 DB check failed on its own prescribed flow. **Fixed under AC4's "UTM-pass bug routes to a fix task here"** — atomic upsert(onConflict:"id") in auth/callback + 6 tests (auth-callback-acquisition.test.ts, mutation-verified: old code fails the 2 payload tests). Same bug was flagged-and-deferred in the 2026-09-29 Pro CTA audit ("Flagged, NOT fixed" note elsewhere in this file) — now closed.**]
+
+**Gates:** lint 0 errors / 5 baseline warnings · prettier clean · clean build (.next deleted first, ✓ Compiled successfully, ƒ Proxy (Middleware)). No tests (doc-only, AC5 = lint+build).
+
+**Research:** 4 web searches (Dub link builder/UTM templates/analytics, UTM naming conventions 2026, PostHog UTM segmentation — $initial_* backfill semantics confirmed from posthog.com/docs/data/utm-segmentation).
+
+**Next:** 20.5 Product Hunt Prep (last Epic 20 story, copy-gated on founder) → then epic-close founder manual batch (20.1/20.2/20.3 deferred items + Dub account + playbook §3 live verification).
+
+## Epic 20.4 — Prompt #3 audit + Prompt #8 UTM-pass fix (2026-10-07)
+
+**Status:** audit complete — 3 findings, all fixed, re-audit green. Uncommitted (no commit requested).
+
+- **F1 (playbook §3 gotcha #2 wrong):** claimed account_created fires "on the auth-callback path" and "won't carry landing UTMs" — both false. Actual: /signup page at form submit (signup/page.tsx:141, email-only per 20.1 D1), onboarding_started at onboarding/1/page.tsx:113; standard journey = same session as landing → posthog-js session super-props (sessionPersistence.update_campaign_params at capture + calculateEventProperties merge) put utm_* ON those events — matches AC3 literal. Rewritten with session-boundary fallback ($initial_utm_*/landing $pageview).
+- **F2 (playbook §3 procedure gaps):** step 3 now requires email+password signup (OAuth never fires account_created) + stay-in-one-window (mw_acquisition cookie AND PostHog first-touch are browser-scoped — verify link must open in same private window); step 4 + success table now assert utm_source ON account_created AND onboarding_started (AC3); failure triage corrected (different browser loses BOTH records; PostHog first-touch only survives cookie expiry, same browser); §1 term/content clarified cookie-only (not persisted to founder_profiles); §4 scope note now records the bug+fix instead of "zero code changed".
+- **F3 (product bug, AC4-sanctioned):** fresh signup has NO founder_profiles row at callback (created lazily at waitlist creation api/waitlist/route.ts:141 or checkout billing/checkout/route.ts:37) → callback .update().eq("id") = 0-row silent no-op (PostgREST empty + error null — Supabase docs/PostgREST #1844) → callback:97 deleted mw_acquisition → UTM permanently lost → playbook §3 step 5 DB check failed on its own prescribed flow. Same bug flagged-and-deferred in 2026-09-29 Pro CTA audit. **Fix:** atomic upsert({id, ref_param, utm_source, utm_medium, utm_campaign, acquisition_captured_at}, {onConflict:"id"}) — Supabase best-practices skill: select-then-insert races, use ON CONFLICT (Prompt #8 Phase 2, 2 searches). RLS "for all ... with check (id = auth.uid())" allows own-row insert; schema only id NOT NULL no-default. Best-effort try/catch unchanged.
+- **Test:** src/**tests**/api/auth-callback-acquisition.test.ts — 6 tests (fresh-signup persist, no-ref cookie, write-fail still redirects+cookie cleanup, cookie deleted after success, no-cookie skips table, malformed cookie tolerated). **Mutation-verified:** reverting route to .update() fails exactly the 2 payload tests. Existing auth-callback-plan-pro 6/6 unaffected (no acquisition cookie → block skipped).
+- **Doc annotations:** story-20.4 "Prompt #3 audit" section (+ 2 Files rows) · epic-20 + sprint-4-plan 20.4 Dev Notes [AUDIT 2026-10-07] bullet · playbook §3/§4 rewritten · this block. ACs unchanged (AC4 explicitly allows the fix).
+- **MEMORY corruption fixed:** this file had 3 control chars (BEL where `a, FF where `f) in the 20.4 block — caused by a prior append using a DOUBLE-quoted here-string (PowerShell `a=BEL, `f=FF). Repaired (BEL→a, FF→f; scanned whole file: 0 remaining controls, 0 lone CR, 0 tabs). **Rule: MEMORY appends must use single-quoted here-string @'...'@ or [IO.File] with literal strings — never double-quoted here-strings with backticks in content.**
+
+## Epic 20.5 — Product Hunt Prep (Prompt #1 scan + Prompt #2 execute, 2026-10-07)
+
+**Status:** ✅ story done — last Epic 20 story; **3 founder-executable gates remain inside the doc** (they are pre-launch checks, not story tasks). Uncommitted (no commit requested). Story + epic-20 (index row + section) + sprint-4-plan (index row + section) flipped `done`.
+
+**Deliverable:** `docs/playbooks/product-hunt-prep.md` (new, alongside the 20.4 playbook) — §1 pre-launch verification gates (AC3: Epic 19 closed ✅, 21.8 hard gate ⬜ runs later, pricing page, legal pages, og:image unfurl check) · §2 listing content checklist (AC1+AC2: PH field specs — name ≤40, tagline ≤60, description ≤500, first comment 800 chars displayed, thumbnail 240×240, gallery **2 required** @1270×760, GIF hover/first-frame rule, topics/makers/shoutouts, website URL with UTM per 20.4 playbook) · §3 asset inventory (existing: logos, og-image routes, `docs/qa/screenshots/19.5-*` 31-screen set, design SVGs, future 21.2 captures | to-create: thumbnail, 3–5 gallery @1270×760, demo GIF 30–90s, founder photo, warm-supporter list) · §4 launch-day runbook (timing Tue–Thu + 12:01 AM PT, T-minus schedule, first-6-hours reply cadence, **badge ask** = compliant supporter wording, red lines, post-launch) · §5 standing decisions (AC4: Growth tier excluded, verified `pricing-section.tsx` has zero Growth references).
+
+**AC2 copy gate honored:** zero drafted public listing copy — tagline/description/first-comment ship as `[FOUNDER-AUTHORED — TO WRITE]` slots with specs + platform constraints only.
+
+**Research (2 searches, 2026-10-07):** official PH prep guide (field specs, 70%-of-POTD first-comment stat) + PH promotion rule (never ask for upvotes — visit+comment only) + 2026 community guides (smollaunch, makerhunt, phlaunchkit, awesome-product-hunt kit). "Badge ask" resolved: compliant ask wording for a top-5/featured finish; never the word "upvote".
+
+**Founder pre-launch gates (in doc §1, not story tasks):** 21.8 launch verification must pass before submission · verify pricing + legal live on production · og:image unfurl check · author the three copy slots.
+
+## Waitlist switcher mismatch fix — preference cookie (Prompt #8, 2026-10-08)
+
+**Symptom:** plain `/dashboard` (no `?wid`) rendered the NEWEST waitlist server-side while the switcher dropdown showed the stored localStorage preference — content and dropdown disagreed until the dropdown was clicked or a `?wid` navigation happened.
+
+**Root cause:** two resolvers that couldn't see each other — server pages resolved `?wid > newest` (localStorage invisible to Server Components); the client shell resolved `?wid > localStorage > newest` and corrected only the dropdown label; nothing reconciled the content.
+
+**Fix (uncommitted, branch `dev`):**
+
+- **Cookie bridge** `active_waitlist_id` (1 year, `samesite=lax`) mirrors the localStorage preference so BOTH sides resolve the same precedence: `?wid > preference > newest`.
+  - `src/lib/waitlist-pref-core.ts` (NEW) — client-safe constants + `document.cookie` read/write (shared by shell and server; shell cannot import `next/headers`).
+  - `src/lib/waitlist-pref.ts` (NEW, server-only) — `getStoredWaitlistPref()` via `await cookies()`.
+- **Server:** `resolveActiveWaitlistRow(supabase, founderId, wid?, columns, storedId?)` validates the preference against ownership (falls through on foreign/stale). All 6 dashboard section pages + `layout.tsx` pass `getStoredWaitlistPref()`; layout passes new optional `defaultWaitlistId` prop to shell (first-paint switcher label = cookie value, zero hydration flip in steady state).
+- **Client (`shell.tsx`):** `getStoredId` falls back to the cookie when localStorage is missing/invalid (keeps client resolution identical to server). Sync effect writes BOTH stores to the resolved id (migrates legacy localStorage-only prefs; materializes pref on fresh browsers) and does a **one-shot `router.refresh()`** (ref-guarded per resolved id) only when the server rendered from a stale/missing cookie. `handleSelectWaitlist` writes the cookie alongside localStorage.
+- New-waitlist creation still lands correctly: onboarding success links `/dashboard?wid=<new id>` → wid wins + effect rewrites both stores.
+- Accepted behavior: viewing via shared `?wid` link updates the preference to the viewed waitlist (preference = last viewed, founder rule).
+
+**Tests:** `src/__tests__/components/dashboard-waitlist-preference.test.tsx` (7: steady no-refresh, legacy migration refresh-once, cookie-only restore, fresh default, ?wid sync no-refresh, invalid pref fallthrough, dropdown writes both stores) + `active-waitlist.test.ts` 4→9 (preference beats newest, wid outranks preference, invalid/foreign fallthrough, null pref single query). **Gates:** lint 0 errors/5 baseline warnings · prettier clean · clean build · full suite **1064 = 1057 pass / 7 fail = exact sanctioned baseline**.
+
+**Gotchas:** supabase-mock `__calls` does NOT record `maybeSingle` (it's a bare `vi.fn`) — count `select` calls instead; `getStoredId` reusing the cookie fallback would prevent restoring localStorage from cookie-only state (read `localStorage.getItem` directly in the sync-effect check).
+
+## Epic 20.6 — Founder Contact Popup (Prompt #2 execute, 2026-10-09)
+
+**Status:** done — docs + code + gates green; founder Vercel mirror pending. Uncommitted (no commit requested). Story + epic-20 + sprint-4-plan flipped done; 20.3 AC3 annotated superseded (contact surface only); 21.8 AC3/AC5 lines updated.
+
+**Locked decisions (all founder):** Instagram + Email only — X dropped (X Chat passcode/onboarding friction is X-side), Reddit evaluated then rejected (invite link exists via Chat settings but request-accept-first is strictly more friction). New story 20.6 (20.3 history intact) · 2 env vars, ask-first approved · row labels exactly Instagram/Email, no subtitle · monochrome currentColor icons (no icon dep; IG gradient would violate tokens).
+
+**Corrections applied mid-session:** founder-supplied IG profile URL (+obrf tracker) replaced with https://ig.me/m/ak66m_ (Meta docs: profile leaves visitors hunting for Message button; ig.me opens the thread). Email stored raw (hazaak004@gmail.com); code builds mailto: with no target. X compose format verified (x.com/messages/compose?recipient_id=numeric, official X docs) for the record though unused. X Chat passcode = mandatory one-time X-side setup, cannot be removed (X docs Nov 2025 launch).
+
+**Implementation:** contact-modal.tsx (new; mirrors upgrade-modal overlay: backdropRef target check, Esc effect, z-50, rounded-xl card, Close aria-label verbatim; flex header instead of absolute close) · feedback-button.tsx (pill button opens modal; single-URL path removed; Tally path byte-identical) · tests 11 to 15 (pill/modal/rows/Esc/backdrop/per-row gating; old-var tests migrated).
+
+**Research delivered (no code):** DM-vs-form separation verdict = keep separate (Zonka distinct-systems, YC no-one-between-founders-and-users, Hubble direct-channel + feature-board; Ad Reform single-intake counterpoint recorded) + MVP operating rules (DMs daily/24h, form weekly per 10/22, close loop per 25; no helpdesk/chatbot/KB; revisit triggers).
+
+**Founder manual-setup state (2026-10-09):** PostHog key live in prod build; Survey 1 + Survey 2 launched; billing-limit step N/A while cardless (story-20.1 corrected); event-flow sweep postponed to after Epic 21. Tally form built, share URL in .env.local (tally.so/r/b5BepL), approved copy recorded in 20.3. Contact IG/email values in .env.local. Vercel mirror (Tally + 2 contact vars) + redeploy + live verify = pending. Convention confirmed: user .env means .env.local.
+
+**Gates:** lint 0 errors / 5 pre-existing warnings · prettier clean · targeted 15/15 · full suite at baseline (dashboard-archive 4 + dashboard-subscriber-table 3, verified file-by-file) · clean build with Proxy (Middleware) · zero old-var refs in code/tests.
+
+**Gotchas:** PostHog survey-builder event picker lists SEEN events only — cancel_intent was unselectable until fired once via the billing page. PostHog free: entire appearance block (themes/colors/position) paywalled; no Set-billing-limit control without card. PS 5.1 Select-String has no -Recurse (pipe Get-ChildItem). Vitest has no basic reporter. Batched same-file Edit calls in one message risk stale snapshots — one edit per file per turn.

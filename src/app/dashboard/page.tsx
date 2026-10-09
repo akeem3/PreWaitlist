@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../lib/supabase/server";
 import { resolveActiveWaitlistRow } from "../../lib/active-waitlist";
+import { getStoredWaitlistPref } from "../../lib/waitlist-pref";
 import DashboardClient from "./client";
 
 interface PageProps {
@@ -20,8 +21,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const { wid } = await searchParams;
 
-  // 4.4: shared resolution — ?wid (validated) else newest. Previously this
-  // page ordered ASC and took [0], i.e. the OLDEST list.
+  // 4.4: shared resolution — ?wid (validated) else preference cookie (the
+  // switcher's last selection) else newest. Previously this page ordered ASC
+  // and took [0], i.e. the OLDEST list.
+  const storedId = await getStoredWaitlistPref();
   const waitlist = await resolveActiveWaitlistRow<{
     id: string;
     headline: string;
@@ -33,7 +36,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     supabase,
     user.id,
     wid,
-    "id, headline, subdomain, template, product_name, cold_threshold"
+    "id, headline, subdomain, template, product_name, cold_threshold",
+    storedId
   );
 
   if (!waitlist) {

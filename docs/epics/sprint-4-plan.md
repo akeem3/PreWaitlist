@@ -51,6 +51,7 @@ Operationalized for Sprint 4: Epic 19's known defects fixed and audits closed �
 | Feedback button (§7 categories → Tally) + "Talk to the founder" (§8) | build     | 20.3 |
 | Founder per-channel marketing links (Dub + UTM playbook)             | setup+doc | 20.4 |
 | Product Hunt prep checklist (founder writes listing copy)            | gated     | 20.5 |
+| Founder contact popup (Instagram + Email modal rows)                 | build     | 20.6 |
 | Full app inventory & behavior map                                    | scan      | 21.1 |
 | Core screenshot set (~20 shots, Playwright)                          | capture   | 21.2 |
 | Behavior-to-source matrix (ACs/REQs/audits/gotchas)                  | scan      | 21.3 |
@@ -83,16 +84,16 @@ Operationalized for Sprint 4: Epic 19's known defects fixed and audits closed �
 
 ## Founder Inputs Required During Sprint 4
 
-| Input                                               | Needed by       | Status                 |
-| --------------------------------------------------- | --------------- | ---------------------- |
-| PostHog account + `NEXT_PUBLIC_POSTHOG_KEY`         | 20.1            | ⬜ pending             |
-| Tally form URL(s) for feedback embed                | 20.3            | ⬜ pending             |
-| Founder social/contact link ("Talk to the founder") | 20.3            | ⬜ pending             |
-| Dub account creation                                | 20.4            | ⬜ pending             |
-| Product Hunt listing copy                           | 20.5            | ⬜ pending (copy-gate) |
-| Resend dashboard SPF/DKIM check                     | 19.7            | ⬜ pending             |
-| Approval of failing-validations list                | 21.5            | ⬜ pending             |
-| Approval to defer/fix decisions from audits         | 19.3–19.5, 21.6 | ⬜ pending             |
+| Input                                                          | Needed by       | Status                 |
+| -------------------------------------------------------------- | --------------- | ---------------------- |
+| PostHog account + `NEXT_PUBLIC_POSTHOG_KEY`                    | 20.1            | ⬜ pending             |
+| Tally form URL(s) for feedback embed                           | 20.3            | ⬜ pending             |
+| Founder contact channels (Instagram DM URL + email, for popup) | 20.6            | ⬜ pending             |
+| Dub account creation                                           | 20.4            | ⬜ pending             |
+| Product Hunt listing copy                                      | 20.5            | ⬜ pending (copy-gate) |
+| Resend dashboard SPF/DKIM check                                | 19.7            | ⬜ pending             |
+| Approval of failing-validations list                           | 21.5            | ⬜ pending             |
+| Approval to defer/fix decisions from audits                    | 19.3–19.5, 21.6 | ⬜ pending             |
 
 ---
 
@@ -356,8 +357,9 @@ PostHog is capturing the core funnel events and 2–3 behavior-triggered surveys
 | 20.1 | PostHog Instrumentation + Surveys               | —          | done   |
 | 20.2 | First-Subscriber Dashboard Walkthrough          | —          | done   |
 | 20.3 | Feedback Surfaces (Tally Button + Founder Link) | —          | done   |
-| 20.4 | Founder Marketing Links (Dub + UTM Playbook)    | —          | ready  |
-| 20.5 | Product Hunt Prep                               | 19.*       | ready  |
+| 20.4 | Founder Marketing Links (Dub + UTM Playbook)    | —          | done   |
+| 20.5 | Product Hunt Prep                               | 19.*       | done   |
+| 20.6 | Founder Contact Popup (Instagram + Email)       | 20.3       | done   |
 
 **Parallelism:** 20.1 first (events underpin everything). 20.2 and 20.3 are independent and can run in parallel. 20.4 is founder-setup + doc. 20.5 runs last within the epic (prep for launch after product is stable).
 
@@ -468,7 +470,7 @@ PostHog is capturing the core funnel events and 2–3 behavior-triggered surveys
 
 ### Story 20.4 — Founder Marketing Links (Dub + UTM Playbook)
 
-**Status:** ready
+**Status:** done
 **Story:** As the founder running my own marketing, I want distinct links per social channel so that I can trace which channel drives signups.
 
 **Acceptance Criteria (EARS):**
@@ -487,6 +489,7 @@ PostHog is capturing the core funnel events and 2–3 behavior-triggered surveys
 - Existing attribution that already works: `?src=powered-by` footer links, acquisition cookie capture in proxy.ts (Story 3.0), `?ref=` (subscriber referrals — different system, don't confuse: `ref` = subscriber's referral code, NOT channel attribution).
 - PostHog free tier captures utm params on pageviews by default (autocapture/pageview properties) — AC3 verification is realistic without extra wiring.
 - Founder account creation for Dub is his step (ask-first satisfied by prior approval).
+- **[AUDIT 2026-10-07]** Prompt #3 audit found a UTM-pass bug (AC4's sanctioned fix task): fresh signups have no `founder_profiles` row at callback → acquisition `.update()` no-opped + cookie discarded → UTM lost. Fixed with atomic `upsert(onConflict:"id")` in `src/app/auth/callback/route.ts` + 6 tests (`auth-callback-acquisition.test.ts`, mutation-verified). Playbook §3 gotcha #2 + verification steps corrected in the same audit. Full record: story file "Prompt #3 audit" section + MEMORY 20.4 block.
 
 **Out of scope:** Building link shortening into the product; subscriber-facing share links (already `ShareButtons`/`ReferralLink`); GA/other analytics install.
 
@@ -494,7 +497,7 @@ PostHog is capturing the core funnel events and 2–3 behavior-triggered surveys
 
 ### Story 20.5 — Product Hunt Prep
 
-**Status:** ready (copy gated on founder)
+**Status:** done
 **Story:** As the founder preparing a Product Hunt launch, I want a prep checklist and asset inventory so that launch day isn't improvised.
 
 **Acceptance Criteria (EARS):**

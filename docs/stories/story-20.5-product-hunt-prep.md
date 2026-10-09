@@ -1,6 +1,6 @@
 # Story 20.5 — Product Hunt Prep
 
-**Status:** ready (copy gated on founder)
+**Status:** done
 **Epic:** 20 — Feedback, Onboarding & Growth Tooling
 **Depends on:** 19.\*
 **Design Refs:** - (no new UI; doc-only checklist — vision Sprint 4 `:437`, not SVG)

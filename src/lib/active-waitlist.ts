@@ -3,9 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 /**
  * 4.4: single home for "which waitlist is active" resolution.
  * Precedence: explicit `?wid` (validated against ownership) > stored
- * preference (client only) > newest. Every dashboard surface resolves the
- * same way — previously each section page rolled its own unordered
- * `maybeSingle`, and the overview even defaulted to the OLDEST list.
+ * preference (client: localStorage, server: preference cookie) > newest.
+ * Every dashboard surface resolves the same way — previously each section
+ * page rolled its own unordered `maybeSingle`, and the overview even
+ * defaulted to the OLDEST list.
  */
 
 interface WaitlistLike {
@@ -13,17 +14,20 @@ interface WaitlistLike {
 }
 
 /**
- * Server flavor: resolve the active waitlist row for a founder. Validates
- * an explicit `wid` against ownership, otherwise returns the newest list.
- * `columns` lets each page fetch exactly what it renders (default `"id"`).
- * Returns null when the founder has no waitlists (callers redirect to
- * onboarding).
+ * Server flavor: resolve the active waitlist row for a founder. Precedence —
+ * explicit `wid` (validated against ownership) > `storedId` preference (the
+ * `active_waitlist_id` cookie, validated against ownership) > newest. This
+ * mirrors the client's `?wid > localStorage > newest` so server-rendered
+ * content and the switcher dropdown agree on a plain entry. `columns` lets
+ * each page fetch exactly what it renders (default `"id"`). Returns null
+ * when the founder has no waitlists (callers redirect to onboarding).
  */
 export async function resolveActiveWaitlistRow<T extends WaitlistLike>(
   supabase: SupabaseClient,
   founderId: string,
   wid?: string | null,
-  columns = "id"
+  columns = "id",
+  storedId?: string | null
 ): Promise<T | null> {
   if (wid) {
     const { data } = await supabase
@@ -33,8 +37,20 @@ export async function resolveActiveWaitlistRow<T extends WaitlistLike>(
       .eq("founder_id", founderId)
       .maybeSingle();
     if (data) return data as unknown as T;
-    // Invalid/foreign wid falls through to newest (matches the shell's
-    // self-heal — never strand on a bad param).
+    // Invalid/foreign wid falls through (matches the shell's self-heal —
+    // never strand on a bad param).
+  }
+
+  if (storedId) {
+    // Preference cookie — same ownership validation as `wid`; a tampered or
+    // stale value falls through to newest instead of rendering a foreign list.
+    const { data } = await supabase
+      .from("waitlists")
+      .select(columns)
+      .eq("id", storedId)
+      .eq("founder_id", founderId)
+      .maybeSingle();
+    if (data) return data as unknown as T;
   }
 
   const { data: newest } = await supabase

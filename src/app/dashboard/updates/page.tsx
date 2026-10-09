@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../../lib/supabase/server";
 import { resolveActiveWaitlistRow } from "../../../lib/active-waitlist";
+import { getStoredWaitlistPref } from "../../../lib/waitlist-pref";
 import UpdatesClient from "./client";
 import UpdatesFreeGate from "./free-gate";
 
@@ -34,11 +35,14 @@ export default async function UpdatesPage({ searchParams }: PageProps) {
 
   const { wid } = await searchParams;
 
-  // 4.4: shared resolution — ?wid (validated) else newest.
+  // 4.4: shared resolution — ?wid (validated) else preference cookie else newest.
+  const storedId = await getStoredWaitlistPref();
   const waitlist = await resolveActiveWaitlistRow<{ id: string }>(
     supabase,
     user.id,
-    wid
+    wid,
+    "id",
+    storedId
   );
 
   if (!waitlist) {

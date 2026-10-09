@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../../lib/supabase/server";
 import { resolveActiveWaitlistRow } from "../../../lib/active-waitlist";
+import { getStoredWaitlistPref } from "../../../lib/waitlist-pref";
 import BroadcastClient from "./client";
 import BroadcastFreeGate from "./free-gate";
 
@@ -37,7 +38,8 @@ export default async function BroadcastPage({ searchParams }: PageProps) {
 
   const { wid } = await searchParams;
 
-  // 4.4: shared resolution — ?wid (validated) else newest.
+  // 4.4: shared resolution — ?wid (validated) else preference cookie else newest.
+  const storedId = await getStoredWaitlistPref();
   const waitlist = await resolveActiveWaitlistRow<{
     id: string;
     product_name: string | null;
@@ -49,7 +51,8 @@ export default async function BroadcastPage({ searchParams }: PageProps) {
     supabase,
     user.id,
     wid,
-    "id, product_name, headline, subdomain, sender_name, sending_domain"
+    "id, product_name, headline, subdomain, sender_name, sending_domain",
+    storedId
   );
 
   if (!waitlist) {

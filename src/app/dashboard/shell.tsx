@@ -14,6 +14,10 @@ import { QuotaWarningBanner } from "../../../components/dashboard/quota-warning-
 import { useRouter, useSearchParams } from "next/navigation";
 import { STORAGE_KEY } from "../../../components/dashboard/waitlist-switcher";
 import { resolveActiveWaitlist } from "../../lib/active-waitlist";
+import {
+  readWaitlistPrefCookie,
+  writeWaitlistPrefCookie,
+} from "../../lib/waitlist-pref-core";
 import { capture, identifyFounder, registerContext } from "@/lib/analytics";
 import { DashboardTour } from "../../../components/dashboard/tour";
 import { FeedbackButton } from "../../../components/dashboard/feedback-button";
@@ -86,6 +90,10 @@ interface DashboardShellProps {
   /** Story 20.1 D6 — signed-in founder id for PostHog identify; optional so
    *  tests can render the shell without analytics. */
   founderId?: string;
+  /** Server-resolved first-paint id (preference cookie > newest) so the
+   *  switcher label matches content before hydration. Optional — tests and
+   *  legacy callers fall back to the client-side resolution. */
+  defaultWaitlistId?: string;
 }
 
 function getStoredId(waitlists: WaitlistRow[]): string | null {
@@ -93,6 +101,11 @@ function getStoredId(waitlists: WaitlistRow[]): string | null {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored && waitlists.some((w) => w.id === stored)) return stored;
   } catch {}
+  // Cookie fallback — both stores hold the same preference; localStorage can
+  // be cleared independently of cookies. Keeps client resolution identical
+  // to the server's (which only sees the cookie).
+  const cookie = readWaitlistPrefCookie();
+  if (cookie && waitlists.some((w) => w.id === cookie)) return cookie;
   return null;
 }
 
@@ -105,6 +118,7 @@ export default function DashboardShell({
   waitlists,
   tier: serverTier,
   founderId,
+  defaultWaitlistId,
 }: DashboardShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [upgradeModal, setUpgradeModal] = useState<{
@@ -114,7 +128,7 @@ export default function DashboardShell({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeWaitlistId, setActiveWaitlistId] = useState(
-    () => resolveActiveWaitlist(waitlists)?.id ?? ""
+    () => defaultWaitlistId || resolveActiveWaitlist(waitlists)?.id || ""
   );
   const [tier, setTierState] = useState(serverTier);
   const tierRef = useRef(serverTier);
@@ -204,11 +218,15 @@ export default function DashboardShell({
     }, TIER_POLL_MAX_MS);
   }, [stopTierPolling, fetchTier, applyTier, broadcastTier, router]);
 
+  // Reconciliation guard: at most one content refresh per resolved id per
+  // mount — a cookie write that never sticks must not loop router.refresh().
+  const prefRefreshRef = useRef<string | null>(null);
+
   // Sync from URL param or localStorage after hydration (client-only).
-  // Server renders with the last waitlist; client hydrates the same, then
-  // corrects to the stored preference. 4.4: shared precedence — ?wid >
-  // stored > newest (same value as current state in the fallback case, so
-  // React bails out with no extra render).
+  // Server renders with the preference cookie (or newest); client corrects
+  // to the same resolution, then keeps both stores + server content aligned.
+  // 4.4: shared precedence — ?wid > stored > newest (same value as the
+  // server now that the cookie mirrors localStorage).
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const wid = searchParams.get("wid");
@@ -219,8 +237,49 @@ export default function DashboardShell({
     });
     if (resolved) {
       setActiveWaitlistId(resolved.id);
+
+      // What the SERVER rendered this pass with: a valid ?wid won; otherwise
+      // the preference cookie it read at request time; otherwise newest.
+      const serverWid = wid && waitlists.some((w) => w.id === wid) ? wid : null;
+      const cookieBefore = readWaitlistPrefCookie();
+      const cookieValid =
+        cookieBefore && waitlists.some((w) => w.id === cookieBefore)
+          ? cookieBefore
+          : null;
+      const newestId = waitlists[waitlists.length - 1]?.id ?? null;
+      const serverResolvedId = serverWid ?? cookieValid ?? newestId;
+
+      // Keep both preference stores aligned with what's actually active
+      // (also migrates legacy localStorage-only prefs onto the cookie).
+      if (cookieBefore !== resolved.id) {
+        writeWaitlistPrefCookie(resolved.id);
+      }
+      // `stored` above may have resolved FROM the cookie — read localStorage
+      // directly here or a cookie-only browser would never get it back.
+      let localStored: string | null = null;
+      try {
+        localStored = localStorage.getItem(STORAGE_KEY);
+      } catch {}
+      if (localStored !== resolved.id) {
+        try {
+          localStorage.setItem(STORAGE_KEY, resolved.id);
+        } catch {}
+      }
+
+      // One-shot: server content disagrees with the client resolution
+      // (cookie missing/stale at request time — first post-deploy load,
+      // cleared cookie, expired pref). Re-fetch so the page re-resolves from
+      // the just-synced cookie. A valid ?wid already rendered correctly.
+      if (
+        !serverWid &&
+        serverResolvedId !== resolved.id &&
+        prefRefreshRef.current !== resolved.id
+      ) {
+        prefRefreshRef.current = resolved.id;
+        router.refresh();
+      }
     }
-  }, [searchParams, waitlists]);
+  }, [searchParams, waitlists, router]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Self-heal: if the URL points at a waitlist the (possibly stale, cached)
@@ -344,6 +403,9 @@ export default function DashboardShell({
       try {
         localStorage.setItem(STORAGE_KEY, waitlistId);
       } catch {}
+      // Cookie is the server's view of the same preference — write both so
+      // the next plain (no ?wid) entry renders this waitlist server-side.
+      writeWaitlistPrefCookie(waitlistId);
       router.push(`/dashboard?wid=${waitlistId}`);
     },
     [router]

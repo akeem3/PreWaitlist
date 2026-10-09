@@ -88,11 +88,13 @@ As the founder, I want product analytics and a few behavior-triggered feedback s
 
 Code ships the SDK + suppression gating; the surveys themselves live in the PostHog dashboard (external account — founder step, verified against PostHog survey docs 2026-10-04).
 
+**Deferred (founder decision 2026-10-07):** all manual steps below — event-flow verification, billing limit, both survey configs, survey preview checks — are **postponed until Epic 20 is complete** (20.4 + 20.5 done). Do not execute them piecemeal; run them as one batch at epic close.
+
 **One-time setup**
 
 1. Create a project at `app.posthog.com` → copy the **Project API key** (`phc_…`).
 2. Vercel → project env vars → add `NEXT_PUBLIC_POSTHOG_KEY` (the `phc_…` key) and `NEXT_PUBLIC_POSTHOG_HOST` (`https://us.i.posthog.com`) → redeploy. (Local dev: leave unset — SDK no-ops.)
-3. PostHog → Billing → set a **billing limit** (e.g. $0 hard limit) as belt-and-braces on the free tier (Dev Note: 1M events/mo, 1,500 survey responses/mo).
+3. PostHog → Billing → **billing limit: N/A while cardless** [CORRECTED 2026-10-09 — verified against the live dashboard: the cardless free plan shows a read-only "Billing limit" ceiling equal to the free tier (e.g. 1M) with no "Set billing limit" control, and no card on file means no charge is possible by construction ("Usage stops at the free tier limits" — posthog.com/pricing)]. The day a card is ever added, that row becomes a "Set billing limit" control → set **$0 per product immediately** (Product analytics + Surveys). (Dev Note: 1M events/mo, 1,500 survey responses/mo).
 
 **Survey 1 — "After first subscriber"**
 
@@ -118,6 +120,8 @@ Code ships the SDK + suppression gating; the surveys themselves live in the Post
 - Trigger each event in-app → PostHog → Activity (live) shows the 13 events; `identify` shows person props `tier`, `waitlist_id`, `subscriber_count`.
 - Launch both surveys → walk the display conditions in PostHog's preview/"why didn't my survey show" tool.
 - Responses land under Surveys → each response links to the person + session replay.
+
+**Status (founder, 2026-10-09):** Survey 1 ("After first subscriber") + Survey 2 ("Before cancellation") built per this spec and **launched** (Survey 2's `cancel_intent` trigger wasn't in the event picker until fired once for real via the billing page — picker lists seen events only). Position = PostHog default bottom-right (custom positioning paywalled — accepted: overlap hits only the founder's own screen, ≤2 visits ever, dismissible). Remaining from this section: event-flow verification in Activity POSTPONED to after Epic 21 (founder decision 2026-10-09 — pipeline proven live via `dashboard_viewed`/`cancel_intent`/`survey shown+dismissed`/identify; the 13-event sweep runs with 21.8's production pass).
 
 ## Risk
 

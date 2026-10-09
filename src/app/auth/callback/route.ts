@@ -44,16 +44,17 @@ export async function GET(request: NextRequest) {
       if (user && acquisitionCookie) {
         try {
           const acquisition = JSON.parse(acquisitionCookie);
-          await supabase
-            .from("founder_profiles")
-            .update({
+          await supabase.from("founder_profiles").upsert(
+            {
+              id: user.id,
               ref_param: acquisition.ref ?? null,
               utm_source: acquisition.utm_source ?? null,
               utm_medium: acquisition.utm_medium ?? null,
               utm_campaign: acquisition.utm_campaign ?? null,
               acquisition_captured_at: new Date().toISOString(),
-            })
-            .eq("id", user.id);
+            },
+            { onConflict: "id" }
+          );
         } catch {
           // Silent fail — acquisition capture is best-effort
         }

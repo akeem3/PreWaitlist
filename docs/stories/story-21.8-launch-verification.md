@@ -14,9 +14,9 @@ As the founder, I want a final launch-readiness sign-off against the vision exit
 
 - AC1: The vision exit condition (`:440`) shall be walked explicitly: sign up → build waitlist → collect signups → track warmth → send broadcast → export data — each step verified working on production Vercel with no broken state (evidence: 21.7 results + live check).
 - AC2: Epic 19 completion shall be confirmed: 8/8 stories done or explicitly deferred with sign-off; P0 tier fix verified in production (Pro confirmation email has no Powered-by).
-- AC3: Epic 20 completion shall be confirmed: PostHog capturing events live, surveys live, walkthrough firing once for a qualifying founder, feedback button + founder link live, Dub playbook delivered, PH prep delivered.
+- AC3: Epic 20 completion shall be confirmed: PostHog capturing events live, surveys live, walkthrough firing once for a qualifying founder, feedback button + founder contact popup live, Dub playbook delivered, PH prep delivered.
 - AC4: Final gates recorded: `pnpm lint` 0 errors, full suite at baseline (7 sanctioned failures), clean `pnpm build`, prettier clean.
-- AC5: An open-items register shall list everything still pending outside code: Paddle production domain approval status, Resend webhook URL dashboard update (www endpoint), `*.prewaitlist.com` wildcard DNS in Vercel, founder env vars (PostHog key, Tally URL, contact URL) presence in Vercel, any 21.6 deferrals.
+- AC5: An open-items register shall list everything still pending outside code: Paddle production domain approval status, Resend webhook URL dashboard update (www endpoint), `*.prewaitlist.com` wildcard DNS in Vercel, founder env vars (PostHog key, Tally URL, contact channels) presence in Vercel, any 21.6 deferrals.
 - AC6: A launch recommendation (go / no-go with reasons) shall be stated, tied to AC1–AC5 evidence.
 
 ## Tasks
