@@ -26,6 +26,7 @@ PostHog is capturing the core funnel events and 2–3 behavior-triggered surveys
 | 20.3 | Feedback Surfaces (Tally Button + Founder Link) | —          | done   |
 | 20.4 | Founder Marketing Links (Dub + UTM Playbook)    | —          | done   |
 | 20.5 | Product Hunt Prep                               | 19.*       | done   |
+| 20.6 | Founder Contact Popup (Instagram + Email)       | 20.3       | done   |
 
 **Parallelism:** 20.1 first (events underpin everything). 20.2 and 20.3 are independent and can run in parallel. 20.4 is founder-setup + doc. 20.5 runs last within the epic (prep for launch after product is stable).
 
@@ -192,3 +193,32 @@ Every story moves `ready` -> `in-progress` -> `done` (or `blocked`), and is only
 - Vision `:437` "Product Hunt listing prepared" — "prepared" = checklist ready + assets identified; founder does the actual PH submission.
 - Timeline note: this story runs near the end of Epic 20 but the _launch itself_ waits on 21.8.
 - Assets exist: `public/PreWaitlist-logo.svg`, og-image route (Phase 5.1), design SVGs in `docs/design/`.
+
+---
+
+### Story 20.6 — Founder Contact Popup (Instagram + Email)
+
+**Status:** done
+**Design Refs:** - (no SVG exists; spec = founder directives 2026-10-09 + feedback doc §8)
+**Story:** As a user, I want the "Talk to the founder" pill to open a small contact card with Instagram and Email options so that I can reach the founder without leaving the dashboard.
+
+**Acceptance Criteria (EARS):**
+
+- AC1: Pill click opens a contact modal (✕/backdrop/Escape close) — no navigation.
+- AC2: One row per set env var: Instagram (`ig.me` DM link, new tab) + Email (`mailto:`, same tab); per-row hide + pill-hide-when-empty.
+- AC3: Monochrome `currentColor` SVG icons; token surfaces only (no brand colors/gradients).
+- AC4: `role="dialog"` + `aria-modal`, focus-in on open, Esc/backdrop close (UpgradeModal pattern).
+- AC5: Copy gate — zero new strings (title reuses §8; row labels are founder-provided names).
+- AC6: Single-URL var removed; `NEXT_PUBLIC_FOUNDER_INSTAGRAM_URL` + `NEXT_PUBLIC_FOUNDER_EMAIL` (ask-first approved).
+- AC7: Tests for open/close, per-row gating, all-unset hide, `mailto:` without `target`.
+- AC8: Lint, tests, and build shall pass.
+
+**Tasks:** T1 (AC1, AC4) Modal shell + a11y · T2 (AC2-AC3) Rows + icons + gating · T3 (AC5) Copy verification · T4 (AC6) Env swap · T5 (AC7) Tests · T6 (AC8) Gates
+
+**Out of scope:** X row (dropped — X-side friction; revivable as one var+row) · Reddit row (evaluated — request-accept friction; rejected) · modal subtitle copy (gate) · Tally/FAB changes · helpdesk/chatbot/KB.
+
+**Dev Notes:**
+
+- IG `https://ig.me/m/<username>` (Meta docs, verified 2026-10-09) — never profile URLs. X compose needs numeric ID (verified 2026-10-09); X Chat passcode is mandatory X-side setup.
+- Separation verdict (best-practice review 2026-10-09): DM channel + Tally form stay separate — distinct jobs; YC/Zonka/Hubble evidence in story file.
+- Full spec: `docs/stories/story-20.6-founder-contact-popup.md`.

@@ -2228,3 +2228,21 @@ Founder: the public-page update card looked "dumped on the page". Restyle in `co
 **Tests:** `src/__tests__/components/dashboard-waitlist-preference.test.tsx` (7: steady no-refresh, legacy migration refresh-once, cookie-only restore, fresh default, ?wid sync no-refresh, invalid pref fallthrough, dropdown writes both stores) + `active-waitlist.test.ts` 4→9 (preference beats newest, wid outranks preference, invalid/foreign fallthrough, null pref single query). **Gates:** lint 0 errors/5 baseline warnings · prettier clean · clean build · full suite **1064 = 1057 pass / 7 fail = exact sanctioned baseline**.
 
 **Gotchas:** supabase-mock `__calls` does NOT record `maybeSingle` (it's a bare `vi.fn`) — count `select` calls instead; `getStoredId` reusing the cookie fallback would prevent restoring localStorage from cookie-only state (read `localStorage.getItem` directly in the sync-effect check).
+
+## Epic 20.6 — Founder Contact Popup (Prompt #2 execute, 2026-10-09)
+
+**Status:** done — docs + code + gates green; founder Vercel mirror pending. Uncommitted (no commit requested). Story + epic-20 + sprint-4-plan flipped done; 20.3 AC3 annotated superseded (contact surface only); 21.8 AC3/AC5 lines updated.
+
+**Locked decisions (all founder):** Instagram + Email only — X dropped (X Chat passcode/onboarding friction is X-side), Reddit evaluated then rejected (invite link exists via Chat settings but request-accept-first is strictly more friction). New story 20.6 (20.3 history intact) · 2 env vars, ask-first approved · row labels exactly Instagram/Email, no subtitle · monochrome currentColor icons (no icon dep; IG gradient would violate tokens).
+
+**Corrections applied mid-session:** founder-supplied IG profile URL (+obrf tracker) replaced with https://ig.me/m/ak66m_ (Meta docs: profile leaves visitors hunting for Message button; ig.me opens the thread). Email stored raw (hazaak004@gmail.com); code builds mailto: with no target. X compose format verified (x.com/messages/compose?recipient_id=numeric, official X docs) for the record though unused. X Chat passcode = mandatory one-time X-side setup, cannot be removed (X docs Nov 2025 launch).
+
+**Implementation:** contact-modal.tsx (new; mirrors upgrade-modal overlay: backdropRef target check, Esc effect, z-50, rounded-xl card, Close aria-label verbatim; flex header instead of absolute close) · feedback-button.tsx (pill button opens modal; single-URL path removed; Tally path byte-identical) · tests 11 to 15 (pill/modal/rows/Esc/backdrop/per-row gating; old-var tests migrated).
+
+**Research delivered (no code):** DM-vs-form separation verdict = keep separate (Zonka distinct-systems, YC no-one-between-founders-and-users, Hubble direct-channel + feature-board; Ad Reform single-intake counterpoint recorded) + MVP operating rules (DMs daily/24h, form weekly per 10/22, close loop per 25; no helpdesk/chatbot/KB; revisit triggers).
+
+**Founder manual-setup state (2026-10-09):** PostHog key live in prod build; Survey 1 + Survey 2 launched; billing-limit step N/A while cardless (story-20.1 corrected); event-flow sweep postponed to after Epic 21. Tally form built, share URL in .env.local (tally.so/r/b5BepL), approved copy recorded in 20.3. Contact IG/email values in .env.local. Vercel mirror (Tally + 2 contact vars) + redeploy + live verify = pending. Convention confirmed: user .env means .env.local.
+
+**Gates:** lint 0 errors / 5 pre-existing warnings · prettier clean · targeted 15/15 · full suite at baseline (dashboard-archive 4 + dashboard-subscriber-table 3, verified file-by-file) · clean build with Proxy (Middleware) · zero old-var refs in code/tests.
+
+**Gotchas:** PostHog survey-builder event picker lists SEEN events only — cancel_intent was unselectable until fired once via the billing page. PostHog free: entire appearance block (themes/colors/position) paywalled; no Set-billing-limit control without card. PS 5.1 Select-String has no -Recurse (pipe Get-ChildItem). Vitest has no basic reporter. Batched same-file Edit calls in one message risk stale snapshots — one edit per file per turn.
