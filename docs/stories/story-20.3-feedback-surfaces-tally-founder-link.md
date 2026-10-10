@@ -85,3 +85,7 @@ As a user, I want an always-available feedback button and a direct way to reach 
 **Deferred (founder decision 2026-10-07):** all three setup gates above are **postponed until Epic 20 is complete** (20.4 + 20.5 done). Execute as one batch at epic close, together with the deferred 20.1 manual steps.
 
 **Gotcha:** happy-dom disables third-party script loading — appending `embed.js` fires `error` synchronously and rejects the loader promise, so tests exercise the `window.open` fallback path directly; popup wiring is tested by pre-setting `window.Tally` (loader short-circuits). Real browsers load the script async → `onload` → popup.
+
+**Icon restyle (2026-10-09, founder directive):** FAB chat-bubble → pencil glyph with `title`/`aria-label` "Submit A Feedback" (founder-approved verbatim this message — flagged as ungrammatical as written; swap to "Submit Feedback" on founder word, one-line change). Tally form title changed by founder to "Submit A Feedback" (Tally-hosted, no code impact). Tests 15→16 (+icon-distinctness test); gates re-run green.
+
+**Hover tooltips + FAB revert (2026-10-09, founder directive):** pencil reverted to the original chat-bubble glyph; both icon buttons gain a CSS-only label pill growing leftward from the button edge on hover/focus (`group` + `group-hover`/`group-focus-visible`, `origin-right`, no `title` attrs — avoids double tooltips). Tooltip strings reuse the approved hover copy verbatim; screen readers use matching `aria-label`s, tooltip spans are `aria-hidden`.

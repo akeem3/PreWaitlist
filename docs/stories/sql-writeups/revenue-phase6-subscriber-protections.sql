@@ -7,6 +7,12 @@
 --     instead of void, which the old route ignores.
 --   * With the new code, a legacy database (this file not yet run) logs a
 --     claim error and falls back to the old post-insert increment.
+-- HOW TO RUN: paste and run the whole file at once. DDL (§§1–3) runs first
+-- and the verification probes (§4) are plain SELECTs with no transaction
+-- commands, so nothing can roll back the DDL. (2026-10-09: removed bare
+-- BEGIN/ROLLBACK wrappers that wiped the DDL when the file ran as one
+-- implicit transaction — every prior full-file run "succeeded" yet persisted
+-- nothing for exactly this reason.)
 --
 -- Sections:
 --   1. increment_subscriber_count(p_waitlist_id, p_cap) — atomic claim
@@ -91,22 +97,22 @@ FROM pg_proc p
 WHERE p.proname IN ('increment_subscriber_count', 'decrement_subscriber_count')
 ORDER BY 1;
 
--- 2) Missing-waitlist call returns NULL (rolled back):
-BEGIN;
+-- 2) Missing-waitlist call returns NULL (read-only probe: the call updates
+--    zero rows, so no transaction wrapper is needed here):
 SELECT increment_subscriber_count(
   '00000000-0000-0000-0000-000000000000'::uuid,
   500
 );
-ROLLBACK;
 
--- 3) Cap behavior on a real waitlist (rolled back — safe):
+-- 3) Cap behavior on a real waitlist (real writes — uncomment and run as a
+--    SEPARATE paste together with its BEGIN/ROLLBACK, never with the DDL):
 --    Replace <waitlist-id> with one of yours.
-BEGIN;
+-- BEGIN;
 -- UPDATE waitlists SET subscriber_count = 499 WHERE id = '<waitlist-id>';
 -- SELECT increment_subscriber_count('<waitlist-id>', 500);  -- expect 500
 -- SELECT increment_subscriber_count('<waitlist-id>', 500);  -- expect NULL (capped)
 -- SELECT decrement_subscriber_count('<waitlist-id>');       -- expect count back to 500
-ROLLBACK;
+-- ROLLBACK;
 
 -- 4) Column + index exist:
 SELECT column_name, generation_expression
