@@ -103,7 +103,7 @@
 
 ### Resend (Story 0.4)
 
-- **Status:** Account created, API key in .env.local. Client module at `src/lib/resend.ts`. Domain `prewaitlist.com` verified. Batch API: `resend.batch.send([...])`, max 100/batch. Sender: `updates@prewaitlist.com`.
+- **Status:** Account created, API key in .env.local. Client module at `src/lib/resend.ts`. Domain `prewaitlist.com` verified. Batch API: `resend.batch.send([...])`, max 100/batch. Sender: `notifications@prewaitlist.com` (transactional) / `updates@prewaitlist.com` (broadcast). **[AMENDED 2026-10-10:** broadcast stream moves to `updates@mail.prewaitlist.com` — see "Sending-subdomain segregation" block at file end; DEPLOY-BLOCKED until that subdomain is verified in Resend.**]**
 - **Webhook:** `RESEND_WEBHOOK_SECRET` added to .env.local (2026-09-13). Endpoint recorded as `https://waitlist-build.vercel.app/api/webhooks/resend` — **DEAD as of 2026-09-27** (Vercel `DEPLOYMENT_NOT_FOUND`, HTTP 404). Correct endpoint, live-verified 2026-09-27: `https://www.prewaitlist.com/api/webhooks/resend` (apex `prewaitlist.com` 308-redirects to www — use www directly). **Resend Dashboard webhook URL update = founder step (instructions given 2026-09-27).** Events: sent, delivered, opened, clicked, bounced, complained. Restricted API key cannot list webhooks via API.
 - **CRON_SECRET:** Added to .env.local (2026-09-13). Used for `/api/cron/warmth` endpoint auth.
 
@@ -270,7 +270,7 @@ picking up a paying customer.
 - **Decay starts at 60 days (not 30):** Waitlist subscribers go quiet while waiting for launch — this is not disengagement. 30-day decay penalizes early adopters unfairly.
 - **Email opens NOT tracked as warmth signal:** Apple Mail Privacy Protection preloads pixels for ~40-50% of email clients, making open data unreliable. Clicks (+5) and referrals (+15) are the primary intent signals.
 - **Cold bar color = blue (not red):** Both Hot (coral `#d0492f` at the time) and Cold (red) being red-family is confusing. Blue is more distinct. **[AMENDED 2026-09-27:** Hot is now green `#0F7A5E`, so Hot/Cold are fully distinct anyway.**]**
-- **Email infrastructure separation:** Transactional emails from `notifications@prewaitlist.com`, marketing from `updates@prewaitlist.com`. Protects deliverability if a broadcast triggers spam complaints.
+- **Email infrastructure separation:** Transactional emails from `notifications@prewaitlist.com`, marketing from `updates@prewaitlist.com`. Protects deliverability if a broadcast triggers spam complaints. **[AMENDED 2026-10-10:** local-part separation proved insufficient — Gmail/Reputation is domain-level, so marketing now lives on a dedicated subdomain `updates@mail.prewaitlist.com`; transactional stays on root.**]**
 - **Confirmation email uses Emails API, not Batch API:** Batch is for bulk sends. Single transactional send uses `resend.emails.send()`.
 - **Paddle Billing uses `Paddle.Initialize()` (not `Paddle.Setup()`):** Classic vs Billing distinction. `customData` not `passthrough`. `subscription.canceled` (one L) not `cancelled`.
 - **Page views table is NOT populated:** No code inserts into it. Warmth scoring uses email events only. Page-visit tracking deferred to v1.1.
@@ -2259,3 +2259,19 @@ Founder directive: revert FAB to chat-bubble; both icon buttons get a CSS-only l
 ## Phase-6 investigation CLOSED (2026-10-09, Prompt #8 — root cause + resolution)
 
 Founder challenge (single project proven by URL) killed the multi-DB theory and exposed the real mechanism: the migration file verified itself with bare ROLLBACK statements; run whole as one implicit transaction, ROLLBACK wiped its own DDL while showing green Success. Evidence chain that closed it: DROPs-only payload (no ROLLBACK) committed vs every full-file run persisted nothing; NULL screenshot = mid-transaction read-your-writes; final SELECTs 0 rows post-wipe; never a red error (rollbacks do not error). Phase-2 self-correction recorded: DDL was sound, verification section was the trap. Fix: stripped bare BEGIN/ROLLBACK from the file (probe 2 now plain SELECT; probe 3 re-commented as separate-run-only) + HOW-TO-RUN header; verified zero bare transaction commands remain. Live close-out on ollaykzbhyniqxxlbkhn: email_normalized 401/42501 (exists), increment 2-arg 200-null (correct no-slot), decrement 204. Counter was frozen between DROPs and fix — recommend one recount (below) to true up cap/tour/survey/counter reads. File change uncommitted (founder commit-push).
+
+## Sending-subdomain segregation — bulk mail to `mail.prewaitlist.com` (2026-10-10)
+
+**Status:** code + tests + doc annotations done, **UNCOMMITTED and DEPLOY-BLOCKED until Resend reports `mail.prewaitlist.com` Verified.** Source: Prompt #8 broadcast-spam investigation; founder answered the decision question "Do it now (Recommended)".
+
+**Decision:** bulk stream (founder updates + broadcasts) → `updates@mail.prewaitlist.com`; transactional (confirmation, moved-up, milestone, 90%-cap warning, retry replay) stays `notifications@prewaitlist.com`; Pro custom `sending_domain` override unchanged.
+
+**Why:** Gmail content/history classifier placed broadcast in Spam (Resend Insights all-green, only flag "Use a subdomain"). Local-part separation on one root domain shares domain-level reputation — subdomain segregation is the only fix that makes the story-12.6 AC2 purpose literally true.
+
+**Implementation (one point):** `src/lib/from-address.ts` default broadcast address; all 4 callers funnel through it (`email.ts:232`, `updates/route.ts:137`, `broadcast/route.ts:190`, preview `broadcast/client.tsx:69`). New lock file `src/__tests__/lib/from-address.test.ts` (10 tests: stream mapping, name chain, sendingDomain override, empty-string fallthrough). AC annotations (never silent rewrites): story-12.6 AC2, story-17.3 AC2, epic-12 AC2, MEMORY lines above, story-19.7 (Both-streams paragraph + resolver row).
+
+**Research (Resend official, 2026-10-10):** free tier = **3 verified domains** (changelog 2026-08-25) → no upgrade, no cost. DNS records generated per-domain in Resend dashboard (expected shape: MX + TXT SPF at `send.mail`, TXT DKIM at `resend._domainkey.mail` — hosts nest under the subdomain). Root `_dmarc` `p=none` covers the subdomain via organizational-domain fallback; no new DMARC record required. Root records stay (transactional still sends from root).
+
+**⚠ DEPLOY GATE:** Resend rejects unverified From domains (403) → bulk sends break the moment this ships. Sequence: founder adds domain in Resend → copies records into Vercel DNS → Resend shows Verified → THEN commit-push + deploy. Never commit-push this before the Verified report.
+
+**Foundational note:** this closes the root cause of the 2026-10-04-era Gmail spam placement; mailbox-side placement guide (Report not spam / Contacts / prior spam-marking) was delivered separately and remains the verification path.

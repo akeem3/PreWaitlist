@@ -15,7 +15,11 @@ const DEFAULT_SENDER_NAME = "PreWaitlist";
  * AC1-AC4: Resolve the from-address based on stream, sender name, and verified domain.
  *
  * Resolution chain: senderName → productName → headline → "PreWaitlist"
- * Domain: verified custom domain (if set) | notifications@ (transactional) | updates@ (broadcast)
+ * Domain: verified custom domain (if set) | notifications@prewaitlist.com (transactional) | updates@mail.prewaitlist.com (broadcast)
+ *
+ * Bulk mail (founder updates + broadcasts) is segregated onto a dedicated subdomain
+ * so spam complaints can never taint transactional mail on the root domain.
+ * [founder decision 2026-10-10 — Gmail spam-placement fix]
  */
 export function resolveFromAddress(
   senderName: string | null | undefined,
@@ -38,7 +42,7 @@ export function resolveFromAddress(
   const email =
     stream === "transactional"
       ? "notifications@prewaitlist.com"
-      : "updates@prewaitlist.com";
+      : "updates@mail.prewaitlist.com";
 
   return `${name} <${email}>`;
 }
