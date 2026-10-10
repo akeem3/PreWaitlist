@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 const TALLY_URL = "https://tally.so/r/abc123";
 const IG_URL = "https://ig.me/m/ak66m_";
 const EMAIL = "hazaak004@gmail.com";
+const FEEDBACK_NAME = "Submit A Feedback";
 const SCRIPT_SELECTOR = 'script[src="https://tally.so/widgets/embed.js"]';
 
 type TallyMock = { openPopup: ReturnType<typeof vi.fn> };
@@ -17,6 +18,13 @@ async function renderButton(): Promise<void> {
 
 function removeTallyScripts() {
   document.querySelectorAll(SCRIPT_SELECTOR).forEach((s) => s.remove());
+}
+
+function tooltipText(container: HTMLElement, testId: string): string | null {
+  return (
+    container.querySelector(`[data-testid="${testId}"]`)?.textContent?.trim() ??
+    null
+  );
 }
 
 async function openContactModal(): Promise<void> {
@@ -78,14 +86,38 @@ describe("FeedbackButton", () => {
     vi.stubEnv("NEXT_PUBLIC_FOUNDER_EMAIL", EMAIL);
     await renderButton();
     const user = userEvent.setup();
-    await user.click(
-      screen.getByRole("button", { name: "Talk to the founder" })
+    const pill = screen.getByRole("button", { name: "Talk to the founder" });
+    // Icon-only person button; hover copy lives in the left-growing tooltip.
+    expect(pill.querySelector("svg")).toBeTruthy();
+    expect(tooltipText(pill, "founder-contact-tooltip")).toBe(
+      "Talk to the founder"
     );
+    await user.click(pill);
     expect(screen.getByTestId("contact-modal")).toBeTruthy();
     // The dialog carries the same approved name.
     expect(
       screen.getByRole("dialog", { name: "Talk to the founder" })
     ).toBeTruthy();
+  });
+
+  it("renders two visually distinct icon buttons (person vs pencil)", async () => {
+    vi.stubEnv("NEXT_PUBLIC_TALLY_FORM_URL", TALLY_URL);
+    vi.stubEnv("NEXT_PUBLIC_FOUNDER_EMAIL", EMAIL);
+    await renderButton();
+    const dm = screen.getByRole("button", { name: "Talk to the founder" });
+    const fab = screen.getByRole("button", { name: FEEDBACK_NAME });
+    // Both icon-only, different glyphs, different hover copy.
+    expect(dm.querySelector("svg")).toBeTruthy();
+    expect(fab.querySelector("svg")).toBeTruthy();
+    const dmIcon = dm.querySelector("svg")?.innerHTML ?? "";
+    const fabIcon = fab.querySelector("svg")?.innerHTML ?? "";
+    expect(dmIcon).toBeTruthy();
+    expect(fabIcon).toBeTruthy();
+    expect(dmIcon).not.toBe(fabIcon);
+    expect(tooltipText(dm, "founder-contact-tooltip")).toBe(
+      "Talk to the founder"
+    );
+    expect(tooltipText(fab, "feedback-tooltip")).toBe(FEEDBACK_NAME);
   });
 
   it("modal shows Instagram row (new tab) + Email row (mailto, same tab)", async () => {
@@ -144,11 +176,12 @@ describe("FeedbackButton", () => {
     expect(screen.queryByTestId("contact-modal")).toBeNull();
   });
 
-  it("FAB is icon-only with aria-label Feedback", async () => {
+  it("FAB is icon-only with founder-approved hover copy", async () => {
     vi.stubEnv("NEXT_PUBLIC_TALLY_FORM_URL", TALLY_URL);
     await renderButton();
-    const fab = screen.getByRole("button", { name: "Feedback" });
-    expect(fab.textContent?.trim()).toBe("");
+    const fab = screen.getByRole("button", { name: FEEDBACK_NAME });
+    expect(fab.querySelector("svg")).toBeTruthy();
+    expect(tooltipText(fab, "feedback-tooltip")).toBe(FEEDBACK_NAME);
   });
 
   it("does not load embed.js before first click (AC6 lazy-load)", async () => {
@@ -166,12 +199,12 @@ describe("FeedbackButton", () => {
     await renderButton();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: "Feedback" }));
+    await user.click(screen.getByRole("button", { name: FEEDBACK_NAME }));
 
     expect(document.querySelectorAll(SCRIPT_SELECTOR)).toHaveLength(1);
     expect(open).toHaveBeenCalledTimes(1);
 
-    await user.click(screen.getByRole("button", { name: "Feedback" }));
+    await user.click(screen.getByRole("button", { name: FEEDBACK_NAME }));
     expect(document.querySelectorAll(SCRIPT_SELECTOR)).toHaveLength(1);
   });
 
@@ -184,7 +217,7 @@ describe("FeedbackButton", () => {
     await renderButton();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: "Feedback" }));
+    await user.click(screen.getByRole("button", { name: FEEDBACK_NAME }));
 
     await waitFor(() => expect(tally.openPopup).toHaveBeenCalledTimes(1));
     expect(tally.openPopup).toHaveBeenCalledWith("abc123", {
@@ -198,7 +231,7 @@ describe("FeedbackButton", () => {
     await renderButton();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: "Feedback" }));
+    await user.click(screen.getByRole("button", { name: FEEDBACK_NAME }));
 
     expect(open).toHaveBeenCalledWith(
       "https://tally.so/forms/xyz",
@@ -214,7 +247,7 @@ describe("FeedbackButton", () => {
     await renderButton();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: "Feedback" }));
+    await user.click(screen.getByRole("button", { name: FEEDBACK_NAME }));
 
     await waitFor(() => expect(open).toHaveBeenCalledTimes(1));
     expect(open).toHaveBeenCalledWith(

@@ -114,8 +114,8 @@
 - **Client module:** ✅ Done — `src/hooks/use-paddle.ts` (SDK init), `src/hooks/use-paddle-upgrade.ts` (onboarding upgrade hook)
 - **Checkout API:** ✅ Done — `src/app/api/billing/checkout/route.ts` (returns priceId + customData)
 - **Webhook:** ✅ Done — `src/app/api/webhooks/paddle/route.ts` (handles subscription.created, subscription.activated, subscription.canceled, subscription.past_due, transaction.completed)
-- **Domain approval:** Submitted `prewaitlist.com` for approval in Paddle Dashboard. Waiting for approval before checkout works.
-- **Status:** Paddle sandbox configured but not yet operational (pending domain approval). All env vars are sandbox tokens — sandbox checkouts only work with sandbox Paddle accounts.
+- **Domain approval:** `prewaitlist.com` approved (founder confirmed 2026-10-09 — done a while ago).
+- **Status:** Paddle sandbox configured and operational for sandbox checkouts. All env vars are sandbox tokens — sandbox checkouts only work with sandbox Paddle accounts.
 
 ### Vercel (Story 0.6)
 
@@ -1759,7 +1759,7 @@ canonical. The API routes (`POST /api/updates`) and auth callback logic
 ### Paddle Sandbox on Production
 
 - **Decision:** Test Paddle in sandbox mode on the production Vercel deployment (not localhost). All Paddle env vars are sandbox tokens. Webhook endpoint must be configured in Paddle sandbox dashboard at `sandbox-vendors.paddle.com`.
-- **Status:** Paddle domain `prewaitlist.com` submitted for approval. Waiting for approval before checkout works end-to-end.
+- **Status:** Paddle domain `prewaitlist.com` approved (founder confirmed 2026-10-09 — done a while ago); sandbox checkouts work end-to-end.
 - **Date:** 2026-09-22
 
 ## Billing Page Gotchas
@@ -1877,7 +1877,7 @@ canonical. The API routes (`POST /api/updates`) and auth callback logic
 - Importing `src/app/layout.tsx` in vitest requires `vi.mock("next/font/google", ...)` — `Geist` is not callable outside the Next compiler (`TypeError: Geist is not a function`).
 - The supabase test mock has **no `.or()`** — chain builders only support `select/eq/not/is/in/order/limit/single/maybeSingle`.
 - New curl-visible og behavior: og:image PNGs are async file routes (`opengraph-image.tsx`), not `<meta>` tags — verify with `curl` for tags + direct route hit for the image.
-- Founder closed the P0 himself: Paddle **production webhook URL** updated to `https://www.prewaitlist.com/api/webhooks/paddle` (was apex → 308). Open question: Paddle **domain approval** status (checkout E2E, not code).
+- Founder closed the P0 himself: Paddle **production webhook URL** updated to `https://www.prewaitlist.com/api/webhooks/paddle` (was apex → 308). Domain approval confirmed done 2026-10-09 (was open).
 
 ## Phone Collection (founder-configurable phone field) — 2026-10-03
 
@@ -2246,3 +2246,16 @@ Founder: the public-page update card looked "dumped on the page". Restyle in `co
 **Gates:** lint 0 errors / 5 pre-existing warnings · prettier clean · targeted 15/15 · full suite at baseline (dashboard-archive 4 + dashboard-subscriber-table 3, verified file-by-file) · clean build with Proxy (Middleware) · zero old-var refs in code/tests.
 
 **Gotchas:** PostHog survey-builder event picker lists SEEN events only — cancel_intent was unselectable until fired once via the billing page. PostHog free: entire appearance block (themes/colors/position) paywalled; no Set-billing-limit control without card. PS 5.1 Select-String has no -Recurse (pipe Get-ChildItem). Vitest has no basic reporter. Batched same-file Edit calls in one message risk stale snapshots — one edit per file per turn.
+
+## Icon restyle session (2026-10-09, Prompt #2, uncommitted)
+
+Founder directive: DM pill becomes a person-icon button (hover/title Talk to the founder), feedback FAB becomes a pencil icon (hover/title Submit A Feedback — founder verbatim this message; flagged ungrammatical, swap to Submit Feedback on founder word). Same round shape, inverted tone + glyphs for distinction. Modal untouched. Tally form title changed by founder to Submit A Feedback (Tally-hosted, zero code impact). Tests 15 to 16 (+distinctness: both icon-only, glyphs differ, titles differ). Gates re-run below.
+SQL status: duplicate probe returns 0 rows (founder screenshot) — duplicates NOT the blocker; awaiting full-file editor output + which file was run + project confirm to isolate the failing statement (recommend section-by-section runs).
+
+## Tooltip + FAB-revert session (2026-10-09, Prompt #2, uncommitted)
+
+Founder directive: revert FAB to chat-bubble; both icon buttons get a CSS-only label pill growing leftward from the button edge on hover/focus (group-hover/focus-visible, origin-right, pointer-events-none, token pill bg-foreground/text-background); title attrs removed (no double tooltips); aria-labels carry the approved strings, tooltip spans aria-hidden. Hover strings reused verbatim (grammar flag on Submit A Feedback still open — fix-it swap pending). Tests: tooltip assertions replace title/textContent checks (tooltipText helper). Docs annotated (20.3/20.6). Gates re-run below.
+
+## Phase-6 investigation CLOSED (2026-10-09, Prompt #8 — root cause + resolution)
+
+Founder challenge (single project proven by URL) killed the multi-DB theory and exposed the real mechanism: the migration file verified itself with bare ROLLBACK statements; run whole as one implicit transaction, ROLLBACK wiped its own DDL while showing green Success. Evidence chain that closed it: DROPs-only payload (no ROLLBACK) committed vs every full-file run persisted nothing; NULL screenshot = mid-transaction read-your-writes; final SELECTs 0 rows post-wipe; never a red error (rollbacks do not error). Phase-2 self-correction recorded: DDL was sound, verification section was the trap. Fix: stripped bare BEGIN/ROLLBACK from the file (probe 2 now plain SELECT; probe 3 re-commented as separate-run-only) + HOW-TO-RUN header; verified zero bare transaction commands remain. Live close-out on ollaykzbhyniqxxlbkhn: email_normalized 401/42501 (exists), increment 2-arg 200-null (correct no-slot), decrement 204. Counter was frozen between DROPs and fix — recommend one recount (below) to true up cap/tour/survey/counter reads. File change uncommitted (founder commit-push).
