@@ -71,7 +71,7 @@ As a user, I want the "Talk to the founder" pill to open a small contact card wi
 
 **Gates:** lint 0 errors / 5 pre-existing warnings · prettier clean · targeted 15/15 · full suite at baseline (dashboard-archive 4 + dashboard-subscriber-table 3, verified file-by-file) · clean build `ƒ Proxy (Middleware)` · zero `NEXT_PUBLIC_FOUNDER_CONTACT_URL` refs in code/tests.
 
-**Founder steps remaining:** mirror 3 values to Vercel (Tally `tally.so/r/b5BepL` already local + 2 contact vars) → redeploy → live verify pill → modal → rows.
+**Founder steps remaining:** Vercel env set (founder 2026-10-09) → redeploy pending (production still serving pre-merge build per og-hash check 2026-10-09) → live verify pill → modal → rows.
 
 **Icon restyle (2026-10-09, founder directive):** pill text → circular person-icon button (`title`/`aria-label` "Talk to the founder" hover); modal itself unchanged. Distinction vs feedback FAB (now pencil): same round shape, inverted tone (card-outline vs accent-solid) + person-vs-pencil glyphs.
 

@@ -2241,7 +2241,7 @@ Founder: the public-page update card looked "dumped on the page". Restyle in `co
 
 **Research delivered (no code):** DM-vs-form separation verdict = keep separate (Zonka distinct-systems, YC no-one-between-founders-and-users, Hubble direct-channel + feature-board; Ad Reform single-intake counterpoint recorded) + MVP operating rules (DMs daily/24h, form weekly per 10/22, close loop per 25; no helpdesk/chatbot/KB; revisit triggers).
 
-**Founder manual-setup state (2026-10-09):** PostHog key live in prod build; Survey 1 + Survey 2 launched; billing-limit step N/A while cardless (story-20.1 corrected); event-flow sweep postponed to after Epic 21. Tally form built, share URL in .env.local (tally.so/r/b5BepL), approved copy recorded in 20.3. Contact IG/email values in .env.local. Vercel mirror (Tally + 2 contact vars) + redeploy + live verify = pending. Convention confirmed: user .env means .env.local.
+**Founder manual-setup state (2026-10-09):** PostHog key live in prod build; Survey 1 + Survey 2 launched; billing-limit step N/A while cardless (story-20.1 corrected); event-flow sweep postponed to after Epic 21. Tally form built, share URL in .env.local (tally.so/r/b5BepL), approved copy recorded in 20.3. Contact IG/email values in .env.local. Vercel env set (founder 2026-10-09); production still serving pre-merge build (og hash unchanged 2026-10-09) → redeploy + live verify pending. Convention confirmed: user .env means .env.local.
 
 **Gates:** lint 0 errors / 5 pre-existing warnings · prettier clean · targeted 15/15 · full suite at baseline (dashboard-archive 4 + dashboard-subscriber-table 3, verified file-by-file) · clean build with Proxy (Middleware) · zero old-var refs in code/tests.
 

@@ -302,6 +302,38 @@ describe("POST /api/updates", () => {
     });
   });
 
+  // Prompt #8 (2026-10-10): shared HTML shell + waitlist-page CTA button.
+  describe("Prompt #8 — shared shell + waitlist CTA", () => {
+    it("sends the shared shell with brand header, preheader and CTA to the waitlist page", async () => {
+      mockSupabase.__queue.push(
+        PROF_PRO,
+        { data: [waitlistRow("wl-1")], error: null },
+        INSERT_OK,
+        { data: [subscriber(0)], error: null },
+        { data: null, error: null }
+      );
+
+      const response = await POST(makeRequest({ body: VALID_BODY }));
+      expect(response.status).toBe(201);
+      expect(batchSend).toHaveBeenCalledTimes(1);
+
+      const payload = (batchSend.mock.calls[0][0] as { html: string }[])[0];
+      const html = payload.html;
+
+      // HTML-email-grade document (brand + preheader + card).
+      expect(html).toContain("<!DOCTYPE html>");
+      expect(html).toContain('role="presentation"');
+      expect(html).toContain("Acme");
+      expect(html).toContain("display: none; max-height: 0");
+      // CTA button — approved label, links the public waitlist page.
+      expect(html).toContain("See all updates");
+      expect(html).toContain('href="https://acme.prewaitlist.com"');
+      expect(html).toContain("#0F7A5E");
+      // Body content still present.
+      expect(html).toContain(VALID_BODY);
+    });
+  });
+
   describe("AC5 — response honesty", () => {
     it("updates sent_at and reports emailSent true on success", async () => {
       mockSupabase.__queue.push(

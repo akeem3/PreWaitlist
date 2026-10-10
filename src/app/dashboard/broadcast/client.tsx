@@ -18,6 +18,13 @@ import {
 import { resolveFromAddress } from "@/lib/from-address";
 import { sanitizeEmailHtml } from "@/lib/sanitize";
 import { capture } from "@/lib/analytics";
+import {
+  BROADCAST_CTA_LABEL,
+  buildEmailPreviewFooter,
+  buildEmailShell,
+  derivePreheader,
+  validateCtaUrl,
+} from "@/lib/email-template";
 
 // COPY GAP B7 — interim honest wording ("sent", not "delivered"): Batch API
 // accept/queue is not inbox delivery; real delivery is the Epic 11
@@ -31,18 +38,22 @@ interface BroadcastClientProps {
   subdomain: string;
   senderName: string | null;
   sendingDomain: string | null;
+  businessAddress: string | null;
 }
 
 export default function BroadcastClient({
   waitlistId,
   productName,
   headline,
+  subdomain,
   senderName,
   sendingDomain,
+  businessAddress,
 }: BroadcastClientProps) {
   const router = useRouter();
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
+  const [ctaUrl, setCtaUrl] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [sentCount, setSentCount] = useState(0);
@@ -105,7 +116,16 @@ export default function BroadcastClient({
   const bodyLength = body.trim().length;
   const overCaps =
     subjectLength > BROADCAST_SUBJECT_MAX || bodyLength > BROADCAST_BODY_MAX;
-  const canSend = subjectLength > 0 && bodyLength > 0 && !overCaps;
+
+  // Prompt #8: optional per-broadcast CTA link. Shared validator = the
+  // server's 400 rule (http/https only, ≤2048) enforced on the client too —
+  // empty is valid and simply omits the button.
+  const trimmedCtaUrl = ctaUrl.trim();
+  const ctaCheck = validateCtaUrl(trimmedCtaUrl);
+  const ctaFieldError = ctaCheck.ok ? null : ctaCheck.error;
+
+  const canSend =
+    subjectLength > 0 && bodyLength > 0 && !overCaps && ctaCheck.ok;
 
   const handleSend = async () => {
     if (!canSend) return;
@@ -126,6 +146,7 @@ export default function BroadcastClient({
           body,
           segment,
           waitlist_id: waitlistId, // Story 17.2 AC1 (Standing Decision B1)
+          cta_url: trimmedCtaUrl || undefined, // Prompt #8 — omitted when empty
         }),
       });
 
@@ -273,6 +294,27 @@ export default function BroadcastClient({
             />
           </div>
 
+          <div>
+            <label
+              htmlFor="broadcast-cta-url"
+              className="text-label text-foreground"
+            >
+              Button link (optional)
+            </label>
+            <Input
+              id="broadcast-cta-url"
+              value={ctaUrl}
+              onChange={(e) => setCtaUrl(e.target.value)}
+              placeholder="https://"
+              className="mt-1"
+            />
+            {ctaFieldError && (
+              <p className="text-body-sm text-destructive mt-1">
+                {ctaFieldError}
+              </p>
+            )}
+          </div>
+
           {error && <p className="text-body-sm text-destructive">{error}</p>}
 
           <div className="flex gap-3">
@@ -303,9 +345,24 @@ export default function BroadcastClient({
                   Subject: {subject}
                 </p>
               </div>
+              {/* Prompt #8: preview renders the SAME shell as the send path
+                  (fragment mode — no doctype/head), including brand header,
+                  hidden preheader and CTA button. Preview === send. */}
               <div
-                className="prose prose-sm max-w-none text-foreground"
-                dangerouslySetInnerHTML={{ __html: sanitizeEmailHtml(body) }}
+                dangerouslySetInnerHTML={{
+                  __html: buildEmailShell({
+                    title: subject || productName || headline || subdomain,
+                    preheader: derivePreheader(body),
+                    brandName: productName || headline || subdomain,
+                    bodyHtml: sanitizeEmailHtml(body),
+                    cta:
+                      ctaCheck.ok && ctaCheck.url
+                        ? { url: ctaCheck.url, label: BROADCAST_CTA_LABEL }
+                        : null,
+                    footerHtml: buildEmailPreviewFooter(businessAddress),
+                    fragment: true,
+                  }),
+                }}
               />
             </div>
           )}

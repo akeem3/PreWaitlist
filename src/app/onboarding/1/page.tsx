@@ -350,6 +350,7 @@ export default function OnboardingStep1() {
         <input
           id="headline"
           type="text"
+          placeholder="Save your spot for launch"
           value={headline}
           onChange={(e) => setHeadline(e.target.value)}
           disabled={isSubmitting}

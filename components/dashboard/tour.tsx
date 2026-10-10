@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { driver, type Config, type Driver, type Side } from "driver.js";
+import { driver, type Config, type DriveStep, type Driver } from "driver.js";
 import "driver.js/dist/driver.css";
 import { setSurveySuppressed } from "@/lib/analytics";
 
@@ -15,57 +15,69 @@ const POLL_INTERVAL_MS = 400;
 const POLL_TIMEOUT_MS = 15_000;
 const STEP_WAIT_MS = 3000;
 
-interface TourStepSpec {
-  element: string;
-  side: Side;
-  title: string;
-  description: string;
-}
-
-// Story 20.2 AC5: copy approved verbatim by the founder (2026-10-04).
-// Order: header/link → stat cards → chart → warmth → qualification → sidebar.
-const STEPS: TourStepSpec[] = [
+/**
+ * Story 20.2 AC5: copy approved verbatim by the founder (2026-10-04).
+ * Order: header/link → stat cards → chart → warmth → qualification → sidebar.
+ *
+ * driver.js v1.9 reads title/description/side ONLY from `step.popover` —
+ * a flat {title, description, side} step renders an empty popover (buttons
+ * only). STEPS is typed as DriveStep[] so TypeScript enforces the nested
+ * shape; the flat shape regression is locked by dashboard-tour.test.tsx.
+ */
+const STEPS: DriveStep[] = [
   {
     element: '[data-tour="dashboard-header"]',
-    side: "bottom",
-    title: "Your waitlist is live",
-    description:
-      "Your public page is live. Share this link where your audience already is — signups land here.",
+    popover: {
+      side: "bottom",
+      title: "Your waitlist is live",
+      description:
+        "Your public page is live. Share this link where your audience already is — signups land here.",
+    },
   },
   {
     element: '[data-tour="stat-cards"]',
-    side: "bottom",
-    title: "Overview",
-    description:
-      "Total signups, referral share, today's growth, and subscriber warmth — all in one row.",
+    popover: {
+      side: "bottom",
+      title: "Overview",
+      description:
+        "Total signups, referral share, today's growth, and subscriber warmth — all in one row.",
+    },
   },
   {
     element: '[data-tour="signup-chart"]',
-    side: "bottom",
-    title: "Signups Over Time",
-    description:
-      "Watch momentum build. The trend line updates as new subscribers join.",
+    popover: {
+      side: "bottom",
+      title: "Signups Over Time",
+      description:
+        "Watch momentum build. The trend line updates as new subscribers join.",
+    },
   },
   {
     element: '[data-tour="warmth-panel"]',
-    side: "top",
-    title: "Warmth Distribution",
-    description:
-      "See who's engaged: Hot, Warm, and Cold — target broadcasts to the right people.",
+    popover: {
+      side: "top",
+      title: "Warmth Distribution",
+      description:
+        "See who's engaged: Hot, Warm, and Cold — target broadcasts to the right people.",
+    },
   },
   {
     element: '[data-tour="qualification-panel"]',
-    side: "top",
-    title: "Qualification Breakdown",
-    description:
-      "See how subscribers answered your questions — your best leads stand out.",
+    popover: {
+      side: "top",
+      title: "Qualification Breakdown",
+      description:
+        "See how subscribers answered your questions — your best leads stand out.",
+    },
   },
   {
     element: SIDEBAR_TARGET,
-    side: "right",
-    title: "Your toolkit",
-    description:
-      "Leaderboard, updates, broadcast, and settings — everything else lives in the sidebar.",
+    popover: {
+      side: "right",
+      title: "Your toolkit",
+      description:
+        "Leaderboard, updates, broadcast, and settings — everything else lives in the sidebar.",
+    },
   },
 ];
 
