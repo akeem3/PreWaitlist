@@ -330,4 +330,88 @@ describe("POST /api/dashboard/broadcast", () => {
       process.env.UNSUBSCRIBE_SECRET = original;
     }
   });
+
+  // Prompt #8 (2026-10-10): HTML email shell + optional CTA link.
+  describe("cta_url (optional per-broadcast link)", () => {
+    it("returns 400 'Invalid link URL' for a javascript: URL", async () => {
+      mockSupabase.__queue.push(PROF_PRO);
+      const res = await POST(
+        makeRequest({ ...VALID, cta_url: "javascript:alert(1)" })
+      );
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toBe("Invalid link URL");
+      // Validated before any waitlist/subscriber read — only the profile
+      // select was consumed.
+      expect(batchSend).not.toHaveBeenCalled();
+    });
+
+    it("returns 400 for a non-URL string", async () => {
+      mockSupabase.__queue.push(PROF_PRO);
+      const res = await POST(makeRequest({ ...VALID, cta_url: "not a url" }));
+      expect(res.status).toBe(400);
+    });
+
+    it("renders the approved CTA button when cta_url is valid", async () => {
+      primeHappy(makeSubs(1));
+
+      const res = await POST(
+        makeRequest({ ...VALID, cta_url: "https://example.com/launch" })
+      );
+      expect(res.status).toBe(200);
+
+      const emails = batchSend.mock.calls[0][0] as { html: string }[];
+      expect(emails[0].html).toContain('href="https://example.com/launch"');
+      expect(emails[0].html).toContain("Read more");
+      expect(emails[0].html).toContain("#0F7A5E");
+    });
+
+    it("omits the CTA button entirely when cta_url is absent", async () => {
+      primeHappy(makeSubs(1));
+
+      const res = await POST(makeRequest(VALID));
+      expect(res.status).toBe(200);
+      const emails = batchSend.mock.calls[0][0] as { html: string }[];
+      expect(emails[0].html).not.toContain("Read more");
+    });
+  });
+
+  describe("HTML email shell (replaces the old bare <div>)", () => {
+    it("sends a full document with doctype, preheader and brand header", async () => {
+      primeHappy(makeSubs(1));
+
+      const res = await POST(makeRequest(VALID));
+      expect(res.status).toBe(200);
+      const emails = batchSend.mock.calls[0][0] as {
+        html: string;
+        text: string;
+      }[];
+      const html = emails[0].html;
+
+      expect(html).toContain("<!DOCTYPE html>");
+      expect(html).toContain('role="presentation"');
+      expect(html).toContain("max-width: 600px");
+      // Brand header from waitlist data (product_name; CSS uppercases visually).
+      expect(html).toContain("Acme");
+      // Derived preheader (hidden preview text).
+      expect(html).toContain("display: none; max-height: 0");
+      // Plain-text part present (text-forward deliverability).
+      expect(emails[0].text).toContain("We are live!");
+      expect(emails[0].text).not.toContain("<p>");
+    });
+
+    it("escapes the founder body but keeps intentional markup (17.5)", async () => {
+      primeHappy([sub(0)]);
+
+      const res = await POST(
+        makeRequest({ ...VALID, body: "<strong>Hi</strong><script>x</script>" })
+      );
+      expect(res.status).toBe(200);
+      const emails = batchSend.mock.calls[0][0] as { html: string }[];
+      expect(emails[0].html).toContain("<strong>Hi</strong>");
+      expect(emails[0].html).not.toContain("<script>");
+      // Still wrapped in the shell, not bare.
+      expect(emails[0].html).toContain("<!DOCTYPE html>");
+    });
+  });
 });

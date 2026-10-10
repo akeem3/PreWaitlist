@@ -67,6 +67,17 @@ describe("Onboarding Step 1 — Headline field (18.5 AC1d)", () => {
     expect(follows(headline, subheadline)).toBe(true);
   });
 
+  it("shows the approved Headline placeholder when empty (Prompt #8)", () => {
+    renderStep1();
+    const headline = screen.getByLabelText("Headline") as HTMLInputElement;
+    expect(headline.placeholder).toBe("Save your spot for launch");
+    // Scaffolding is Headline-only — siblings keep their own placeholders.
+    const productName = screen.getByLabelText(
+      "Product Name"
+    ) as HTMLInputElement;
+    expect(productName.placeholder).toBe("e.g. Buildly");
+  });
+
   it("persists a typed headline on submit", async () => {
     const user = userEvent.setup();
     renderStep1();

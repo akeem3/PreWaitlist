@@ -84,16 +84,16 @@ Operationalized for Sprint 4: Epic 19's known defects fixed and audits closed �
 
 ## Founder Inputs Required During Sprint 4
 
-| Input                                                          | Needed by       | Status                 |
-| -------------------------------------------------------------- | --------------- | ---------------------- |
-| PostHog account + `NEXT_PUBLIC_POSTHOG_KEY`                    | 20.1            | ⬜ pending             |
-| Tally form URL(s) for feedback embed                           | 20.3            | ⬜ pending             |
-| Founder contact channels (Instagram DM URL + email, for popup) | 20.6            | ⬜ pending             |
-| Dub account creation                                           | 20.4            | ⬜ pending             |
-| Product Hunt listing copy                                      | 20.5            | ⬜ pending (copy-gate) |
-| Resend dashboard SPF/DKIM check                                | 19.7            | ⬜ pending             |
-| Approval of failing-validations list                           | 21.5            | ⬜ pending             |
-| Approval to defer/fix decisions from audits                    | 19.3–19.5, 21.6 | ⬜ pending             |
+| Input                                                          | Needed by       | Status                         |
+| -------------------------------------------------------------- | --------------- | ------------------------------ |
+| PostHog account + `NEXT_PUBLIC_POSTHOG_KEY`                    | 20.1            | ⬜ pending                     |
+| Tally form URL(s) for feedback embed                           | 20.3            | ✅ env set (live after deploy) |
+| Founder contact channels (Instagram DM URL + email, for popup) | 20.6            | ✅ env set (live after deploy) |
+| Dub account creation                                           | 20.4            | ⬜ pending                     |
+| Product Hunt listing copy                                      | 20.5            | ⬜ pending (copy-gate)         |
+| Resend dashboard SPF/DKIM check                                | 19.7            | ⬜ pending                     |
+| Approval of failing-validations list                           | 21.5            | ⬜ pending                     |
+| Approval to defer/fix decisions from audits                    | 19.3–19.5, 21.6 | ⬜ pending                     |
 
 ---
 

@@ -105,8 +105,15 @@ export default function OnboardingStep4a() {
       </div>
 
       <h1 className="mb-2 text-h2">Qualify your leads</h1>
-      <p className="mb-6 text-body text-muted-foreground">
+      <p className="mb-2 text-body text-muted-foreground">
         Ask questions to understand who&apos;s serious about your product.
+      </p>
+      <p className="mb-6 text-sm text-muted-foreground">
+        <span className="font-medium text-foreground">
+          Not sure what to ask? Try:
+        </span>{" "}
+        &quot;What are you currently using today?&quot; · &quot;What&apos;s your
+        biggest challenge?&quot; · &quot;How soon do you need this?&quot;
       </p>
 
       <QuestionEditor

@@ -80,7 +80,7 @@ As a user, I want an always-available feedback button and a direct way to reach 
 
 **Tests:** `src/__tests__/components/dashboard-feedback-button.test.tsx` (11) — env gating ×4, verbatim copy + link attrs, icon-only aria, no-script-before-click, embed.js injection on click (once), openPopup `("abc123", { layout: "modal" })`, non-`/r/` fallback, script-failure fallback.
 
-**Founder setup gates (open — surfaces stay hidden until done):** (1) create ONE Tally form per Dev Notes (category MC with the 6 §7 labels, "Tell me what happened." long text, "Can I follow up with you?" yes/no, email optional — visible-vs-hidden is founder's call) and put its share URL in `NEXT_PUBLIC_TALLY_FORM_URL`; (2) set contact channels per Story 20.6 (`NEXT_PUBLIC_FOUNDER_INSTAGRAM_URL` + `NEXT_PUBLIC_FOUNDER_EMAIL` — SUPERSEDED 2026-10-09: single `NEXT_PUBLIC_FOUNDER_CONTACT_URL` removed); (3) redeploy.
+**Founder setup gates (open — surfaces stay hidden until done):** (1) create ONE Tally form per Dev Notes (category MC with the 6 §7 labels, "Tell me what happened." long text, "Can I follow up with you?" yes/no, email optional — visible-vs-hidden is founder's call) and put its share URL in `NEXT_PUBLIC_TALLY_FORM_URL`; (2) set contact channels per Story 20.6 (`NEXT_PUBLIC_FOUNDER_INSTAGRAM_URL` + `NEXT_PUBLIC_FOUNDER_EMAIL` — SUPERSEDED 2026-10-09: single `NEXT_PUBLIC_FOUNDER_CONTACT_URL` removed); (3) redeploy — Vercel env set (founder 2026-10-09), live after next deploy.
 
 **Deferred (founder decision 2026-10-07):** all three setup gates above are **postponed until Epic 20 is complete** (20.4 + 20.5 done). Execute as one batch at epic close, together with the deferred 20.1 manual steps.
 

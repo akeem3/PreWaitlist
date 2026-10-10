@@ -2,6 +2,7 @@ import { resend } from "@/lib/resend";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { generateUnsubscribeUrl } from "@/lib/unsubscribe";
 import { resolveFromAddress, type Stream } from "@/lib/from-address";
+import { EMAIL_DEFAULT_ADDRESS } from "@/lib/email-template";
 
 // Re-export for existing server-side importers (Story 17.3 moved the
 // implementation to the isomorphic `from-address` module so Client
@@ -38,8 +39,9 @@ export function interpolateEmail(
   });
 }
 
-const DEFAULT_ADDRESS =
-  "PreWaitlist Inc., 548 Market St, Suite 35000, San Francisco, CA 94104";
+// Single source: client-safe `email-template.ts` owns the constant (Client
+// Components can import it; this server module cannot be imported client-side).
+const DEFAULT_ADDRESS = EMAIL_DEFAULT_ADDRESS;
 
 /**
  * Check if a subscriber has unsubscribed.

@@ -47,11 +47,12 @@ export default async function BroadcastPage({ searchParams }: PageProps) {
     subdomain: string;
     sender_name: string | null;
     sending_domain: string | null;
+    business_address: string | null;
   }>(
     supabase,
     user.id,
     wid,
-    "id, product_name, headline, subdomain, sender_name, sending_domain",
+    "id, product_name, headline, subdomain, sender_name, sending_domain, business_address",
     storedId
   );
 
@@ -67,6 +68,7 @@ export default async function BroadcastPage({ searchParams }: PageProps) {
       subdomain={waitlist.subdomain}
       senderName={waitlist.sender_name}
       sendingDomain={waitlist.sending_domain ?? null}
+      businessAddress={waitlist.business_address ?? null}
     />
   );
 }

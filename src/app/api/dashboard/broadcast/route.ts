@@ -17,6 +17,13 @@ import {
   BROADCAST_BODY_MAX,
   BROADCAST_SUBJECT_MAX,
 } from "@/lib/broadcast-limits";
+import {
+  BROADCAST_CTA_LABEL,
+  buildEmailShell,
+  derivePreheader,
+  htmlToText,
+  validateCtaUrl,
+} from "@/lib/email-template";
 
 // Story 17.0 AC1 (B13): server-side length caps, shared with the compose
 // client (Story 17.2). Implementation lives in the dependency-free
@@ -51,7 +58,13 @@ export async function POST(req: NextRequest) {
   // Story 19.4 M19: malformed JSON must not throw a raw SyntaxError — null
   // falls through to the existing waitlist_id validation (400 + string).
   const body = await req.json().catch(() => null);
-  const { subject, body: emailBody, segment, waitlist_id } = body ?? {};
+  const {
+    subject,
+    body: emailBody,
+    segment,
+    waitlist_id,
+    cta_url,
+  } = body ?? {};
 
   if (!waitlist_id) {
     return NextResponse.json(
@@ -81,6 +94,16 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+
+  // Optional per-broadcast CTA link (Prompt #8, founder decision 2026-10-10).
+  // Validated before any DB read — cheap check, and an invalid link must
+  // 400 before we touch subscribers. Rejects non-http(s) schemes so a
+  // crafted `javascript:` URL can never reach the rendered href.
+  const ctaCheck = validateCtaUrl(cta_url);
+  if (!ctaCheck.ok) {
+    return NextResponse.json({ error: ctaCheck.error }, { status: 400 });
+  }
+  const ctaUrl = ctaCheck.url;
 
   const { data: waitlist } = await supabase
     .from("waitlists")
@@ -197,6 +220,15 @@ export async function POST(req: NextRequest) {
   // wholesale-escape (B8): intentional formatting survives.
   const safeBody = sanitizeEmailHtml(emailBody);
 
+  // Prompt #8: HTML-email-grade shell (doctype/table/600px card/brand header/
+  // hidden preheader/CTA) replaces the old bare <div>. Shared with the
+  // compose preview via `email-template` so preview === send. Preheader +
+  // plain-text part are derived from the body — no extra copy authored.
+  const brandName =
+    waitlist.product_name || waitlist.headline || waitlist.subdomain;
+  const preheader = derivePreheader(bodyText);
+  const plainText = htmlToText(bodyText);
+
   for (let i = 0; i < eligible.length; i += BATCH_SIZE) {
     const batch = eligible.slice(i, i + BATCH_SIZE);
     const chunkIndex = i / BATCH_SIZE;
@@ -209,18 +241,21 @@ export async function POST(req: NextRequest) {
         waitlist.business_address
       );
 
-      const html = `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 16px;">
-          ${safeBody}
-          ${footer}
-        </div>
-      `;
+      const html = buildEmailShell({
+        title: subjectText,
+        preheader,
+        brandName,
+        bodyHtml: safeBody,
+        cta: ctaUrl ? { url: ctaUrl, label: BROADCAST_CTA_LABEL } : null,
+        footerHtml: footer,
+      });
 
       return {
         from,
         to: [sub.email],
         subject,
         html,
+        text: plainText,
         headers: {
           "List-Unsubscribe": `<${unsubscribeUrl}>`,
           "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",

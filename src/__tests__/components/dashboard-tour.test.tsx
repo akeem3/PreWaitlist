@@ -7,13 +7,20 @@ import {
   TOUR_REPLAY_EVENT,
 } from "../../../components/dashboard/tour";
 
+interface TourStepShape {
+  element: string;
+  // driver.js v1.9 reads title/description/side ONLY from step.popover.
+  // Flat steps render an empty popover — this type + the shape-lock test
+  // prevent the regression (Prompt #8, 2026-10-10).
+  popover: { title: string; description: string; side: string };
+  // Explicitly assert the flat keys are absent at runtime (see shape-lock).
+  title?: undefined;
+  description?: undefined;
+  side?: undefined;
+}
+
 interface TourDriverConfig {
-  steps: {
-    element: string;
-    side: string;
-    title: string;
-    description: string;
-  }[];
+  steps: TourStepShape[];
   showProgress?: boolean;
   skipMissingElement?: boolean;
   waitForElement?: number;
@@ -145,10 +152,10 @@ describe("DashboardTour", () => {
     const cfg = lastConfig();
     expect(cfg.showProgress).toBe(true);
     expect(cfg.skipMissingElement).toBe(true);
-    expect(cfg.steps.map((step) => step.title)).toEqual(
+    expect(cfg.steps.map((step) => step.popover.title)).toEqual(
       APPROVED_COPY.map((step) => step.title)
     );
-    expect(cfg.steps.map((step) => step.description)).toEqual(
+    expect(cfg.steps.map((step) => step.popover.description)).toEqual(
       APPROVED_COPY.map((step) => step.description)
     );
     expect(cfg.steps.map((step) => step.element)).toEqual([
@@ -158,6 +165,35 @@ describe("DashboardTour", () => {
       '[data-tour="warmth-panel"]',
       '[data-tour="qualification-panel"]',
       '[data-tour="dashboard-sidebar"]',
+    ]);
+  });
+
+  it("uses the driver.js popover shape on every step (no flat title/description/side)", () => {
+    render(<TourFixture />);
+    const cfg = lastConfig();
+    expect(cfg.steps).toHaveLength(6);
+
+    for (const step of cfg.steps) {
+      // Popover present, non-empty, and typed.
+      expect(typeof step.popover).toBe("object");
+      expect(step.popover.title.trim().length).toBeGreaterThan(0);
+      expect(step.popover.description.trim().length).toBeGreaterThan(0);
+      expect(["top", "bottom", "left", "right"]).toContain(step.popover.side);
+      // Flat keys the driver ignores must be absent — a flat step is the
+      // exact regression that rendered titleless popovers.
+      expect(step.title).toBeUndefined();
+      expect(step.description).toBeUndefined();
+      expect(step.side).toBeUndefined();
+    }
+
+    // Sides honored per spec (previously all ignored → bottom).
+    expect(cfg.steps.map((step) => step.popover.side)).toEqual([
+      "bottom",
+      "bottom",
+      "bottom",
+      "top",
+      "top",
+      "right",
     ]);
   });
 
