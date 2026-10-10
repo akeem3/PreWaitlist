@@ -253,9 +253,12 @@ export async function POST(req: NextRequest) {
       return {
         from,
         to: [sub.email],
-        subject,
+        subject: subjectText,
         html,
-        text: plainText,
+        // Never ship an empty multipart text part (Prompt #8 spam follow-up):
+        // a tag-only body strips to "" — fall back to the brand name (data,
+        // not authored copy) so the plain-text check always passes.
+        text: plainText || brandName,
         headers: {
           "List-Unsubscribe": `<${unsubscribeUrl}>`,
           "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
@@ -285,7 +288,7 @@ export async function POST(req: NextRequest) {
   // Story 17.0 AC6 (B10 partial): never silently drop history.
   const { error: insertError } = await supabase.from("broadcasts").insert({
     waitlist_id: waitlist.id,
-    subject,
+    subject: subjectText,
     recipient_count: totalSent,
     sent_at: new Date().toISOString(),
   });

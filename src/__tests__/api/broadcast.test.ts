@@ -414,4 +414,47 @@ describe("POST /api/dashboard/broadcast", () => {
       expect(emails[0].html).toContain("<!DOCTYPE html>");
     });
   });
+
+  // Prompt #8 spam follow-up (2026-10-10): hygiene locks — trimmed subject
+  // on the wire and in history, and a multipart text part that is never empty.
+  describe("subject + plain-text hardening", () => {
+    it("sends the trimmed subject, not the raw input", async () => {
+      primeHappy([sub(0)]);
+
+      const res = await POST(
+        makeRequest({ ...VALID, subject: "  Launch day  " })
+      );
+      expect(res.status).toBe(200);
+      const emails = batchSend.mock.calls[0][0] as { subject: string }[];
+      expect(emails[0].subject).toBe("Launch day");
+    });
+
+    it("stores the trimmed subject in broadcast history", async () => {
+      primeHappy([sub(0)]);
+
+      const res = await POST(
+        makeRequest({ ...VALID, subject: "  Launch day  " })
+      );
+      expect(res.status).toBe(200);
+      const insertCall = mockSupabase.__calls.find(
+        (c) => c.method === "insert"
+      );
+      expect(insertCall).toBeDefined();
+      const row = insertCall!.args[0] as { subject?: string };
+      expect(row.subject).toBe("Launch day");
+    });
+
+    it("falls back to the brand name when the body strips to an empty text part", async () => {
+      primeHappy([sub(0)]);
+
+      const res = await POST(makeRequest({ ...VALID, body: "<div> </div>" }));
+      expect(res.status).toBe(200);
+      const emails = batchSend.mock.calls[0][0] as {
+        text?: string;
+        subject: string;
+      }[];
+      expect(emails[0].text).toBe("Acme");
+      expect(emails[0].text?.length).toBeGreaterThan(0);
+    });
+  });
 });

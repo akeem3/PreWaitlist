@@ -237,7 +237,7 @@ Every new subscriber receives a confirmation email with their position and refer
 **Acceptance Criteria (EARS):**
 
 - AC1: Transactional emails (confirmation, moved-up, milestone) shall be sent from `notifications@prewaitlist.com`.
-- AC2: Marketing emails (broadcasts) shall be sent from `updates@prewaitlist.com`.
+- AC2: Marketing emails (broadcasts) shall be sent from `updates@prewaitlist.com`. **[AMENDED 2026-10-10 — now `updates@mail.prewaitlist.com` (founder subdomain-segregation decision; see story-12.6 AC2 annotation).]**
 - AC3: The `from` address resolution shall check: (1) founder's custom sender name + verified domain, (2) fallback to default prewaitlist.com addresses.
 - AC4: When a founder verifies their own domain (Story 13.5), transactional emails shall use `{sender_name}@{verified_domain}` and broadcasts shall use `{sender_name}@{verified_domain}`.
 - AC5: The email sending utility (`src/lib/email.ts`, created in Story 12.0) shall accept a `stream` parameter ("transactional" | "broadcast") to resolve the correct `from` address.

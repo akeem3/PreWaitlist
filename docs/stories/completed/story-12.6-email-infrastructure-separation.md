@@ -12,7 +12,7 @@ As a system, I want transactional emails and marketing broadcasts to use separat
 ## Acceptance Criteria (EARS)
 
 - AC1: Transactional emails (confirmation, moved-up, milestone) shall be sent from `notifications@prewaitlist.com`.
-- AC2: Marketing emails (broadcasts) shall be sent from `updates@prewaitlist.com`.
+- AC2: Marketing emails (broadcasts) shall be sent from `updates@prewaitlist.com`. **[AMENDED 2026-10-10 — founder decision (Gmail spam-placement fix): bulk stream now sends from `updates@mail.prewaitlist.com` (dedicated subdomain); transactional stays on root per AC1. The AC's stated purpose — "spam complaint on a broadcast does not affect transactional emails" — is only truly achieved by subdomain segregation, since local-part separation on one domain shares domain-level reputation. Custom-domain override (AC4) unchanged.]**
 - AC3: The `from` address resolution shall check: (1) founder's custom sender name + domain, (2) fallback to default prewaitlist.com addresses.
 - AC4: When a founder verifies their own domain (Story 13.5), emails shall use the verified domain with the **stream local-part** — transactional `notifications@{verified_domain}`, broadcasts `updates@{verified_domain}` — with the founder's `{sender_name}` as the **display name** (e.g. `"Acme <notifications@custom-domain>"`), never as the local-part. **[AMENDED 2026-09-28 — Story 17.7 AC6: original "`{sender_name}@{verified_domain}`" misdescribed `resolveFromAddress` — sender name is display-only; local-part is always stream-scoped (Standing Decision: stream separation remains).]**
 - AC5: The email sending utility (`src/lib/email.ts`, created in Story 12.0) shall accept a `stream` parameter ("transactional" | "broadcast") to resolve the correct `from` address.
