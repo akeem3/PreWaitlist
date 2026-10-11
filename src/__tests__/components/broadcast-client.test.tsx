@@ -271,7 +271,7 @@ describe("BroadcastClient — button link + shell preview", () => {
     });
   });
 
-  it("preview renders the shared shell with brand + CTA button (parity)", async () => {
+  it("preview renders the shared shell with brand + inline CTA link (parity)", async () => {
     mockFetch();
     const user = await renderAndSettle();
 
@@ -287,18 +287,22 @@ describe("BroadcastClient — button link + shell preview", () => {
       .parentElement as HTMLElement;
     const html = preview.innerHTML;
 
-    // Shell fragment: brand header, CTA button with approved label,
-    // hidden preheader, 600px card — same markup the send path uses.
+    // Shell fragment: brand header, inline CTA text link with approved
+    // label, hidden preheader, 600px card — same markup the send path uses.
     expect(html).toContain("Acme");
     expect(html).toContain("https://example.com/launch");
     expect(html).toContain("Read more");
     expect(html).toContain("display: none; max-height: 0");
     expect(html).toContain("max-width: 600px");
-    // Body content present.
+    // Inline link, not the old CTA button.
+    expect(html).toContain("text-decoration: underline");
+    expect(html).not.toContain("padding: 13px 28px");
+    // Body content present, wrapped in the pre-wrap paragraph.
     expect(html).toContain("<p>We are live!</p>");
+    expect(html).toContain("white-space: pre-wrap");
   });
 
-  it("preview omits the CTA button when no link is set", async () => {
+  it("preview omits the CTA link when no link is set", async () => {
     mockFetch();
     const user = await renderAndSettle();
 
@@ -310,5 +314,19 @@ describe("BroadcastClient — button link + shell preview", () => {
       .parentElement as HTMLElement;
     expect(preview.innerHTML).not.toContain("Read more");
     expect(preview.innerHTML).toContain("Unsubscribe");
+  });
+
+  // Prompt #8 (2026-10-11): personalization token hint under subject + body.
+  it("shows the personalization token hint under Subject and Body", async () => {
+    mockFetch();
+    render(<BroadcastClient {...PROPS} />);
+    await waitFor(() =>
+      expect(screen.getByText(/Send to\s+42\s+subscribers/i)).toBeTruthy()
+    );
+
+    const hints = screen.getAllByText("{{first_name}}");
+    expect(hints.length).toBe(2); // one under Subject, one under Body
+    const productHints = screen.getAllByText("{{product_name}}");
+    expect(productHints.length).toBe(2);
   });
 });

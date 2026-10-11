@@ -41,6 +41,22 @@ export function escapeEmailHtml(value: string): string {
 }
 
 /**
+ * Replace {{variable}} placeholders in an email template with actual values.
+ * Unmatched variables are left as-is (e.g. {{unknown}} stays unchanged).
+ * Lives here (not `@/lib/email`) so Client Components can interpolate
+ * without pulling in the server-only `resend` import chain.
+ */
+export function interpolateEmail(
+  template: string,
+  vars: Record<string, string | number>
+): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
+    const val = vars[key];
+    return val !== undefined && val !== "" ? String(val) : `{{${key}}}`;
+  });
+}
+
+/**
  * Validate the optional per-broadcast CTA link.
  * - absent / empty → { ok: true, url: null } (no CTA rendered)
  * - present but unusable → { ok: false, error: CTA_URL_ERROR } (server 400,

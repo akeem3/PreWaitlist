@@ -23,6 +23,8 @@ import {
   buildEmailPreviewFooter,
   buildEmailShell,
   derivePreheader,
+  escapeEmailHtml,
+  interpolateEmail,
   validateCtaUrl,
 } from "@/lib/email-template";
 
@@ -39,6 +41,21 @@ interface BroadcastClientProps {
   senderName: string | null;
   sendingDomain: string | null;
   businessAddress: string | null;
+}
+
+// Prompt #8 (2026-10-11): personalization tokens available in subject + body.
+// Token names only — no prose copy (copy-gate safe).
+function TokenHint() {
+  return (
+    <p className="text-caption text-muted-foreground mt-1 flex flex-wrap items-center gap-1.5">
+      <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+        {"{{first_name}}"}
+      </code>
+      <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+        {"{{product_name}}"}
+      </code>
+    </p>
+  );
 }
 
 export default function BroadcastClient({
@@ -275,6 +292,7 @@ export default function BroadcastClient({
               placeholder="What's the update?"
               className="mt-1"
             />
+            <TokenHint />
           </div>
 
           <div>
@@ -292,6 +310,7 @@ export default function BroadcastClient({
               rows={12}
               className="mt-1 font-mono text-sm"
             />
+            <TokenHint />
           </div>
 
           <div>
@@ -347,18 +366,28 @@ export default function BroadcastClient({
               </div>
               {/* Prompt #8: preview renders the SAME shell as the send path
                   (fragment mode — no doctype/head), including brand header,
-                  hidden preheader and CTA button. Preview === send. */}
+                  hidden preheader and wrapped body. Personalization tokens:
+                  {{product_name}} interpolated with the real brand;
+                  {{first_name}} stays visible (no recipient in preview).
+                  CTA is the inline text link the send path now uses. */}
               <div
                 dangerouslySetInnerHTML={{
                   __html: buildEmailShell({
                     title: subject || productName || headline || subdomain,
                     preheader: derivePreheader(body),
                     brandName: productName || headline || subdomain,
-                    bodyHtml: sanitizeEmailHtml(body),
-                    cta:
+                    bodyHtml: `<p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: #4b5563; white-space: pre-wrap;">${interpolateEmail(
+                      sanitizeEmailHtml(body),
+                      {
+                        product_name:
+                          productName || headline || subdomain || "",
+                      }
+                    )}</p>${
                       ctaCheck.ok && ctaCheck.url
-                        ? { url: ctaCheck.url, label: BROADCAST_CTA_LABEL }
-                        : null,
+                        ? `<p style="margin: 28px 0 0 0;"><a href="${escapeEmailHtml(ctaCheck.url)}" target="_blank" rel="noopener" style="color: #0F7A5E; font-weight: 600; text-decoration: underline;">${escapeEmailHtml(BROADCAST_CTA_LABEL)} →</a></p>`
+                        : ""
+                    }`,
+                    cta: null,
                     footerHtml: buildEmailPreviewFooter(businessAddress),
                     fragment: true,
                   }),

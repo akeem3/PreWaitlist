@@ -2,12 +2,16 @@ import { resend } from "@/lib/resend";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { generateUnsubscribeUrl } from "@/lib/unsubscribe";
 import { resolveFromAddress, type Stream } from "@/lib/from-address";
-import { EMAIL_DEFAULT_ADDRESS } from "@/lib/email-template";
+import { EMAIL_DEFAULT_ADDRESS, interpolateEmail } from "@/lib/email-template";
 
 // Re-export for existing server-side importers (Story 17.3 moved the
 // implementation to the isomorphic `from-address` module so Client
 // Components can share it without pulling in `resend`).
 export { resolveFromAddress };
+// interpolateEmail moved to the client-safe `email-template` module (broadcast
+// compose preview interpolates {{product_name}} without the resend import
+// chain). Re-exported here so existing server importers keep working.
+export { interpolateEmail };
 
 interface SendEmailParams {
   to: string;
@@ -23,20 +27,6 @@ interface SendEmailParams {
   subscriberId?: string;
   waitlistId?: string;
   businessAddress?: string | null;
-}
-
-/**
- * Replace {{variable}} placeholders in an email template with actual values.
- * Unmatched variables are left as-is (e.g. {{unknown}} stays unchanged).
- */
-export function interpolateEmail(
-  template: string,
-  vars: Record<string, string | number>
-): string {
-  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
-    const val = vars[key];
-    return val !== undefined && val !== "" ? String(val) : `{{${key}}}`;
-  });
 }
 
 // Single source: client-safe `email-template.ts` owns the constant (Client

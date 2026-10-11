@@ -21,7 +21,9 @@ import {
   BROADCAST_CTA_LABEL,
   buildEmailShell,
   derivePreheader,
+  escapeEmailHtml,
   htmlToText,
+  interpolateEmail,
   validateCtaUrl,
 } from "@/lib/email-template";
 
@@ -120,7 +122,7 @@ export async function POST(req: NextRequest) {
 
   let query = supabase
     .from("subscribers")
-    .select("id, email, referral_code, unsubscribed_at")
+    .select("id, email, referral_code, unsubscribed_at, display_name")
     .eq("waitlist_id", waitlist.id);
 
   if (segment === "hot_warm") {
@@ -143,7 +145,12 @@ export async function POST(req: NextRequest) {
   // Mirrors isEmailBounced() semantics: hard bounces suppress forever,
   // soft bounces only within 24h.
   const adminSupabase = createAdminClient();
-  const eligible: { id: string; email: string; referral_code: string }[] = [];
+  const eligible: {
+    id: string;
+    email: string;
+    referral_code: string;
+    display_name: string | null;
+  }[] = [];
 
   // Story 19.4 M21: fail closed — sending when the bounce-suppression read
   // failed would email hard-bounced addresses (deliverability + compliance).
@@ -220,20 +227,44 @@ export async function POST(req: NextRequest) {
   // wholesale-escape (B8): intentional formatting survives.
   const safeBody = sanitizeEmailHtml(emailBody);
 
-  // Prompt #8: HTML-email-grade shell (doctype/table/600px card/brand header/
-  // hidden preheader/CTA) replaces the old bare <div>. Shared with the
-  // compose preview via `email-template` so preview === send. Preheader +
-  // plain-text part are derived from the body — no extra copy authored.
+  // Prompt #8 (2026-10-11): per-recipient personalization + Primary-parity
+  // body wrapper. Tokens: {{first_name}} (subscriber display name first
+  // word, fallback "there") + {{product_name}} (waitlist brand). House
+  // style is double-brace (interpolateEmail). HTML path escapes the name
+  // before interpolation; subject/plain-text keep the raw name (plain-text
+  // context). Body is wrapped in the same white-space: pre-wrap <p> the
+  // updates route uses — structural parity is a Gmail Primary lever.
   const brandName =
     waitlist.product_name || waitlist.headline || waitlist.subdomain;
-  const preheader = derivePreheader(bodyText);
-  const plainText = htmlToText(bodyText);
+
+  // Prompt #8: inline text-link CTA replaces the button. Marketing-framed
+  // button CTAs are a Promotions signal; a single text link matches the
+  // update email's Primary-winning shape more closely. cta: null keeps the
+  // shell button slot empty — the link is appended inside bodyHtml.
+  const inlineCtaHtml = ctaUrl
+    ? `<p style="margin: 28px 0 0 0;"><a href="${escapeEmailHtml(ctaUrl)}" target="_blank" rel="noopener" style="color: #0F7A5E; font-weight: 600; text-decoration: underline;">${escapeEmailHtml(BROADCAST_CTA_LABEL)} →</a></p>`
+    : "";
 
   for (let i = 0; i < eligible.length; i += BATCH_SIZE) {
     const batch = eligible.slice(i, i + BATCH_SIZE);
     const chunkIndex = i / BATCH_SIZE;
 
     const emails = batch.map((sub) => {
+      // Same fallback as the confirmation email (subscribers/route.ts:46).
+      const firstName =
+        (sub.display_name ?? "").trim().split(" ")[0] || "there";
+      const textVars = { first_name: firstName, product_name: brandName };
+      const htmlVars = {
+        first_name: escapeEmailHtml(firstName),
+        product_name: escapeEmailHtml(brandName),
+      };
+
+      const subjectOut = interpolateEmail(subjectText, textVars);
+      const bodyForHtml = interpolateEmail(safeBody, htmlVars);
+      const bodyForText = interpolateEmail(bodyText, textVars);
+      const preheader = derivePreheader(bodyForText);
+      const plainText = htmlToText(bodyForText) || brandName;
+
       // Single unsubscribe generation per recipient, reused for header + footer.
       const unsubscribeUrl = generateUnsubscribeUrl(sub.id);
       const footer = buildBroadcastEmailFooterWithUrl(
@@ -242,23 +273,23 @@ export async function POST(req: NextRequest) {
       );
 
       const html = buildEmailShell({
-        title: subjectText,
+        title: subjectOut,
         preheader,
         brandName,
-        bodyHtml: safeBody,
-        cta: ctaUrl ? { url: ctaUrl, label: BROADCAST_CTA_LABEL } : null,
+        bodyHtml: `<p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: #4b5563; white-space: pre-wrap;">${bodyForHtml}</p>${inlineCtaHtml}`,
+        cta: null,
         footerHtml: footer,
       });
 
       return {
         from,
         to: [sub.email],
-        subject: subjectText,
+        subject: subjectOut,
         html,
         // Never ship an empty multipart text part (Prompt #8 spam follow-up):
         // a tag-only body strips to "" — fall back to the brand name (data,
         // not authored copy) so the plain-text check always passes.
-        text: plainText || brandName,
+        text: plainText,
         headers: {
           "List-Unsubscribe": `<${unsubscribeUrl}>`,
           "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
