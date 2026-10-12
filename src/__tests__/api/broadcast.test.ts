@@ -352,7 +352,7 @@ describe("POST /api/dashboard/broadcast", () => {
       expect(res.status).toBe(400);
     });
 
-    it("renders the approved inline text link when cta_url is valid", async () => {
+    it("renders the approved CTA button when cta_url is valid", async () => {
       primeHappy(makeSubs(1));
 
       const res = await POST(
@@ -364,9 +364,10 @@ describe("POST /api/dashboard/broadcast", () => {
       expect(emails[0].html).toContain('href="https://example.com/launch"');
       expect(emails[0].html).toContain("Read more");
       expect(emails[0].html).toContain("#0F7A5E");
-      // Inline text link, not the old CTA button (no button padding block).
-      expect(emails[0].html).not.toContain("padding: 13px 28px");
-      expect(emails[0].html).toContain("text-decoration: underline");
+      // CTA button from the shared shell (unique padding block).
+      expect(emails[0].html).toContain("padding: 13px 28px");
+      // No inline text-link (the removed shape appended " →" after the label).
+      expect(emails[0].html).not.toContain("Read more →");
     });
 
     it("omits the CTA link entirely when cta_url is absent", async () => {

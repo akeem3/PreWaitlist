@@ -103,7 +103,7 @@
 
 ### Resend (Story 0.4)
 
-- **Status:** Account created, API key in .env.local. Client module at `src/lib/resend.ts`. Domain `prewaitlist.com` verified. Batch API: `resend.batch.send([...])`, max 100/batch. Sender: `notifications@prewaitlist.com` (transactional) / `updates@prewaitlist.com` (broadcast). **[AMENDED 2026-10-10:** broadcast stream moves to `updates@mail.prewaitlist.com` — see "Sending-subdomain segregation" block at file end; DEPLOY-BLOCKED until that subdomain is verified in Resend.**]**
+- **Status:** Account created, API key in .env.local. Client module at `src/lib/resend.ts`. Domain `prewaitlist.com` verified. Batch API: `resend.batch.send([...])`, max 100/batch. Sender: `notifications@prewaitlist.com` (transactional) / `updates@prewaitlist.com` (broadcast). **[AMENDED 2026-10-10:** broadcast stream moves to `updates@mail.prewaitlist.com` — see "Sending-subdomain segregation" block at file end; `mail.prewaitlist.com` **Verified in Resend 2026-10-10** — bulk sends unblocked.**]**
 - **Webhook:** `RESEND_WEBHOOK_SECRET` added to .env.local (2026-09-13). Endpoint recorded as `https://waitlist-build.vercel.app/api/webhooks/resend` — **DEAD as of 2026-09-27** (Vercel `DEPLOYMENT_NOT_FOUND`, HTTP 404). Correct endpoint, live-verified 2026-09-27: `https://www.prewaitlist.com/api/webhooks/resend` (apex `prewaitlist.com` 308-redirects to www — use www directly). **Resend Dashboard webhook URL update = founder step (instructions given 2026-09-27).** Events: sent, delivered, opened, clicked, bounced, complained. Restricted API key cannot list webhooks via API.
 - **CRON_SECRET:** Added to .env.local (2026-09-13). Used for `/api/cron/warmth` endpoint auth.
 
@@ -2262,7 +2262,7 @@ Founder challenge (single project proven by URL) killed the multi-DB theory and 
 
 ## Sending-subdomain segregation — bulk mail to `mail.prewaitlist.com` (2026-10-10)
 
-**Status:** code + tests + doc annotations done, **UNCOMMITTED and DEPLOY-BLOCKED until Resend reports `mail.prewaitlist.com` Verified.** Source: Prompt #8 broadcast-spam investigation; founder answered the decision question "Do it now (Recommended)".
+**Status:** committed `b715d6b` → merged `bdce783` → **pushed to main 2026-10-10 (Vercel deployed).** `mail.prewaitlist.com` **Verified in Resend 2026-10-10 (founder)** — bulk sends unblocked; post-verify test send still pending. **Pending register:** sprint-4-plan "Founder Inputs" table. Prompt #2 walkthrough also still pending (same table). Source: Prompt #8 broadcast-spam investigation; founder answered the decision question "Do it now (Recommended)".
 
 **Decision:** bulk stream (founder updates + broadcasts) → `updates@mail.prewaitlist.com`; transactional (confirmation, moved-up, milestone, 90%-cap warning, retry replay) stays `notifications@prewaitlist.com`; Pro custom `sending_domain` override unchanged.
 

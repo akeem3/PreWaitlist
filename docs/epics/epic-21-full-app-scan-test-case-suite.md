@@ -21,7 +21,7 @@ Build the launch-blocking verification suite: scan the real application end-to-e
 
 | ID   | Title                                                     | Depends on                      | Status |
 | ---- | --------------------------------------------------------- | ------------------------------- | ------ |
-| 21.1 | Full App Inventory & Behavior Scan                        | —                               | ready  |
+| 21.1 | Full App Inventory & Behavior Scan                        | —                               | done   |
 | 21.2 | Page Capture (Core Screenshot Set)                        | 21.1                            | ready  |
 | 21.3 | Document Cross-Reference Scan (Behavior-to-Source Matrix) | —                               | ready  |
 | 21.4 | Input Validation Audit                                    | 21.1                            | ready  |
@@ -40,7 +40,7 @@ Every story moves `ready` -> `in-progress` -> `done` (or `blocked`), and is only
 
 ### Story 21.1 — Full App Inventory & Behavior Scan
 
-**Status:** ready
+**Status:** done
 **Design Refs:** - (no new UI; spec = live codebase — pages, APIs, proxy behavior — not SVG)
 **Story:** As the QA author, I want a code-derived inventory of every route, guard, API endpoint, and state variant so that test cases are grounded in what actually exists.
 

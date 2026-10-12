@@ -237,13 +237,10 @@ export async function POST(req: NextRequest) {
   const brandName =
     waitlist.product_name || waitlist.headline || waitlist.subdomain;
 
-  // Prompt #8: inline text-link CTA replaces the button. Marketing-framed
-  // button CTAs are a Promotions signal; a single text link matches the
-  // update email's Primary-winning shape more closely. cta: null keeps the
-  // shell button slot empty — the link is appended inside bodyHtml.
-  const inlineCtaHtml = ctaUrl
-    ? `<p style="margin: 28px 0 0 0;"><a href="${escapeEmailHtml(ctaUrl)}" target="_blank" rel="noopener" style="color: #0F7A5E; font-weight: 600; text-decoration: underline;">${escapeEmailHtml(BROADCAST_CTA_LABEL)} →</a></p>`
-    : "";
+  // Prompt #8 (2026-10-12): CTA button restored (founder decision — parity
+  // with the update email's Primary-winning shape). Button is optional:
+  // empty cta_url omits it entirely (validateCtaUrl already returned null).
+  const cta = ctaUrl ? { url: ctaUrl, label: BROADCAST_CTA_LABEL } : null;
 
   for (let i = 0; i < eligible.length; i += BATCH_SIZE) {
     const batch = eligible.slice(i, i + BATCH_SIZE);
@@ -276,8 +273,8 @@ export async function POST(req: NextRequest) {
         title: subjectOut,
         preheader,
         brandName,
-        bodyHtml: `<p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: #4b5563; white-space: pre-wrap;">${bodyForHtml}</p>${inlineCtaHtml}`,
-        cta: null,
+        bodyHtml: `<p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: #4b5563; white-space: pre-wrap;">${bodyForHtml}</p>`,
+        cta,
         footerHtml: footer,
       });
 

@@ -15,6 +15,10 @@ import {
   BROADCAST_BODY_MAX,
   BROADCAST_SUBJECT_MAX,
 } from "@/lib/broadcast-limits";
+import {
+  DEFAULT_BROADCAST_BODY,
+  DEFAULT_BROADCAST_SUBJECT,
+} from "@/lib/broadcast-templates";
 import { resolveFromAddress } from "@/lib/from-address";
 import { sanitizeEmailHtml } from "@/lib/sanitize";
 import { capture } from "@/lib/analytics";
@@ -23,7 +27,6 @@ import {
   buildEmailPreviewFooter,
   buildEmailShell,
   derivePreheader,
-  escapeEmailHtml,
   interpolateEmail,
   validateCtaUrl,
 } from "@/lib/email-template";
@@ -68,9 +71,9 @@ export default function BroadcastClient({
   businessAddress,
 }: BroadcastClientProps) {
   const router = useRouter();
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
-  const [ctaUrl, setCtaUrl] = useState("");
+  const [subject, setSubject] = useState(DEFAULT_BROADCAST_SUBJECT);
+  const [body, setBody] = useState(DEFAULT_BROADCAST_BODY);
+  const [ctaUrl, setCtaUrl] = useState(`https://${subdomain}.prewaitlist.com`);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [sentCount, setSentCount] = useState(0);
@@ -366,10 +369,9 @@ export default function BroadcastClient({
               </div>
               {/* Prompt #8: preview renders the SAME shell as the send path
                   (fragment mode — no doctype/head), including brand header,
-                  hidden preheader and wrapped body. Personalization tokens:
-                  {{product_name}} interpolated with the real brand;
-                  {{first_name}} stays visible (no recipient in preview).
-                  CTA is the inline text link the send path now uses. */}
+                  hidden preheader, wrapped body and CTA button. Personalization
+                  tokens: {{product_name}} interpolated with the real brand;
+                  {{first_name}} stays visible (no recipient in preview). */}
               <div
                 dangerouslySetInnerHTML={{
                   __html: buildEmailShell({
@@ -382,12 +384,11 @@ export default function BroadcastClient({
                         product_name:
                           productName || headline || subdomain || "",
                       }
-                    )}</p>${
+                    )}</p>`,
+                    cta:
                       ctaCheck.ok && ctaCheck.url
-                        ? `<p style="margin: 28px 0 0 0;"><a href="${escapeEmailHtml(ctaCheck.url)}" target="_blank" rel="noopener" style="color: #0F7A5E; font-weight: 600; text-decoration: underline;">${escapeEmailHtml(BROADCAST_CTA_LABEL)} →</a></p>`
-                        : ""
-                    }`,
-                    cta: null,
+                        ? { url: ctaCheck.url, label: BROADCAST_CTA_LABEL }
+                        : null,
                     footerHtml: buildEmailPreviewFooter(businessAddress),
                     fragment: true,
                   }),
