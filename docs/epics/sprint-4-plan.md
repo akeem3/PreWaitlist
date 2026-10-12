@@ -84,16 +84,19 @@ Operationalized for Sprint 4: Epic 19's known defects fixed and audits closed �
 
 ## Founder Inputs Required During Sprint 4
 
-| Input                                                          | Needed by       | Status                         |
-| -------------------------------------------------------------- | --------------- | ------------------------------ |
-| PostHog account + `NEXT_PUBLIC_POSTHOG_KEY`                    | 20.1            | ⬜ pending                     |
-| Tally form URL(s) for feedback embed                           | 20.3            | ✅ env set (live after deploy) |
-| Founder contact channels (Instagram DM URL + email, for popup) | 20.6            | ✅ env set (live after deploy) |
-| Dub account creation                                           | 20.4            | ⬜ pending                     |
-| Product Hunt listing copy                                      | 20.5            | ⬜ pending (copy-gate)         |
-| Resend dashboard SPF/DKIM check                                | 19.7            | ⬜ pending                     |
-| Approval of failing-validations list                           | 21.5            | ⬜ pending                     |
-| Approval to defer/fix decisions from audits                    | 19.3–19.5, 21.6 | ⬜ pending                     |
+| Input                                                                                   | Needed by                     | Status                                                                                          |
+| --------------------------------------------------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------- |
+| PostHog account + `NEXT_PUBLIC_POSTHOG_KEY`                                             | 20.1                          | ✅ key live in prod (2026-10-09); Survey 1+2 launched — event-flow sweep deferred to after 21.7 |
+| Tally form URL(s) for feedback embed                                                    | 20.3                          | ✅ env set (live after deploy)                                                                  |
+| Founder contact channels (Instagram DM URL + email, for popup)                          | 20.6                          | ✅ env set (live after deploy)                                                                  |
+| Dub account creation                                                                    | 20.4                          | ⬜ pending                                                                                      |
+| Product Hunt listing copy                                                               | 20.5                          | ⬜ pending (copy-gate)                                                                          |
+| Resend dashboard R1–R4 check                                                            | 19.7                          | ⬜ pending                                                                                      |
+| `mail.prewaitlist.com` verify in Resend (bulk From subdomain switch, shipped `bdce783`) | subdomain switch (2026-10-10) | ✅ Verified 2026-10-10 — bulk sends unblocked                                                   |
+| Post-verify test broadcast/update → inbox check                                         | subdomain switch (2026-10-10) | ⬜ pending                                                                                      |
+| Prompt #2 walkthrough (Prompt #8 findings confirmation + tour live check)               | — (Prompt #8)                 | ⬜ pending                                                                                      |
+| Approval of failing-validations list                                                    | 21.5                          | ⬜ pending                                                                                      |
+| Approval to defer/fix decisions from audits                                             | 19.3–19.5, 21.6               | ⬜ pending                                                                                      |
 
 ---
 

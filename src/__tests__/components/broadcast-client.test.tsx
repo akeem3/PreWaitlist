@@ -88,6 +88,9 @@ describe("BroadcastClient (Story 17.6 AC3)", () => {
     mockFetch();
     const user = await renderAndSettle();
 
+    // Prefilled fields — clear before typing so the assertion is exact.
+    await user.clear(screen.getByLabelText("Subject"));
+    await user.clear(screen.getByLabelText("Body"));
     await user.type(screen.getByLabelText("Subject"), "Hello");
     await user.type(screen.getByLabelText("Body"), "<p>Hi there</p>");
     await user.click(screen.getByRole("button", { name: /Send to 42/ }));
@@ -117,25 +120,22 @@ describe("BroadcastClient (Story 17.6 AC3)", () => {
     expect(screen.getByText("Cold (12)")).toBeTruthy();
   });
 
-  it("disables Send when subject or body is empty", async () => {
+  it("disables Send when subject or body is emptied", async () => {
     mockFetch();
-    render(<BroadcastClient {...PROPS} />);
-    await waitFor(() =>
-      expect(screen.getByText(/Send to\s+42\s+subscribers/i)).toBeTruthy()
-    );
+    const user = await renderAndSettle();
+
+    // Prefills make Send enabled on mount — clear both to test empty.
+    await user.clear(screen.getByLabelText("Subject"));
+    await user.clear(screen.getByLabelText("Body"));
     const sendBtn = screen.getByRole("button", { name: /Send to 42/ });
     expect(sendBtn).toHaveProperty("disabled", true);
   });
 
   it("disables Send when subject exceeds length cap", async () => {
     mockFetch();
-    const user = userEvent.setup();
-    render(<BroadcastClient {...PROPS} />);
-    await waitFor(() =>
-      expect(screen.getByText(/Send to\s+42\s+subscribers/i)).toBeTruthy()
-    );
+    const user = await renderAndSettle();
+    await user.clear(screen.getByLabelText("Subject"));
     await user.type(screen.getByLabelText("Subject"), "x".repeat(201));
-    await user.type(screen.getByLabelText("Body"), "ok body");
     const sendBtn = screen.getByRole("button", { name: /Send to 42/ });
     expect(sendBtn).toHaveProperty("disabled", true);
   });
@@ -144,6 +144,8 @@ describe("BroadcastClient (Story 17.6 AC3)", () => {
     mockFetch();
     const user = await renderAndSettle();
 
+    await user.clear(screen.getByLabelText("Subject"));
+    await user.clear(screen.getByLabelText("Body"));
     await user.type(screen.getByLabelText("Subject"), "Hello");
     await user.type(screen.getByLabelText("Body"), "<p>Hi</p>");
     await user.click(screen.getByRole("button", { name: /Send to 42/ }));
@@ -162,6 +164,8 @@ describe("BroadcastClient (Story 17.6 AC3)", () => {
     });
     const user = await renderAndSettle();
 
+    await user.clear(screen.getByLabelText("Subject"));
+    await user.clear(screen.getByLabelText("Body"));
     await user.type(screen.getByLabelText("Subject"), "Hello");
     await user.type(screen.getByLabelText("Body"), "<p>Hi</p>");
     await user.click(screen.getByRole("button", { name: /Send to 42/ }));
@@ -181,6 +185,8 @@ describe("BroadcastClient (Story 17.6 AC3)", () => {
     });
     const user = await renderAndSettle();
 
+    await user.clear(screen.getByLabelText("Subject"));
+    await user.clear(screen.getByLabelText("Body"));
     await user.type(screen.getByLabelText("Subject"), "Hello");
     await user.type(screen.getByLabelText("Body"), "<p>Hi</p>");
     await user.click(screen.getByRole("button", { name: /Send to 42/ }));
@@ -213,20 +219,26 @@ describe("BroadcastClient — button link + shell preview", () => {
     return JSON.parse(postCall![1].body as string);
   }
 
-  it("renders the approved Button link label + placeholder", async () => {
+  it("renders the approved Button link label + default waitlist URL", async () => {
     mockFetch();
     render(<BroadcastClient {...PROPS} />);
     await waitFor(() =>
       expect(screen.getByText(/Send to\s+42\s+subscribers/i)).toBeTruthy()
     );
-    const field = screen.getByLabelText("Button link (optional)");
-    expect((field as HTMLInputElement).placeholder).toBe("https://");
+    const field = screen.getByLabelText(
+      "Button link (optional)"
+    ) as HTMLInputElement;
+    // Prefilled with the waitlist page (founder decision 2026-10-12).
+    expect(field.value).toBe("https://acme.prewaitlist.com");
   });
 
   it("blocks Send and shows the approved error for an invalid URL", async () => {
     mockFetch();
     const user = await renderAndSettle();
 
+    await user.clear(screen.getByLabelText("Subject"));
+    await user.clear(screen.getByLabelText("Body"));
+    await user.clear(screen.getByLabelText("Button link (optional)"));
     await user.type(screen.getByLabelText("Subject"), "Hello");
     await user.type(screen.getByLabelText("Body"), "<p>Hi</p>");
     await user.type(screen.getByLabelText("Button link (optional)"), "nope");
@@ -242,6 +254,9 @@ describe("BroadcastClient — button link + shell preview", () => {
     mockFetch();
     const user = await renderAndSettle();
 
+    await user.clear(screen.getByLabelText("Subject"));
+    await user.clear(screen.getByLabelText("Body"));
+    await user.clear(screen.getByLabelText("Button link (optional)"));
     await user.type(screen.getByLabelText("Subject"), "Hello");
     await user.type(screen.getByLabelText("Body"), "<p>Hi</p>");
     await user.type(
@@ -257,12 +272,23 @@ describe("BroadcastClient — button link + shell preview", () => {
     });
   });
 
-  it("omits cta_url from the POST body when the field is empty", async () => {
+  it("includes the default waitlist cta_url when untouched", async () => {
     mockFetch();
     const user = await renderAndSettle();
 
-    await user.type(screen.getByLabelText("Subject"), "Hello");
-    await user.type(screen.getByLabelText("Body"), "<p>Hi</p>");
+    await user.click(screen.getByRole("button", { name: /Send to 42/ }));
+
+    await waitFor(() => {
+      const body = postBody();
+      expect(body.cta_url).toBe("https://acme.prewaitlist.com");
+    });
+  });
+
+  it("omits cta_url from the POST body when the field is cleared", async () => {
+    mockFetch();
+    const user = await renderAndSettle();
+
+    await user.clear(screen.getByLabelText("Button link (optional)"));
     await user.click(screen.getByRole("button", { name: /Send to 42/ }));
 
     await waitFor(() => {
@@ -275,12 +301,11 @@ describe("BroadcastClient — button link + shell preview", () => {
     mockFetch();
     const user = await renderAndSettle();
 
+    await user.clear(screen.getByLabelText("Subject"));
+    await user.clear(screen.getByLabelText("Body"));
     await user.type(screen.getByLabelText("Subject"), "Launch day");
     await user.type(screen.getByLabelText("Body"), "<p>We are live!</p>");
-    await user.type(
-      screen.getByLabelText("Button link (optional)"),
-      "https://example.com/launch"
-    );
+    // cta_url already prefilled to the waitlist URL.
     await user.click(screen.getByRole("button", { name: "Preview" }));
 
     const preview = screen.getByText(/Preview — how recipients/)
@@ -290,18 +315,25 @@ describe("BroadcastClient — button link + shell preview", () => {
     // Shell fragment: brand header, CTA button with approved label,
     // hidden preheader, 600px card — same markup the send path uses.
     expect(html).toContain("Acme");
-    expect(html).toContain("https://example.com/launch");
+    expect(html).toContain("https://acme.prewaitlist.com");
     expect(html).toContain("Read more");
     expect(html).toContain("display: none; max-height: 0");
     expect(html).toContain("max-width: 600px");
-    // Body content present.
+    // CTA button (unique padding block), not the inline text link.
+    expect(html).toContain("padding: 13px 28px");
+    expect(html).not.toContain("Read more →");
+    // Body content present, wrapped in the pre-wrap paragraph.
     expect(html).toContain("<p>We are live!</p>");
+    expect(html).toContain("white-space: pre-wrap");
   });
 
-  it("preview omits the CTA button when no link is set", async () => {
+  it("preview omits the CTA when the link is cleared", async () => {
     mockFetch();
     const user = await renderAndSettle();
 
+    await user.clear(screen.getByLabelText("Subject"));
+    await user.clear(screen.getByLabelText("Body"));
+    await user.clear(screen.getByLabelText("Button link (optional)"));
     await user.type(screen.getByLabelText("Subject"), "Launch day");
     await user.type(screen.getByLabelText("Body"), "<p>We are live!</p>");
     await user.click(screen.getByRole("button", { name: "Preview" }));
@@ -309,6 +341,72 @@ describe("BroadcastClient — button link + shell preview", () => {
     const preview = screen.getByText(/Preview — how recipients/)
       .parentElement as HTMLElement;
     expect(preview.innerHTML).not.toContain("Read more");
+    expect(preview.innerHTML).not.toContain("padding: 13px 28px");
     expect(preview.innerHTML).toContain("Unsubscribe");
+  });
+
+  // Prompt #8 (2026-10-11): personalization token hint under subject + body.
+  it("shows the personalization token hint under Subject and Body", async () => {
+    mockFetch();
+    render(<BroadcastClient {...PROPS} />);
+    await waitFor(() =>
+      expect(screen.getByText(/Send to\s+42\s+subscribers/i)).toBeTruthy()
+    );
+
+    const hints = screen.getAllByText("{{first_name}}");
+    expect(hints.length).toBe(2); // one under Subject, one under Body
+    const productHints = screen.getAllByText("{{product_name}}");
+    expect(productHints.length).toBe(2);
+  });
+});
+
+// Founder decision (2026-10-12): premade starter message with tokens
+// baked in + default waitlist-page CTA link.
+describe("BroadcastClient — premade starter message (founder decision)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("confirm", () => true);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("prefills Subject with the approved default template", async () => {
+    mockFetch();
+    render(<BroadcastClient {...PROPS} />);
+    await waitFor(() =>
+      expect(screen.getByText(/Send to\s+42\s+subscribers/i)).toBeTruthy()
+    );
+    expect((screen.getByLabelText("Subject") as HTMLInputElement).value).toBe(
+      "Update from {{product_name}}"
+    );
+  });
+
+  it("prefills Body with the approved default template (tokens baked in)", async () => {
+    mockFetch();
+    render(<BroadcastClient {...PROPS} />);
+    await waitFor(() =>
+      expect(screen.getByText(/Send to\s+42\s+subscribers/i)).toBeTruthy()
+    );
+    const bodyField = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    expect(bodyField.value).toContain("Hi {{first_name}},");
+    expect(bodyField.value).toContain("Quick update from {{product_name}}");
+    expect(bodyField.value).toContain("We're getting closer to launch");
+    expect(bodyField.value).toContain("More soon.");
+  });
+
+  it("Send is enabled on mount (prefills are valid content)", async () => {
+    mockFetch();
+    render(<BroadcastClient {...PROPS} />);
+    await waitFor(() =>
+      expect(screen.getByText(/Send to\s+42\s+subscribers/i)).toBeTruthy()
+    );
+    expect(screen.getByRole("button", { name: /Send to 42/ })).toHaveProperty(
+      "disabled",
+      false
+    );
   });
 });

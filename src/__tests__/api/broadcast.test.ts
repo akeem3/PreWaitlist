@@ -364,9 +364,13 @@ describe("POST /api/dashboard/broadcast", () => {
       expect(emails[0].html).toContain('href="https://example.com/launch"');
       expect(emails[0].html).toContain("Read more");
       expect(emails[0].html).toContain("#0F7A5E");
+      // CTA button from the shared shell (unique padding block).
+      expect(emails[0].html).toContain("padding: 13px 28px");
+      // No inline text-link (the removed shape appended " →" after the label).
+      expect(emails[0].html).not.toContain("Read more →");
     });
 
-    it("omits the CTA button entirely when cta_url is absent", async () => {
+    it("omits the CTA link entirely when cta_url is absent", async () => {
       primeHappy(makeSubs(1));
 
       const res = await POST(makeRequest(VALID));
@@ -455,6 +459,145 @@ describe("POST /api/dashboard/broadcast", () => {
       }[];
       expect(emails[0].text).toBe("Acme");
       expect(emails[0].text?.length).toBeGreaterThan(0);
+    });
+  });
+
+  // Prompt #8 (2026-10-11): per-recipient personalization + Primary-parity
+  // body wrapper (white-space: pre-wrap) + inline text-link CTA.
+  describe("personalization + body wrapper (Primary parity)", () => {
+    it("interpolates {{first_name}} from display_name in subject and body", async () => {
+      primeHappy([sub(0, { display_name: "Alice Smith" })]);
+
+      const res = await POST(
+        makeRequest({
+          ...VALID,
+          subject: "Hello {{first_name}}",
+          body: "<p>Hi {{first_name}}, we are live with {{product_name}}!</p>",
+        })
+      );
+      expect(res.status).toBe(200);
+
+      const emails = batchSend.mock.calls[0][0] as {
+        subject: string;
+        html: string;
+        text?: string;
+      }[];
+      expect(emails[0].subject).toBe("Hello Alice");
+      expect(emails[0].html).toContain("Hi Alice");
+      expect(emails[0].html).toContain("we are live with Acme!");
+      expect(emails[0].text).toContain("Hi Alice");
+      // Tokens fully resolved — no leftover braces.
+      expect(emails[0].html).not.toContain("{{first_name}}");
+      expect(emails[0].html).not.toContain("{{product_name}}");
+    });
+
+    it("falls back to 'there' when display_name is null", async () => {
+      primeHappy([sub(0, { display_name: null })]);
+
+      const res = await POST(
+        makeRequest({
+          ...VALID,
+          subject: "Hello {{first_name}}",
+          body: "<p>Hi {{first_name}}!</p>",
+        })
+      );
+      expect(res.status).toBe(200);
+
+      const emails = batchSend.mock.calls[0][0] as {
+        subject: string;
+        html: string;
+      }[];
+      expect(emails[0].subject).toBe("Hello there");
+      expect(emails[0].html).toContain("Hi there!");
+    });
+
+    it("uses only the first word of a multi-word display_name", async () => {
+      primeHappy([sub(0, { display_name: "Alice Marie Smith" })]);
+
+      const res = await POST(
+        makeRequest({
+          ...VALID,
+          body: "<p>Hi {{first_name}}!</p>",
+        })
+      );
+      expect(res.status).toBe(200);
+      const emails = batchSend.mock.calls[0][0] as { html: string }[];
+      expect(emails[0].html).toContain("Hi Alice!");
+    });
+
+    it("escapes HTML in display_name before interpolating into the body", async () => {
+      primeHappy([sub(0, { display_name: '<img src=x onerror="alert(1)">' })]);
+
+      const res = await POST(
+        makeRequest({
+          ...VALID,
+          body: "<p>Hi {{first_name}}!</p>",
+        })
+      );
+      expect(res.status).toBe(200);
+      const emails = batchSend.mock.calls[0][0] as { html: string }[];
+      // Escaped as text — never a live tag.
+      expect(emails[0].html).toContain("&lt;img");
+      expect(emails[0].html).not.toContain("<img src=x");
+      expect(emails[0].html).not.toContain('onerror="alert(1)"');
+    });
+
+    it("leaves unknown tokens as-is (house interpolateEmail behavior)", async () => {
+      primeHappy([sub(0)]);
+
+      const res = await POST(
+        makeRequest({
+          ...VALID,
+          body: "<p>Hi {{first_name}}, position {{position}}</p>",
+        })
+      );
+      expect(res.status).toBe(200);
+      const emails = batchSend.mock.calls[0][0] as { html: string }[];
+      // {{first_name}} resolved (fallback "there"), {{position}} untouched.
+      expect(emails[0].html).toContain("Hi there");
+      expect(emails[0].html).toContain("{{position}}");
+    });
+
+    it("wraps the body in white-space: pre-wrap (parity with updates route)", async () => {
+      primeHappy([sub(0)]);
+
+      const res = await POST(makeRequest(VALID));
+      expect(res.status).toBe(200);
+      const emails = batchSend.mock.calls[0][0] as { html: string }[];
+      expect(emails[0].html).toContain("white-space: pre-wrap");
+      // Wrapped in the same styled <p> the updates route uses.
+      expect(emails[0].html).toContain(
+        '<p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: #4b5563; white-space: pre-wrap;">'
+      );
+    });
+
+    it("builds unique subjects and html per recipient (different names)", async () => {
+      primeHappy([
+        sub(0, { display_name: "Alice Smith", email: "alice@example.com" }),
+        sub(1, { display_name: "Bob Jones", email: "bob@example.com" }),
+      ]);
+
+      const res = await POST(
+        makeRequest({
+          ...VALID,
+          subject: "Hi {{first_name}}",
+          body: "<p>Welcome {{first_name}}!</p>",
+        })
+      );
+      expect(res.status).toBe(200);
+
+      const emails = batchSend.mock.calls[0][0] as {
+        to: string[];
+        subject: string;
+        html: string;
+      }[];
+      expect(emails).toHaveLength(2);
+      expect(emails[0].subject).toBe("Hi Alice");
+      expect(emails[1].subject).toBe("Hi Bob");
+      expect(emails[0].html).toContain("Welcome Alice!");
+      expect(emails[1].html).toContain("Welcome Bob!");
+      expect(emails[0].html).not.toBe(emails[1].html);
+      expect(emails[0].subject).not.toBe(emails[1].subject);
     });
   });
 });

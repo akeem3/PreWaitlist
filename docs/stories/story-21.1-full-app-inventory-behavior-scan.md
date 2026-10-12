@@ -1,6 +1,6 @@
 # Story 21.1 — Full App Inventory & Behavior Scan
 
-**Status:** ready
+**Status:** done
 **Epic:** 21 — Full App Scan & Test Case Suite
 **Depends on:** —
 **Design Refs:** - (no new UI; spec = live codebase — pages, APIs, proxy behavior — not SVG)

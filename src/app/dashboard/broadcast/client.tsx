@@ -15,6 +15,10 @@ import {
   BROADCAST_BODY_MAX,
   BROADCAST_SUBJECT_MAX,
 } from "@/lib/broadcast-limits";
+import {
+  DEFAULT_BROADCAST_BODY,
+  DEFAULT_BROADCAST_SUBJECT,
+} from "@/lib/broadcast-templates";
 import { resolveFromAddress } from "@/lib/from-address";
 import { sanitizeEmailHtml } from "@/lib/sanitize";
 import { capture } from "@/lib/analytics";
@@ -23,6 +27,7 @@ import {
   buildEmailPreviewFooter,
   buildEmailShell,
   derivePreheader,
+  interpolateEmail,
   validateCtaUrl,
 } from "@/lib/email-template";
 
@@ -41,6 +46,21 @@ interface BroadcastClientProps {
   businessAddress: string | null;
 }
 
+// Prompt #8 (2026-10-11): personalization tokens available in subject + body.
+// Token names only — no prose copy (copy-gate safe).
+function TokenHint() {
+  return (
+    <p className="text-caption text-muted-foreground mt-1 flex flex-wrap items-center gap-1.5">
+      <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+        {"{{first_name}}"}
+      </code>
+      <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+        {"{{product_name}}"}
+      </code>
+    </p>
+  );
+}
+
 export default function BroadcastClient({
   waitlistId,
   productName,
@@ -51,9 +71,9 @@ export default function BroadcastClient({
   businessAddress,
 }: BroadcastClientProps) {
   const router = useRouter();
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
-  const [ctaUrl, setCtaUrl] = useState("");
+  const [subject, setSubject] = useState(DEFAULT_BROADCAST_SUBJECT);
+  const [body, setBody] = useState(DEFAULT_BROADCAST_BODY);
+  const [ctaUrl, setCtaUrl] = useState(`https://${subdomain}.prewaitlist.com`);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [sentCount, setSentCount] = useState(0);
@@ -275,6 +295,7 @@ export default function BroadcastClient({
               placeholder="What's the update?"
               className="mt-1"
             />
+            <TokenHint />
           </div>
 
           <div>
@@ -292,6 +313,7 @@ export default function BroadcastClient({
               rows={12}
               className="mt-1 font-mono text-sm"
             />
+            <TokenHint />
           </div>
 
           <div>
@@ -347,14 +369,22 @@ export default function BroadcastClient({
               </div>
               {/* Prompt #8: preview renders the SAME shell as the send path
                   (fragment mode — no doctype/head), including brand header,
-                  hidden preheader and CTA button. Preview === send. */}
+                  hidden preheader, wrapped body and CTA button. Personalization
+                  tokens: {{product_name}} interpolated with the real brand;
+                  {{first_name}} stays visible (no recipient in preview). */}
               <div
                 dangerouslySetInnerHTML={{
                   __html: buildEmailShell({
                     title: subject || productName || headline || subdomain,
                     preheader: derivePreheader(body),
                     brandName: productName || headline || subdomain,
-                    bodyHtml: sanitizeEmailHtml(body),
+                    bodyHtml: `<p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; color: #4b5563; white-space: pre-wrap;">${interpolateEmail(
+                      sanitizeEmailHtml(body),
+                      {
+                        product_name:
+                          productName || headline || subdomain || "",
+                      }
+                    )}</p>`,
                     cta:
                       ctaCheck.ok && ctaCheck.url
                         ? { url: ctaCheck.url, label: BROADCAST_CTA_LABEL }
