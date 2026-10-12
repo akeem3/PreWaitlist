@@ -1,6 +1,6 @@
 # Story 21.2 — Page Capture (Core Screenshot Set)
 
-**Status:** ready
+**Status:** done
 **Epic:** 21 — Full App Scan & Test Case Suite
 **Depends on:** 21.1
 **Design Refs:** - (no new UI; captures = live-app screenshots of existing screens, not SVG)

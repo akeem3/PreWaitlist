@@ -540,8 +540,8 @@ Build the launch-blocking verification suite: scan the real application end-to-e
 
 | ID   | Title                                                     | Depends on                      | Status |
 | ---- | --------------------------------------------------------- | ------------------------------- | ------ |
-| 21.1 | Full App Inventory & Behavior Scan                        | —                               | ready  |
-| 21.2 | Page Capture (Core Screenshot Set)                        | 21.1                            | ready  |
+| 21.1 | Full App Inventory & Behavior Scan                        | —                               | done   |
+| 21.2 | Page Capture (Core Screenshot Set)                        | 21.1                            | done   |
 | 21.3 | Document Cross-Reference Scan (Behavior-to-Source Matrix) | —                               | ready  |
 | 21.4 | Input Validation Audit                                    | 21.1                            | ready  |
 | 21.5 | Manual Test-Case Document                                 | 21.1–21.4, 19.1–19.2, 20.1–20.3 | ready  |
@@ -557,7 +557,7 @@ Build the launch-blocking verification suite: scan the real application end-to-e
 
 ### Story 21.1 — Full App Inventory & Behavior Scan
 
-**Status:** ready
+**Status:** done
 **Story:** As the QA author, I want a code-derived inventory of every route, guard, API endpoint, and state variant so that test cases are grounded in what actually exists.
 
 **Acceptance Criteria (EARS):**
@@ -584,7 +584,7 @@ Build the launch-blocking verification suite: scan the real application end-to-e
 
 ### Story 21.2 — Page Capture (Core Screenshot Set)
 
-**Status:** ready
+**Status:** done
 **Story:** As the QA author, I want ~20 representative screenshots so that test cases can reference expected visual states and the founder can eyeball pages without booting the app.
 
 **Acceptance Criteria (EARS):**
