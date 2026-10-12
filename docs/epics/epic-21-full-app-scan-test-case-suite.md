@@ -23,7 +23,7 @@ Build the launch-blocking verification suite: scan the real application end-to-e
 | ---- | --------------------------------------------------------- | ------------------------------- | ------ |
 | 21.1 | Full App Inventory & Behavior Scan                        | —                               | done   |
 | 21.2 | Page Capture (Core Screenshot Set)                        | 21.1                            | done   |
-| 21.3 | Document Cross-Reference Scan (Behavior-to-Source Matrix) | —                               | ready  |
+| 21.3 | Document Cross-Reference Scan (Behavior-to-Source Matrix) | —                               | done   |
 | 21.4 | Input Validation Audit                                    | 21.1                            | ready  |
 | 21.5 | Manual Test-Case Document                                 | 21.1–21.4, 19.1–19.2, 20.1–20.3 | ready  |
 | 21.6 | Fix Pass on Validated Failures                            | 21.4, 21.5                      | ready  |
@@ -99,7 +99,7 @@ Every story moves `ready` -> `in-progress` -> `done` (or `blocked`), and is only
 
 ### Story 21.3 — Document Cross-Reference Scan (Behavior-to-Source Matrix)
 
-**Status:** ready
+**Status:** done
 **Design Refs:** - (no new UI; spec = source docs — story ACs, PRD REQs, audits, MEMORY, design guides — not SVG)
 **Story:** As the QA author, I want every expected behavior traceable to its source document so that no test case asserts an invented expectation.
 

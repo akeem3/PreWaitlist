@@ -1,6 +1,6 @@
 # Story 21.3 — Document Cross-Reference Scan (Behavior-to-Source Matrix)
 
-**Status:** ready
+**Status:** done
 **Epic:** 21 — Full App Scan & Test Case Suite
 **Depends on:** —
 **Design Refs:** - (no new UI; spec = source docs — story ACs, PRD REQs, audits, MEMORY, design guides — not SVG)
