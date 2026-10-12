@@ -42,6 +42,7 @@ interface ShotSpec {
   viewport: "desktop" | "mobile";
   fullPage: boolean;
   inventoryId: string; // 21.1 inventory page ID
+  settleScroll?: boolean; // scroll page first — whileInView sections (marketing home)
 }
 
 /**
@@ -60,6 +61,7 @@ const SHOTS: ShotSpec[] = [
     viewport: "desktop",
     fullPage: true,
     inventoryId: "28",
+    settleScroll: true, // FadeIn/StaggerGroup are whileInView — scroll first
   },
   {
     nn: "02",
@@ -340,6 +342,15 @@ test("capture core screenshot set", async ({ page }) => {
   test.setTimeout(240_000);
   fs.mkdirSync(SHOTS_DIR, { recursive: true });
 
+  // Partial re-run: CAPTURE_FILTER=01 runs only that NN id (anon-only path —
+  // login, seed, and tier flips are skipped when no auth/pro shots are selected).
+  const filter = process.env.CAPTURE_FILTER ?? "";
+  const run: ShotSpec[] = filter ? SHOTS.filter((s) => s.nn === filter) : SHOTS;
+  if (filter && run.length === 0) {
+    throw new Error(`CAPTURE_FILTER=${filter} matched no shots`);
+  }
+  const needsAuth = run.some((s) => s.phase !== "anon");
+
   const captured: string[] = [];
   const failures: string[] = [];
 
@@ -356,6 +367,32 @@ test("capture core screenshot set", async ({ page }) => {
     );
   };
 
+  /**
+   * whileInView sections (framer-motion, marketing home) never trigger from a
+   * fullPage screenshot — Playwright stitches the viewport without scrolling,
+   * so below-fold sections stay in their hidden initial state. Scroll through
+   * the page in viewport steps so every section crosses its viewport amount
+   * (0.2-0.3), wait for the staggered transitions (≤0.5s items + 0.12s
+   * stagger), then return to top before capturing.
+   */
+  const settleScroll = async (p: Page) => {
+    await p.evaluate(async () => {
+      const step = Math.max(window.innerHeight * 0.75, 400);
+      const pause = (ms: number) =>
+        new Promise<void>((resolve) => setTimeout(resolve, ms));
+      const maxY = document.documentElement.scrollHeight;
+      for (let y = 0; y <= maxY; y += step) {
+        window.scrollTo(0, y);
+        await pause(180);
+      }
+      window.scrollTo(0, maxY);
+      await pause(300);
+    });
+    await p.waitForTimeout(2000);
+    await p.evaluate(() => window.scrollTo(0, 0));
+    await p.waitForTimeout(300);
+  };
+
   const shoot = async (spec: ShotSpec, ids: Record<string, string>) => {
     const url = spec.url.replace(
       /\{(\w+)\}/g,
@@ -369,6 +406,9 @@ test("capture core screenshot set", async ({ page }) => {
         .waitForLoadState("networkidle", { timeout: 5_000 })
         .catch(() => undefined);
       await page.evaluate(() => document.fonts.ready);
+      if (spec.settleScroll) {
+        await settleScroll(page);
+      }
       await page.mouse.move(-1, -1);
       const file = `${spec.nn}-${spec.id}-${spec.viewport}.png`;
       await page.screenshot({
@@ -400,11 +440,22 @@ test("capture core screenshot set", async ({ page }) => {
 
   // ---------- Phase A: anon captures (no auth) ----------
   console.log("Phase A: anon captures");
-  for (const spec of SHOTS.filter((s) => s.phase === "anon")) {
+  for (const spec of run.filter((s) => s.phase === "anon")) {
     if (spec.id.startsWith("onboarding-")) {
       await setDraft(page, "free");
     }
     await shoot(spec, { subdomain: QA_SUBDOMAIN });
+  }
+
+  if (!needsAuth) {
+    console.log(
+      `\nCaptured ${captured.length}/${run.length} shots (anon-only filter)`
+    );
+    if (failures.length > 0) {
+      console.error(`Failures (${failures.length}):\n${failures.join("\n")}`);
+      throw new Error(`${failures.length} captures failed`);
+    }
+    return;
   }
 
   // ---------- Login + seed ----------
@@ -507,91 +558,95 @@ test("capture core screenshot set", async ({ page }) => {
 
   // ---------- Phase B: authed free-tier captures ----------
   console.log("Phase B: authed free captures");
-  for (const spec of SHOTS.filter((s) => s.phase === "auth")) {
+  for (const spec of run.filter((s) => s.phase === "auth")) {
     await shoot(spec, ids);
   }
 
   // ---------- Phase C: pro flips ----------
   console.log("Phase C: pro captures");
   if (!creds.id) {
-    // Derive user id from the profile endpoint if the creds file lacks it.
-    const profRes = await api.get("/api/profile");
-    if (!profRes.ok()) {
-      throw new Error(`profile fetch failed: ${profRes.status()}`);
-    }
-    // profile response has no raw id — fall back to waitlist founder via REST
+    // Resolve founder id via REST (secret key — independent of browser session).
     const envLocal = loadEnvLocal();
     const base =
       process.env.NEXT_PUBLIC_SUPABASE_URL || envLocal.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.SUPABASE_SECRET_KEY || envLocal.SUPABASE_SECRET_KEY;
-    if (base && key) {
-      const wRes = await fetch(
-        `${base}/rest/v1/waitlists?id=eq.${waitlistId}&select=founder_id`,
-        {
-          headers: { apikey: key, Authorization: `Bearer ${key}` },
-        }
+    if (!base || !key) {
+      throw new Error(
+        "cannot resolve founder user id — creds.id missing and NEXT_PUBLIC_SUPABASE_URL/SUPABASE_SECRET_KEY unset"
       );
-      const wRows = await wRes.json();
-      if (Array.isArray(wRows) && wRows[0]?.founder_id) {
-        creds.id = wRows[0].founder_id as string;
+    }
+    const wRes = await fetch(
+      `${base}/rest/v1/waitlists?id=eq.${waitlistId}&select=founder_id`,
+      {
+        headers: { apikey: key, Authorization: `Bearer ${key}` },
       }
+    );
+    const wRows = wRes.ok() ? await wRes.json() : [];
+    if (Array.isArray(wRows) && wRows[0]?.founder_id) {
+      creds.id = wRows[0].founder_id as string;
     }
   }
   if (!creds.id) {
     throw new Error("cannot resolve founder user id for tier flip");
   }
 
-  await setTier("pro", creds.id);
+  // try/finally: a timeout or throw mid-pro-phase must never leave the QA
+  // account on pro — that would silently corrupt the next run's free-state
+  // shots (13-dashboard-home-free, 15-dashboard-warmth-free).
+  try {
+    await setTier("pro", creds.id);
 
-  // Ensure an empty waitlist exists for the empty-dashboard shot (pro = unlimited).
-  let emptyRow = findRow(EMPTY_SUBDOMAIN);
-  let emptyWaitlistId = emptyRow?.waitlistId ?? emptyRow?.id ?? "";
-  if (!emptyWaitlistId) {
-    // Re-read the list — we may have created qa-mobile above.
-    const freshList = await api.get("/api/waitlist");
-    const freshRows: {
-      waitlistId?: string;
-      id?: string;
-      slug?: string;
-      subdomain?: string;
-    }[] = freshList.ok() ? await freshList.json() : [];
-    emptyRow = freshRows.find(
-      (w) => w.slug === EMPTY_SUBDOMAIN || w.subdomain === EMPTY_SUBDOMAIN
-    );
-    emptyWaitlistId = emptyRow?.waitlistId ?? emptyRow?.id ?? "";
-  }
-  if (!emptyWaitlistId) {
-    const createRes = await api.post("/api/waitlist", {
-      data: {
-        subdomain: EMPTY_SUBDOMAIN,
-        headline: "Empty State Capture",
-        subheadline: "Zero-subscriber dashboard state.",
-        product_name: "QA Empty",
-        template: "minimal",
-      },
-    });
-    if (createRes.ok()) {
-      emptyWaitlistId = (await createRes.json()).id as string;
-    } else {
-      console.warn(
-        `qa-empty create failed (${createRes.status()}) — empty-dashboard shot will fall back to qa-mobile`
+    // Ensure an empty waitlist exists for the empty-dashboard shot (pro = unlimited).
+    let emptyRow = findRow(EMPTY_SUBDOMAIN);
+    let emptyWaitlistId = emptyRow?.waitlistId ?? emptyRow?.id ?? "";
+    if (!emptyWaitlistId) {
+      // Re-read the list — we may have created qa-mobile above.
+      const freshList = await api.get("/api/waitlist");
+      const freshRows: {
+        waitlistId?: string;
+        id?: string;
+        slug?: string;
+        subdomain?: string;
+      }[] = freshList.ok() ? await freshList.json() : [];
+      emptyRow = freshRows.find(
+        (w) => w.slug === EMPTY_SUBDOMAIN || w.subdomain === EMPTY_SUBDOMAIN
       );
+      emptyWaitlistId = emptyRow?.waitlistId ?? emptyRow?.id ?? "";
     }
-  }
-  ids.emptyWaitlistId = emptyWaitlistId || waitlistId;
-  console.log(`qa-empty waitlist: ${ids.emptyWaitlistId}`);
+    if (!emptyWaitlistId) {
+      const createRes = await api.post("/api/waitlist", {
+        data: {
+          subdomain: EMPTY_SUBDOMAIN,
+          headline: "Empty State Capture",
+          subheadline: "Zero-subscriber dashboard state.",
+          product_name: "QA Empty",
+          template: "minimal",
+        },
+      });
+      if (!createRes.ok()) {
+        // Never fall back to qa-mobile — a populated dashboard labeled
+        // "empty" is worse evidence than a failed run.
+        throw new Error(
+          `qa-empty waitlist create failed: ${createRes.status()} ${await createRes.text()}`
+        );
+      }
+      emptyWaitlistId = (await createRes.json()).id as string;
+    }
+    ids.emptyWaitlistId = emptyWaitlistId;
+    console.log(`qa-empty waitlist: ${ids.emptyWaitlistId}`);
 
-  for (const spec of SHOTS.filter((s) => s.phase === "pro")) {
-    await setDraft(page, "pro");
-    await shoot(spec, ids);
+    for (const spec of run.filter((s) => s.phase === "pro")) {
+      await setDraft(page, "pro");
+      await shoot(spec, ids);
+    }
+  } finally {
+    // ---------- Restore free tier (re-run determinism) ----------
+    await setTier("free", creds.id);
+    console.log("Tier restored to free");
   }
-
-  // ---------- Restore free tier (re-run determinism) ----------
-  await setTier("free", creds.id);
-  console.log("Tier restored to free");
 
   // ---------- Summary ----------
-  console.log(`\nCaptured ${captured.length}/${SHOTS.length} shots`);
+  console.log(`\nCaptured ${captured.length}/${run.length} shots`);
   if (failures.length > 0) {
     console.error(`Failures (${failures.length}):\n${failures.join("\n")}`);
     throw new Error(`${failures.length} captures failed`);
