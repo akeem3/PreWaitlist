@@ -1,6 +1,6 @@
 # Story 21.5 — Manual Test-Case Document
 
-**Status:** ready (founder approval gate on validation-failure list)
+**Status:** done (AC5 gate closed 2026-10-12 — founder ruled fix-all-8, recorded in doc)
 **Epic:** 21 — Full App Scan & Test Case Suite
 **Depends on:** 21.1–21.4, 19.1–19.2, 20.1–20.3
 **Design Refs:** - (no new UI; spec = 21.1–21.4 outputs, not SVG)
