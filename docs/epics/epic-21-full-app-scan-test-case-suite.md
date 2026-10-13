@@ -24,8 +24,8 @@ Build the launch-blocking verification suite: scan the real application end-to-e
 | 21.1 | Full App Inventory & Behavior Scan                        | —                               | done   |
 | 21.2 | Page Capture (Core Screenshot Set)                        | 21.1                            | done   |
 | 21.3 | Document Cross-Reference Scan (Behavior-to-Source Matrix) | —                               | done   |
-| 21.4 | Input Validation Audit                                    | 21.1                            | ready  |
-| 21.5 | Manual Test-Case Document                                 | 21.1–21.4, 19.1–19.2, 20.1–20.3 | ready  |
+| 21.4 | Input Validation Audit                                    | 21.1                            | done   |
+| 21.5 | Manual Test-Case Document                                 | 21.1–21.4, 19.1–19.2, 20.1–20.3 | done   |
 | 21.6 | Fix Pass on Validated Failures                            | 21.4, 21.5                      | ready  |
 | 21.7 | Full QA Execution                                         | 21.5, 21.6, 19.*                | ready  |
 | 21.8 | Launch Verification                                       | 19.\*, 20.\*, 21.7              | ready  |
@@ -126,9 +126,10 @@ Every story moves `ready` -> `in-progress` -> `done` (or `blocked`), and is only
 
 ### Story 21.4 — Input Validation Audit
 
-**Status:** ready
+**Status:** done
 **Design Refs:** - (no new UI; spec = validation code in forms/API routes + 21.3 sources, not SVG)
 **Story:** As the founder, I want every form and API input probed for validation failures so that the "already failing" hunches are confirmed with evidence before test cases are written.
+**Probed 2026-10-12 — 0 broken, 8 weak (W1–W8), 0 strict. Results in the story file; W1–W8 feed the 21.5 founder-approval gate.**
 
 **Acceptance Criteria (EARS):**
 
@@ -153,7 +154,7 @@ Every story moves `ready` -> `in-progress` -> `done` (or `blocked`), and is only
 
 ### Story 21.5 — Manual Test-Case Document
 
-**Status:** ready (founder approval gate on validation-failure list)
+**Status:** done
 **Design Refs:** - (no new UI; spec = 21.1–21.4 outputs, not SVG)
 **Story:** As the founder, I want a single executable test document covering every flow of the real app so that I can verify the product by hand before launch.
 
