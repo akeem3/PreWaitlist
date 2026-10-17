@@ -41,10 +41,18 @@ function buildClient({
 /**
  * happy-dom (test env) strips the forbidden `cookie` request header, so a real
  * NextRequest can't carry it — the route only touches `request.url` and
- * `request.cookies.get()`, so a Request with a cookies shim is sufficient.
+ * `request.cookies.get()`/`getAll()`, so a Request with a cookies shim is
+ * sufficient. getAll returns no PKCE verifier cookies (none set in these tests).
  */
 function makeRequest(acquisition?: string, dest?: string): NextRequest {
   const base = new Request("http://localhost/auth/callback?code=test-code");
+  const all: Array<{ name: string; value: string }> = [];
+  if (acquisition !== undefined) {
+    all.push({ name: "mw_acquisition", value: acquisition });
+  }
+  if (dest) {
+    all.push({ name: "auth_redirect_to", value: dest });
+  }
   return Object.assign(base, {
     cookies: {
       get: (name: string) => {
@@ -56,6 +64,7 @@ function makeRequest(acquisition?: string, dest?: string): NextRequest {
         }
         return undefined;
       },
+      getAll: () => all,
     },
   }) as unknown as NextRequest;
 }

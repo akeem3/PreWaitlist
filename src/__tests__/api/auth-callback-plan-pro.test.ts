@@ -39,7 +39,8 @@ function buildClient({ waitlists, waitlistError = null }: ClientOptions) {
 /**
  * happy-dom (test env) strips the forbidden `cookie` request header, so a real
  * NextRequest can't carry it — the route only touches `request.url` and
- * `request.cookies.get()`, so a Request with a cookies shim is sufficient.
+ * `request.cookies.get()`/`getAll()`, so a Request with a cookies shim is
+ * sufficient. getAll returns no PKCE verifier cookies (none set in these tests).
  */
 function makeRequest(dest?: string): NextRequest {
   const base = new Request("http://localhost/auth/callback?code=test-code");
@@ -47,6 +48,7 @@ function makeRequest(dest?: string): NextRequest {
     cookies: {
       get: (name: string) =>
         name === "auth_redirect_to" && dest ? { name, value: dest } : undefined,
+      getAll: () => (dest ? [{ name: "auth_redirect_to", value: dest }] : []),
     },
   }) as unknown as NextRequest;
 }

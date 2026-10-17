@@ -9,6 +9,13 @@ export async function GET(request: NextRequest) {
   const cookieRedirect = request.cookies.get("auth_redirect_to")?.value;
   const next = cookieRedirect || searchParams.get("next") || "/dashboard";
 
+  // PKCE diagnostic: cookie names only (never values) — distinguishes
+  // "verifier cookie absent" from "verifier present but rejected".
+  const verifierCookieNames = request.cookies
+    .getAll()
+    .map((c) => c.name)
+    .filter((name) => name.includes("code-verifier"));
+
   if (code) {
     let supabaseResponse = NextResponse.next({ request });
 
@@ -34,6 +41,16 @@ export async function GET(request: NextRequest) {
     );
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) {
+      console.error("[auth-callback] exchange failed", {
+        name: error.name,
+        status: error.status,
+        message: error.message,
+        hasVerifierCookie: verifierCookieNames.length > 0,
+        verifierCookieNames,
+        flowIdParam: searchParams.get("sb_flow_id"),
+      });
+    }
     if (!error) {
       const {
         data: { user },
@@ -99,6 +116,14 @@ export async function GET(request: NextRequest) {
       return response;
     }
   }
+
+  console.error("[auth-callback] no code or exchange failed", {
+    hasCode: Boolean(code),
+    hasVerifierCookie: verifierCookieNames.length > 0,
+    verifierCookieNames,
+    flowIdParam: searchParams.get("sb_flow_id"),
+    url: request.url,
+  });
 
   return NextResponse.redirect(`${origin}/auth/auth-code-error`);
 }
