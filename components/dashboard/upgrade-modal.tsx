@@ -33,6 +33,9 @@ const HEADLINES: Record<string, string> = {
   // so the ?plan=pro leg renders exactly what it did before its trigger key
   // was split off from the settings-page "billing" opener).
   "pro-cta-billing": "Manage your subscription",
+  // Cap-warning email deep link (?upgrade=cap). Reuses the existing
+  // subscriber_cap string — no new copy.
+  "cap-email": "Remove the 500 subscriber limit",
 };
 
 const COOLDOWN_DAYS = 1;
@@ -46,12 +49,17 @@ const COOLDOWN_DAYS = 1;
 // - The billing page's "Upgrade to Pro" button (trigger "billing"): TC-AUTH-09
 //   retest showed cooldown gating turned the button into a silent dead button
 //   for 24h after any dismissal — active purchase intent must always open.
+// - The cap "subscriber_cap" key is shared by three explicit buttons (header
+//   "Add new waitlist", the switcher's "+ Add new waitlist", and the sidebar
+//   "Upgrade to Pro"); the passive cap-warning email deep link was split off
+//   to its own key ("cap-email") so it still honors the cooldown.
 // The cooldown still governs passive re-prompts, which use their own trigger
 // keys.
 const COOLDOWN_EXEMPT_TRIGGERS = new Set([
   "pro-cta-onboarding",
   "pro-cta-billing",
   "billing",
+  "subscriber_cap",
 ]);
 
 function getCooldownKey(triggerSource: string): string {

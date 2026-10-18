@@ -2301,3 +2301,42 @@ Founder challenge (single project proven by URL) killed the multi-DB theory and 
 **Fix (one line):** `overflow-x-hidden` → `overflow-x-clip`. `overflow: clip` clips horizontal overflow identically but creates NO scroll container, so sticky keeps binding to the viewport. Verified in compiled CSS (`overflow-x-clip` + `.z-(--z-sticky){z-index:var(--z-sticky)}` with `--z-sticky:20` emitted on `:root`), lint 0/5, clean build.
 
 **Gotcha:** never put `overflow-x-hidden` (or any `overflow: hidden/auto/scroll`) on an ancestor between a sticky element and the viewport. Use `overflow-x-clip` when you need horizontal clipping without breaking sticky/fixed descendants. Also fixed 3 here-string control-char corruptions (TAB/LF eating the `t`/`n` chars) in the Gate 1 paragraph above — same double-quoted-here-string bug class already documented.
+
+## Manual QA — Batch 1 (Auth) CLOSED + upgrade-cooldown intent split (2026-10-16)
+
+**Status:** Batch 1 of `docs/qa/manual-test-cases.md` (§1, TC-AUTH-01..13) **closed: 12 pass / 0 fail / 1 deferred** (TC-AUTH-04 signup rate cooldown deferred by founder — "document as later"). Fix commits: `e7cc421` (duplicate detection + gate-before-open) and `fc88810` (billing button cooldown exemption), both on main/dev, prod-verified.
+
+**Two fixes shipped:**
+
+1. **TC-AUTH-03 duplicate signup** — GoTrue with `mailer_autoconfirm: false` never returns "User already registered"; it returns 200 + obfuscated user + `identities: []` (anti-enumeration, supabase/auth#1517). Detection = `data.user?.identities?.length === 0` in `signup/page.tsx` → existing error copy, no redirect, no `account_created` capture. Locked by `signup-duplicate.test.tsx`.
+2. **TC-AUTH-09 billing dead button (2 rounds)** — round 1: cooldown ran post-paint → flicker; fix = render-level gate (founder: "gate before open"). Round 2: the gate made it a **silent 24h dead button** because the billing page's explicit "Upgrade to Pro" click (trigger `billing`) was cooldown-gated. Final fix: `billing` joins `COOLDOWN_EXEMPT_TRIGGERS`.
+
+**Durable rule — cooldown vs explicit intent:** the 1-day dismiss cooldown (`COOLDOWN_DAYS=1`) applies ONLY to passive re-prompts. **Explicit-intent openers are exempt and must always open:** `pro-cta-onboarding`, `pro-cta-billing` (deep links) + `billing` (settings-page Upgrade button). Rationale: active purchase intent can never be suppressed — a dead upgrade button is lost revenue, worse than a re-prompt. If a future passive auto-opener is added, gate it; don't re-gate button triggers. Exempt set lives in `components/dashboard/upgrade-modal.tsx` (`COOLDOWN_EXEMPT_TRIGGERS`) with the exempt-it.each test lock.
+
+**Gotcha:** a render-level suppression gate converts any cooldown bug from "visible flicker" (annoying but reportable) into "silent dead button" (looks broken). When gating UI behind persisted state (localStorage keys), always ask what a _legit_ user re-click looks like after the state exists.
+
+**QA flow notes:** founder retests on production after deploy; TC-AUTH-09's dismissal key from earlier testing stayed in localStorage — the exemption made retest pass without clearing storage. Batch 2 = §2 Onboarding (TC-ONB-01..14), 94 cases remain total.
+
+## Upgrade-cooldown intent split + step-5 button width (2026-10-18)
+
+**Two UI fixes, both uncommitted on `dev`.**
+
+### A — "Add new waitlist" buttons silently dead for 24h
+
+**Symptom:** free account — every "Add new waitlist" click did nothing (no modal, no error).
+
+**Root cause:** four entry points shared trigger key `subscriber_cap` (header button `client.tsx:301`, switcher `sidebar.tsx:284`, sidebar "Upgrade to Pro" `sidebar.tsx:440`, passive `?upgrade=cap` email deep link `shell.tsx:366`). The key was NOT in `COOLDOWN_EXEMPT_TRIGGERS`, so once `localStorage["upgrade-dismissed-subscriber_cap"]` existed (any prior dismissal), the modal's gate-before-open (render `return null` + `onOpenChange(false)`) made every click a zero-pixel no-op for 24h. Same bug class as the billing button fixed by `fc88810` — the durable rule (cooldown = passive re-prompts only; explicit intent always opens) had never been applied to this key.
+
+**Fix:** `subscriber_cap` added to `COOLDOWN_EXEMPT_TRIGGERS`; the passive deep link split to its own key **`cap-email`** (`shell.tsx:366`) with `HEADLINES["cap-email"]` reusing the existing string "Remove the 500 subscriber limit" (zero new copy — copy gate). Cooldown for `cap-email` preserved (standing decision intact). Tests: exempt `it.each` += `subscriber_cap`; new lock test that `cap-email` still never paints within cooldown. TC-BILL-03 expected line annotated.
+
+**Research (2 searches):** frequency capping governs _re-showing interruptions you initiated_; user-initiated / high-intent contexts are exempt (Seatext dismissal-rules table; Modalcast passive-vs-requested budget; Jakob Nielsen "ask at the moment of need"). **Rule of thumb for future triggers:** every button / deep-link click = explicit intent -> own key + exempt; every auto-opener = passive -> own key + gated.
+
+### B — Step-5 free upgrade button "crushed" (content-width)
+
+**Symptom:** onboarding step 5 (free), "Upgrade to customise emails" hugged its text instead of spanning the card.
+
+**Root cause:** `src/app/onboarding/5/page.tsx:184-187` — a `<button>` inside a plain block div (`rounded-xl border ... p-5`). A button's `width: auto` computes to fit-content even at `display:flex` (the `flex` class only makes it a flex container for its own children; nothing stretches the button itself).
+
+**Fix:** one class — add `w-full` (text was already centered via `justify-center`).
+
+**Gotcha:** never rely on a `<button>` inheriting width from a block parent — buttons are shrink-to-fit form controls. Always add `w-full` (or a width utility) when the design wants an edge-to-edge button.

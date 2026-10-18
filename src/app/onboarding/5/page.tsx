@@ -184,7 +184,7 @@ export default function OnboardingStep5() {
             <button
               type="button"
               onClick={() => upgrade?.triggerUpgrade("email_customisation")}
-              className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-dashed border-accent bg-accent/5 py-3 text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-accent-foreground"
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-accent bg-accent/5 py-3 text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-accent-foreground"
             >
               <span>Upgrade to customise emails</span>
               <svg

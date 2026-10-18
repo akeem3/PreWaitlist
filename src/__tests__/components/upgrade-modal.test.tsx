@@ -181,32 +181,57 @@ describe("UpgradeModal", () => {
     ).not.toBeInTheDocument();
   });
 
-  // Explicit-intent regression: ?plan=pro deep links and the billing page's
-  // "Upgrade to Pro" button must survive a prior dismissal — the deep links
-  // otherwise shut ~3ms after paint (flicker, stripped param loses the pay
-  // intent), and the billing button was a silent dead button for 24h
-  // (TC-AUTH-09 retest).
-  it.each(["pro-cta-onboarding", "pro-cta-billing", "billing"])(
-    "does not auto-close exempted trigger %s within cooldown",
-    (trigger) => {
-      const onOpenChange = vi.fn();
-      localStorageMock.setItem(
-        `upgrade-dismissed-${trigger}`,
-        JSON.stringify({ dismissedAt: Date.now() })
-      );
-      render(
-        <UpgradeModal
-          {...defaultProps}
-          triggerSource={trigger}
-          onOpenChange={onOpenChange}
-        />
-      );
-      expect(onOpenChange).not.toHaveBeenCalled();
-      expect(
-        screen.getByRole("heading", { name: "Upgrade to Pro" })
-      ).toBeInTheDocument();
-    }
-  );
+  // Explicit-intent regression: ?plan=pro deep links, the billing page's
+  // "Upgrade to Pro" button, and the three "Add new waitlist"/"Upgrade to
+  // Pro" buttons that share the subscriber_cap key must survive a prior
+  // dismissal — the deep links otherwise shut ~3ms after paint (flicker,
+  // stripped param loses the pay intent), and the buttons were silent dead
+  // buttons for 24h (TC-AUTH-09 retest).
+  it.each([
+    "pro-cta-onboarding",
+    "pro-cta-billing",
+    "billing",
+    "subscriber_cap",
+  ])("does not auto-close exempted trigger %s within cooldown", (trigger) => {
+    const onOpenChange = vi.fn();
+    localStorageMock.setItem(
+      `upgrade-dismissed-${trigger}`,
+      JSON.stringify({ dismissedAt: Date.now() })
+    );
+    render(
+      <UpgradeModal
+        {...defaultProps}
+        triggerSource={trigger}
+        onOpenChange={onOpenChange}
+      />
+    );
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("heading", { name: "Upgrade to Pro" })
+    ).toBeInTheDocument();
+  });
+
+  // The cap-warning email deep link (?upgrade=cap) was split onto its own
+  // passive key so it still honors the 1-day cooldown — exempting
+  // subscriber_cap wholesale must not silently override that decision.
+  it("still honors cooldown for the passive cap-email deep link", () => {
+    const onOpenChange = vi.fn();
+    localStorageMock.setItem(
+      "upgrade-dismissed-cap-email",
+      JSON.stringify({ dismissedAt: Date.now() })
+    );
+    render(
+      <UpgradeModal
+        {...defaultProps}
+        triggerSource="cap-email"
+        onOpenChange={onOpenChange}
+      />
+    );
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(
+      screen.queryByRole("heading", { name: "Upgrade to Pro" })
+    ).not.toBeInTheDocument();
+  });
 
   // Story 20.1 AC2 + D7 — the open effect captures the funnel event, raises
   // the survey-suppression flag for as long as the modal owns the UI, and

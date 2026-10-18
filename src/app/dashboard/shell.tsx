@@ -355,15 +355,16 @@ export default function DashboardShell({
     } catch {}
   }, [startTierPolling]);
 
-  // Cap-warning email deep link: ?upgrade=cap opens the Pro modal with the
-  // subscriber-cap trigger (mount-only). Honors the 1-day dismiss cooldown
-  // via the modal itself.
+  // Cap-warning email deep link: ?upgrade=cap opens the Pro modal with its own
+  // passive trigger key "cap-email" (mount-only). The three explicit buttons
+  // share the exempt "subscriber_cap" key; this passive arrival key is NOT
+  // exempt, so it still honors the 1-day dismiss cooldown via the modal itself.
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("upgrade") === "cap") {
-        setUpgradeModal({ open: true, triggerSource: "subscriber_cap" });
+        setUpgradeModal({ open: true, triggerSource: "cap-email" });
         params.delete("upgrade");
         const qs = params.toString();
         window.history.replaceState(

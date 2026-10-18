@@ -28,7 +28,7 @@
 
 ## 1. Auth & account <a id="auth"></a>
 
-> **Batch 1 executed 2026-10-16 - local (localhost:3000) - 11 pass / 1 fail / 1 deferred.** Retests: TC-AUTH-03 PASS; TC-AUTH-09 round-2 fix awaiting retest; TC-AUTH-04 deferred by founder.
+> **Batch 1 executed 2026-10-16 - local + production retests - 12 pass / 0 fail / 1 deferred.** BATCH 1 CLOSED: TC-AUTH-03 PASS, TC-AUTH-09 PASS (both after fixes), TC-AUTH-04 deferred by founder.
 
 ### TC-AUTH-01: Email signup happy path
 
@@ -100,9 +100,9 @@
 **Preconditions:** Signed in, ≥1 waitlist.
 **Steps:** 1. Open `/dashboard/settings/billing?plan=pro`.
 **Expected:** Upgrade modal auto-opens (trigger `pro-cta-billing`); param stripped after open (source: Pro CTA fix).
-**Result:** [ ] Pass [x] Fail
+**Result:** [x] Pass [ ] Fail
 
-> **Run note (2026-10-16 - local): round 1 flicker FIXED (gate-before-open); round 2 RE-TEST FAIL ("the button doesn't function at all") -> FIXED, awaiting retest.** Round-1 fix (render-level gate: suppressed non-exempt triggers return null before paint) turned the old flicker into a silent dead button: the billing page's "Upgrade to Pro" button (`billing/client.tsx` trigger `billing`) is an explicit purchase-intent click, but the 1-day dismiss cooldown suppressed every re-click for 24h after any dismissal - lost revenue, not anti-nag. **Round-2 fix:** added `billing` to `COOLDOWN_EXEMPT_TRIGGERS` in `upgrade-modal.tsx` (explicit-intent class, same rationale as the `pro-cta-*` deep links - active "Go Pro" choice always opens; cooldown still governs passive re-prompts). Locked by the exempted-trigger test now covering `billing` (`upgrade-modal.test.tsx`). **Retest:** dismiss the billing modal, re-click "Upgrade to Pro" - the modal must open every time. Note: the deep-link auto-open leg (`?plan=pro` -> trigger `pro-cta-billing`) was already exempt and unaffected.
+> **Run note (2026-10-16 - local): FIXED x2, RE-TEST PASS (round 2, production).** Round 1: cooldown enforced in a post-paint effect → flicker; fixed with render-level gate (founder decision: gate before open). Round 2: the gate turned the cooldown into a **silent dead button** — the billing page's explicit "Upgrade to Pro" button (`billing/client.tsx`, trigger `billing`) was cooldown-gated, so every re-click within 24h of any dismissal did nothing (active purchase intent suppressed). **Fix:** `billing` added to `COOLDOWN_EXEMPT_TRIGGERS` in `upgrade-modal.tsx` — explicit-intent openers (billing button + `pro-cta-*` deep links) always open; cooldown remains for passive re-prompts. Locked by the exempted-trigger test covering `billing` (`upgrade-modal.test.tsx`). Committed `fc88810` → main. **Retest: PASS** — button opens every time after dismissal.
 
 ### TC-AUTH-10: Signed-in user hits auth pages
 
@@ -639,8 +639,8 @@
 ### TC-BILL-03: Upgrade modal triggers + cooldown
 
 **Preconditions:** Free founder.
-**Steps:** 1. Fire 4+ triggers (sidebar lock, cap, `?upgrade=cap`, settings button). 2. Dismiss, re-fire same trigger same day. 3. Use `?plan=pro` deep link after dismiss.
-**Expected:** All open with `Unlock all Pro features` fallback copy family; 1-day cooldown per trigger; deep links exempt (source: stories 13.1 + 2026-09-22/29 decisions).
+**Steps:** 1. Fire 4+ triggers (sidebar lock, cap buttons, `?upgrade=cap`, settings button). 2. Dismiss, re-fire same trigger same day. 3. Use `?plan=pro` deep link after dismiss.
+**Expected:** All open with `Unlock all Pro features` fallback copy family; 1-day cooldown for passive keys only — explicit-intent triggers (`subscriber_cap` buttons, `billing`, `pro-cta-onboarding`, `pro-cta-billing`) always open; `?upgrade=cap` uses its own passive key `cap-email` and still cools down (source: stories 13.1 + 2026-09-22/29/10-16 decisions).
 **Result:** [ ] Pass [ ] Fail
 
 ### TC-BILL-04: Free creation limit + cancel-guard [PROD]
@@ -847,9 +847,9 @@
 
 | Total | Passed | Failed | Deferred | Launch blockers |
 | ----- | ------ | ------ | -------- | --------------- |
-| 107   | 11     | 1      | 1        |                 |
+| 107   | 12     | 0      | 1        |                 |
 
-> **Progress (2026-10-16):** batch 1 (Sec 1 Auth) executed local - 11 pass (TC-AUTH-03 retest PASS after duplicate-detection fix) / 1 fail (TC-AUTH-09 round-2 dead-button fix, awaiting retest) / 1 deferred by founder (TC-AUTH-04 signup rate cooldown - "document as later"). 94 cases not yet executed.
+> **Progress (2026-10-16):** batch 1 (Sec 1 Auth) **CLOSED - 12 pass / 0 fail / 1 deferred** (TC-AUTH-04 signup rate cooldown, deferred by founder: "document as later"). Fixes shipped: duplicate-detection (`signup-duplicate.test.tsx`) + billing button cooldown exemption (`fc88810`). 94 cases not yet executed → next: batch 2 (Sec 2 Onboarding, TC-ONB-01..14).
 
 ## AC5 gate — founder fix/defer (CLOSED 2026-10-12)
 
