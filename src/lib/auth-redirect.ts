@@ -19,7 +19,8 @@ export interface AuthIntent {
   dest: string | null;
 }
 
-function validNext(raw: string | null): string | null {
+/** Same-origin relative path guard: rejects empty, absolute and protocol-relative input. */
+export function validNext(raw: string | null): string | null {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return null;
   return raw;
 }
