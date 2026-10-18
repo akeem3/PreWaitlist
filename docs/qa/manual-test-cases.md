@@ -28,6 +28,8 @@
 
 ## 1. Auth & account <a id="auth"></a>
 
+> **Batch 1 executed 2026-10-16 - local (localhost:3000) - 10 pass / 2 fail / 1 retest.**
+
 ### TC-AUTH-01: Email signup happy path
 
 **Preconditions:** Signed out, fresh email.
@@ -36,7 +38,7 @@
 1. Open `/signup`, enter valid email + password ≥8 chars, submit.
 2. Follow to `/verify-email`.
    **Expected:** Account created; verification notice shown with resend option (source: story-2.2, story-2.4; PRD REQ-6.5.1/6.5.2). No name field on form (source: PRD §5 SD1).
-   **Result:** [ ] Pass [ ] Fail
+   **Result:** [x] Pass [ ] Fail
 
 ### TC-AUTH-02: Signup rejects bad input client-side
 
@@ -45,84 +47,90 @@
 
 1. Submit empty email → note message. 2. Submit `not-an-email` → note message. 3. Submit valid email + 7-char password → note message.
    **Expected:** `Email address is required` / `Please enter a valid email address` / `Password must be at least 8 characters`; no Supabase call fires (source: story-2.3 + revenue-phase-6 `validateEmail` return fix).
-   **Result:** [ ] Pass [ ] Fail
+   **Result:** [x] Pass [ ] Fail
 
 ### TC-AUTH-03: Signup duplicate email
 
 **Preconditions:** Existing account email.
 **Steps:** 1. Submit signup with the existing email.
 **Expected:** `An account with this email already exists. Please sign in.` (source: `(auth)/signup/page.tsx` mapping).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [ ] Pass [x] Fail
+
+> **Run note (2026-10-16 - local): CONFIRMED BUG -> FIXED, awaiting founder retest.** With email confirmations enabled (our config), GoTrue never returns "User already registered" - it returns a 200 success payload with an obfuscated user whose `identities[]` is empty (anti-enumeration, supabase/auth#1517; documented detection pattern in the Supabase auth-signup reference). The old message-mapping at `signup/page.tsx` was dead code on this config. **Fix:** after signUp, `data.user?.identities?.length === 0` -> "An account with this email already exists. Please sign in." (existing copy reused verbatim); skips the verify-email redirect and the `account_created` capture. Locked by `src/__tests__/components/signup-duplicate.test.tsx` (4 tests). **Retest:** sign up again with the confirmed duplicate email -> expect the error, no redirect.
 
 ### TC-AUTH-04: Signup rapid-submit cooldown
 
 **Preconditions:** Signed out, `/signup`.
 **Steps:** 1. Submit 5+ times within a minute.
 **Expected:** `Too many attempts. Please try again in Ns` client cooldown (source: signup rate gate; server-side is Supabase-owned).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [ ] Pass [ ] Fail - RETEST PENDING
+
+> **Run note (2026-10-16 - local):** RETEST - only 2 submits made; the client cooldown needs >= `MAX_SUBMIT_ATTEMPTS` (5). Founder questions answered: (a) auth user row created before email verification = **intended** - Supabase creates the account at signUp; confirmation gates sign-in, not user creation. (b) 2nd submit within 30s -> "Something went wrong" = GoTrue security/rate-limit message falling through to the catch-all (`signup/page.tsx:131`; the specific branch at :130 only matches "rate limit"/"too many"). **Retest:** submit 5x -> 5th must show `Too many attempts. Please try again in Ns`.
 
 ### TC-AUTH-05: Signin happy path + wrong password
 
 **Preconditions:** Existing verified account.
 **Steps:** 1. Sign in with correct credentials → dashboard. 2. Sign out, sign in with wrong password.
 **Expected:** Success lands per redirect rules; failure shows `Invalid email or password. Please try again.` (source: story-2.3).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-AUTH-06: Forgot-password flow, no enumeration
 
 **Preconditions:** `/forgot-password`.
 **Steps:** 1. Submit unknown email. 2. Submit known email, use reset link, set ≥8-char password at reset page.
 **Expected:** Both show check-email confirmation (unknown emails not revealed); reset enforces 8-char floor (source: story-2.4; reset-password gate).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-AUTH-07: Legal links on auth pages
 
 **Preconditions:** `/signup`.
 **Steps:** 1. Click Terms + Privacy links.
 **Expected:** Land on `/legal/terms` and `/legal/privacy` (not `/terms`, `/privacy`) (source: revenue-phase-6 bonus fix).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-AUTH-08: `?plan=pro` fresh founder → onboarding modal
 
 **Preconditions:** Fresh account, 0 waitlists, link `/signup?next=/dashboard/settings/billing&plan=pro` completed.
 **Steps:** 1. Complete email signup via the Pro CTA.
 **Expected:** Lands `/onboarding/1?plan=pro` with upgrade modal open (trigger `pro-cta-onboarding`), surviving a prior dismissal (source: Pro CTA fix 2026-09-29 + flicker-fix exemption).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-AUTH-09: `?plan=pro` existing founder → billing modal
 
 **Preconditions:** Signed in, ≥1 waitlist.
 **Steps:** 1. Open `/dashboard/settings/billing?plan=pro`.
 **Expected:** Upgrade modal auto-opens (trigger `pro-cta-billing`); param stripped after open (source: Pro CTA fix).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [ ] Pass [x] Fail
+
+> **Run note (2026-10-16 - local): CONFIRMED UX DEFECT -> FIXED, awaiting founder retest.** Root cause: the 1-day cooldown (`COOLDOWN_DAYS=1`) was enforced in an effect that runs **after** React paints - a suppressed re-click painted the modal, then instantly closed it. **Founder decision: gate BEFORE open.** **Fix:** render-level gate in `upgrade-modal.tsx` - suppressed non-exempt triggers return null before painting; the effect still syncs parent state via `onOpenChange(false)` and still skips the `upgrade_triggered` capture. Locked by the strengthened cooldown test (no-paint assertion) in `upgrade-modal.test.tsx`. **Retest:** dismiss the billing modal, re-click "Upgrade to Pro" - expect nothing to appear (no flicker); 1-day cooldown still suppresses the re-prompt.
 
 ### TC-AUTH-10: Signed-in user hits auth pages
 
 **Preconditions:** Signed in.
 **Steps:** 1. Visit `/signup` and `/signin`.
 **Expected:** Redirected away (post-auth path; `plan=pro` branch respected) (source: `resolvePostAuthPath` 2026-09-29).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-AUTH-11: Google OAuth signin
 
 **Preconditions:** Signed out.
 **Steps:** 1. Click Google on `/signin`, complete consent.
 **Expected:** Account/session created via callback; acquisition cookie persisted (source: story-2.3; 20.4 upsert fix).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-AUTH-12: Marketing homepage variants + footer
 
 **Preconditions:** None.
 **Steps:** 1. Open `/`. 2. Open `/?src=powered-by`. 3. Inspect footer.
 **Expected:** Cold hero → problem → difference → comparison → features → confidence → pricing (Free+Pro only); `?src=powered-by` swaps hero; footer never shows Powered-by (source: story-3.1/3.5; manifest `01-marketing-home-desktop.png`).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-AUTH-13: Signout clears session
 
 **Preconditions:** Signed in.
 **Steps:** 1. Sign out via settings hub button. 2. Visit `/dashboard`.
 **Expected:** Session cleared; dashboard → 307 `/signin` (source: inventory §1.2 #13 + §6.3).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ---
 
@@ -839,7 +847,9 @@
 
 | Total | Passed | Failed | Deferred | Launch blockers |
 | ----- | ------ | ------ | -------- | --------------- |
-| 107   |        |        |          |                 |
+| 107   | 10     | 2      | 0        |                 |
+
+> **Progress (2026-10-16):** batch 1 (Sec 1 Auth) executed local - 10 pass / 2 fail both FIXED and awaiting founder retest (TC-AUTH-03 duplicate detection, TC-AUTH-09 modal flicker) / 1 retest pending (TC-AUTH-04, needs 5+ submits). 94 cases not yet executed.
 
 ## AC5 gate — founder fix/defer (CLOSED 2026-10-12)
 

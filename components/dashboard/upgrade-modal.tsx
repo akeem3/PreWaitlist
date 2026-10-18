@@ -209,6 +209,18 @@ export function UpgradeModal({
 
   if (!open) return null;
 
+  // Gate BEFORE paint (TC-AUTH-09): the effect below can only close the
+  // modal after React has already painted it, which produced a visible
+  // open-then-shut flash on cooldown-suppressed re-clicks. Returning null
+  // here means a suppressed non-exempt trigger never paints; the effect
+  // still syncs the parent's open state via onOpenChange(false).
+  if (
+    !COOLDOWN_EXEMPT_TRIGGERS.has(triggerSource) &&
+    isSuppressed(triggerSource)
+  ) {
+    return null;
+  }
+
   const headline = HEADLINES[triggerSource] ?? "Unlock all Pro features";
 
   return (

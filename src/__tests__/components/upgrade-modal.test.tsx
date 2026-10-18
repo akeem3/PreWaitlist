@@ -160,7 +160,7 @@ describe("UpgradeModal", () => {
     ).toBeInTheDocument();
   });
 
-  it("auto-closes when the trigger is within cooldown", () => {
+  it("auto-closes and never paints when the trigger is within cooldown", () => {
     const onOpenChange = vi.fn();
     localStorageMock.setItem(
       "upgrade-dismissed-sidebar",
@@ -174,6 +174,11 @@ describe("UpgradeModal", () => {
       />
     );
     expect(onOpenChange).toHaveBeenCalledWith(false);
+    // TC-AUTH-09 gate-before-open: a suppressed non-exempt trigger must not
+    // paint at all (the pre-fix behavior painted then instantly closed).
+    expect(
+      screen.queryByRole("heading", { name: "Upgrade to Pro" })
+    ).not.toBeInTheDocument();
   });
 
   // Flicker regression: explicit-intent ?plan=pro deep links must survive a

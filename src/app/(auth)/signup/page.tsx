@@ -109,7 +109,7 @@ function SignupPageContent() {
       writeAuthRedirectCookie(dest);
     }
 
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -131,6 +131,19 @@ function SignupPageContent() {
       } else {
         setError("Something went wrong. Please try again.");
       }
+      setLoading(false);
+      return;
+    }
+
+    // With email confirmations enabled (our config: mailer_autoconfirm=false),
+    // GoTrue never returns the "User already registered" error above — for an
+    // existing email (confirmed or not) it returns a 200 success payload with
+    // an obfuscated user whose identities[] is empty (anti-enumeration,
+    // supabase/auth#1517; documented detection pattern in Supabase auth-signup
+    // reference). TC-AUTH-03: without this check the dupe sailed through to
+    // /verify-email as if the account were new.
+    if (data.user?.identities?.length === 0) {
+      setError("An account with this email already exists. Please sign in.");
       setLoading(false);
       return;
     }
