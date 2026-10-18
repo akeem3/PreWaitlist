@@ -181,10 +181,12 @@ describe("UpgradeModal", () => {
     ).not.toBeInTheDocument();
   });
 
-  // Flicker regression: explicit-intent ?plan=pro deep links must survive a
-  // prior dismissal, or the arrival modal shuts ~3ms after paint and the
-  // stripped param loses the pay intent.
-  it.each(["pro-cta-onboarding", "pro-cta-billing"])(
+  // Explicit-intent regression: ?plan=pro deep links and the billing page's
+  // "Upgrade to Pro" button must survive a prior dismissal — the deep links
+  // otherwise shut ~3ms after paint (flicker, stripped param loses the pay
+  // intent), and the billing button was a silent dead button for 24h
+  // (TC-AUTH-09 retest).
+  it.each(["pro-cta-onboarding", "pro-cta-billing", "billing"])(
     "does not auto-close exempted trigger %s within cooldown",
     (trigger) => {
       const onOpenChange = vi.fn();

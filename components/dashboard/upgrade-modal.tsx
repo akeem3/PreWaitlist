@@ -37,16 +37,21 @@ const HEADLINES: Record<string, string> = {
 
 const COOLDOWN_DAYS = 1;
 
-// Explicit-intent arrival deep links (?plan=pro from the Go Pro CTA) are
-// exempt from the dismiss cooldown: the founder actively chose "Go Pro" in
-// this session, so a prior dismissal must not auto-close the arrival modal —
-// it flashed for ~3ms, then the already-stripped param lost the pay intent
-// (reported as "the upgrade modal just flickers"). The cooldown still governs
-// passive re-prompts (sidebar, gates, settings buttons), which use their own
-// trigger keys.
+// Explicit-intent openers are exempt from the dismiss cooldown: the founder
+// actively chose "Go Pro", so a prior dismissal must not suppress or auto-close
+// their click. Two classes:
+// - Arrival deep links (?plan=pro from the Go Pro CTA): a prior dismissal used
+//   to auto-close the arrival modal ~3ms after paint, losing the pay intent
+//   (reported as "the upgrade modal just flickers").
+// - The billing page's "Upgrade to Pro" button (trigger "billing"): TC-AUTH-09
+//   retest showed cooldown gating turned the button into a silent dead button
+//   for 24h after any dismissal — active purchase intent must always open.
+// The cooldown still governs passive re-prompts, which use their own trigger
+// keys.
 const COOLDOWN_EXEMPT_TRIGGERS = new Set([
   "pro-cta-onboarding",
   "pro-cta-billing",
+  "billing",
 ]);
 
 function getCooldownKey(triggerSource: string): string {

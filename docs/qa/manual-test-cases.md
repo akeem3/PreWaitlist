@@ -28,7 +28,7 @@
 
 ## 1. Auth & account <a id="auth"></a>
 
-> **Batch 1 executed 2026-10-16 - local (localhost:3000) - 10 pass / 2 fail / 1 retest.**
+> **Batch 1 executed 2026-10-16 - local (localhost:3000) - 11 pass / 1 fail / 1 deferred.** Retests: TC-AUTH-03 PASS; TC-AUTH-09 round-2 fix awaiting retest; TC-AUTH-04 deferred by founder.
 
 ### TC-AUTH-01: Email signup happy path
 
@@ -54,18 +54,18 @@
 **Preconditions:** Existing account email.
 **Steps:** 1. Submit signup with the existing email.
 **Expected:** `An account with this email already exists. Please sign in.` (source: `(auth)/signup/page.tsx` mapping).
-**Result:** [ ] Pass [x] Fail
+**Result:** [x] Pass [ ] Fail
 
-> **Run note (2026-10-16 - local): CONFIRMED BUG -> FIXED, awaiting founder retest.** With email confirmations enabled (our config), GoTrue never returns "User already registered" - it returns a 200 success payload with an obfuscated user whose `identities[]` is empty (anti-enumeration, supabase/auth#1517; documented detection pattern in the Supabase auth-signup reference). The old message-mapping at `signup/page.tsx` was dead code on this config. **Fix:** after signUp, `data.user?.identities?.length === 0` -> "An account with this email already exists. Please sign in." (existing copy reused verbatim); skips the verify-email redirect and the `account_created` capture. Locked by `src/__tests__/components/signup-duplicate.test.tsx` (4 tests). **Retest:** sign up again with the confirmed duplicate email -> expect the error, no redirect.
+> **Run note (2026-10-16 - local): RE-TEST PASS.** Confirmed bug fixed: GoTrue anti-enumeration returns 200 + empty `identities[]` on duplicate signup (supabase/auth#1517); `signup/page.tsx` now detects `data.user?.identities?.length === 0` and shows "An account with this email already exists. Please sign in." (existing copy verbatim), skipping the verify-email redirect and the `account_created` capture. Locked by `src/__tests__/components/signup-duplicate.test.tsx` (4 tests).
 
 ### TC-AUTH-04: Signup rapid-submit cooldown
 
 **Preconditions:** Signed out, `/signup`.
 **Steps:** 1. Submit 5+ times within a minute.
 **Expected:** `Too many attempts. Please try again in Ns` client cooldown (source: signup rate gate; server-side is Supabase-owned).
-**Result:** [ ] Pass [ ] Fail - RETEST PENDING
+**Result:** [ ] Pass [ ] Fail - DEFERRED
 
-> **Run note (2026-10-16 - local):** RETEST - only 2 submits made; the client cooldown needs >= `MAX_SUBMIT_ATTEMPTS` (5). Founder questions answered: (a) auth user row created before email verification = **intended** - Supabase creates the account at signUp; confirmation gates sign-in, not user creation. (b) 2nd submit within 30s -> "Something went wrong" = GoTrue security/rate-limit message falling through to the catch-all (`signup/page.tsx:131`; the specific branch at :130 only matches "rate limit"/"too many"). **Retest:** submit 5x -> 5th must show `Too many attempts. Please try again in Ns`.
+> **Run note (2026-10-16 - local): DEFERRED by founder** ("leave for now, document as later"). Not a product defect - the earlier retest only made 2 submits; the client cooldown needs >= `MAX_SUBMIT_ATTEMPTS` (5). If resumed later: submit 5x within a minute -> 5th must show `Too many attempts. Please try again in Ns`. Context from first run: (a) auth user row created before email verification = intended (Supabase creates the account at signUp); (b) 2nd submit within 30s -> "Something went wrong" = GoTrue security message falling through to the catch-all (`signup/page.tsx`).
 
 ### TC-AUTH-05: Signin happy path + wrong password
 
@@ -102,7 +102,7 @@
 **Expected:** Upgrade modal auto-opens (trigger `pro-cta-billing`); param stripped after open (source: Pro CTA fix).
 **Result:** [ ] Pass [x] Fail
 
-> **Run note (2026-10-16 - local): CONFIRMED UX DEFECT -> FIXED, awaiting founder retest.** Root cause: the 1-day cooldown (`COOLDOWN_DAYS=1`) was enforced in an effect that runs **after** React paints - a suppressed re-click painted the modal, then instantly closed it. **Founder decision: gate BEFORE open.** **Fix:** render-level gate in `upgrade-modal.tsx` - suppressed non-exempt triggers return null before painting; the effect still syncs parent state via `onOpenChange(false)` and still skips the `upgrade_triggered` capture. Locked by the strengthened cooldown test (no-paint assertion) in `upgrade-modal.test.tsx`. **Retest:** dismiss the billing modal, re-click "Upgrade to Pro" - expect nothing to appear (no flicker); 1-day cooldown still suppresses the re-prompt.
+> **Run note (2026-10-16 - local): round 1 flicker FIXED (gate-before-open); round 2 RE-TEST FAIL ("the button doesn't function at all") -> FIXED, awaiting retest.** Round-1 fix (render-level gate: suppressed non-exempt triggers return null before paint) turned the old flicker into a silent dead button: the billing page's "Upgrade to Pro" button (`billing/client.tsx` trigger `billing`) is an explicit purchase-intent click, but the 1-day dismiss cooldown suppressed every re-click for 24h after any dismissal - lost revenue, not anti-nag. **Round-2 fix:** added `billing` to `COOLDOWN_EXEMPT_TRIGGERS` in `upgrade-modal.tsx` (explicit-intent class, same rationale as the `pro-cta-*` deep links - active "Go Pro" choice always opens; cooldown still governs passive re-prompts). Locked by the exempted-trigger test now covering `billing` (`upgrade-modal.test.tsx`). **Retest:** dismiss the billing modal, re-click "Upgrade to Pro" - the modal must open every time. Note: the deep-link auto-open leg (`?plan=pro` -> trigger `pro-cta-billing`) was already exempt and unaffected.
 
 ### TC-AUTH-10: Signed-in user hits auth pages
 
@@ -847,9 +847,9 @@
 
 | Total | Passed | Failed | Deferred | Launch blockers |
 | ----- | ------ | ------ | -------- | --------------- |
-| 107   | 10     | 2      | 0        |                 |
+| 107   | 11     | 1      | 1        |                 |
 
-> **Progress (2026-10-16):** batch 1 (Sec 1 Auth) executed local - 10 pass / 2 fail both FIXED and awaiting founder retest (TC-AUTH-03 duplicate detection, TC-AUTH-09 modal flicker) / 1 retest pending (TC-AUTH-04, needs 5+ submits). 94 cases not yet executed.
+> **Progress (2026-10-16):** batch 1 (Sec 1 Auth) executed local - 11 pass (TC-AUTH-03 retest PASS after duplicate-detection fix) / 1 fail (TC-AUTH-09 round-2 dead-button fix, awaiting retest) / 1 deferred by founder (TC-AUTH-04 signup rate cooldown - "document as later"). 94 cases not yet executed.
 
 ## AC5 gate — founder fix/defer (CLOSED 2026-10-12)
 
