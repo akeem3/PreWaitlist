@@ -2278,7 +2278,7 @@ Founder challenge (single project proven by URL) killed the multi-DB theory and 
 
 ## Email-link confirmation fix — token_hash verifyOtp route (2026-10-10)
 
-**Status:** implemented, all gates green, **uncommitted**; **3 founder manual gates open** (below).
+**Status:** ✅ CLOSED 2026-10-16 — committed `fd91aeb` (merged to main, Vercel deployed); templates swapped via Management API; founder confirmed email link → dashboard works end-to-end ("it finally works").
 
 **Root cause (proven):** production email confirm link = PKCE `?code=` → `/auth/callback` → `exchangeCodeForSession` needs the fixed `<storageKey>-code-verifier` cookie in the _clicking_ browser; two same-browser events wipe it first — (1) a failed signup retry (the live `500 Error sending confirmation email` makes retries common) overwrites then deletes the fixed key, (2) session teardown `_removeSession → removeAllPKCEVerifiers` wipes all slots. Result: `AuthPKCECodeVerifierMissingError` on `/auth/auth-code-error`. Same-device click ruled out transport (probe 3: verifier cookies written, survive reload, server received them).
 
@@ -2286,6 +2286,18 @@ Founder challenge (single project proven by URL) killed the multi-DB theory and 
 
 **Founder gates (fix is inert until these):** (1) Supabase → Auth → Email Templates — swap Confirm-signup + Reset-password hrefs to the token_hash URLs above (verify-email resend is template-driven, no code change); (2) verify Site URL = `https://www.prewaitlist.com` (templates' `{{ .SiteURL }}`); (3) Auth logs — investigate the current signup `500 Error sending confirmation email` (SMTP quota/provider) — it blocks all real-email E2E right now. No Redirect-URL allowlist change needed (verifyOtp is a direct API call, not an OAuth redirect).
 
+**Gate 1 closed (2026-10-16):** templates swapped via Supabase Management API (PATCH /v1/projects/ollaykzbhyniqxxlbkhn/config/auth) using a founder-issued PAT (7-day scoped token, revoked after use - token was stored in temp file outside repo, never in code/.env, deleted after). PATCH 200, both mailer_templates_custom_contents flags confirmed true. Templates now: Confirm-signup -> `https://www.prewaitlist.com/auth/confirm?token_hash={{ .TokenHash }}&amp;type=signup`; Reset-password -> same with type=recovery. Hardcoded www (skips apex 308 redirect hop for email-security scanners). Subjects + bodies untouched. SMTP config already correct (smtp.resend.com:465, sender notifications@prewaitlist.com = Resend verified domain). **Gotcha:** GoTrue /auth/v1/admin/templates returns 404 on v2.197.0 (removed in GoTrue v2) - use Management API config/auth endpoint instead. Management API logs endpoints all 404 on the PAT - no auth-log access via Management API. Founder verified end-to-end (fresh signup -> email link -> dashboard) = working.
+
 **Gates:** lint 0 errors / 5 baseline warnings · targeted 44/44 · full suite **1125 = 1118 pass / 7 fail = exact sanctioned baseline** (dashboard-archive 4 + dashboard-subscriber-table 3; billing flake passed on re-run) · clean build (`next build` exit 0, `ƒ Proxy (Middleware)`, `/auth/confirm` registered) · prettier clean · live probes on `next start :3100`: no-params → 307 error page with `c:0` diag, bogus `token_hash` → live GoTrue `403 Email link is invalid or has expired` → error page with `c:1/e/s/m` (verifyOtp path proven end-to-end), anon `/dashboard` → 307 `/signin` intact.
 
 **Gotchas:** `NextResponse.redirect(url)` without explicit status = **307** — callback's error paths always were 307; only success paths pass explicit 302 (test error redirects with 307). `pnpm.ps1` shim in `%APPDATA%\npm` is corrupted (first line = `re_QnZPPBox…`) → use `pnpm.cmd` or `node_modules\.bin\*.CMD` directly until reinstalled. `/auth/*` is anon-allowlisted in `src/lib/supabase/middleware.ts:64` — new auth routes need no middleware change.
+
+## Marketing navbar sticky fix — overflow-x-hidden ancestor (2026-10-18)
+
+**Symptom:** marketing homepage navbar did not stick to the top on scroll.
+
+**Root cause:** `components/layout/marketing-layout.tsx` wrapper had `overflow-x-hidden`. Per CSS spec, `overflow-x: hidden` forces `overflow-y` to compute to `auto`, so that div became a scroll container. The `sticky top-0` header then positioned against the wrapper (which never scrolls) instead of the viewport, so it rode up with the page.
+
+**Fix (one line):** `overflow-x-hidden` → `overflow-x-clip`. `overflow: clip` clips horizontal overflow identically but creates NO scroll container, so sticky keeps binding to the viewport. Verified in compiled CSS (`overflow-x-clip` + `.z-(--z-sticky){z-index:var(--z-sticky)}` with `--z-sticky:20` emitted on `:root`), lint 0/5, clean build.
+
+**Gotcha:** never put `overflow-x-hidden` (or any `overflow: hidden/auto/scroll`) on an ancestor between a sticky element and the viewport. Use `overflow-x-clip` when you need horizontal clipping without breaking sticky/fixed descendants. Also fixed 3 here-string control-char corruptions (TAB/LF eating the `t`/`n` chars) in the Gate 1 paragraph above — same double-quoted-here-string bug class already documented.
