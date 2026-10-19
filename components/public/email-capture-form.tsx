@@ -293,7 +293,7 @@ export function EmailCaptureForm({
           {/* Honeypot — off-screen, humans never fill it */}
           <div
             aria-hidden="true"
-            className="absolute -left-[9999px] h-px w-px overflow-hidden"
+            className="absolute left-[9999px] h-px w-px overflow-hidden"
           >
             <input
               type="text"

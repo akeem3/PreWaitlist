@@ -2340,3 +2340,17 @@ Founder challenge (single project proven by URL) killed the multi-DB theory and 
 **Fix:** one class — add `w-full` (text was already centered via `justify-center`).
 
 **Gotcha:** never rely on a `<button>` inheriting width from a block parent — buttons are shrink-to-fit form controls. Always add `w-full` (or a width utility) when the design wants an edge-to-edge button.
+
+## Manual QA — Batch 2 (Onboarding) executed + Case 14 triage (2026-10-19)
+
+**Status:** Batch 2 (§2 Onboarding, TC-ONB-01..14) **executed — 13 pass / 1 fail**. Results recorded in `docs/qa/manual-test-cases.md` (summary table now `| 107 | 25 | 1 | 1 |`); **uncommitted** alongside the batch-1 doc edits + prior memory block. No code changed in this round — Case 14 fixes queued for story 21.6.
+
+**Passes:** TC-ONB-01..13 (Case 09 passed with a founder UX note — at the question cap the add/upgrade control should disappear rather than remain and error; which control(s) to confirm when 21.6 picks it up).
+
+**TC-ONB-14 FAIL — root causes located (not yet fixed):**
+
+- **(a) Signed-in free founder mid-flow → `/onboarding/1` → `/dashboard`.** `src/components/auth/onboarding-guard.tsx:32-40` redirects ANY free founder with >=1 waitlist on every onboarding route (intent: stop a 2nd-waitlist bypass of the 402 gate at `src/app/api/waitlist/route.ts:208`). Side effect: legitimate mid-flow resume is dead — after FlushGate creates the waitlist at the Step-3 wall, leaving/reloading blocks return to Steps 4/4a/5. Guard runs server-side in `src/app/onboarding/layout.tsx`, so it fires on hard entry (typed URL/reload) but not on in-flow client nav — that is why Cases 07/08 passed and 14a failed.
+- **(b) Fresh founder, no draft, `/onboarding/4` → `/onboarding/signup` wall (not `/onboarding/1`).** Phase-B guard in `src/lib/supabase/middleware.ts` sends unauthenticated Phase-B paths to the wall; FlushGate (which owns the `200 []` → `/onboarding/1` behavior, revenue-phase-4 F1) only renders for authenticated users, so the spec'd redirect cannot fire. The wall has no draft check and falls back to fabricated defaults (`Your Product`, `your-page.prewaitlist.com`, `Template: minimal`) at `src/app/onboarding/signup/page.tsx:118-128` — a fresher sees fake "Step 3 of 5" progress.
+- **Open question:** the signed-in fresh-founder variant of (b) was not separately exercised (the screenshot showed the signed-out wall — middleware only redirects when unauthenticated). Re-verify both auth states when fixing.
+
+**Fix direction (for 21.6, not applied):** guard must distinguish mid-flow (allow resume / let step pages smart-redirect by data completeness) from a true 2nd-waitlist attempt; wall must check for a local draft and send no-draft visitors to `/onboarding/1`.

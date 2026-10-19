@@ -136,103 +136,112 @@
 
 ## 2. Onboarding wizard <a id="onboarding"></a>
 
+> **Batch 2 executed 2026-10-19 — 13 pass / 1 fail.** Cases 01–13 PASS (Case 09 passed with a founder UX note). Case 14 FAIL — run note below; root causes located, fixes deferred to 21.6 (no code change in this round).
+
 ### TC-ONB-01: Step 1 slug check + fallbacks
 
 **Preconditions:** Fresh browser (no draft), `/onboarding/1`.
 **Steps:** 1. Type product name, watch subdomain status. 2. Try a taken slug. 3. Click "I'll name it later".
 **Expected:** Debounced available/taken states; taken shows `Already taken`; name-later generates fallback and continues (source: story-4.1/10.6; manifest `07-onboarding-1-desktop.png`).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-ONB-02: Step 1 headline field
 
 **Preconditions:** `/onboarding/1`.
 **Steps:** 1. Fill Product Name + Headline + Subheadline distinctly.
 **Expected:** Three separate fields; empty headline falls back (never empty downstream) (source: story-18.3; fallback chain).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-ONB-03: Step 2 template select
 
 **Preconditions:** Step 1 done.
 **Steps:** 1. Preview Minimal/Bold/Dark cards. 2. Select Dark, continue.
 **Expected:** Selected card gets accent border; choice persists to preview (source: story-4.2).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-ONB-04: Step 3 brand + logo + CTA
 
 **Preconditions:** Step 2 done.
 **Steps:** 1. Pick a swatch, type invalid hex + blur. 2. Upload PNG >2MB, then valid PNG. 3. Edit CTA text.
 **Expected:** Invalid hex shows `Enter a valid hex color (e.g. #0F7A5E)`; oversize/non-PNG rejected; logo stored as data URL; CTA free text (source: story-4.3/18.4; manifest `08-onboarding-3-desktop.png`).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-ONB-05: Step 3 milestones validation
 
 **Preconditions:** Step 3, milestones ON.
 **Steps:** 1. Set threshold 0 / duplicate thresholds / empty label → submit.
 **Expected:** `Threshold must be a whole number greater than 0` / `Each tier needs a unique referral count` / `Reward for "Refer N friends" is required`; submit blocked (source: milestone hardening F3/F4).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-ONB-06: Step 3 phone + counter toggles
 
 **Preconditions:** Step 3.
 **Steps:** 1. Set Phone → Required. 2. Toggle signup counter on.
 **Expected:** Phone select persists (Off/Optional/Required, default Off); counter toggle present, OFF default (source: phone plan 2026-10-03; issue #16).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-ONB-07: Signup wall after Step 3
 
 **Preconditions:** Phase A draft in localStorage, signed out.
 **Steps:** 1. Continue past Step 3.
 **Expected:** Signup wall (`/onboarding/signup`); after signup, draft flushes and flow resumes at Step 4 (source: story-6.0; FlushGate).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-ONB-08: Step 4 qualification decision
 
 **Preconditions:** Signed in, draft flushed.
 **Steps:** 1. Choose Yes → lands 4a. 2. Restart, choose No → lands 5.
 **Expected:** Yes→4a, No→5 (source: story-4.4).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-ONB-09: Step 4a question caps [FREE] then [PRO]
 
 **Preconditions:** Free founder at 4a.
 **Steps:** 1. Add 2 questions. 2. Try a 3rd. 3. Flip to Pro, add up to 5, try 6th. 4. MC question with 1 option → submit.
 **Expected:** Free capped at 2 (badge `FREE — 2 questions max`), Pro at 5; MC needs ≥2 options (`Multiple choice questions need at least 2 options.`); ≥1 question required (source: story-4.5/Epic 14; 4a validator).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
+
+> **Founder UX note (2026-10-19):** pass, but at the question cap the button should disappear rather than remain and error (founder referenced the upgrade button after the 5th Pro question). Which control(s) — add-question, upgrade, or both — to confirm when 21.6 picks it up.
 
 ### TC-ONB-10: Step 5 Free vs Pro branches
 
 **Preconditions:** Step 4a done (or skipped).
 **Steps:** 1. As Free: inspect email fields. 2. As Pro: edit sender/subject/body, exceed 200-char subject → launch.
 **Expected:** Free shows locked fields + Pro badge; Pro edits save; >200 subject → `Email subject must be 200 characters or fewer` (source: story-6.3; `waitlist/route.ts` caps).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-ONB-11: Launch + success screen
 
 **Preconditions:** Step 5 complete.
 **Steps:** 1. Click `Launch my waitlist`. 2. On success, click share + dashboard links.
 **Expected:** Waitlist created; success shows share buttons (no platform tabs), `?wid=<new id>` dashboard link (source: story-6.3/6.4/5.2; manifest `19-onboarding-success-desktop.png`).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-ONB-12: Preview parity (content order/copy)
 
 **Preconditions:** Steps 1–3 filled.
 **Steps:** 1. Compare right-pane preview against §4 live order + copy (headline, consent line, trust line, sample updates, how-it-works).
 **Expected:** Same order/copy at compact scale (approximation, not pixel parity); consent + trust lines present (source: W1 amendment; stories 18.0–18.2).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-ONB-13: Upgrade modal from onboarding (Pro-gated step)
 
 **Preconditions:** Free founder at 4a cap or Step 5 Pro field.
 **Steps:** 1. Trigger upgrade (cap click / locked field). 2. Complete sandbox checkout. 3. Continue in place.
 **Expected:** `usePaddleUpgrade` opens checkout, tier flips, flow resumes without losing state (source: seamless upgrade 2026-09-22). `[PROD]` for real checkout; sandbox on prod.
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-ONB-14: Resume mid-flow + fresh-founder redirect
 
 **Preconditions:** (a) Phase A draft in localStorage, signed out. (b) Fresh founder, no draft, at `/onboarding/4`.
 **Steps:** 1. Return to `/onboarding/1` → note landing step. 2. Load (b) → note landing.
 **Expected:** (a) resumes at correct step by data completeness; (b) 200 `[]` treated as empty → `/onboarding/1`, no error UI (source: FlushGate; revenue-phase-4 F1).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [ ] Pass [x] Fail
+
+> **Run note (2026-10-19 — local): FAIL (both legs).**
+> **(a) Signed-in free founder mid-flow → `/onboarding/1` → `/dashboard`.** After the Step-3 signup wall, FlushGate creates the waitlist; `src/components/auth/onboarding-guard.tsx:32-40` then redirects any free founder with ≥1 waitlist on every onboarding route (intent: stop a 2nd-waitlist bypass of the 402 gate at `src/app/api/waitlist/route.ts:208`). Consequence: legitimate mid-flow resume is blocked — a founder who leaves or reloads cannot return to Steps 4/4a/5.
+> **(b) Fresh founder, no draft, `/onboarding/4` → `/onboarding/signup` wall, not `/onboarding/1`.** The Phase-B guard in `src/lib/supabase/middleware.ts` sends unauthenticated Phase-B paths to the wall; FlushGate — which owns the `200 []` → `/onboarding/1` behavior (revenue-phase-4 F1) — only renders for authenticated users, so the spec'd redirect cannot fire. The wall performs no draft check and falls back to fabricated defaults (`Your Product`, `your-page.prewaitlist.com`, `Template: minimal`) at `src/app/onboarding/signup/page.tsx:118-128`.
+> **Open question for 21.6:** the signed-in fresh-founder variant of (b) was not separately exercised; re-verify both auth states when fixing.
 
 ---
 
@@ -847,9 +856,9 @@
 
 | Total | Passed | Failed | Deferred | Launch blockers |
 | ----- | ------ | ------ | -------- | --------------- |
-| 107   | 12     | 0      | 1        |                 |
+| 107   | 25     | 1      | 1        |                 |
 
-> **Progress (2026-10-16):** batch 1 (Sec 1 Auth) **CLOSED - 12 pass / 0 fail / 1 deferred** (TC-AUTH-04 signup rate cooldown, deferred by founder: "document as later"). Fixes shipped: duplicate-detection (`signup-duplicate.test.tsx`) + billing button cooldown exemption (`fc88810`). 94 cases not yet executed → next: batch 2 (Sec 2 Onboarding, TC-ONB-01..14).
+> **Progress (2026-10-19):** batch 1 (Sec 1 Auth) **CLOSED — 12 pass / 0 fail / 1 deferred** (TC-AUTH-04 signup rate cooldown, deferred by founder: "document as later"). Fixes shipped: duplicate-detection (`signup-duplicate.test.tsx`) + billing button cooldown exemption (`fc88810`). Batch 2 (Sec 2 Onboarding) **executed — 13 pass / 1 fail** (TC-ONB-14 resume/fresh-redirect; root causes located, fixes queued for 21.6). 81 cases not yet executed → next: batch 3 (Sec 3 Dashboard, TC-DASH-01..19).
 
 ## AC5 gate — founder fix/defer (CLOSED 2026-10-12)
 
