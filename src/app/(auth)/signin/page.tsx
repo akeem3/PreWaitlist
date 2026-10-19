@@ -102,7 +102,13 @@ function SigninPageContent() {
 
     // Register auth listener BEFORE signInWithPassword so we catch SIGNED_IN
     // when it fires during the sign-in call. If we register after, the event
-    // is already dispatched and missed — forcing a 2s timeout flash.
+    // is already dispatched and missed.
+    //
+    // Navigation happens ONLY on confirmed success: the SIGNED_IN event during
+    // the call, or the awaited call resolving without error. A former 2s
+    // fallback timer navigated blind — on a failed sign-in it pushed /dashboard
+    // before the error came back (live-verified 2026-10-19), bouncing back to
+    // /signin with the failure message never shown.
     let handled = false;
 
     const {
@@ -111,20 +117,10 @@ function SigninPageContent() {
       if (!handled && event === "SIGNED_IN") {
         handled = true;
         subscription.unsubscribe();
-        clearTimeout(fallbackTimer);
         // Honor intent when present — the server layout decides otherwise
         void navigatePostAuth();
       }
     });
-
-    // Fallback: if SIGNED_IN doesn't fire within 2s, proceed anyway.
-    const fallbackTimer = setTimeout(() => {
-      if (!handled) {
-        handled = true;
-        subscription.unsubscribe();
-        void navigatePostAuth();
-      }
-    }, 2000);
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
@@ -135,7 +131,6 @@ function SigninPageContent() {
     lastSubmitTime.current = Date.now();
 
     if (signInError) {
-      clearTimeout(fallbackTimer);
       handled = true;
       subscription.unsubscribe();
       if (signInError.message.includes("rate limit")) {
@@ -147,11 +142,11 @@ function SigninPageContent() {
       return;
     }
 
-    // Scenario A: SIGNED_IN already fired during signInWithPassword but we
-    // haven't redirected yet (userId was being set). Fire now.
+    // Scenario A: SIGNED_IN didn't fire during signInWithPassword (or hasn't
+    // yet) — the sign-in itself succeeded, so proceed. This is the safe
+    // replacement for the old timer: success is known, never assumed.
     if (!handled) {
       handled = true;
-      clearTimeout(fallbackTimer);
       subscription.unsubscribe();
       void navigatePostAuth();
     }

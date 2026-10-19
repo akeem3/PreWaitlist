@@ -53,6 +53,14 @@ const COOLDOWN_DAYS = 1;
 //   "Add new waitlist", the switcher's "+ Add new waitlist", and the sidebar
 //   "Upgrade to Pro"); the passive cap-warning email deep link was split off
 //   to its own key ("cap-email") so it still honors the cooldown.
+// - Every other button-fired key is explicit intent too (QA Batch 3
+//   TC-DASH-02/10/11: non-exempt warmth/broadcast/updates keys became silent
+//   dead buttons after one dismissal). Rule: button/deep-link click = own
+//   key + exempt; auto-opener = passive = gated.
+// - Exception: the free-gate pages (updates/broadcast) auto-open on mount as
+//   their page content — story 4.5 / TC-DASH-11 expect the landing modal — so
+//   those keys stay exempt as well. "cap-email" is today's only gated passive
+//   auto-opener.
 // The cooldown still governs passive re-prompts, which use their own trigger
 // keys.
 const COOLDOWN_EXEMPT_TRIGGERS = new Set([
@@ -60,6 +68,12 @@ const COOLDOWN_EXEMPT_TRIGGERS = new Set([
   "pro-cta-billing",
   "billing",
   "subscriber_cap",
+  "warmth",
+  "broadcast",
+  "updates",
+  "csv_export",
+  "qual_question",
+  "email_customisation",
 ]);
 
 function getCooldownKey(triggerSource: string): string {

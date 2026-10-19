@@ -9,6 +9,16 @@ vi.mock("next/navigation", () => ({
   redirect: (path: string) => mockRedirect(path),
 }));
 
+// Mock next/headers cookies — default to no progress cookie; individual
+// tests override via mockCookiesGet.
+const mockCookiesGet = vi.fn();
+vi.mock("next/headers", () => ({
+  cookies: () =>
+    Promise.resolve({
+      get: (name: string) => mockCookiesGet(name),
+    }),
+}));
+
 // Mock Supabase server client
 const mockGetUser = vi.fn();
 const mockSupabaseFrom = vi.fn();
@@ -22,36 +32,41 @@ vi.mock("../../lib/supabase/server", () => ({
 
 import { OnboardingGuard } from "../../components/auth/onboarding-guard";
 
+function mockFreeFounder(waitlistCount: number) {
+  mockGetUser.mockResolvedValue({
+    data: { user: { id: "user-1" } },
+    error: null,
+  });
+
+  const chain = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: { tier: "free" },
+      error: null,
+    }),
+  };
+  const countChain = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    then: vi.fn((resolve: (v: { count: number }) => void) =>
+      resolve({ count: waitlistCount })
+    ),
+  };
+
+  mockSupabaseFrom
+    .mockReturnValueOnce(chain) // founder_profiles query
+    .mockReturnValueOnce(countChain); // waitlists count query
+}
+
 describe("OnboardingGuard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCookiesGet.mockReturnValue(undefined);
   });
 
   it("allows free user with 0 waitlists", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: { id: "user-1" } },
-      error: null,
-    });
-
-    const chain = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      maybeSingle: vi.fn().mockResolvedValue({
-        data: { tier: "free" },
-        error: null,
-      }),
-    };
-    const countChain = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      then: vi.fn((resolve: (v: { count: number }) => void) =>
-        resolve({ count: 0 })
-      ),
-    };
-
-    mockSupabaseFrom
-      .mockReturnValueOnce(chain) // founder_profiles query
-      .mockReturnValueOnce(countChain); // waitlists count query
+    mockFreeFounder(0);
 
     render(
       await OnboardingGuard({
@@ -63,29 +78,37 @@ describe("OnboardingGuard", () => {
     expect(mockRedirect).not.toHaveBeenCalled();
   });
 
-  it("redirects free user with 1 waitlist to /dashboard", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: { id: "user-1" } },
-      error: null,
-    });
+  it("redirects free user with 1 waitlist and no draft cookie to /dashboard", async () => {
+    mockFreeFounder(1);
 
-    const chain = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      maybeSingle: vi.fn().mockResolvedValue({
-        data: { tier: "free" },
-        error: null,
-      }),
-    };
-    const countChain = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      then: vi.fn((resolve: (v: { count: number }) => void) =>
-        resolve({ count: 1 })
-      ),
-    };
+    await expect(
+      OnboardingGuard({ children: <div>Content</div> })
+    ).rejects.toThrow("REDIRECT:/dashboard");
+  });
 
-    mockSupabaseFrom.mockReturnValueOnce(chain).mockReturnValueOnce(countChain);
+  // QA Batch 2 TC-ONB-14a: mid-flow resume — free founder with an existing
+  // waitlist AND an in-progress draft cookie must not be bounced.
+  it("allows free user with 1 waitlist when the progress cookie marks a mid-flow draft", async () => {
+    mockFreeFounder(1);
+    mockCookiesGet.mockImplementation((name: string) =>
+      name === "onboarding_in_progress" ? { value: "1" } : undefined
+    );
+
+    render(
+      await OnboardingGuard({
+        children: <div data-testid="child">Content</div>,
+      })
+    );
+
+    expect(screen.getByTestId("child")).toBeDefined();
+    expect(mockRedirect).not.toHaveBeenCalled();
+  });
+
+  it("redirects free user with a progress cookie whose value is not 1", async () => {
+    mockFreeFounder(1);
+    mockCookiesGet.mockImplementation((name: string) =>
+      name === "onboarding_in_progress" ? { value: "0" } : undefined
+    );
 
     await expect(
       OnboardingGuard({ children: <div>Content</div> })

@@ -26,8 +26,14 @@ export default function UpdatesClient({
   const [error, setError] = useState<string | null>(null);
   const [updates, setUpdates] = useState(initialUpdates);
 
-  const charCount = body.length;
-  const isValid = charCount >= 10 && charCount <= 2000;
+  // QA Batch 3 TC-DASH-11: validate on the trimmed length — the server
+  // (api/updates/route.ts) trims before its min-10/max-2000 checks, so raw
+  // body.length let whitespace-heavy input enable Publish and then 400.
+  const trimmed = body.trim();
+  // Count against the trimmed length too — the server validates and stores
+  // the trimmed text, so raw whitespace must not pad the /2000 display.
+  const charCount = trimmed.length;
+  const isValid = trimmed.length >= 10 && trimmed.length <= 2000;
 
   async function handlePublish() {
     if (!isValid) return;
@@ -50,8 +56,10 @@ export default function UpdatesClient({
       }
 
       setBody("");
+      // Server stores the trimmed body (route trims before insert) — mirror
+      // it so the optimistic list matches the persisted row.
       setUpdates((prev) => [
-        { id: data.id, body, created_at: new Date().toISOString() },
+        { id: data.id, body: trimmed, created_at: new Date().toISOString() },
         ...prev,
       ]);
 

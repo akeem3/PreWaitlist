@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useOnboardingForm } from "../context";
+import {
+  ONBOARDING_SERVER_DEFAULTS,
+  useOnboardingForm,
+  storedDraftHasProgress,
+} from "../context";
 import { createClient } from "../../../../src/lib/supabase/client";
 
 export default function OnboardingSignup() {
@@ -11,12 +15,32 @@ export default function OnboardingSignup() {
   const form = useOnboardingForm();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Hydration gate (same pattern as Steps 1–3): SSR can never see
+  // localStorage, so the preview card must paint ONBOARDING_SERVER_DEFAULTS
+  // first and swap in the draft post-hydration — otherwise React throws a
+  // mismatch ("Bat Is the Name" vs "Your Product") whenever a draft exists.
+  const [mounted, setMounted] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
     form.setLoading(false);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // QA Batch 2 TC-ONB-14b: a no-draft visitor hard-landing here (bookmarked
+  // /onboarding/4 while signed out) has nothing to "save" — the wall would
+  // fabricate defaults and fake "Step 3 of 5". Send them to Step 1 instead.
+  // The check must be "actual founder input", not "storage key exists": the
+  // provider persists a defaults-only object for every visitor on mount, so
+  // the raw key is always there by the time effects run (live-verified
+  // 2026-10-19 — draft written at ~3ms, old check never fired).
+  useEffect(() => {
+    if (!storedDraftHasProgress()) {
+      router.replace("/onboarding/1");
+    }
+  }, [router]);
 
   // Check if already logged in — skip to Step 4
   useEffect(() => {
@@ -115,17 +139,20 @@ export default function OnboardingSignup() {
           </div>
           <div className="text-left">
             <p className="text-sm font-medium text-foreground">
-              {form.headline || "Your Product"}
+              {mounted && form.headline ? form.headline : "Your Product"}
             </p>
             <p className="text-xs text-muted-foreground">
-              {form.slug
+              {mounted && form.slug
                 ? `${form.slug}.prewaitlist.com`
                 : "your-page.prewaitlist.com"}
             </p>
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
-          Template: {form.template} • Brand color: {form.brandColor}
+          Template:{" "}
+          {mounted ? form.template : ONBOARDING_SERVER_DEFAULTS.template} •
+          Brand color:{" "}
+          {mounted ? form.brandColor : ONBOARDING_SERVER_DEFAULTS.brandColor}
         </p>
       </div>
 

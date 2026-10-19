@@ -437,7 +437,7 @@ export function EmailCaptureForm({
                     style={
                       answers[q.id] ? { borderColor: brandColor } : undefined
                     }
-                    className={`block w-full ${inputHeight} appearance-none rounded-[var(--input-radius)] border pl-[var(--input-padding-x)] pr-10 ${textSize} disabled:cursor-not-allowed disabled:opacity-50 ${qualBorder} ${qualBg} ${focusClasses} ${
+                    className={`block w-full ${inputHeight} appearance-none rounded-(--input-radius) border pl-[var(--input-padding-x)] pr-10 ${textSize} disabled:cursor-not-allowed disabled:opacity-50 ${qualBorder} ${qualBg} ${focusClasses} ${
                       answers[q.id] ? inputText : qualOverlay
                     }`}
                   >

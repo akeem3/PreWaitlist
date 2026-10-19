@@ -242,52 +242,71 @@
 > **(a) Signed-in free founder mid-flow → `/onboarding/1` → `/dashboard`.** After the Step-3 signup wall, FlushGate creates the waitlist; `src/components/auth/onboarding-guard.tsx:32-40` then redirects any free founder with ≥1 waitlist on every onboarding route (intent: stop a 2nd-waitlist bypass of the 402 gate at `src/app/api/waitlist/route.ts:208`). Consequence: legitimate mid-flow resume is blocked — a founder who leaves or reloads cannot return to Steps 4/4a/5.
 > **(b) Fresh founder, no draft, `/onboarding/4` → `/onboarding/signup` wall, not `/onboarding/1`.** The Phase-B guard in `src/lib/supabase/middleware.ts` sends unauthenticated Phase-B paths to the wall; FlushGate — which owns the `200 []` → `/onboarding/1` behavior (revenue-phase-4 F1) — only renders for authenticated users, so the spec'd redirect cannot fire. The wall performs no draft check and falls back to fabricated defaults (`Your Product`, `your-page.prewaitlist.com`, `Template: minimal`) at `src/app/onboarding/signup/page.tsx:118-128`.
 > **Open question for 21.6:** the signed-in fresh-founder variant of (b) was not separately exercised; re-verify both auth states when fixing.
+> **[FIXED 2026-10-19 — Prompt #8, uncommitted]** (a) `onboarding_in_progress` cookie (`src/lib/onboarding-progress-core.ts`) written by `LocalOnboardingProvider` on every draft persist, cleared by `clearPersisted()` on success; `OnboardingGuard` now allows a free founder with ≥1 waitlist through when the cookie is present. (b) The signup wall now checks for a persisted draft and `router.replace("/onboarding/1")` when absent (`src/app/onboarding/signup/page.tsx`). Tests: `onboarding-guard.test.tsx` (+2 cookie cases), new `onboarding-signup-wall.test.tsx` (2). **Retest both legs; also re-verify the signed-in fresh-founder variant of (b).**
 
 ---
 
 ## 3. Founder dashboard <a id="dashboard"></a>
+
+> **Batch 3 executed 2026-10-19 — production — 11 pass / 4 fail / 4 pending.** PASS: 01, 03, 04, 06, 08, 09, 12, 13, 14, 15, 19. FAIL: 02 (free half), 05, 10 (free half), 11. Not run: 07, 16, 17, 18. Split-tier cases (02/10/11/19) are scored once — any failed half fails the case. No code fixes in this round; findings recorded for triage.
 
 ### TC-DASH-01: Overview populated vs empty
 
 **Preconditions:** Pro founder, populated waitlist; then `qa-empty` waitlist.
 **Steps:** 1. Open `/dashboard`. 2. Switch to empty waitlist.
 **Expected:** Populated: stat cards + chart + warmth + qualification + top referrers. Empty: welcome + guidance + ghost cards, no checklist (source: story-12.1.1/12.1.2; manifest `20-dashboard-home-pro-desktop.png`, `21-dashboard-empty-desktop.png`).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-DASH-02: Sidebar locks [FREE] vs unlock [PRO]
 
 **Preconditions:** Free founder.
 **Steps:** 1. Inspect sidebar nav. 2. Click Warmth/Broadcast. 3. Flip Pro, revisit.
 **Expected:** Free: Warmth + Broadcast locked with upgrade CTA; Pro: all unlocked (source: story-12.1.0/13.2; manifest `13-dashboard-home-free-desktop.png`).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [ ] Pass [x] Fail
+
+> **Run note (2026-10-19 — production): FAIL (free half).** The upgrade modal does not open consistently when the locked sidebar items are clicked. It appears once, then subsequent clicks do nothing. Pro half PASS — sidebar unlocks correctly.
+> **[FIXED 2026-10-19 — Prompt #8, uncommitted]** `warmth` and `broadcast` triggers added to `COOLDOWN_EXEMPT_TRIGGERS` (`components/dashboard/upgrade-modal.tsx`) — after one dismissal the render gate was silently eating every subsequent click (same bug class as the `billing`/`subscriber_cap` exemptions). **Retest: dismiss the modal once, then click the locked sidebar items again — the modal must re-open.**
 
 ### TC-DASH-03: Waitlist switcher precedence
 
 **Preconditions:** ≥2 waitlists.
 **Steps:** 1. Note newest vs stored preference. 2. Open plain `/dashboard`. 3. Open `?wid=<other>`. 4. Open `?wid=<bogus>`.
 **Expected:** Plain renders preference (cookie/localStorage), not newest; valid `?wid` wins + rewrites preference; bogus falls through (source: switcher fix 2026-10-08).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-DASH-04: Tier refresh after upgrade
 
 **Preconditions:** Free founder on dashboard.
 **Steps:** 1. Upgrade (sandbox), keep tab open.
 **Expected:** Sidebar unlocks without full reload (poll + `router.refresh()`); billing page concurs (source: tier-refresh 2026-09-23). `[PROD]`
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-DASH-05: First-subscriber tour + replay
 
 **Preconditions:** Founder with ≥1 subscriber, fresh localStorage flag.
 **Steps:** 1. Open `/dashboard`. 2. Skip mid-tour. 3. Replay via header button. 4. Open with `?upgrade=cap`.
 **Expected:** 6 steps desktop (5 <lg, no sidebar step); Skip writes flag; replay restarts; tour defers while upgrade modal open (source: story-20.2 + audit F1).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [ ] Pass [x] Fail
+
+> **Run note (2026-10-19 — production): FAIL — two issues.**
+>
+> 1. The first-subscriber tour does not work — it does not run.
+> 2. After clearing localStorage, signing in to an existing account redirects to Step 1 (waitlist creation) instead of the dashboard.
+
+> **[FIXED 2026-10-19 — Prompt #8, uncommitted]**
+>
+> 1. **Tour gate:** `src/app/dashboard/layout.tsx` now live-COUNTs the default waitlist's subscribers (`head: true`) and passes it as `liveSubscriberCount` to the shell/tour — the cached `waitlists.subscriber_count` column (frozen at 0 by the Phase-6 DROPs) was the gate the tour checked (`countRef.current < 1`). Falls back to the cached column on count error.
+> 2. **Sign-in → Step 1: root cause NOT reproduced in code** — the only code path that lands on `/onboarding/1` is the dashboard layout's zero-waitlist bounce; a plain `/signin` defaults to `/dashboard`. **Ambiguous: which account was used for the retest?** If that account's waitlist is missing/deleted, the bounce is correct. **Retest with the known-good founder account; if it still reproduces, treat as a new failure.**
+>    **Founder clue (2026-10-19):** "it only happens when I clear the local storage of the browser; otherwise sign in redirects to dashboard." Code invariant from the Prompt #3 audit: the guard (`onboarding-guard.tsx`) and the layout bounce are both **server-side and localStorage-independent** (`auth-redirect.ts:112-113` sends a plain sign-in to `/dashboard` unconditionally) — so **any** `/onboarding/1` landing implies the waitlists count was 0 **at that moment**. Best-supported explanation: the tested account's waitlist existed only as a Phase-A localStorage draft (never flushed by FlushGate) — clearing storage destroys the only copy, so Step 1 is the correct outcome; with the draft present, the flush during that journey creates the server row and the run ends at the dashboard. **Retest issue 1: clear localStorage, sign in with an account whose waitlist has ≥1 real subscriber — the tour must auto-start (6 steps desktop).** (Founder reminder: the Phase-6 recount SQL should also be run — it benefits the 90%-cap + quota banner paths that still read the cached column.) **Retest issue 2 on the same known-good account: sign-in must land `/dashboard`. If Step 1 still appears while the server row provably exists, treat as a new failure with a live repro path.**
 
 ### TC-DASH-06: Feedback + contact surfaces
 
 **Preconditions:** Env vars set (Tally URL, contact URLs).
 **Steps:** 1. Click FAB → Tally popup. 2. Open contact pill → Instagram + Email rows. 3. Unset vars (local) → surfaces hidden.
 **Expected:** Tally lazy-loads on first click; modal rows open ig.me + mailto; each surface hides independently without its var (source: stories 20.3/20.6).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
+
+> **Run note (2026-10-19 — production): PASS for steps 1–2.** Tally popup and the contact modal (Instagram + Email rows) verified. Step 3 (hide surfaces when env vars are unset) is local-only — not executable on production without a redeploy; recorded as not tested.
 
 ### TC-DASH-07: Quota banner + auto-refresh
 
@@ -296,61 +315,79 @@
 **Expected:** Banner renders on quotaHit only; data refreshes on focus + 60s interval (source: quota banner; story-12.2.12).
 **Result:** [ ] Pass [ ] Fail
 
+> **Run note (2026-10-19 — production): PENDING — not executed.** Requires a near-cap free waitlist on production. Deferred to a later run.
+
 ### TC-DASH-08: Leaderboard page + CSV [PRO]
 
 **Preconditions:** Pro, populated waitlist.
 **Steps:** 1. Open dashboard leaderboard, sort Referrals/Position, paginate. 2. Export CSV, open in spreadsheet.
 **Expected:** Boost-first sort, PAGE_SIZE=10, `Showing X–Y of Z`; CSV headers incl. Quality % after Warmth, RFC4180-quoted, formula-prefixed cells (source: stories 16.4/16.5/9.3/14.4/19.2; manifest `14-dashboard-leaderboard-desktop.png`).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-DASH-09: Qualification page
 
 **Preconditions:** Questions + answers exist.
 **Steps:** 1. Open dashboard qualification.
 **Expected:** Per-question cards with type chips, ordinal badges, answer distribution; respondent counts (source: story-14.3).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-DASH-10: Warmth page gate [FREE] vs [PRO]
 
 **Preconditions:** Free founder.
 **Steps:** 1. Open dashboard warmth. 2. Flip Pro, revisit.
 **Expected:** Free: distribution + upgrade nudge; Pro: bars + per-subscriber table with Hot/Warm/Cold badges (green/blue scheme) (source: stories 12.3.3/15.4; manifest `15-dashboard-warmth-free-desktop.png`).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [ ] Pass [x] Fail
+
+> **Run note (2026-10-19 — production): FAIL (free half).** The free state renders as intended (distribution + "Upgrade to target segments" pill), but clicking the Warmth card on the dashboard does not open the upgrade modal. Pro half PASS — bars + per-subscriber table render with Hot green / Cold blue.
+> **[FIXED 2026-10-19 — Prompt #8, uncommitted]** Same root cause as TC-DASH-02: `warmth` trigger now in `COOLDOWN_EXEMPT_TRIGGERS`. **Retest: dismiss the modal once, then click the Warmth card again — the modal must re-open.**
 
 ### TC-DASH-11: Updates compose + honest failure
 
 **Preconditions:** Pro founder.
 **Steps:** 1. Publish 9-char body. 2. Publish valid body. 3. As Free, open page / visit direct URL.
 **Expected:** 9-char → `Body must be at least 10 characters`; valid publishes (201, `sent_at` iff mailed); send failure shows `Update saved, but emails could not be sent.`; Free direct URL gets upgrade path (source: stories 12.1.4/16.0/16.1/17.4).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [ ] Pass [x] Fail
+
+> **Run note (2026-10-19 — production): FAIL — two issues.**
+>
+> 1. Free half: the upgrade modal does not appear when the Free updates page is opened/clicked.
+> 2. Pro half (compose otherwise PASS): the 10-character minimum counts a space as a character — whitespace passes the length check.
+
+> **[FIXED 2026-10-19 — Prompt #8, uncommitted]**
+>
+> 1. `updates` trigger now in `COOLDOWN_EXEMPT_TRIGGERS` (same root cause as TC-DASH-02/10).
+> 2. Client now validates on the trimmed length (`src/app/dashboard/updates/client.tsx`) — matches the server's trim-before-min-10 (`api/updates/route.ts`); whitespace-only and whitespace-padded-short bodies keep Publish disabled (tests in `dashboard-updates-compose.test.tsx`).
+>    **Retest: (1) dismiss the modal once, revisit the Free updates page — modal must re-open. (2) type 12 raw chars of mostly whitespace — Publish must stay disabled; type a real ≥10-char body — Publish enables and the stored update is the trimmed body.**
 
 ### TC-DASH-12: Broadcast compose + segments [PRO]
 
 **Preconditions:** Pro, subscribers across tiers.
 **Steps:** 1. Check segment counts (All/Hot+Warm/Cold). 2. Send to Cold. 3. Submit 201-char subject / empty body.
 **Expected:** Eligible counts (unsub+bounce excluded); caps enforced (`Subject must be ≤ 200 characters and body ≤ 10000 characters`); `waitlist_id` included (B1 lock); honest status (source: stories 17.0–17.2).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-DASH-13: Subscriber detail page
 
 **Preconditions:** Subscriber with referrals + milestones + events.
 **Steps:** 1. Open `/dashboard/subscribers/<id>` from table row.
 **Expected:** Position/email grid, referral code, referred list, qual answers, milestones-earned card, email event log (source: stories 9.4/11.6/12.2.13).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
+
+> **Founder UX note (2026-10-19 — production): PASS, with a UX follow-up.** The subscriber detail page only opens when the email cell is clicked. Expected behavior is a click anywhere on the row. Currently not obvious to the user — recorded for 21.6.
 
 ### TC-DASH-14: Archive / unarchive + banner
 
 **Preconditions:** Test waitlist.
 **Steps:** 1. Archive (confirm dialog). 2. Visit its public URL. 3. Unarchive from banner.
 **Expected:** Confirm dialog; public URL → `/gone`; banner offers unarchive (source: story-12.2.1).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-DASH-15: Settings hub + waitlist settings
 
 **Preconditions:** Signed in.
 **Steps:** 1. Walk hub → waitlist list → waitlist detail → profile. 2. Edit 6 waitlist fields, logo upload, phone mode. 3. Edit qualification questions (ids preserved).
 **Expected:** Three-level hierarchy; saves persist; logo = data URL; phone Off/Optional/Required; question edits keep ids (source: stories 12.2.2/12.2.3/14.2/phone plan).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-DASH-16: Billing page + cancel
 
@@ -359,12 +396,16 @@
 **Expected:** Tier from context; status + invoices render; portal cancel flows; downgrade reconciles (source: story-13.3; reconcile cron). `[PROD]`
 **Result:** [ ] Pass [ ] Fail
 
+> **Run note (2026-10-19 — production): PENDING — not executed.** Sandbox billing/cancel flow was not run in this batch.
+
 ### TC-DASH-17: Chart range + stat deltas
 
 **Preconditions:** Populated waitlist, signups across >30 days.
 **Steps:** 1. Toggle chart 30d / All Time. 2. Read stat-card deltas.
 **Expected:** Bars re-aggregate per range; deltas show comparison tone; empty metrics show em-dash (source: stories 9.6/12.1.2).
 **Result:** [ ] Pass [ ] Fail
+
+> **Run note (2026-10-19 — production): PENDING — not executed.** Requires signups older than 30 days on production.
 
 ### TC-DASH-18: Profile danger zone + data export
 
@@ -373,12 +414,14 @@
 **Expected:** Export returns profile payload (graceful degradation); delete cancels via Paddle then removes user (source: inventory §2 `profile` row; D4).
 **Result:** [ ] Pass [ ] Fail
 
+> **Run note (2026-10-19 — production): PENDING — not executed.** Requires a separate throwaway founder account.
+
 ### TC-DASH-19: Second waitlist create (free 402 / pro ok)
 
 **Preconditions:** Free founder with 1 active waitlist.
 **Steps:** 1. Create from header/switcher or settings list. 2. Flip Pro, create again.
 **Expected:** Free → 402 upgrade prompt (no deadlock); Pro → created, `?wid=<new>` lands on it (source: story-13.4 tier limit; 19.6 flow GREEN).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ---
 
@@ -854,11 +897,11 @@
 
 ## Results summary (filled in 21.7)
 
-| Total | Passed | Failed | Deferred | Launch blockers |
-| ----- | ------ | ------ | -------- | --------------- |
-| 107   | 25     | 1      | 1        |                 |
+| Total | Passed | Failed | Deferred | Launch blockers                     |
+| ----- | ------ | ------ | -------- | ----------------------------------- |
+| 107   | 36     | 5      | 1        | 5 — TC-DASH-02/05/10/11 · TC-ONB-14 |
 
-> **Progress (2026-10-19):** batch 1 (Sec 1 Auth) **CLOSED — 12 pass / 0 fail / 1 deferred** (TC-AUTH-04 signup rate cooldown, deferred by founder: "document as later"). Fixes shipped: duplicate-detection (`signup-duplicate.test.tsx`) + billing button cooldown exemption (`fc88810`). Batch 2 (Sec 2 Onboarding) **executed — 13 pass / 1 fail** (TC-ONB-14 resume/fresh-redirect; root causes located, fixes queued for 21.6). 81 cases not yet executed → next: batch 3 (Sec 3 Dashboard, TC-DASH-01..19).
+> **Progress (2026-10-19):** batch 1 (Sec 1 Auth) **CLOSED — 12 pass / 0 fail / 1 deferred** (TC-AUTH-04 signup rate cooldown, deferred by founder: "document as later"). Fixes shipped: duplicate-detection (`signup-duplicate.test.tsx`) + billing button cooldown exemption (`fc88810`). Batch 2 (Sec 2 Onboarding) **executed — 13 pass / 1 fail** (TC-ONB-14 resume/fresh-redirect; root causes located, fixes queued for 21.6). Batch 3 (Sec 3 Dashboard, TC-DASH-01..19) **executed on production — 11 pass / 4 fail / 4 pending.** Fails: 02 (free half — upgrade modal inconsistent), 05 (tour does not run + post-localStorage login lands on Step 1 instead of dashboard), 10 (free half — Warmth card click does not open modal), 11 (free half — no modal; Pro — whitespace counts toward 10-char minimum). Pending: 07, 16, 17, 18. Running total: **36 pass / 5 fail / 1 deferred**; 65 cases remaining (4 pending in Sec 3 + 61 in Sec 4–12). Next: batch 4 (Sec 4 Public waitlist & thank-you).
 
 ## AC5 gate — founder fix/defer (CLOSED 2026-10-12)
 

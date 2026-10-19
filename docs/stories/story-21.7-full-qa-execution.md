@@ -1,6 +1,6 @@
 # Story 21.7 — Full QA Execution
 
-**Status:** ready
+**Status:** in-progress
 **Epic:** 21 — Full App Scan & Test Case Suite
 **Depends on:** 21.5, 21.6, 19.\*
 **Design Refs:** - (no new UI; spec = docs/qa/manual-test-cases.md, not SVG)
@@ -31,6 +31,8 @@ As the founder, I want the complete test document executed end-to-end with resul
 - Writing new cases during execution (small addendums allowed if a gap is found — add with citation, execute, note); performance/load testing.
 
 ## Dev Notes
+
+**Execution progress (2026-10-19):** batch 1 (Sec 1 Auth) closed — 12 pass / 1 deferred. Batch 2 (Sec 2 Onboarding) — 13 pass / 1 fail (TC-ONB-14). Batch 3 (Sec 3 Dashboard, TC-DASH-01..19) executed on production — 11 pass / 4 fail / 4 pending. Running total 36 pass / 5 fail / 1 deferred; 65 cases remaining. Results and run notes recorded in `docs/qa/manual-test-cases.md`.
 
 - Execution order suggestion: follow doc section order (auth → onboarding → dashboard → public → …) so environment setup (tier flips, seed data) happens once per section.
 - Founder may execute personally (that's the point of the manual doc) with the agent standing by for triage/fixes — coordinate in session.

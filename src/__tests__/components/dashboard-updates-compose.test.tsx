@@ -62,6 +62,25 @@ describe("Updates Compose UI", () => {
     expect(publishBtn?.hasAttribute("disabled")).toBe(true);
   });
 
+  // QA Batch 3 TC-DASH-11: the server trims before its min-10 check, so the
+  // client must too — whitespace must not count toward the minimum.
+  it("publish button is disabled for whitespace-only input", async () => {
+    render(<UpdatesClient {...baseProps} />);
+    const user = userEvent.setup();
+    await user.type(screen.getByPlaceholderText(PLACEHOLDER), "           ");
+    const publishBtn = screen.getByText("Publish").closest("button");
+    expect(publishBtn?.hasAttribute("disabled")).toBe(true);
+  });
+
+  it("publish button is disabled when only whitespace makes up 10+ raw characters", async () => {
+    render(<UpdatesClient {...baseProps} />);
+    const user = userEvent.setup();
+    // 12 raw chars, 2 real chars — server trims to 2 and would 400.
+    await user.type(screen.getByPlaceholderText(PLACEHOLDER), "hi          ");
+    const publishBtn = screen.getByText("Publish").closest("button");
+    expect(publishBtn?.hasAttribute("disabled")).toBe(true);
+  });
+
   it("renders character count", () => {
     render(<UpdatesClient {...baseProps} />);
     expect(screen.getByText("0/2000")).toBeDefined();

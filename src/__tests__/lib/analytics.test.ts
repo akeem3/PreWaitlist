@@ -15,16 +15,22 @@ type AnalyticsModule = typeof import("../../../src/lib/analytics");
  * Story 20.1 — wrapper behavior: no-key no-op (AC1), init shape (AC1/D4),
  * suppression gating (D7), and forwarding. Module state (initialized/enabled)
  * is per-import, so every test loads a fresh copy.
+ *
+ * 2026-10-19 investigation — the SDK is code-split and initialized on an idle
+ * callback (setTimeout fallback under happy-dom), so every enabled test drives
+ * fake timers and awaits the returned init promise.
  */
 describe("analytics wrapper", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    vi.useFakeTimers();
     delete process.env.NEXT_PUBLIC_POSTHOG_KEY;
     delete process.env.NEXT_PUBLIC_POSTHOG_HOST;
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     delete process.env.NEXT_PUBLIC_POSTHOG_KEY;
     delete process.env.NEXT_PUBLIC_POSTHOG_HOST;
   });
@@ -33,16 +39,23 @@ describe("analytics wrapper", () => {
     return import("../../../src/lib/analytics");
   }
 
+  /** Fake-timer settle: run the idle fallback + the dynamic import microtasks. */
+  async function settle(pending: Promise<void>): Promise<void> {
+    await vi.advanceTimersByTimeAsync(5000);
+    await pending;
+  }
+
   async function loadEnabled(): Promise<AnalyticsModule> {
     process.env.NEXT_PUBLIC_POSTHOG_KEY = "phc_test_key";
     const mod = await load();
-    mod.initAnalytics();
+    await settle(mod.initAnalytics());
     return mod;
   }
 
   it("does not initialize the SDK without a key (AC1 no-key no-op)", async () => {
     const mod = await load();
-    mod.initAnalytics();
+    await mod.initAnalytics();
+    await vi.advanceTimersByTimeAsync(5000);
 
     expect(posthogMock.init).not.toHaveBeenCalled();
 
@@ -69,7 +82,7 @@ describe("analytics wrapper", () => {
     process.env.NEXT_PUBLIC_POSTHOG_KEY = "phc_test_key";
     process.env.NEXT_PUBLIC_POSTHOG_HOST = "https://eu.i.posthog.com";
     const mod = await load();
-    mod.initAnalytics();
+    await settle(mod.initAnalytics());
 
     expect(posthogMock.init).toHaveBeenCalledWith("phc_test_key", {
       api_host: "https://eu.i.posthog.com",
@@ -79,9 +92,41 @@ describe("analytics wrapper", () => {
 
   it("initializes only once even if called twice", async () => {
     const mod = await loadEnabled();
-    mod.initAnalytics();
+    await mod.initAnalytics();
 
     expect(posthogMock.init).toHaveBeenCalledTimes(1);
+  });
+
+  it("buffers events fired before the SDK is ready and flushes them in order", async () => {
+    process.env.NEXT_PUBLIC_POSTHOG_KEY = "phc_test_key";
+    const mod = await load();
+
+    const pending = mod.initAnalytics();
+
+    // Fired while the SDK chunk is still loading.
+    mod.identifyFounder("founder-1", { tier: "free" });
+    mod.registerContext({ tier: "free" });
+    mod.capture("account_created", { method: "email" });
+
+    expect(posthogMock.init).not.toHaveBeenCalled();
+    expect(posthogMock.capture).not.toHaveBeenCalled();
+
+    await settle(pending);
+
+    expect(posthogMock.identify).toHaveBeenCalledWith("founder-1", {
+      tier: "free",
+    });
+    expect(posthogMock.register).toHaveBeenCalledWith({ tier: "free" });
+    expect(posthogMock.capture).toHaveBeenCalledWith("account_created", {
+      method: "email",
+    });
+
+    const order = [
+      posthogMock.identify.mock.invocationCallOrder[0],
+      posthogMock.register.mock.invocationCallOrder[0],
+      posthogMock.capture.mock.invocationCallOrder[0],
+    ];
+    expect(order).toEqual([...order].sort((a, b) => a - b));
   });
 
   it("forwards capture events and properties once enabled", async () => {

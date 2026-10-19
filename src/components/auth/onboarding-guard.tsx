@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "../../lib/supabase/server";
+import { ONBOARDING_PROGRESS_COOKIE } from "@/lib/onboarding-progress-core";
 
 export async function OnboardingGuard({
   children,
@@ -21,6 +23,9 @@ export async function OnboardingGuard({
   }
 
   // Check tier: free users with an existing waitlist cannot enter onboarding
+  // UNLESS they have an in-progress draft (cookie set by
+  // LocalOnboardingProvider) — that is mid-flow resume, not a re-run
+  // (QA Batch 2 TC-ONB-14a).
   const { data: profile } = await supabase
     .from("founder_profiles")
     .select("tier")
@@ -36,7 +41,12 @@ export async function OnboardingGuard({
       .eq("founder_id", user.id);
 
     if ((count ?? 0) > 0) {
-      redirect("/dashboard");
+      const cookieStore = await cookies();
+      const hasDraft =
+        cookieStore.get(ONBOARDING_PROGRESS_COOKIE)?.value === "1";
+      if (!hasDraft) {
+        redirect("/dashboard");
+      }
     }
   }
 

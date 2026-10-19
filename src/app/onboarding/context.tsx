@@ -10,6 +10,10 @@ import {
   useState,
 } from "react";
 import { type PhoneMode } from "@/lib/phone";
+import {
+  clearOnboardingProgressCookie,
+  writeOnboardingProgressCookie,
+} from "@/lib/onboarding-progress-core";
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -194,6 +198,58 @@ export function hasStaleDraft(): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// Progress predicate
+// ---------------------------------------------------------------------------
+
+// The provider persists a defaults-only object for every visitor the moment
+// an onboarding route mounts (live-verified 2026-10-19: storage key written
+// ~3ms after page load), so "the storage key exists" says nothing about
+// whether the founder actually started anything. Both the guard-cookie writer
+// and the signup-wall redirect need REAL progress: at least one value
+// differing from the initial defaults. tier/waitlistId/loading/_ts are
+// excluded — provenance, not progress.
+const PROGRESS_FIELDS = [
+  "slug",
+  "productName",
+  "headline",
+  "subheadline",
+  "template",
+  "brandColor",
+  "logoUrl",
+  "ctaText",
+  "milestoneRewards",
+  "qualificationEnabled",
+  "questions",
+  "signupCounterEnabled",
+  "signupCounterThreshold",
+  "emailSubject",
+  "emailSenderName",
+  "emailBody",
+  "phoneMode",
+] as const satisfies readonly (keyof OnboardingFormState)[];
+
+export function hasOnboardingProgress(
+  stored: Partial<OnboardingFormState> | null | undefined
+): boolean {
+  if (!stored) return false;
+  for (const field of PROGRESS_FIELDS) {
+    const value = stored[field];
+    if (value === undefined || value === null) continue;
+    if (Array.isArray(value)) {
+      if (value.length > 0) return true;
+      continue;
+    }
+    if (value !== initialState[field]) return true;
+  }
+  return false;
+}
+
+/** Client-side: does the persisted draft contain actual founder input? */
+export function storedDraftHasProgress(): boolean {
+  return hasOnboardingProgress(readStoredData());
+}
+
+// ---------------------------------------------------------------------------
 // Context
 // ---------------------------------------------------------------------------
 
@@ -243,6 +299,16 @@ export function LocalOnboardingProvider({
       localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersisted(state)));
     } catch {
       // Silent fail
+    }
+    // Server-visible draft signal: lets OnboardingGuard distinguish mid-flow
+    // resume from a re-run over an existing waitlist (QA Batch 2 TC-ONB-14a).
+    // Gated on REAL progress — this effect also runs with a defaults-only
+    // object for every visitor on mount, and writing the cookie then would
+    // disable the guard's re-run protection for any signed-in founder who
+    // merely opened an onboarding URL (cookie must mean "draft in progress",
+    // not "an onboarding route mounted in the last day").
+    if (hasOnboardingProgress(state)) {
+      writeOnboardingProgressCookie();
     }
   }, [state]);
 
@@ -372,6 +438,10 @@ export function LocalOnboardingProvider({
     } catch {
       // Ignore
     }
+    // Success screen: the draft is done — drop the server-visible resume
+    // signal so OnboardingGuard bounces a free founder back to the dashboard
+    // if they re-enter /onboarding/* later (re-run protection).
+    clearOnboardingProgressCookie();
     setState(initialState);
   }, []);
 
@@ -383,6 +453,9 @@ export function LocalOnboardingProvider({
     } catch {
       // Ignore
     }
+    // Start fresh = no draft in progress → the guard must bounce a re-run
+    // over an existing waitlist again (same reasoning as clearPersisted).
+    clearOnboardingProgressCookie();
     setState(initialState);
   }, []);
 

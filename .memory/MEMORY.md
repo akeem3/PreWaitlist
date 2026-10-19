@@ -2354,3 +2354,81 @@ Founder challenge (single project proven by URL) killed the multi-DB theory and 
 - **Open question:** the signed-in fresh-founder variant of (b) was not separately exercised (the screenshot showed the signed-out wall — middleware only redirects when unauthenticated). Re-verify both auth states when fixing.
 
 **Fix direction (for 21.6, not applied):** guard must distinguish mid-flow (allow resume / let step pages smart-redirect by data completeness) from a true 2nd-waitlist attempt; wall must check for a local draft and send no-draft visitors to `/onboarding/1`.
+
+## Manual QA — Batch 3 (Founder Dashboard) executed (2026-10-19)
+
+**Status:** Section 3 of `docs/qa/manual-test-cases.md` (TC-DASH-01..19) **executed on production — 11 pass / 4 fail / 4 pending**. Docs-only round: **no code changed**. Results + per-case run notes recorded in the QA doc (summary table now `| 107 | 36 | 5 | 1 | 5 blockers |`); story 21.7 + epic-21 flipped to `in-progress`. Uncommitted.
+
+**Fails (launch blockers unless waived):**
+
+- **TC-DASH-02 (free half)** — upgrade modal opens once from a locked sidebar item, then subsequent clicks do nothing.
+- **TC-DASH-05** — (1) the first-subscriber tour does not run; (2) after clearing localStorage, signing in to an existing account lands on onboarding Step 1 instead of `/dashboard`.
+- **TC-DASH-10 (free half)** — clicking the dashboard Warmth card does not open the upgrade modal (free layout itself renders correctly).
+- **TC-DASH-11** — free half: no upgrade modal on the Free updates page; Pro half: the 10-char minimum counts whitespace as characters.
+
+**Pending (not run):** 07 (needs near-cap free waitlist), 16 (sandbox billing/cancel), 17 (needs >30d data), 18 (throwaway account).
+
+**Passes:** 01, 03, 04, 06, 08, 09, 12, 13, 14, 15, 19. TC-DASH-06 step 3 (hide surfaces when env vars unset) is local-only — not testable on prod. TC-DASH-13 UX note: subscriber detail opens only from the email cell; expected whole-row click (21.6 follow-up).
+
+**Pattern:** all four fails cluster in one area — free-tier upgrade-modal entry points (locked nav item, Warmth card, updates page) plus the tour. Likely one shared trigger/dismiss-state cause; investigate together in 21.6 rather than as four separate fixes.
+
+## Prompt #8 QA-batch fix batch — cooldown intents, tour count, onboarding resume, whitespace, wall redirect (2026-10-19)
+
+**Status:** all 5 fixes implemented + gated, **uncommitted** on `dev` (working tree alongside prior batches). Source: Prompt #8 investigation of Batch 2 (TC-ONB-14) + Batch 3 (TC-DASH-02/05/10/11) failures in `docs/qa/manual-test-cases.md`. No SQL, no new deps/env. Each case's run note in the QA doc now carries a `[FIXED 2026-10-19]` + retest-instruction annotation.
+
+**Fix A — explicit-intent cooldown exemptions (TC-DASH-02/10/11a):**
+
+- `components/dashboard/upgrade-modal.tsx` — `COOLDOWN_EXEMPT_TRIGGERS` += `warmth`, `broadcast`, `updates`, `csv_export`, `qual_question`, `email_customisation`. Same bug class as the prior `billing`/`subscriber_cap` exemptions: the render-level gate (`return null` + `onOpenChange(false)`) made every click after ONE dismissal a zero-pixel no-op for 24h. Durable rule restated in the comment: button/deep-link click = own key + exempt; auto-opener = passive = gated (`cap-email` stays the only gated key).
+- Test: exempt `it.each` expanded to all 10 keys (`upgrade-modal.test.tsx`).
+
+**Fix B — updates compose trimmed validation (TC-DASH-11b):**
+
+- `src/app/dashboard/updates/client.tsx` — `trimmed = body.trim()`; `isValid = trimmed.length >= 10 && <= 2000`; optimistic prepend stores `trimmed` (server already trims before insert). Client/server parity — whitespace no longer counts toward the minimum.
+- Tests: +2 in `dashboard-updates-compose.test.tsx` (whitespace-only disabled; 12-raw-char whitespace-padded disabled).
+
+**Fix C — tour live subscriber count (TC-DASH-05 issue 1):**
+
+- `src/app/dashboard/layout.tsx` — after resolving `defaultWaitlistId`, head-COUNTs `subscribers` (`{ count: "exact", head: true }.eq("waitlist_id", id)`) → `liveSubscriberCount` prop; count-error falls back to the cached column.
+- `src/app/dashboard/shell.tsx` — new optional `liveSubscriberCount` prop; `DashboardTour subscriberCount={liveSubscriberCount ?? activeWaitlist?.subscriber_count ?? 0}`.
+- Why: tour gated on the cached `waitlists.subscriber_count` column, frozen at 0 on production by the Phase-6 DROPs (recount never confirmed run). Stats + public counter already live-COUNT.
+
+**Fix D — onboarding mid-flow resume cookie (TC-ONB-14a):**
+
+- NEW `src/lib/onboarding-progress-core.ts` — `onboarding_in_progress` cookie (1-day max-age, samesite=lax), client write/clear helpers; same isomorphic-core pattern as `waitlist-pref-core.ts`.
+- `src/app/onboarding/context.tsx` — `LocalOnboardingProvider` persist effect writes the cookie on every draft persist; `clearPersisted()` (success screen) clears it.
+- `src/components/auth/onboarding-guard.tsx` — free + ≥1 waitlist redirects to `/dashboard` UNLESS `cookie.get("onboarding_in_progress")?.value === "1"` — server can now distinguish mid-flow resume from a re-run over an existing waitlist. (402 second-waitlist gate untouched.)
+- Tests: guard +2 (cookie allows; value `"0"` still redirects); new `onboarding-signup-wall.test.tsx`.
+
+**Fix E — signup wall no-draft redirect (TC-ONB-14b):**
+
+- `src/app/onboarding/signup/page.tsx` — mount effect: no persisted `prewaitlist_onboarding` draft → `router.replace("/onboarding/1")`. Removes the fabricated-defaults + fake "Step 3 of 5" wall for no-draft visitors.
+- Tests: new `onboarding-signup-wall.test.tsx` (2: no-draft redirects; draft present does not).
+
+**Drive-by fix (pre-existing, not from this investigation):**
+
+- `components/public/email-capture-form.tsx:440` — MC select class `rounded-[var(--input-radius)]` → `rounded-(--input-radius)`, completing the in-flight Tailwind syntax modernization (line 270 already modernized; the test asserted the modernized form). Unblocked `email-capture-form.test.tsx` (1 fail in full suite).
+
+**Gates:** lint **0 errors / 5 baseline warnings** · prettier clean on all touched files · targeted 47/47 (guard 6, upgrade-modal 28, signup-wall 2, updates-compose 11) + tour/context 37/37 · full suite **1145 = 1138 pass / 7 fail = exact sanctioned baseline** (dashboard-archive 4 + dashboard-subscriber-table 3; billing flake + email-capture-form both green in isolation) · clean build (`next build` exit 0, `ƒ Proxy (Middleware)`).
+
+**TC-DASH-05 issue 2 NOT fixed (ambiguous):** plain `/signin` has no code path to `/onboarding/1` — only the dashboard layout zero-waitlist bounce does. Recorded in the QA doc as a retest item with the known-good founder account; no code change proposed.
+
+**Founder retest checklist (post-deploy):**
+
+1. TC-DASH-02/10/11a: dismiss the upgrade modal once, re-click every locked/button entry — modal must re-open every time.
+2. TC-DASH-11b: whitespace-only Publish stays disabled; real body stores trimmed.
+3. TC-DASH-05(1): clear localStorage, sign in with an account that has ≥1 real subscriber — tour must auto-start. Run the Phase-6 recount SQL too (90%-cap/quota paths still read the cached column).
+4. TC-ONB-14(a): signed-in free founder mid-flow — leave + return to `/onboarding/1` — must resume, not bounce. (b): signed-OUT no-draft hard landing on `/onboarding/4` — must land on `/onboarding/1`; re-verify the signed-in fresh-founder variant of (b).
+
+## QA-batch fixes: wall redirect, guard-cookie semantics, sign-in blind timer (2026-10-19)
+
+**Status:** three fixes from the slowness investigation's Prompt #8 (investigation itself CLOSED — slowness gone, founder chose "Fix all three now" + keep the PostHog lazy-load change). Implemented, tested, gated, live-verified on the dev server `:3000`. **Uncommitted** (no commit requested).
+
+1. **TC-ONB-14b wall redirect was dead code.** `LocalOnboardingProvider`'s persist effect writes a defaults-only draft ~3ms after mount for every visitor (probes: `draftWritten` 3ms/23ms, zero `/onboarding/1` requests ever issued), so `signup/page.tsx`'s raw localStorage-key existence check always saw a draft and never redirected. Fix: shared predicate `hasOnboardingProgress(stored)` + `storedDraftHasProgress()` exported from `context.tsx` (all persisted fields vs `ONBOARDING_SERVER_DEFAULTS`; excludes `tier`/`waitlistId`/`loading`/`_ts` — provenance, not progress). Predicate lives in `context.tsx`, not `onboarding-progress-core.ts`, to avoid a client→lib→client import cycle.
+2. **Guard cookie semantics.** `onboarding_in_progress=1` was written for every visitor on mount (cookie meant "an onboarding route mounted in the last day", not "draft in progress"), which disabled `OnboardingGuard`'s TC-ONB-14a ≥1-waitlist re-run protection. Fix: persist effect writes the cookie only when `hasOnboardingProgress(state)`; `clearDraft()` (Start fresh / success screen `clearPersisted()`) also clears it. Cookie deliberately KEPT after `flushToAPI` success — Phase B resume still needs it (cookie written at step 3, slug exists, before flush).
+3. **Sign-in 2s blind fallback timer.** `setTimeout(2000)` in `handleSubmit` called `navigatePostAuth()` before `signInWithPassword` resolved → failed sign-in pushed `/dashboard`, bounced back to `/signin`, error copy never shown (remount loses the pending setError). Fix: timer removed entirely — navigation only via SIGNED_IN event or post-await success (`if (!handled)`); success path provably redundant without it. Error copy + failure branch untouched.
+
+**Tests:** +29 — new `onboarding-progress-cookie.test.tsx` (25: predicate units with 17 changed-field `it.each` cases, TTL via `storedDraftHasProgress`, cookie written on real edit, no cookie on fresh mount, cookie cleared by Start fresh), new `signin-failed-signin.test.tsx` (3, fake timers: fail → no nav + error shown; slow success → exactly one nav after 3s; SIGNED_IN event during pending call → exactly once, no double-fire), `onboarding-signup-wall.test.tsx` +1 (defaults-only draft still redirects) with the context mock converted to `importOriginal` partial so the real predicate + real `ONBOARDING_SERVER_DEFAULTS` run under test. **Gates:** targeted 33/33 + neighbors 28/28 (onboarding-draft-resume, onboarding-guard, auth-signed-in-redirect, step-1-headline, step-4a-caption, signup-duplicate) · full suite **1177 = 1170 pass / 7 fail = exact sanctioned baseline** (dashboard-archive 4 + dashboard-subscriber-table 3) · lint 0 errors / 5 baseline warnings · `pnpm build` exit 0.
+
+**Live verify (dev :3000):** fresh `/onboarding/signup` → `/onboarding/1` AND no guard cookie on fresh visit; editing a field → cookie=1; seeded real draft stays on the wall; anon `/onboarding/4` → `/onboarding/1` (via wall); failed sign-in stays `/signin`, framenavigated shows no `/dashboard` ever, error alert appears in place. The shared verify script scored 7/8 across runs — the one miss was environmental (Supabase uplink stalled >30s in headless Chromium, no response/failure either); a dedicated probe of the same path got `400` at 2s with the alert rendering, and a direct Node POST to the same GoTrue endpoint returned 400 in 4s → endpoint healthy, code path proven. **Closes founder retest checklist item 4(b) signed-OUT half**; signed-in fresh-founder variant still open (QA auth credentials blocked — `invalid_credentials`).
+
+**Gotchas:** raw localStorage-key existence can NEVER mean "has progress" in Phase A (defaults persist on mount) — always route through `storedDraftHasProgress()` · tests exercising the real module predicate need `vi.mock(..., importOriginal)` partial mocks · `getByLabel("Password")` strict-mode collides with the Show-password button → use `input[name="password"]` · `pnpm build` did NOT kill the user's dev server (Next 16 keeps `.next/dev` separate from `.next/build`) · PS 5.1 `Get-Content` renders this UTF-8 file as mojibake — use the Read tool for tails you need to string-match in an Edit.

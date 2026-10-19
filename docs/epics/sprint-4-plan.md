@@ -538,16 +538,16 @@ Build the launch-blocking verification suite: scan the real application end-to-e
 
 ## Story Index
 
-| ID   | Title                                                     | Depends on                      | Status |
-| ---- | --------------------------------------------------------- | ------------------------------- | ------ |
-| 21.1 | Full App Inventory & Behavior Scan                        | —                               | done   |
-| 21.2 | Page Capture (Core Screenshot Set)                        | 21.1                            | done   |
-| 21.3 | Document Cross-Reference Scan (Behavior-to-Source Matrix) | —                               | done   |
-| 21.4 | Input Validation Audit                                    | 21.1                            | ready  |
-| 21.5 | Manual Test-Case Document                                 | 21.1–21.4, 19.1–19.2, 20.1–20.3 | ready  |
-| 21.6 | Fix Pass on Validated Failures                            | 21.4, 21.5                      | ready  |
-| 21.7 | Full QA Execution                                         | 21.5, 21.6, 19.*                | ready  |
-| 21.8 | Launch Verification                                       | 19.\*, 20.\*, 21.7              | ready  |
+| ID   | Title                                                     | Depends on                      | Status      |
+| ---- | --------------------------------------------------------- | ------------------------------- | ----------- |
+| 21.1 | Full App Inventory & Behavior Scan                        | —                               | done        |
+| 21.2 | Page Capture (Core Screenshot Set)                        | 21.1                            | done        |
+| 21.3 | Document Cross-Reference Scan (Behavior-to-Source Matrix) | —                               | done        |
+| 21.4 | Input Validation Audit                                    | 21.1                            | ready       |
+| 21.5 | Manual Test-Case Document                                 | 21.1–21.4, 19.1–19.2, 20.1–20.3 | ready       |
+| 21.6 | Fix Pass on Validated Failures                            | 21.4, 21.5                      | ready       |
+| 21.7 | Full QA Execution                                         | 21.5, 21.6, 19.\*               | in-progress |
+| 21.8 | Launch Verification                                       | 19.\*, 20.\*, 21.7              | ready       |
 
 **Chain:** 21.1 → 21.2 → 21.4 are sequential within the scan phase; 21.3 runs parallel to 21.1 (independent doc mining). 21.5 waits for: scan outputs (21.1–21.4) + Epic 19 fixes (test expectations must reflect fixed behavior, especially 19.1/19.2) + Epic 20 surfaces (20.1–20.3 need test cases too). 21.6 fixes what 21.4/21.5 surface. 21.7 executes. 21.8 signs off.
 
@@ -718,7 +718,7 @@ Build the launch-blocking verification suite: scan the real application end-to-e
 
 ### Story 21.7 — Full QA Execution
 
-**Status:** ready
+**Status:** in-progress
 **Story:** As the founder, I want the complete test document executed end-to-end with results recorded so that launch blockers are visible.
 
 **Acceptance Criteria (EARS):**
@@ -733,6 +733,7 @@ Build the launch-blocking verification suite: scan the real application end-to-e
 
 **Dev Notes:**
 
+- **Execution progress (2026-10-19):** batch 1 (Sec 1 Auth) closed — 12 pass / 1 deferred. Batch 2 (Sec 2 Onboarding) — 13 pass / 1 fail (TC-ONB-14). Batch 3 (Sec 3 Dashboard, TC-DASH-01..19) executed on production — 11 pass / 4 fail / 4 pending. Running total 36 pass / 5 fail / 1 deferred; 65 cases remaining. Results + run notes in `docs/qa/manual-test-cases.md`.
 - Execution order suggestion: follow doc section order (auth → onboarding → dashboard → public → …) so environment setup (tier flips, seed data) happens once per section.
 - Founder may execute personally (that's the point of the manual doc) with the agent standing by for triage/fixes — coordinate in session.
 - Two-tier reality: some cases are prod-only (emails, webhooks, cron, og:image) — execute those against `www.prewaitlist.com`/subdomains and note environment per case.

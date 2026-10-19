@@ -59,12 +59,27 @@ export default async function DashboardLayout({
   const defaultWaitlistId =
     resolveActiveWaitlist(waitlists ?? [], { storedId: storedId })?.id ?? "";
 
+  // QA Batch 3 TC-DASH-05: the tour must not depend on the cached
+  // waitlists.subscriber_count column (frozen by the Phase-6 migration
+  // DROPs on production). Live-count the default waitlist's subscribers —
+  // same head-count pattern as the stats API — and fall back to the cached
+  // column on error.
+  let liveSubscriberCount: number | null = null;
+  if (defaultWaitlistId) {
+    const { count, error: countError } = await supabase
+      .from("subscribers")
+      .select("id", { count: "exact", head: true })
+      .eq("waitlist_id", defaultWaitlistId);
+    if (!countError) liveSubscriberCount = count ?? 0;
+  }
+
   return (
     <DashboardShell
       waitlists={(waitlists ?? []) as WaitlistRow[]}
       tier={profile?.tier ?? "free"}
       founderId={user.id}
       defaultWaitlistId={defaultWaitlistId}
+      liveSubscriberCount={liveSubscriberCount}
     >
       {children}
     </DashboardShell>

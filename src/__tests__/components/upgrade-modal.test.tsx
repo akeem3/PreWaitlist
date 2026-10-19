@@ -182,16 +182,22 @@ describe("UpgradeModal", () => {
   });
 
   // Explicit-intent regression: ?plan=pro deep links, the billing page's
-  // "Upgrade to Pro" button, and the three "Add new waitlist"/"Upgrade to
-  // Pro" buttons that share the subscriber_cap key must survive a prior
-  // dismissal — the deep links otherwise shut ~3ms after paint (flicker,
-  // stripped param loses the pay intent), and the buttons were silent dead
-  // buttons for 24h (TC-AUTH-09 retest).
+  // "Upgrade to Pro" button, the "Add new waitlist"/"Upgrade to Pro" buttons
+  // that share the subscriber_cap key, and every other button-fired key
+  // (QA Batch 3 TC-DASH-02/10/11) must survive a prior dismissal — the deep
+  // links otherwise shut ~3ms after paint (flicker, stripped param loses the
+  // pay intent), and the buttons were silent dead buttons for 24h.
   it.each([
     "pro-cta-onboarding",
     "pro-cta-billing",
     "billing",
     "subscriber_cap",
+    "warmth",
+    "broadcast",
+    "updates",
+    "csv_export",
+    "qual_question",
+    "email_customisation",
   ])("does not auto-close exempted trigger %s within cooldown", (trigger) => {
     const onOpenChange = vi.fn();
     localStorageMock.setItem(

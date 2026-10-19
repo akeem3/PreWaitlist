@@ -94,6 +94,11 @@ interface DashboardShellProps {
    *  switcher label matches content before hydration. Optional — tests and
    *  legacy callers fall back to the client-side resolution. */
   defaultWaitlistId?: string;
+  /** Live COUNT(*) of the default active waitlist's subscribers (QA Batch 3
+   *  TC-DASH-05) — the tour gate uses this instead of the cached
+   *  waitlists.subscriber_count column. Null/undefined = fall back to the
+   *  column (tests, count-query errors). */
+  liveSubscriberCount?: number | null;
 }
 
 function getStoredId(waitlists: WaitlistRow[]): string | null {
@@ -119,6 +124,7 @@ export default function DashboardShell({
   tier: serverTier,
   founderId,
   defaultWaitlistId,
+  liveSubscriberCount,
 }: DashboardShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [upgradeModal, setUpgradeModal] = useState<{
@@ -510,9 +516,13 @@ export default function DashboardShell({
         {/* Renders null; children effects (page captures) run before the
             tour's effect so Survey 1 eligibility sees dashboard_viewed.
             interruptOpen: the ?upgrade=cap deep link mounts the Pro modal
-            with the tour eligible — the tour must yield to the modal. */}
+            with the tour eligible — the tour must yield to the modal.
+            subscriberCount: prefer the live COUNT (QA Batch 3 TC-DASH-05) —
+            the cached column can be stale (Phase-6 DROP freeze). */}
         <DashboardTour
-          subscriberCount={activeWaitlist?.subscriber_count ?? 0}
+          subscriberCount={
+            liveSubscriberCount ?? activeWaitlist?.subscriber_count ?? 0
+          }
           interruptOpen={upgradeModal.open}
         />
       </main>
