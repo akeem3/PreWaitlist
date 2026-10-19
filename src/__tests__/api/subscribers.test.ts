@@ -572,8 +572,11 @@ describe("POST /api/subscribers", () => {
     });
     const response = await POST(request);
     expect(response.status).toBe(429);
+    expect(response.headers.get("retry-after")).toBe("3600");
     const data = await response.json();
-    expect(data.error).toBe("Something went wrong. Please try again.");
+    expect(data.error).toBe(
+      "Too many signups from this network. Please try again in an hour."
+    );
   });
 
   it("returns 403 when the atomic claim reports the cap reached", async () => {

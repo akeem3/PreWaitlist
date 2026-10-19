@@ -503,7 +503,18 @@ export async function POST(request: NextRequest) {
       .eq("consent_ip_address", ipAddress)
       .gte("created_at", oneHourAgo);
     if ((recentFromIp ?? 0) >= 5) {
-      return genericSignupError(429);
+      // Distinct, human copy for the one recoverable rejection a real person
+      // can actually hit (approved verbatim, 2026-10-19). Retry-After matches
+      // the copy and the worst case of the rolling window (RFC 6585).
+      // Anti-enumeration is unaffected: this reveals only IP-window state,
+      // never whether an account/email exists.
+      return NextResponse.json(
+        {
+          error:
+            "Too many signups from this network. Please try again in an hour.",
+        },
+        { status: 429, headers: { "Retry-After": "3600" } }
+      );
     }
   }
 

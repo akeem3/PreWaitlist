@@ -493,7 +493,7 @@ describe("EmailCaptureForm", () => {
       name: /Which plan\?/,
     }) as HTMLSelectElement;
     expect(select.id).toBe("qual-q-mc");
-    expect(select.className).toContain("rounded-[var(--input-radius)]");
+    expect(select.className).toContain("rounded-(--input-radius)");
     expect(select.className).toContain("h-11");
     expect(select.className).toContain("appearance-none");
     // muted question surface — never the shiny card
@@ -878,6 +878,38 @@ describe("EmailCaptureForm", () => {
         screen.getByText("Something went wrong. Please try again.")
       ).toBeDefined();
     });
+  });
+
+  it("surfaces the 429 rate-limit copy without retrying (2026-10-19)", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 429,
+      json: () =>
+        Promise.resolve({
+          error:
+            "Too many signups from this network. Please try again in an hour.",
+        }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const user = userEvent.setup();
+    render(<EmailCaptureForm {...defaultProps} />);
+
+    await user.type(
+      screen.getByPlaceholderText("Email address"),
+      "test@example.com"
+    );
+    await user.click(screen.getByRole("button", { name: /Join Waitlist/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "Too many signups from this network. Please try again in an hour."
+        )
+      ).toBeDefined();
+    });
+    // 429 must never be replayed — the window has not expired.
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
   it("does not retry a 400 that is unrelated to referral (19.3 F1 guard)", async () => {
