@@ -13,7 +13,7 @@ As a founder after onboarding, I want to edit qualification questions from waitl
 - AC1: The system shall provide a waitlist-scoped settings surface for qualification questions within the existing settings hierarchy (`/dashboard/[waitlistId]/settings` or `/dashboard/settings/waitlists` detail — document choice in PR).
 - AC2: The editor shall reuse the Step 4a question-building UI via a **shared component** extracted in 14.1 — single implementation, not a fork.
 - AC3: Save shall `PATCH /api/waitlist` with the full `questions` array; server cap + type/options validation from 14.0 apply.
-- AC4: `/dashboard/qualification` shall include an **Edit questions** control that navigates to this settings surface (label **COPY GAP**).
+- AC4: `/dashboard/qualification` shall include an **Edit questions** control that navigates to this settings surface (label **COPY GAP**) **[RESOLVED 2026-10-19: founder dictated the label verbatim — control now reads "Add or Edit Questions" (`src/app/dashboard/qualification/client.tsx:23`); same control, same navigation]**.
 - AC5: Edits shall be non-destructive when subscribers exist: answers keep `question_id` keys (no key rewrite on rename); deleting a question leaves orphan keys that dashboard/CSV ignore — no destructive cascade required.
 - AC6: The editor shall enforce Free/Pro caps and fire the existing upgrade modal at Free cap (`triggerUpgrade("qual_question")`).
 - AC7: Lint and build shall pass with zero errors.

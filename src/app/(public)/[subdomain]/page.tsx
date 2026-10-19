@@ -6,6 +6,7 @@ import { notFound, redirect } from "next/navigation";
 import { WaitlistPageContent } from "../../../../components/public/waitlist-page-content";
 import { EmailCaptureForm } from "../../../../components/public/email-capture-form";
 import { LatestUpdateCard } from "../../../../components/public/updates-feed";
+import { AutoRefresh } from "../../../../components/public/auto-refresh";
 
 type Props = { params: Promise<{ subdomain: string }> };
 
@@ -135,47 +136,50 @@ export default async function PublicSubdomainPage({ params }: Props) {
   const latestUpdate = latestUpdateResult.data;
 
   return (
-    <WaitlistPageContent
-      template={waitlist.template as "minimal" | "bold" | "dark"}
-      headline={waitlist.headline}
-      subheadline={waitlist.subheadline}
-      logoUrl={waitlist.logo_url}
-      productName={waitlist.product_name}
-      ctaText={waitlist.cta_text}
-      brandColor={waitlist.brand_color}
-      tier={tier}
-      signupCounter={signupCount}
-      signupCounterVisible={signupCounterVisible}
-      milestoneRewards={milestoneRewards}
-      emailCaptureForm={
-        <Suspense>
-          <EmailCaptureForm
-            waitlistId={waitlist.id}
-            subdomain={waitlist.subdomain}
-            ctaText={waitlist.cta_text || "Join Waitlist"}
-            brandColor={waitlist.brand_color}
-            template={waitlist.template as "minimal" | "bold" | "dark"}
-            tier={tier}
-            questions={questions}
-            qualificationEnabled={waitlist.qualification_enabled}
-            subscriberCount={signupCount}
-            phoneMode={
-              waitlist.phone_mode === "optional" ||
-              waitlist.phone_mode === "required"
-                ? waitlist.phone_mode
-                : "off"
-            }
-          />
-        </Suspense>
-      }
-      latestUpdateSlot={
-        latestUpdate ? (
-          <LatestUpdateCard
-            update={latestUpdate}
-            template={waitlist.template as "minimal" | "bold" | "dark"}
-          />
-        ) : undefined
-      }
-    />
+    <>
+      <AutoRefresh />
+      <WaitlistPageContent
+        template={waitlist.template as "minimal" | "bold" | "dark"}
+        headline={waitlist.headline}
+        subheadline={waitlist.subheadline}
+        logoUrl={waitlist.logo_url}
+        productName={waitlist.product_name}
+        ctaText={waitlist.cta_text}
+        brandColor={waitlist.brand_color}
+        tier={tier}
+        signupCounter={signupCount}
+        signupCounterVisible={signupCounterVisible}
+        milestoneRewards={milestoneRewards}
+        emailCaptureForm={
+          <Suspense>
+            <EmailCaptureForm
+              waitlistId={waitlist.id}
+              subdomain={waitlist.subdomain}
+              ctaText={waitlist.cta_text || "Join Waitlist"}
+              brandColor={waitlist.brand_color}
+              template={waitlist.template as "minimal" | "bold" | "dark"}
+              tier={tier}
+              questions={questions}
+              qualificationEnabled={waitlist.qualification_enabled}
+              subscriberCount={signupCount}
+              phoneMode={
+                waitlist.phone_mode === "optional" ||
+                waitlist.phone_mode === "required"
+                  ? waitlist.phone_mode
+                  : "off"
+              }
+            />
+          </Suspense>
+        }
+        latestUpdateSlot={
+          latestUpdate ? (
+            <LatestUpdateCard
+              update={latestUpdate}
+              template={waitlist.template as "minimal" | "bold" | "dark"}
+            />
+          ) : undefined
+        }
+      />
+    </>
   );
 }

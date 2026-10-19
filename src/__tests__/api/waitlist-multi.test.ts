@@ -475,3 +475,91 @@ describe("PATCH /api/waitlist (multi-waitlist)", () => {
     });
   });
 });
+
+describe("PATCH /api/waitlist — qualification_enabled mirror", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSupabase.__calls.length = 0;
+    mockSupabase.__queue.length = 0;
+  });
+
+  function lastUpdatePayload() {
+    const updates = mockSupabase.__calls.filter((c) => c.method === "update");
+    expect(updates.length).toBeGreaterThan(0);
+    return updates[updates.length - 1].args[0] as Record<string, unknown>;
+  }
+
+  it("sets qualification_enabled true when non-empty questions are saved", async () => {
+    // Pro owner: no count query. Queue: ownership, waitlists update,
+    // existing-question load (none), question insert.
+    mockSupabase.__queue.push({
+      data: { id: "wl-1", founder_profiles: [{ tier: "pro" }] },
+      error: null,
+    });
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+    mockSupabase.__queue.push({ data: [], error: null });
+    mockSupabase.__queue.push({ data: [], error: null });
+
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: {
+          waitlist_id: "wl-1",
+          questions: [
+            { text: "Why do you want early access?", type: "free_text" },
+          ],
+        },
+      })
+    );
+    expect(response.status).toBe(200);
+    expect(lastUpdatePayload()).toEqual({ qualification_enabled: true });
+  });
+
+  it("sets qualification_enabled false when all questions are removed", async () => {
+    mockSupabase.__queue.push({
+      data: { id: "wl-1", founder_profiles: [{ tier: "pro" }] },
+      error: null,
+    });
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+    mockSupabase.__queue.push({ data: [], error: null });
+
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: { waitlist_id: "wl-1", questions: [] },
+      })
+    );
+    expect(response.status).toBe(200);
+    expect(lastUpdatePayload()).toEqual({ qualification_enabled: false });
+  });
+
+  it("leaves qualification_enabled untouched when no questions are sent", async () => {
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+    mockSupabase.__queue.push({ data: null, error: null });
+
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: { waitlist_id: "wl-1", headline: "Updated headline" },
+      })
+    );
+    expect(response.status).toBe(200);
+    const payload = lastUpdatePayload();
+    expect("qualification_enabled" in payload).toBe(false);
+    expect(payload.headline).toBe("Updated headline");
+  });
+
+  it("preserves an explicit qualification_enabled write when no questions are sent (step 4 shape)", async () => {
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+    mockSupabase.__queue.push({ data: null, error: null });
+
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: { waitlist_id: "wl-1", qualification_enabled: true },
+      })
+    );
+    expect(response.status).toBe(200);
+    expect(lastUpdatePayload()).toEqual({ qualification_enabled: true });
+  });
+});

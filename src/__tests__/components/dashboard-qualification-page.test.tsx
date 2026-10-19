@@ -77,9 +77,9 @@ describe("Dashboard Qualification Page", () => {
     expect(panel.getAttribute("data-waitlist-id")).toBe("wl-123");
   });
 
-  it("renders Edit questions link to settings qualification tab", () => {
+  it("renders Add or Edit Questions link to settings qualification tab", () => {
     render(<QualificationClient subdomain="acme" waitlistId="wl-1" />);
-    const link = screen.getByRole("link", { name: "Edit questions" });
+    const link = screen.getByRole("link", { name: "Add or Edit Questions" });
     expect(link.getAttribute("href")).toBe(
       "/dashboard/wl-1/settings?tab=qualification"
     );
@@ -92,9 +92,9 @@ describe("Dashboard Qualification Page", () => {
     expect(container.firstChild).toHaveClass("max-w-6xl");
   });
 
-  it("renders Edit questions as a solid accent CTA (brand color)", () => {
+  it("renders Add or Edit Questions as a solid accent CTA (brand color)", () => {
     render(<QualificationClient subdomain="acme" waitlistId="wl-1" />);
-    const link = screen.getByRole("link", { name: "Edit questions" });
+    const link = screen.getByRole("link", { name: "Add or Edit Questions" });
     expect(link.className).toContain("bg-accent");
     expect(link.className).toContain("text-accent-foreground");
     expect(link.className).not.toContain("border-border");

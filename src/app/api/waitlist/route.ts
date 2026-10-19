@@ -472,6 +472,17 @@ export async function PATCH(request: NextRequest) {
   // Explicit handling for product_name (also included via ...updates spread)
   if (body.product_name !== undefined) updates.product_name = body.product_name;
 
+  // Mirror question existence onto the public-page gate. The live waitlist
+  // page only fetches questions when qualification_enabled is true, so a
+  // waitlist created with qualification off (step-4 skip) that later gains
+  // questions via settings would otherwise never show them publicly. A PATCH
+  // that omits `questions` leaves the flag untouched (Step 4's explicit flag
+  // write is unaffected); 4a always saves >=1 question (its continue button
+  // requires one), so the flag stays true on the onboarding path.
+  if (normalizedQuestions !== null) {
+    updates.qualification_enabled = normalizedQuestions.length > 0;
+  }
+
   // Update waitlists table (excluding questions — that's a child table)
   const { error } = await supabase
     .from("waitlists")

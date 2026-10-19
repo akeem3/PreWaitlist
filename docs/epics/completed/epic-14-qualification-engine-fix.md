@@ -128,7 +128,7 @@ Stories must be executed in dependency order; 14.0's migration SQL is a hard gat
 - AC1: The system shall provide a waitlist-scoped settings surface for qualification questions (recommended: section under `/dashboard/[waitlistId]/settings` or `/dashboard/settings/waitlists` detail — pick existing settings hierarchy; document choice in PR).
 - AC2: The editor shall reuse the same question-building UI as Step 4a (extract shared component from 14.1 — single implementation, not a fork).
 - AC3: Save shall `PATCH /api/waitlist` with full `questions` array; server cap + validation from 14.0 apply.
-- AC4: The qualification dashboard page shall include an **Edit questions** control that navigates to this settings surface (Story 12.3.2 AC5 CTA intent — label **COPY GAP**).
+- AC4: The qualification dashboard page shall include an **Edit questions** control that navigates to this settings surface (Story 12.3.2 AC5 CTA intent — label **COPY GAP**) **[RESOLVED 2026-10-19: label founder-dictated as "Add or Edit Questions" — same control, same navigation]**.
 - AC5: When the waitlist has existing subscribers, editing questions that would orphan answers shall be non-destructive: `question_id` keys on old answers remain (no key rewrite on edit); renaming text is safe; deleting a question leaves orphan keys that dashboard/CSV ignore (document; no destructive cascade required).
 - AC6: The editor shall enforce Free/Pro caps and fire the existing upgrade modal at Free cap (same `triggerUpgrade("qual_question")` path).
 - AC7: Lint and build shall pass with zero errors.
