@@ -242,7 +242,7 @@
 > **(a) Signed-in free founder mid-flow → `/onboarding/1` → `/dashboard`.** After the Step-3 signup wall, FlushGate creates the waitlist; `src/components/auth/onboarding-guard.tsx:32-40` then redirects any free founder with ≥1 waitlist on every onboarding route (intent: stop a 2nd-waitlist bypass of the 402 gate at `src/app/api/waitlist/route.ts:208`). Consequence: legitimate mid-flow resume is blocked — a founder who leaves or reloads cannot return to Steps 4/4a/5.
 > **(b) Fresh founder, no draft, `/onboarding/4` → `/onboarding/signup` wall, not `/onboarding/1`.** The Phase-B guard in `src/lib/supabase/middleware.ts` sends unauthenticated Phase-B paths to the wall; FlushGate — which owns the `200 []` → `/onboarding/1` behavior (revenue-phase-4 F1) — only renders for authenticated users, so the spec'd redirect cannot fire. The wall performs no draft check and falls back to fabricated defaults (`Your Product`, `your-page.prewaitlist.com`, `Template: minimal`) at `src/app/onboarding/signup/page.tsx:118-128`.
 > **Open question for 21.6:** the signed-in fresh-founder variant of (b) was not separately exercised; re-verify both auth states when fixing.
-> **[FIXED 2026-10-19 — Prompt #8, uncommitted]** (a) `onboarding_in_progress` cookie (`src/lib/onboarding-progress-core.ts`) written by `LocalOnboardingProvider` on every draft persist, cleared by `clearPersisted()` on success; `OnboardingGuard` now allows a free founder with ≥1 waitlist through when the cookie is present. (b) The signup wall now checks for a persisted draft and `router.replace("/onboarding/1")` when absent (`src/app/onboarding/signup/page.tsx`). Tests: `onboarding-guard.test.tsx` (+2 cookie cases), new `onboarding-signup-wall.test.tsx` (2). **Retest both legs; also re-verify the signed-in fresh-founder variant of (b).**
+> **[FIXED 2026-10-19 — Prompt #8 — shipped `ea721c0`, merged to main, deployed]** (a) `onboarding_in_progress` cookie (`src/lib/onboarding-progress-core.ts`) written by `LocalOnboardingProvider` on every draft persist, cleared by `clearPersisted()` on success; `OnboardingGuard` now allows a free founder with ≥1 waitlist through when the cookie is present. (b) The signup wall now checks for a persisted draft and `router.replace("/onboarding/1")` when absent (`src/app/onboarding/signup/page.tsx`). Tests: `onboarding-guard.test.tsx` (+2 cookie cases), new `onboarding-signup-wall.test.tsx` (2). **Retest both legs; also re-verify the signed-in fresh-founder variant of (b).**
 
 ---
 
@@ -265,7 +265,7 @@
 **Result:** [ ] Pass [x] Fail
 
 > **Run note (2026-10-19 — production): FAIL (free half).** The upgrade modal does not open consistently when the locked sidebar items are clicked. It appears once, then subsequent clicks do nothing. Pro half PASS — sidebar unlocks correctly.
-> **[FIXED 2026-10-19 — Prompt #8, uncommitted]** `warmth` and `broadcast` triggers added to `COOLDOWN_EXEMPT_TRIGGERS` (`components/dashboard/upgrade-modal.tsx`) — after one dismissal the render gate was silently eating every subsequent click (same bug class as the `billing`/`subscriber_cap` exemptions). **Retest: dismiss the modal once, then click the locked sidebar items again — the modal must re-open.**
+> **[FIXED 2026-10-19 — Prompt #8 — shipped `ea721c0`, merged to main, deployed]** `warmth` and `broadcast` triggers added to `COOLDOWN_EXEMPT_TRIGGERS` (`components/dashboard/upgrade-modal.tsx`) — after one dismissal the render gate was silently eating every subsequent click (same bug class as the `billing`/`subscriber_cap` exemptions). **Retest: dismiss the modal once, then click the locked sidebar items again — the modal must re-open.**
 
 ### TC-DASH-03: Waitlist switcher precedence
 
@@ -293,7 +293,7 @@
 > 1. The first-subscriber tour does not work — it does not run.
 > 2. After clearing localStorage, signing in to an existing account redirects to Step 1 (waitlist creation) instead of the dashboard.
 
-> **[FIXED 2026-10-19 — Prompt #8, uncommitted]**
+> **[FIXED 2026-10-19 — Prompt #8 — shipped `ea721c0`, merged to main, deployed]**
 >
 > 1. **Tour gate:** `src/app/dashboard/layout.tsx` now live-COUNTs the default waitlist's subscribers (`head: true`) and passes it as `liveSubscriberCount` to the shell/tour — the cached `waitlists.subscriber_count` column (frozen at 0 by the Phase-6 DROPs) was the gate the tour checked (`countRef.current < 1`). Falls back to the cached column on count error.
 > 2. **Sign-in → Step 1: root cause NOT reproduced in code** — the only code path that lands on `/onboarding/1` is the dashboard layout's zero-waitlist bounce; a plain `/signin` defaults to `/dashboard`. **Ambiguous: which account was used for the retest?** If that account's waitlist is missing/deleted, the bounce is correct. **Retest with the known-good founder account; if it still reproduces, treat as a new failure.**
@@ -339,7 +339,7 @@
 **Result:** [ ] Pass [x] Fail
 
 > **Run note (2026-10-19 — production): FAIL (free half).** The free state renders as intended (distribution + "Upgrade to target segments" pill), but clicking the Warmth card on the dashboard does not open the upgrade modal. Pro half PASS — bars + per-subscriber table render with Hot green / Cold blue.
-> **[FIXED 2026-10-19 — Prompt #8, uncommitted]** Same root cause as TC-DASH-02: `warmth` trigger now in `COOLDOWN_EXEMPT_TRIGGERS`. **Retest: dismiss the modal once, then click the Warmth card again — the modal must re-open.**
+> **[FIXED 2026-10-19 — Prompt #8 — shipped `ea721c0`, merged to main, deployed]** Same root cause as TC-DASH-02: `warmth` trigger now in `COOLDOWN_EXEMPT_TRIGGERS`. **Retest: dismiss the modal once, then click the Warmth card again — the modal must re-open.**
 
 ### TC-DASH-11: Updates compose + honest failure
 
@@ -353,7 +353,7 @@
 > 1. Free half: the upgrade modal does not appear when the Free updates page is opened/clicked.
 > 2. Pro half (compose otherwise PASS): the 10-character minimum counts a space as a character — whitespace passes the length check.
 
-> **[FIXED 2026-10-19 — Prompt #8, uncommitted]**
+> **[FIXED 2026-10-19 — Prompt #8 — shipped `ea721c0`, merged to main, deployed]**
 >
 > 1. `updates` trigger now in `COOLDOWN_EXEMPT_TRIGGERS` (same root cause as TC-DASH-02/10).
 > 2. Client now validates on the trimmed length (`src/app/dashboard/updates/client.tsx`) — matches the server's trim-before-min-10 (`api/updates/route.ts`); whitespace-only and whitespace-padded-short bodies keep Publish disabled (tests in `dashboard-updates-compose.test.tsx`).
@@ -448,6 +448,8 @@
 **Expected:** Question text inside field, amber `(optional)` right; MC label above + collapsed select showing `Select an option`, brand border when answered (source: story-18.7 + 2026-10-03 MC directive).
 **Result:** [ ] Pass [ ] Fail
 
+> **Retest for `8edf472` (2026-10-20):** also verify the exact original bug — use a waitlist whose owner answered **No** at onboarding step 4 (never visited 4a), then add a question via **dashboard settings → Qualification tab → save**, and load the public page. The question must appear (before the fix, `qualification_enabled` stayed false forever and the form never asked it). Optionally leave the public page open while saving and confirm it appears within ~60s via auto-refresh, without reloading.
+
 ### TC-PUB-04: Phone modes on form
 
 **Preconditions:** Waitlists with phone off / optional / required.
@@ -479,8 +481,8 @@
 ### TC-PUB-08: Milestones + updates card on page
 
 **Preconditions:** Milestones + ≥1 founder update.
-**Steps:** 1. Check milestone chips vs referral state. 2. Check updates card content/position.
-**Expected:** Locked/unlocked chip states; latest-update card only, below fold, centered restyle (source: stories 4.3/7.6/7.7 + 2026-10-03 restyle).
+**Steps:** 1. Check milestone chips vs referral state. 2. Check updates card content/position. 3. Leave the public page open; publish a **new** update from `/dashboard/updates`; watch the public page.
+**Expected:** Locked/unlocked chip states; latest-update card only, below fold, centered restyle (source: stories 4.3/7.6/7.7 + 2026-10-03 restyle). **Step 3:** the new update appears within ~60s with **no manual reload** (auto-refresh, `8edf472`); an in-progress form field on the page must keep its typed text.
 **Result:** [ ] Pass [ ] Fail
 
 ### TC-PUB-09: Powered-by gating [FREE] vs [PRO]
@@ -897,11 +899,13 @@
 
 ## Results summary (filled in 21.7)
 
-| Total | Passed | Failed | Deferred | Launch blockers                     |
-| ----- | ------ | ------ | -------- | ----------------------------------- |
-| 107   | 36     | 5      | 1        | 5 — TC-DASH-02/05/10/11 · TC-ONB-14 |
+| Total | Passed | Failed | Deferred | Launch blockers                                                          |
+| ----- | ------ | ------ | -------- | ------------------------------------------------------------------------ |
+| 107   | 36     | 5      | 1        | 5 — TC-DASH-02/05/10/11 · TC-ONB-14 **(fixes deployed, retest pending)** |
 
 > **Progress (2026-10-19):** batch 1 (Sec 1 Auth) **CLOSED — 12 pass / 0 fail / 1 deferred** (TC-AUTH-04 signup rate cooldown, deferred by founder: "document as later"). Fixes shipped: duplicate-detection (`signup-duplicate.test.tsx`) + billing button cooldown exemption (`fc88810`). Batch 2 (Sec 2 Onboarding) **executed — 13 pass / 1 fail** (TC-ONB-14 resume/fresh-redirect; root causes located, fixes queued for 21.6). Batch 3 (Sec 3 Dashboard, TC-DASH-01..19) **executed on production — 11 pass / 4 fail / 4 pending.** Fails: 02 (free half — upgrade modal inconsistent), 05 (tour does not run + post-localStorage login lands on Step 1 instead of dashboard), 10 (free half — Warmth card click does not open modal), 11 (free half — no modal; Pro — whitespace counts toward 10-char minimum). Pending: 07, 16, 17, 18. Running total: **36 pass / 5 fail / 1 deferred**; 65 cases remaining (4 pending in Sec 3 + 61 in Sec 4–12). Next: batch 4 (Sec 4 Public waitlist & thank-you).
+
+> **Progress (2026-10-20):** all batch-2/3 fix work now **committed, merged to main, and deployed** — `ea721c0` (cooldown exemptions, guard cookie, wall redirect, tour live count, whitespace trim, sign-in timer) + `8edf472` (public-page auto-refresh, `qualification_enabled` mirror, CTA copy "Add or Edit Questions"). The 5 blockers above are fix-complete and await founder retest on production (each case's run note carries its retest instruction). Prompt #3 double audit passed; automated suite at exact baseline (1188 = 1181 pass / 7 fail). **Batch 4 (Sec 4, TC-PUB-01..16) starting 2026-10-20** — cases 03 and 08 double as the live-page retest for `8edf472` (settings-added questions render on the public page; founder updates appear via auto-refresh).
 
 ## AC5 gate — founder fix/defer (CLOSED 2026-10-12)
 
