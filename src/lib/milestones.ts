@@ -5,6 +5,7 @@ import {
   buildFreeEmailFooter,
   isUnsubscribed,
 } from "@/lib/email";
+import { htmlToText } from "@/lib/email-template";
 import { isEmailBounced } from "@/lib/bounces";
 
 interface MilestoneTier {
@@ -234,16 +235,22 @@ export async function checkAndFulfillMilestones(
           ? `https://${email.waitlist.subdomain}.prewaitlist.com?ref=${subscriber.referral_code}`
           : null;
       try {
+        const html = buildMilestoneEmailHTML(
+          email.tier,
+          referralCount,
+          email.waitlist,
+          referralLink,
+          email.founderTier
+        );
         const result = await sendEmail({
           to: subscriber.email,
           subject: `Congratulations! You earned: ${email.tier.reward_label}`,
-          html: buildMilestoneEmailHTML(
-            email.tier,
-            referralCount,
-            email.waitlist,
-            referralLink,
-            email.founderTier
-          ),
+          html,
+          // Plain-text sibling for the multipart payload. Gmail's Primary
+          // classifier leans on the text part — HTML-only sends land in
+          // Promotions. Copy is byte-identical to the HTML (derived, not
+          // authored) so this never touches the content gate.
+          text: htmlToText(html.slice(html.indexOf("</head>"))),
           stream: "transactional",
           senderName:
             email.founderTier === "pro" ? email.waitlist?.sender_name : null,

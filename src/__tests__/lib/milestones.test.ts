@@ -287,6 +287,34 @@ describe("checkAndFulfillMilestones", () => {
     );
   });
 
+  it("sends a plain-text part mirroring the HTML body (Gmail Promotions fix)", async () => {
+    mock.__queue.push(
+      {
+        data: [{ tier_referrals: 3, reward_label: EARLY_ACCESS_LABEL }],
+        error: null,
+      },
+      {
+        data: subscriberRow({ referral_code: "ref12345" }),
+        error: null,
+      },
+      { data: { ...baseWaitlist, subdomain: "acme" }, error: null },
+      { data: null, error: null }
+    );
+
+    await checkAndFulfillMilestones("sub-1", "wl-1", 3);
+
+    const args = vi.mocked(sendEmail).mock.calls[0][0] as {
+      html: string;
+      text?: string;
+    };
+    expect(args.text).toBeTypeOf("string");
+    // derived from the HTML after </head> — no authored copy
+    expect(args.text).toContain("Congratulations!");
+    expect(args.text).toContain("Early access");
+    expect(args.text).not.toContain("&nbsp;");
+    expect(args.text).not.toContain("<");
+  });
+
   it("omits the share button when no referral code exists", async () => {
     mock.__queue.push(
       {

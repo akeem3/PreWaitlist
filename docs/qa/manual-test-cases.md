@@ -1,6 +1,6 @@
 # Manual Test Cases — Pre-Launch QA Suite
 
-**Story:** 21.5 · **Epic:** 21 · **Status:** draft — AC5 founder gate OPEN (W1–W8 fix/defer pending; pre-flagged cases assert correct behavior)
+**Story:** 21.5 · **Epic:** 21 · **Status:** executed — batches 1–4 complete (57 pass / 0 fail / 1 deferred; 49 not yet run). AC5 gate CLOSED 2026-10-12 (fix all 8 in 21.6). Last synced 2026-10-21 with `f42ce06` (waitlist visual rebalance, subscriber referral link, leaderboard row click).
 **Sources (only):** `docs/qa/app-inventory.md` (21.1) · `docs/qa/screenshots/` + `manifest.md` (21.2) · `docs/qa/behavior-sources.md` (21.3) · `story-21.4-input-validation-audit.md` (21.4). Never the outdated user-flow doc.
 **Scale:** ~150 cases. Mark each `Result` during execution (21.7).
 
@@ -224,6 +224,8 @@
 **Expected:** Same order/copy at compact scale (approximation, not pixel parity); consent + trust lines present (source: W1 amendment; stories 18.0–18.2).
 **Result:** [x] Pass [ ] Fail
 
+> **AMENDED 2026-10-21 (`f42ce06`):** the visual rebalance lives in the **shared renderer** (`components/share/waitlist-template-content.tsx`), so the preview must mirror the live hierarchy too — quiet border-only how-it-works steps and brand-outlined `text-sm` milestone chips at compact scale. A preview that still shows filled/bold step cards is a parity bug.
+
 ### TC-ONB-13: Upgrade modal from onboarding (Pro-gated step)
 
 **Preconditions:** Free founder at 4a cap or Step 5 Pro field.
@@ -323,9 +325,11 @@
 ### TC-DASH-08: Leaderboard page + CSV [PRO]
 
 **Preconditions:** Pro, populated waitlist.
-**Steps:** 1. Open dashboard leaderboard, sort Referrals/Position, paginate. 2. Export CSV, open in spreadsheet.
-**Expected:** Boost-first sort, PAGE_SIZE=10, `Showing X–Y of Z`; CSV headers incl. Quality % after Warmth, RFC4180-quoted, formula-prefixed cells (source: stories 16.4/16.5/9.3/14.4/19.2; manifest `14-dashboard-leaderboard-desktop.png`).
+**Steps:** 1. Open dashboard leaderboard, sort Referrals/Position, paginate. 2. Export CSV, open in spreadsheet. 3. Click anywhere on a row (rank, name, date, empty space) — not just the email.
+**Expected:** Boost-first sort, PAGE_SIZE=10, `Showing X–Y of Z`; CSV headers incl. Quality % after Warmth, RFC4180-quoted, formula-prefixed cells (source: stories 16.4/16.5/9.3/14.4/19.2; manifest `14-dashboard-leaderboard-desktop.png`). **Step 3:** any point on the row opens `/dashboard/subscribers/<id>` — the email link stretches over the whole row (source: `f42ce06`).
 **Result:** [x] Pass [ ] Fail
+
+> **Row-click leg added 2026-10-21 (`f42ce06`) — retest pending.** The 2026-10-19 pass predates whole-row click (only the email was clickable then). Retest: click a non-email cell on any row → subscriber detail opens. Keyboard is unchanged (Tab reaches the email link, Enter opens).
 
 ### TC-DASH-09: Qualification page
 
@@ -374,11 +378,11 @@
 ### TC-DASH-13: Subscriber detail page
 
 **Preconditions:** Subscriber with referrals + milestones + events.
-**Steps:** 1. Open `/dashboard/subscribers/<id>` from table row.
-**Expected:** Position/email grid, referral code, referred list, qual answers, milestones-earned card, email event log (source: stories 9.4/11.6/12.2.13).
+**Steps:** 1. Open a subscriber from the leaderboard by clicking anywhere on the row (also verifies TC-DASH-08 step 3). 2. Inspect the Referral code + Referral link cards. 3. Click the link card's copy button.
+**Expected:** Position/email grid, referral code, **Referral link card directly after it** — copyable canonical `https://{subdomain}.prewaitlist.com?ref={code}` with a 2s "Copied!" confirmation — referred list, qual answers, milestones-earned card, email event log (source: stories 9.4/11.6/12.2.13; `f42ce06`).
 **Result:** [x] Pass [ ] Fail
 
-> **Founder UX note (2026-10-19 — production): PASS, with a UX follow-up.** The subscriber detail page only opens when the email cell is clicked. Expected behavior is a click anywhere on the row. Currently not obvious to the user — recorded for 21.6.
+> **Founder UX note (2026-10-19 — production): PASS, with a UX follow-up.** The subscriber detail page only opened when the email cell was clicked; expected a click anywhere on the row. **[RESOLVED 2026-10-21 — shipped `f42ce06`, merged to main + deployed]** Whole-row click added (stretched-link overlay; email link still the keyboard target). The same commit adds the **Referral link** card after Referral code (shared `ReferralLink`, canonical URL matching milestone/confirmation emails) so the founder can copy the full link in one click. Tests: `dashboard-leaderboard-page.test.tsx` (stretched-link lock), `dashboard-subscriber-detail.test.tsx` (card order + URL format). **Retest: click a non-email part of a leaderboard row → detail opens; copy the Referral link → clipboard holds `https://{subdomain}.prewaitlist.com?ref={code}`.**
 
 ### TC-DASH-14: Archive / unarchive + banner
 
@@ -390,9 +394,11 @@
 ### TC-DASH-15: Settings hub + waitlist settings
 
 **Preconditions:** Signed in.
-**Steps:** 1. Walk hub → waitlist list → waitlist detail → profile. 2. Edit 6 waitlist fields, logo upload, phone mode. 3. Edit qualification questions (ids preserved).
-**Expected:** Three-level hierarchy; saves persist; logo = data URL; phone Off/Optional/Required; question edits keep ids (source: stories 12.2.2/12.2.3/14.2/phone plan).
+**Steps:** 1. Walk hub → waitlist list → waitlist detail → profile. 2. Edit 6 waitlist fields, logo upload, phone mode. 3. Edit qualification questions (ids preserved). 4. Edit milestone rewards + toggle the signup counter in waitlist settings.
+**Expected:** Three-level hierarchy; saves persist; logo = data URL; phone Off/Optional/Required; question edits keep ids (source: stories 12.2.2/12.2.3/14.2/phone plan). **Step 4:** milestone tiers are add/edit/remove (1–5, threshold >0, unique, label required — same validation as onboarding Step 3); signup counter toggle persists and drives the public page's ≥10 counter (source: `086cc17` D1–D4; `dashboard-settings-milestones.test.tsx`).
 **Result:** [x] Pass [ ] Fail
+
+> **Step 4 added 2026-10-21 (`086cc17`):** milestone rewards and the signup-counter toggle are now editable from waitlist settings (previously onboarding Step 3 only). Retest: change tiers in settings → public page chips reflect it; toggle counter → public page hides/shows at the ≥10 threshold.
 
 ### TC-DASH-16: Billing page + cancel
 
@@ -440,6 +446,8 @@
 **Steps:** 1. Load page, scroll top→bottom.
 **Expected:** Brand top-left → headline (5xl/6xl extrabold) → subheadline → counter → form → milestones → how-it-works cards → updates below fold (source: stories 18.0/18.6; manifest `02-waitlist-populated-desktop.png`).
 **Result:** [x] Pass [ ] Fail
+
+> **AMENDED 2026-10-21 (`f42ce06` — visual rebalance, founder):** order and copy are unchanged; the **hierarchy** is not. Milestone chips are now the second focal point (`text-sm`, brand-color outline on every template), while how-it-works step cards are quiet metadata (border only, no fill, `text-xs`, muted) — previously the step cards carried `text-sm` fills and competed with the chips. Retest: the chips should draw the eye before the step cards; no template should show filled/bold step cards.
 
 ### TC-PUB-02: Form field order + trust + consent
 
@@ -491,6 +499,8 @@
 **Steps:** 1. Check milestone chips vs referral state. 2. Check updates card content/position. 3. Leave the public page open; publish a **new** update from `/dashboard/updates`; watch the public page.
 **Expected:** Locked/unlocked chip states; latest-update card only, below fold, centered restyle (source: stories 4.3/7.6/7.7 + 2026-10-03 restyle). **Step 3:** the new update appears within ~60s with **no manual reload** (auto-refresh, `8edf472`); an in-progress form field on the page must keep its typed text.
 **Result:** [x] Pass [ ] Fail
+
+> **AMENDED 2026-10-21 (`f42ce06` — founder rebalance):** milestone chips are now the page's second focal point — brand-color outline (`border-[var(--brand-color)]`) on **all** templates, `rounded-(--radius-lg)`, `px-3.5 py-2`, `text-sm` (threshold bold foreground, label semibold brand), backgrounds minimal `bg-card` / bold `bg-muted` / dark `bg-dark-template-input`. Retest: chips read clearly above the quiet how-it-works row on Minimal, Bold and Dark; unlocked labels use the founder's brand color.
 
 ### TC-PUB-09: Powered-by gating [FREE] vs [PRO]
 
@@ -588,6 +598,19 @@
 **Steps:** 1. Fill to 500, attempt 501st. 2. Check 90%-warning email at 450.
 **Expected:** 501st → 403 `Subscriber limit reached…`; warning email at ≥450 with `/dashboard?upgrade=cap` CTA; Pro exempt (source: stories 13.4/12.x; 2026-09-22 decision). `[PROD]` for emails.
 **Result:** [ ] Pass [ ] Fail
+
+> **Cap-test procedure (staging — verbatim SQL; no real 500 rows needed).** The cap enforces on the cached `waitlists.subscriber_count`, so seed the counter directly. Use a throwaway **Free** waitlist (e.g. subdomain `cap-test`); everything below runs in the Supabase SQL Editor + the public page.
+>
+> 1. **Seed at 449:** `UPDATE waitlists SET subscriber_count = 449 WHERE subdomain = 'cap-test';`
+> 2. **Signup #1** (public page form, fresh email) → succeeds; counter becomes 450 via the atomic claim (`increment_subscriber_count(id, 500)`).
+> 3. **90% email check [PROD]:** founder inbox receives `{product} is almost full` (`You've reached 450 of 500 subscribers on the Free plan.` + `Upgrade to Pro` CTA → `/dashboard?upgrade=cap`). **Batch 5:** the email must also carry a plain-text part (multipart — open the raw email / "Show original"; body is readable text, not HTML source).
+> 4. **Seed at 499:** `UPDATE waitlists SET subscriber_count = 499 WHERE subdomain = 'cap-test';`
+> 5. **Signup #2** (fresh email) → succeeds; counter hits exactly 500.
+> 6. **Signup #3** (fresh email) → **403** with body `{"error":"Subscriber limit reached. Upgrade to Pro for unlimited signups."}` — two independent gates fire: pre-check (`route.ts:560`, `count >= 500`) and the atomic claim (`route.ts:685`, `NULL` = capped).
+> 7. **Pro exempt:** SQL flip the founder to `pro` (`UPDATE founder_profiles SET tier = 'pro' WHERE id = (SELECT id FROM auth.users WHERE email = '…');`), retry Signup #3 → 201 (`p_cap: null` for Pro at `route.ts:677`).
+> 8. **Cleanup:** delete the throwaway waitlist + its subscribers, or reset `subscriber_count = 0`.
+>
+> **Notes:** same-IP signups are fine — rate limit is 5/hour per IP and the test uses 3. The 90% email idempotency key is `cap-warning/{waitlist_id}`, so a repeat send at 500 dedupes rather than spamming (second fire is expected, second _delivery_ is not). Local runs only prove steps 2/4/5/6/7 (emails are `[PROD]`).
 
 ### TC-LEAD-05: Top-referrers visibility by tier
 
@@ -927,6 +950,8 @@
 
 > **Batch 4 agent-verification (2026-10-20): 3 pass / 0 fail.** TC-PUB-13 — both progress-line states live-proven on production (state 2 via temporary seeded referral rows, verified, then deleted). TC-PUB-15 — formula answer stored **raw** via a real public signup; export half locked by code read (`escapeCsvCell` on every cell) + 41/41 targeted tests; live CSV download needs the founder's dashboard session (QA creds stale — one-line spot-check in the run note). TC-PUB-16 — anon root og-image 200 PNG + subdomain-host `og:image` both live. Running total: **51 pass / 6 fail / 1 deferred**. Remaining: TC-PUB-14 og card layout **fixed 2026-10-19** (center-composition on both `opengraph-image.tsx` files — uncommitted, retest after deploy), batch-2/3 blocker retests, Sec 5–12.
 > **Final status (2026-10-20): 57 pass / 0 fail / 1 deferred — zero failures.** All 6 prior failures retested PASSED (founder): TC-ONB-14 + TC-DASH-02/05/10/11 (batch 2–3, fixes `ea721c0`) and TC-PUB-14 (batch 4, og-card center-composition — fix accepted; **still uncommitted** alongside the doc). Batch sections: Sec 1 = 12/0 + 1 deferred · Sec 2 = 14/0 · Sec 3 = 15/0 + 4 not-run (07/16/17/18) · Sec 4 = 16/0. Remaining work: 4 not-run dashboard cases + Sec 5–12 (45 cases) = 49 unexecuted, the 1 deferred (TC-AUTH-04), and `commit-push` when instructed.
+
+> **Progress (2026-10-21) — founder UX follow-ups shipped, `f42ce06` (merged to main + deployed):** (1) waitlist page **visual rebalance** — how-it-works demoted to quiet metadata, milestone chips promoted to second focal point (TC-PUB-01/08 amended; preview parity applies via the shared renderer, TC-ONB-12); (2) subscriber detail gains a **Referral link** card after Referral code (copyable canonical `https://{subdomain}.prewaitlist.com?ref={code}`); (3) dashboard leaderboard rows are **fully clickable** → subscriber detail (resolves the TC-DASH-13 founder UX note). TC-DASH-08/13 now carry a **row-click leg added after their 2026-10-20 pass — retest pending**. Running total unchanged until that retest: **57 pass / 0 fail / 1 deferred**; 49 cases still unexecuted. The 2026-10-20 note's "still uncommitted" items (og-card fix + doc updates) also landed in that push. **Also folded in:** TC-DASH-15 step 4 covers milestone-reward + signup-counter editing in waitlist settings (shipped earlier in `086cc17`, previously onboarding-only).
 
 ## AC5 gate — founder fix/defer (CLOSED 2026-10-12)
 

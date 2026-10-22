@@ -229,6 +229,8 @@ Every story moves `ready` -> `in-progress` -> `done` (or `blocked`), and is only
 
 **Dev Notes:**
 
+- **Execution progress (2026-10-19 → 2026-10-21):** batch 1 (Sec 1 Auth) closed — 12 pass / 1 deferred (TC-AUTH-04, founder-deferred). Batch 2 (Sec 2 Onboarding) 14/0, batch 3 (Sec 3 Dashboard) 15/0 + 4 not-run (TC-DASH-07/16/17/18), batch 4 (Sec 4 Public/thank-you) 16/0 — **57 pass / 0 fail / 1 deferred**. Blockers found in batches 2–4 were fixed and retested (`ea721c0`, `8edf472`, og-card center-composition). Remaining: 4 not-run dashboard cases + Sec 5–12 (45 cases).
+- **Founder UX follow-ups shipped 2026-10-21 (`f42ce06`, merged to main):** subscriber detail gains a **Referral link** card after Referral code (copyable canonical URL); dashboard leaderboard rows are **fully clickable** → subscriber detail; waitlist page **visual rebalance** (milestone chips promoted to second focal point with brand outline, how-it-works demoted to quiet border-only metadata). Test-case expectations amended in TC-DASH-08/13 + TC-PUB-01/08 + TC-ONB-12; TC-DASH-08/13 row-click legs await retest.
 - Execution order suggestion: follow doc section order (auth → onboarding → dashboard → public → …) so environment setup (tier flips, seed data) happens once per section.
 - Founder may execute personally (that's the point of the manual doc) with the agent standing by for triage/fixes — coordinate in session.
 - Two-tier reality: some cases are prod-only (emails, webhooks, cron, og:image) — execute those against `www.prewaitlist.com`/subdomains and note environment per case.

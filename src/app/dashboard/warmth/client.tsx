@@ -336,7 +336,7 @@ export default function WarmthClient({
 
             {/* Footer */}
             {filtered.length > 0 && (
-              <div className="flex items-center justify-between border-t border-border px-5 py-3 text-xs text-muted-foreground">
+              <div className="flex items-center justify-between border-t border-border px-5 py-3 text-sm text-muted-foreground">
                 <span>
                   Showing {start + 1}–{end} of {filtered.length}
                 </span>

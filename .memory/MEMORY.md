@@ -2486,3 +2486,44 @@ both, single edit point by design):
   `src/__tests__/components/waitlist-template-content.test.tsx`.
 - Gates: eslint 0, targeted 68/68, full suite 1205 = 1198 pass / 7 fail (exact baseline),
   clean build. Uncommitted.
+
+## Waitlist rebalance + subscriber referral link + leaderboard row click - shipped f42ce06 (2026-10-21)
+
+**Status:** committed `f42ce06` on `dev`, pushed, fast-forward merged to `main`, pushed -> Vercel deployed. Back on `dev`, clean tree. Supersedes the "Uncommitted" note above for the rebalance block. 8 files, +116/-35.
+
+**Three founder-requested changes:**
+
+1. **Waitlist page visual rebalance** (shared renderer, live + preview together): how-it-works
+   step cards -> quiet border-only metadata (`text-xs`, muted, no fill); milestone chips ->
+   second focal point (brand-color outline on all templates, `rounded-(--radius-lg)`,
+   `px-3.5 py-2`, `text-sm`). Strings frozen. Design guide §3/§7.1/§7.3 AMENDED; new test lock.
+2. **Subscriber detail - Referral link card** directly after Referral code
+   (`src/app/dashboard/subscribers/[id]/page.tsx`): shared `ReferralLink` (readonly input +
+   copy button + 2s Copied), chrome flattened via `className="border-0 bg-transparent p-0"`
+   inside the page card. URL = canonical `https://${subdomain}.prewaitlist.com?ref=${code}`
+   (`waitlistRow` cast extended with `subdomain`). Matches milestone/confirmation emails.
+3. **Leaderboard whole-row click** (`src/app/dashboard/leaderboard/client.tsx`):
+   stretched-link pattern - row div gains `relative`, email `<Link>` gains
+   `after:absolute after:inset-0 after:content-['']`. Clicking anywhere on the row opens
+   subscriber detail; keyboard target stays the email link (no nested interactive elements,
+   sort headers unaffected).
+
+**Tests:** +2 - `dashboard-leaderboard-page.test.tsx` stretched-link lock (row `relative` +
+link `after:absolute`/`after:inset-0`); `dashboard-subscriber-detail.test.tsx` referral-link
+card order + `prewaitlist.com?ref=` + `ReferralLink` usage. **Gotcha:** that leaderboard
+test's `next/link` mock originally destructured only `children`/`href` and dropped
+`className` - had to pass `className` through to assert the stretched-link classes.
+
+**Gates:** prettier + eslint clean (4 files) · targeted 53/53 · full suite **1207 = 1200 pass
+/ 7 fail = exact sanctioned baseline** · clean build.
+
+**Docs synced:** `docs/qa/manual-test-cases.md` - header status (AC5 closed, batches 1-4 =
+57/0/1), TC-DASH-08 (row-click step + retest note), TC-DASH-13 (referral link card + UX note
+RESOLVED), TC-DASH-15 step 4 (milestone rewards + counter editing in settings, from `086cc17`),
+TC-PUB-01/08 (AMENDED rebalance hierarchy), TC-ONB-12 (preview parity note), progress log
+2026-10-21. `sprint-4-plan` 21.5 index `ready -> done` + 21.7 execution-progress bullet.
+`epic-21` 21.7 Dev Notes (batches + shipped follow-ups). `story-21.7` execution progress
+paragraph.
+
+**Retest pending (founder):** leaderboard click a non-email cell -> detail; detail Referral
+link copy -> clipboard; public page hierarchy on Minimal/Bold/Dark (chips prominent, steps quiet).

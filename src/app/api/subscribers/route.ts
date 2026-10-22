@@ -12,6 +12,7 @@ import {
   interpolateEmail,
 } from "@/lib/email";
 import { isEmailBounced } from "@/lib/bounces";
+import { htmlToText } from "@/lib/email-template";
 import { enqueueEmailRetry, maybeWarnFounderQuota } from "@/lib/retry-queue";
 import { isPhoneMode, normalizePhoneInput, type PhoneMode } from "@/lib/phone";
 
@@ -1303,6 +1304,10 @@ export async function POST(request: NextRequest) {
         to: founderEmail,
         subject: `${productName} is almost full — upgrade to keep growing`,
         html,
+        // Plain-text sibling — same deliverability rationale as the
+        // milestone congrats (multipart text part leans Primary, not
+        // Promotions). Derived from the HTML above: copy unchanged.
+        text: htmlToText(html),
         stream: "transactional",
         idempotencyKey: `cap-warning/${waitlist_id}`,
         waitlistId: waitlist_id,

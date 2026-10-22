@@ -12,9 +12,7 @@ type Row = {
   quality_score: number | null;
   rank: number;
   created_at: string;
-  milestone_earned_count: number;
-  milestone_total: number;
-  milestone_next: { threshold: number; label: string } | null;
+  milestone_tiers: { threshold: number; label: string; earned: boolean }[];
 };
 
 type SortKey =
@@ -56,24 +54,54 @@ const formatDate = (d: string) =>
     year: "numeric",
   });
 
+// QA Batch 5 (TC-LEAD-03): full tier strip — every threshold, not just the
+// next one. Earned = accent green + ✓, first pending = the emphasized target,
+// rest muted. Labels (founder data) surface in the native title tooltip.
 function formatMilestone(row: Row) {
-  if (row.milestone_total === 0) return "\u2014";
-  if (row.milestone_earned_count === row.milestone_total)
-    return "\u2713 Complete";
-  if (row.milestone_next) {
-    return `${row.referral_count}/${row.milestone_next.threshold}`;
-  }
-  return `${row.milestone_earned_count}/${row.milestone_total}`;
+  const tiers = row.milestone_tiers;
+  if (!tiers || tiers.length === 0) return "\u2014";
+  if (tiers.every((t) => t.earned)) return "\u2713 Complete";
+  const nextIndex = tiers.findIndex((t) => !t.earned);
+  const title = tiers
+    .map((t) => `${t.threshold}${t.earned ? " \u2713" : ""}: ${t.label}`)
+    .join(" \u00b7 ");
+  return (
+    <span
+      className="flex flex-wrap justify-center gap-x-1 gap-y-0.5"
+      title={title}
+    >
+      {tiers.map((t, i) => (
+        <span
+          key={t.threshold}
+          className={
+            t.earned
+              ? "text-accent"
+              : i === nextIndex
+                ? "font-medium text-foreground"
+                : "text-muted-foreground"
+          }
+        >
+          {t.threshold}
+          {t.earned ? "\u2713" : ""}
+        </span>
+      ))}
+    </span>
+  );
 }
 
 const PAGE_SIZE = 10;
 
 // Single grid definition — Phone column (locked decision) appears only when
 // the waitlist collects phone numbers; otherwise the grid stays pixel-identical.
+// minmax(0,1fr) instead of bare 1fr (= minmax(auto,1fr)): the auto minimum is
+// content-based, so a long unbreakable email/name used to widen THAT row's
+// track only — columns slipped out of alignment across rows and the table
+// overflowed the card. With a 0 minimum, every row computes identical tracks
+// and long values ellipsize inside their cell instead.
 const GRID =
-  "grid grid-cols-[48px_1fr_1fr_100px_100px_120px_120px] items-center gap-4";
+  "grid grid-cols-[48px_minmax(0,1fr)_minmax(0,1fr)_100px_100px_120px_120px] items-center gap-4";
 const GRID_WITH_PHONE =
-  "grid grid-cols-[48px_1fr_1fr_1fr_100px_100px_120px_120px] items-center gap-4";
+  "grid grid-cols-[48px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_100px_100px_120px_120px] items-center gap-4";
 
 export default function LeaderboardClient({
   rows,
@@ -322,17 +350,24 @@ export default function LeaderboardClient({
                       <span className="text-center text-body-sm text-muted-foreground">
                         {row.rank}
                       </span>
-                      <span className="text-body-sm font-medium text-foreground">
+                      <span
+                        className="truncate text-body-sm font-medium text-foreground"
+                        title={displayName}
+                      >
                         {displayName}
                       </span>
                       <Link
                         href={`/dashboard/subscribers/${row.id}`}
-                        className="text-body-sm font-medium text-accent hover:underline after:absolute after:inset-0 after:content-['']"
+                        className="truncate text-body-sm font-medium text-accent hover:underline after:absolute after:inset-0 after:content-['']"
+                        title={row.email}
                       >
                         {row.email}
                       </Link>
                       {phoneEnabled && (
-                        <span className="text-body-sm text-muted-foreground">
+                        <span
+                          className="truncate text-body-sm text-muted-foreground"
+                          title={row.phone ?? undefined}
+                        >
                           {row.phone || "\u2014"}
                         </span>
                       )}
@@ -347,7 +382,7 @@ export default function LeaderboardClient({
                       <span className="text-center text-body-sm text-muted-foreground">
                         {formatMilestone(row)}
                       </span>
-                      <span className="text-center text-body-sm text-muted-foreground">
+                      <span className="whitespace-nowrap text-center text-body-sm text-muted-foreground">
                         {formatDate(row.created_at)}
                       </span>
                     </div>
@@ -359,7 +394,7 @@ export default function LeaderboardClient({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t border-border px-5 py-3 text-xs text-muted-foreground">
+        <div className="flex items-center justify-between border-t border-border px-5 py-3 text-sm text-muted-foreground">
           <span>
             {search
               ? `${sorted.length} result${sorted.length !== 1 ? "s" : ""}`

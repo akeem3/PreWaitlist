@@ -9,12 +9,14 @@ vi.mock("next/link", () => ({
     children,
     href,
     className,
+    title,
   }: {
     children: React.ReactNode;
     href: string;
     className?: string;
+    title?: string;
   }) => (
-    <a href={href} className={className} data-testid="link">
+    <a href={href} className={className} title={title} data-testid="link">
       {children}
     </a>
   ),
@@ -28,9 +30,11 @@ const makeRows = (count: number) =>
     quality_score: i % 3 === 0 ? Math.round((i / count) * 100) : null,
     created_at: `2026-01-${String(i + 1).padStart(2, "0")}T00:00:00Z`,
     rank: i + 1,
-    milestone_earned_count: 0,
-    milestone_total: 3,
-    milestone_next: { threshold: 5, label: "Early access" },
+    milestone_tiers: [
+      { threshold: 5, label: "Early access", earned: false },
+      { threshold: 10, label: "Sticker pack", earned: false },
+      { threshold: 25, label: "Big discount", earned: false },
+    ],
   }));
 
 describe("Dashboard Leaderboard Client", () => {
@@ -262,23 +266,36 @@ describe("Dashboard Leaderboard Client", () => {
     expect(screen.getByText("0 results")).toBeDefined();
   });
 
-  it("displays milestone progress", () => {
+  it("displays the full milestone tier strip (earned + pending)", () => {
     render(
       <LeaderboardClient
         {...defaultProps}
         rows={[
           {
             ...makeRows(1)[0],
-            referral_count: 2,
-            milestone_earned_count: 1,
-            milestone_total: 3,
-            milestone_next: { threshold: 5, label: "Early access" },
+            referral_count: 5,
+            milestone_tiers: [
+              { threshold: 3, label: "Early access", earned: true },
+              { threshold: 10, label: "Sticker pack", earned: false },
+              { threshold: 25, label: "Big discount", earned: false },
+            ],
           },
         ]}
         totalCount={1}
       />
     );
-    expect(screen.getByText("2/5")).toBeDefined();
+    // every tier renders — earned = green ✓, next pending = emphasized target
+    expect(screen.getByText("3✓")).toHaveClass("text-accent");
+    const next = screen.getByText("10");
+    expect(next).toHaveClass("font-medium");
+    expect(next).toHaveClass("text-foreground");
+    expect(screen.getByText("25")).toHaveClass("text-muted-foreground");
+    // founder's labels surface in the native title tooltip (data, not copy)
+    expect(
+      screen.getByTitle(
+        "3 ✓: Early access · 10: Sticker pack · 25: Big discount"
+      )
+    ).toBeDefined();
   });
 
   it("displays milestone complete state", () => {
@@ -289,9 +306,11 @@ describe("Dashboard Leaderboard Client", () => {
           {
             ...makeRows(1)[0],
             referral_count: 10,
-            milestone_earned_count: 3,
-            milestone_total: 3,
-            milestone_next: null,
+            milestone_tiers: [
+              { threshold: 3, label: "Early access", earned: true },
+              { threshold: 10, label: "Sticker pack", earned: true },
+              { threshold: 25, label: "Big discount", earned: true },
+            ],
           },
         ]}
         totalCount={1}
@@ -307,9 +326,7 @@ describe("Dashboard Leaderboard Client", () => {
         rows={[
           {
             ...makeRows(1)[0],
-            milestone_earned_count: 0,
-            milestone_total: 0,
-            milestone_next: null,
+            milestone_tiers: [],
           },
         ]}
         totalCount={1}
@@ -458,6 +475,50 @@ describe("Dashboard Leaderboard Client", () => {
     expect(screen.getByRole("button", { name: /Previous/ })).toBeDisabled();
   });
 
+  // --- Long-content cells must ellipsize inside their tracks (never widen
+  //     the row) — the fix for the destabilized leaderboard structure ---
+
+  it("truncates long names and emails inside their cells", () => {
+    const longName = "Bartholomew Fitzgerald-McAllister III";
+    const longEmail =
+      "bartholomew.fitzgerald-mcallister@very-long-domain.example.com";
+    render(
+      <LeaderboardClient
+        rows={[{ ...makeRows(1)[0], display_name: longName, email: longEmail }]}
+        totalCount={1}
+      />
+    );
+    const name = screen.getByText(longName);
+    expect(name.className).toContain("truncate");
+    expect(name.getAttribute("title")).toBe(longName);
+    const email = screen.getByRole("link", { name: longEmail });
+    expect(email.className).toContain("truncate");
+    expect(email.getAttribute("title")).toBe(longEmail);
+    // stretched row-click overlay still present alongside truncate
+    expect(email.className).toContain("after:absolute");
+  });
+
+  it("keeps header and body rows on the same grid definition", () => {
+    render(<LeaderboardClient {...defaultProps} />);
+    const gridColsOf = (el: Element | null) =>
+      (el?.className.match(/grid-cols-\[[^\]]+\]/) ?? [])[0];
+    const header = screen.getByRole("button", { name: /^Email/ }).parentElement;
+    const firstRow = screen.getByRole("link", {
+      name: "user0@example.com",
+    }).parentElement;
+    expect(gridColsOf(header)).toBeDefined();
+    expect(gridColsOf(header)).toBe(gridColsOf(firstRow));
+  });
+
+  it("truncates phone values when the column is enabled", () => {
+    render(
+      <LeaderboardClient rows={makePhoneRows()} totalCount={3} phoneEnabled />
+    );
+    const phone = screen.getByText("+15551234567");
+    expect(phone.className).toContain("truncate");
+    expect(phone.getAttribute("title")).toBe("+15551234567");
+  });
+
   // --- Phone column (phone collection — locked decision 1) ---
 
   const makePhoneRows = () => {
@@ -469,7 +530,6 @@ describe("Dashboard Leaderboard Client", () => {
         phone: "+15551234567",
         referral_count: 3,
         quality_score: 10,
-        milestone_next: { threshold: 5, label: "Early access" },
       },
       {
         ...base[1],
@@ -477,7 +537,6 @@ describe("Dashboard Leaderboard Client", () => {
         phone: null as string | null,
         referral_count: 2,
         quality_score: 10,
-        milestone_next: { threshold: 5, label: "Early access" },
       },
       {
         ...base[2],
@@ -485,7 +544,6 @@ describe("Dashboard Leaderboard Client", () => {
         phone: "+447911123456",
         referral_count: 1,
         quality_score: 10,
-        milestone_next: { threshold: 5, label: "Early access" },
       },
     ];
   };
@@ -504,13 +562,14 @@ describe("Dashboard Leaderboard Client", () => {
     expect(screen.queryByText("Phone")).toBeNull();
     expect(screen.queryByText("+15551234567")).toBeNull();
     expect(screen.queryByText("+447911123456")).toBeNull();
-    // off layout keeps the original 7-column grid
+    // off layout keeps the original 7-column grid (minmax(0,1fr) — tracks
+    // must be content-independent so long emails can't skew row alignment)
     const email = screen.getByRole("button", { name: /^Email/ });
     expect(email.parentElement?.className).toContain(
-      "grid-cols-[48px_1fr_1fr_100px_100px_120px_120px]"
+      "grid-cols-[48px_minmax(0,1fr)_minmax(0,1fr)_100px_100px_120px_120px]"
     );
     expect(email.parentElement?.className).not.toContain(
-      "grid-cols-[48px_1fr_1fr_1fr_100px"
+      "grid-cols-[48px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_100px"
     );
   });
 
@@ -529,7 +588,7 @@ describe("Dashboard Leaderboard Client", () => {
 
     // 8-column grid while on
     expect(email.parentElement?.className).toContain(
-      "grid-cols-[48px_1fr_1fr_1fr_100px_100px_120px_120px]"
+      "grid-cols-[48px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_100px_100px_120px_120px]"
     );
   });
 

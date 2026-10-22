@@ -126,12 +126,6 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
       const referral_count = referralCounts.get(s.id) || 0;
       const earned =
         (s.milestones_earned as { threshold: number; label: string }[]) || [];
-      const nextTier =
-        milestoneRewards?.find(
-          (t) =>
-            !earned.some((e) => e.threshold === t.tier_referrals) &&
-            t.tier_referrals > referral_count
-        ) || null;
 
       return {
         id: s.id,
@@ -145,11 +139,14 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
             : null,
         created_at: s.created_at,
         position_boost: !!s.position_boost,
-        milestone_earned_count: earned.length,
-        milestone_total: milestoneRewards?.length || 0,
-        milestone_next: nextTier
-          ? { threshold: nextTier.tier_referrals, label: nextTier.reward_label }
-          : null,
+        // QA Batch 5 (TC-LEAD-03): full tier strip — every threshold with its
+        // earned flag + founder's reward label (labels ride along for the
+        // cell's title tooltip; they're data, not authored copy).
+        milestone_tiers: (milestoneRewards ?? []).map((t) => ({
+          threshold: t.tier_referrals,
+          label: t.reward_label,
+          earned: earned.some((e) => e.threshold === t.tier_referrals),
+        })),
       };
     })
     .sort((a, b) => {

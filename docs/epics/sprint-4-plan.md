@@ -544,7 +544,7 @@ Build the launch-blocking verification suite: scan the real application end-to-e
 | 21.2 | Page Capture (Core Screenshot Set)                        | 21.1                            | done        |
 | 21.3 | Document Cross-Reference Scan (Behavior-to-Source Matrix) | —                               | done        |
 | 21.4 | Input Validation Audit                                    | 21.1                            | ready       |
-| 21.5 | Manual Test-Case Document                                 | 21.1–21.4, 19.1–19.2, 20.1–20.3 | ready       |
+| 21.5 | Manual Test-Case Document                                 | 21.1–21.4, 19.1–19.2, 20.1–20.3 | done        |
 | 21.6 | Fix Pass on Validated Failures                            | 21.4, 21.5                      | ready       |
 | 21.7 | Full QA Execution                                         | 21.5, 21.6, 19.\*               | in-progress |
 | 21.8 | Launch Verification                                       | 19.\*, 20.\*, 21.7              | ready       |
@@ -734,6 +734,7 @@ Build the launch-blocking verification suite: scan the real application end-to-e
 **Dev Notes:**
 
 - **Execution progress (2026-10-19):** batch 1 (Sec 1 Auth) closed — 12 pass / 1 deferred. Batch 2 (Sec 2 Onboarding) — 13 pass / 1 fail (TC-ONB-14). Batch 3 (Sec 3 Dashboard, TC-DASH-01..19) executed on production — 11 pass / 4 fail / 4 pending. Running total 36 pass / 5 fail / 1 deferred; 65 cases remaining. Results + run notes in `docs/qa/manual-test-cases.md`.
+- **Execution progress (2026-10-20 → 2026-10-21):** batches 2–4 closed after fix retests — **57 pass / 0 fail / 1 deferred** (Sec 1 12/0 +1 deferred · Sec 2 14/0 · Sec 3 15/0 +4 not-run (07/16/17/18) · Sec 4 16/0). Remaining: 4 not-run dashboard cases + Sec 5–12 (45). Founder UX follow-ups from batch 3/4 shipped in `f42ce06`: subscriber detail **Referral link** card, leaderboard **whole-row click**, waitlist-page visual rebalance (milestone chips promoted, how-it-works demoted). TC-DASH-08/13 retest legs added to the doc.
 - Execution order suggestion: follow doc section order (auth → onboarding → dashboard → public → …) so environment setup (tier flips, seed data) happens once per section.
 - Founder may execute personally (that's the point of the manual doc) with the agent standing by for triage/fixes — coordinate in session.
 - Two-tier reality: some cases are prod-only (emails, webhooks, cron, og:image) — execute those against `www.prewaitlist.com`/subdomains and note environment per case.

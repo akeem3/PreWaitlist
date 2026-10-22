@@ -437,6 +437,101 @@ describe("POST /api/subscribers", () => {
     expect(html).not.toContain("<pro-footer>");
   });
 
+  // --- 90% cap warning: plain-text part (Batch 5) ---
+
+  it("sends the 90% cap-warning email with a plain-text part", async () => {
+    // server cap check (under 500 → signup allowed)
+    mockSupabase.__queue.push({
+      data: {
+        subscriber_count: 450,
+        founder_profiles: { tier: "free" },
+      },
+      error: null,
+    });
+    // insert
+    mockAdminSupabase.__queue.push({
+      data: {
+        id: "sub-1",
+        email: "test@test.com",
+        referral_code: "abc12345",
+        position: 451,
+      },
+      error: null,
+    });
+    // confirmation IIFE: waitlist select
+    mockAdminSupabase.__queue.push({
+      data: {
+        product_name: "Acme",
+        headline: "Join Acme",
+        subdomain: "acme",
+        sender_name: null,
+        sending_domain: null,
+        business_address: null,
+        email_subject: null,
+        email_body: null,
+      },
+      error: null,
+    });
+    // cap-warning IIFE: waitlist select (90% gate — count >= 450)
+    mockAdminSupabase.__queue.push({
+      data: {
+        subscriber_count: 450,
+        subdomain: "acme",
+        product_name: "Acme",
+        founder_id: "f-1",
+      },
+      error: null,
+    });
+    // cap-warning IIFE: founder profile (tier must be free)
+    mockAdminSupabase.__queue.push({
+      data: { tier: "free" },
+      error: null,
+    });
+    // confirmation IIFE: subscriber display_name
+    mockAdminSupabase.__queue.push({
+      data: { display_name: null },
+      error: null,
+    });
+    // confirmation IIFE: subscriber count
+    mockAdminSupabase.__queue.push({ data: null, error: null, count: 451 });
+    // confirmation IIFE: milestone rewards
+    mockAdminSupabase.__queue.push({ data: [], error: null });
+    // confirmation IIFE: founder tier
+    mockAdminSupabase.__queue.push({
+      data: { founder_profiles: [{ tier: "free" }] },
+      error: null,
+    });
+    // cap-warning IIFE resolves founder email via auth.admin.getUserById —
+    // the shared mock's auth object has no `admin` namespace.
+    const getUserById = vi.fn().mockResolvedValue({
+      data: { user: { email: "founder@example.com" } },
+      error: null,
+    });
+    (
+      mockAdminSupabase.auth as unknown as {
+        admin: { getUserById: ReturnType<typeof vi.fn> };
+      }
+    ).admin = { getUserById };
+
+    const response = await postDirectSignup();
+    expect(response.status).toBe(201);
+
+    const capCall = mockedSendEmail.mock.calls.find(
+      (c) => c[0]?.idempotencyKey === "cap-warning/waitlist-1"
+    );
+    expect(capCall).toBeDefined();
+    const payload = capCall![0];
+    expect(payload.to).toBe("founder@example.com");
+    // Plain-text sibling mirrors the HTML body: real text, no tags.
+    expect(payload.text).toBeTypeOf("string");
+    expect(payload.text).toContain("almost full");
+    expect(payload.text).toContain("450 of 500");
+    expect(payload.text).toContain("Upgrade to Pro");
+    expect(payload.text).not.toContain("<");
+    expect(payload.text).not.toContain(">");
+    expect(payload.text).not.toContain("&nbsp;");
+  });
+
   // --- Quota failure paths (3.1c) ---
 
   function eventInserts() {

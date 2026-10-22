@@ -105,7 +105,9 @@ export function derivePreheader(value: string): string {
 /**
  * Plain-text part for multipart payloads (text-forward placement leans
  * Primary per deliverability research — Prompt #8 Phase 2).
- * Unescapes the 5 HTML entities after tag stripping (order: `&` last).
+ * Unescapes the HTML entities after tag stripping (order: `&` last).
+ * `&nbsp;` → space: the spacer divs/templates use it, and a literal
+ * `&nbsp;` in a text part is a visible defect.
  */
 export function htmlToText(value: string): string {
   const withBreaks = value
@@ -113,6 +115,7 @@ export function htmlToText(value: string): string {
     .replace(/<\/(p|div|h[1-6]|li)>/gi, "\n");
   const stripped = withBreaks.replace(/<[^>]+>/g, "");
   return stripped
+    .replace(/&nbsp;/g, " ")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
