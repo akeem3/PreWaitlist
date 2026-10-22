@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { createClient } from "../../../../lib/supabase/server";
 import Link from "next/link";
 import { EmailEventLog } from "../../../../../components/dashboard/email-event-log";
+import { ReferralLink } from "../../../../../components/share/referral-link";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -41,6 +42,7 @@ export default async function SubscriberDetailPage({ params }: Props) {
 
   const waitlistRow = subscriber.waitlists as unknown as {
     phone_mode?: string | null;
+    subdomain: string;
   };
   const phoneEnabled = (waitlistRow.phone_mode ?? "off") !== "off";
 
@@ -131,6 +133,16 @@ export default async function SubscriberDetailPage({ params }: Props) {
           <p className="text-body-sm text-foreground">
             {subscriber.referral_code}
           </p>
+        </div>
+
+        <div className="mb-6 rounded-[var(--card-radius)] border border-border bg-card p-5">
+          <h3 className="mb-3 text-body-sm font-medium text-foreground">
+            Referral link
+          </h3>
+          <ReferralLink
+            url={`https://${waitlistRow.subdomain}.prewaitlist.com?ref=${subscriber.referral_code}`}
+            className="border-0 bg-transparent p-0"
+          />
         </div>
 
         {referralCount > 0 && (

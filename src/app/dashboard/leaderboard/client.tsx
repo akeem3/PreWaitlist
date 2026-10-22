@@ -313,7 +313,7 @@ export default function LeaderboardClient({
                   return (
                     <div
                       key={row.id}
-                      className={`${gridClass} px-5 py-3 transition-colors hover:bg-muted/30 ${
+                      className={`${gridClass} relative px-5 py-3 transition-colors hover:bg-muted/30 ${
                         i < visible.length - 1
                           ? "border-b border-border/50"
                           : ""
@@ -327,7 +327,7 @@ export default function LeaderboardClient({
                       </span>
                       <Link
                         href={`/dashboard/subscribers/${row.id}`}
-                        className="text-body-sm font-medium text-accent hover:underline"
+                        className="text-body-sm font-medium text-accent hover:underline after:absolute after:inset-0 after:content-['']"
                       >
                         {row.email}
                       </Link>

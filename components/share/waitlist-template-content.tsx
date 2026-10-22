@@ -103,16 +103,16 @@ export function WaitlistTemplateContent({
       : "border-border";
 
   const stepCard = isDark
-    ? "border-dark-template-border bg-dark-template-input text-dark-template-text"
+    ? "border border-dark-template-border text-dark-template-muted"
     : isBold
-      ? "border-2 border-foreground bg-muted text-foreground"
-      : "border-border bg-card text-foreground";
+      ? "border border-foreground text-muted-foreground"
+      : "border border-border text-muted-foreground";
 
-  const chipSurface = isDark
-    ? "border-dark-template-border bg-dark-template-input"
+  const chipBg = isDark
+    ? "bg-dark-template-input"
     : isBold
-      ? "border-foreground bg-muted"
-      : "border-border bg-muted";
+      ? "bg-muted"
+      : "bg-card";
 
   const brandVar = { "--brand-color": brandColor } as React.CSSProperties;
 
@@ -157,20 +157,21 @@ export function WaitlistTemplateContent({
             {milestoneRewards.map((r) => (
               <div
                 key={r.threshold}
+                style={brandVar}
                 className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-center",
-                  chipSurface
+                  "flex items-center gap-1.5 rounded-(--radius-lg) border border-[var(--brand-color)] px-3.5 py-2 text-center",
+                  chipBg
                 )}
               >
                 <span
-                  className={`text-xs font-semibold ${
+                  className={`text-sm font-bold ${
                     isDark ? "text-dark-template-text" : "text-foreground"
                   }`}
                 >
                   Refer {r.threshold}
                 </span>
                 <span
-                  className={`text-xs ${
+                  className={`text-sm ${
                     isDark
                       ? "text-dark-template-muted"
                       : "text-muted-foreground"
@@ -178,10 +179,7 @@ export function WaitlistTemplateContent({
                 >
                   ·
                 </span>
-                <span
-                  className="text-xs font-medium text-[var(--brand-color)]"
-                  style={brandVar}
-                >
+                <span className="text-sm font-semibold text-[var(--brand-color)]">
                   {r.label || "Unlock reward"}
                 </span>
               </div>
@@ -198,7 +196,7 @@ export function WaitlistTemplateContent({
           {HOW_IT_WORKS_STEPS.map((step) => (
             <div
               key={step.n}
-              className={`flex items-center justify-center gap-1.5 rounded-[var(--radius-md)] border px-3 py-2.5 text-center text-sm font-medium ${stepCard}`}
+              className={`flex items-center justify-center gap-1 rounded-[var(--radius-md)] border px-2.5 py-1.5 text-center text-xs font-medium ${stepCard}`}
             >
               <span
                 className="font-bold text-[var(--brand-color)]"

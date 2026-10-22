@@ -82,10 +82,10 @@ Role → size / weight / color. These are the only roles on the waitlist surface
 | Counter number                 | `text-sm`                                        | `text-sm`                          | bold (700)                                           | foreground                                                      |
 | Counter label                  | `text-sm`                                        | `text-sm`                          | normal (400)                                         | muted                                                           |
 | Section label ("How it works") | `text-sm`                                        | `text-sm`                          | semibold (600)                                       | foreground                                                      |
-| Step number ("1." …)           | `text-sm`                                        | `text-sm`                          | bold (700)                                           | **brand color**                                                 |
-| Step label                     | `text-sm`                                        | `text-sm`                          | medium (500)                                         | foreground                                                      |
-| Milestone "Refer N"            | `text-xs`                                        | `text-xs`                          | semibold (600)                                       | foreground                                                      |
-| Milestone reward label         | `text-xs`                                        | `text-xs`                          | medium (500)                                         | brand color                                                     |
+| Step number ("1." …)           | `text-xs`                                        | `text-xs`                          | bold (700)                                           | **brand color**                                                 |
+| Step label                     | `text-xs`                                        | `text-xs`                          | medium (500)                                         | muted (AMENDED 2026-10-21)                                      |
+| Milestone "Refer N"            | `text-sm`                                        | `text-sm`                          | bold (700)                                           | foreground (AMENDED 2026-10-21)                                 |
+| Milestone reward label         | `text-sm`                                        | `text-sm`                          | semibold (600)                                       | brand color (AMENDED 2026-10-21)                                |
 | In-field question (overlay)    | `text-sm`/`text-base` per template               | same                               | normal (400)                                         | muted /70 (foreground demoted — founder directive 2026-09-30)   |
 | "(optional)" badge (in field)  | `text-xs`                                        | `text-xs`                          | normal (400)                                         | warning amber `text-warning` (founder 2026-10-03), pinned right |
 | Input text                     | `text-base`                                      | `text-sm`/`text-base` per template | normal (400)                                         | foreground                                                      |
@@ -174,14 +174,15 @@ Replaces the bare divider + text line.
 border-t (template border) · pt-8 (live) / pt-6 (preview)
   "How it works"        — text-sm font-semibold, foreground, centered
   grid: 1 col mobile · 3 cols sm+ (gap-3)
-    per step: rounded card (template character) · flex row centered
-      <span bold brand>1.</span> <span medium foreground>Enter your email</span>
+    per step: border-only chip (quiet — no fill) · flex row centered
+      <span bold brand>1.</span> <span medium muted>Enter your email</span>
 ```
 
 - **Strings frozen:** "How it works", "1. Enter your email", "2. Get your position", "3. Refer friends to move up" — rendered verbatim (number span inline within the same text run so `textContent` is unchanged).
-- Step card character: minimal = `border border-border bg-card` · bold = `border-2 border-foreground bg-muted` · dark = `border border-dark-template-border bg-dark-template-input`
-- Step card padding `px-3 py-2.5`, `justify-center`, `gap-1.5`, `rounded-[var(--radius-md)]`
-- Number gets brand color + bold; label stays foreground medium.
+- **AMENDED 2026-10-21 (founder rebalance):** step cards demoted to quiet metadata so milestone chips own the visual power below the form — no background fill on any template, muted label text, smaller type/padding. Prior spec: filled cards (`bg-card`/`bg-muted`/`bg-dark-template-input`), `text-sm`, `px-3 py-2.5`, bold `border-2` on the bold template, foreground labels.
+- Step card character: minimal = `border border-border text-muted-foreground` · bold = `border border-foreground text-muted-foreground` · dark = `border border-dark-template-border text-dark-template-muted`
+- Step card padding `px-2.5 py-1.5`, `text-xs`, `justify-center`, `gap-1`, `rounded-[var(--radius-md)]`
+- Number keeps brand color + bold; label is muted (was foreground medium).
 
 ### 7.2 Signup counter pill
 
@@ -189,9 +190,10 @@ Per §5. Visible only when enabled and count defined (unchanged logic).
 
 ### 7.3 Milestone chips
 
-- Keep chip anatomy (`border`, `rounded-md`, `px-2.5 py-1.5`, `text-xs`), row centered `gap-2 flex-wrap`, `max-w-md`
-- "Refer N" semibold foreground · `·` muted · reward label medium brand color
-- Template surfaces: minimal `border-border bg-muted` · bold `border-foreground bg-muted` · dark `border-dark-template-border bg-dark-template-input`
+- **AMENDED 2026-10-21 (founder rebalance):** chips are the page's second focal point after the form — bigger, brand-outlined, higher-contrast type (were small muted `text-xs` pills). Paired with the §7.1 step-card demotion.
+- Chip anatomy: `border border-[var(--brand-color)]` (brand outline on **all** templates, `style` sets `--brand-color`) · `rounded-(--radius-lg)` · `px-3.5 py-2` · row centered `gap-2 flex-wrap`, `max-w-md`
+- "Refer N" `text-sm` bold foreground · `·` `text-sm` muted · reward label `text-sm` semibold brand color
+- Chip bg: minimal `bg-card` · bold `bg-muted` · dark `bg-dark-template-input`
 
 ### 7.4 Latest update card
 

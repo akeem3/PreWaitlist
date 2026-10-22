@@ -2466,3 +2466,23 @@ Founder challenge (single project proven by URL) killed the multi-DB theory and 
 **TC-PUB-14 root cause + fix (Prompt #8):** both `src/app/(public)/[subdomain]/opengraph-image.tsx` and `src/app/opengraph-image.tsx` left-anchored the content column (no `alignItems`/`textAlign: center`) → content sat in the left third of the 1200×630 canvas. Two harms: (1) mismatch with the app's centered hero ("does not look like previewed in the app"); (2) fails platform center-crops — X summary / Discord / WhatsApp keep only the middle 630px square (cols 285–915), and X overlays its domain text on the bottom-left (last ~115px). NOT a regression: shipped left-aligned in `9073c3b` (2026-10-04 "centered layout" commit = vertical-only centering); 2026-10-04 verification was pixel-scan-only, never eyeballed — today's X-composer paste was the founder's first visual look. Fix = center composition on both files: `alignItems: "center"` on the columns, `textAlign: "center"` on headline/subtitle, `alignSelf: "center"` on the Powered-by footer (also clears the X overlay). Zero copy/color/size/font changes (copy gate n/a). Verified via local prod-mode render (`next build` + `:3100` + real `test` data) — both cards center-weighted ✓. Retest after `commit-push` + deploy: new build = new image URL hash = automatic X re-scrape; founder eyeballs the composer + one free-tier card (all founder waitlists are Pro — free footer branch covered by `showPoweredBy` test + same JSX).
 
 **Gotchas:** `eslint.CMD` cannot accept `"(public)/[subdomain]/..."` paths (cmd.exe treats brackets as globs → `was unexpected at this time`) — invoke `node "node_modules\.pnpm\eslint@...\node_modules\eslint\bin\eslint.js"` directly; `next start -p PORT` binds `localhost` (IPv6 `::1`), NOT `127.0.0.1` — probe `http://localhost:PORT` or the poll loop falsely reports not-ready; Satori supports `alignItems`/`textAlign`/`alignSelf` (flex subset — verified rendering live).
+
+## Waitlist page visual rebalance - how-it-works demoted, milestones amplified (2026-10-21)
+
+Founder: how-it-works cards were stealing visual power from milestone chips. Rebalanced in
+the ONE shared renderer (`components/share/waitlist-template-content.tsx` - live + preview
+both, single edit point by design):
+
+- How-it-works step cards demoted to quiet metadata: NO background fill on any template
+  (border only + muted label), `text-xs`, `px-2.5 py-1.5`, `gap-1` (was filled `text-sm`
+  cards; bold template had `border-2` + `bg-muted`). Strings + brand-colored number frozen.
+- Milestone chips promoted to second focal point: `border-[var(--brand-color)]` brand
+  outline on ALL templates (chip div carries `style={{ "--brand-color" }}`), `rounded-(--radius-lg)`,
+  `px-3.5 py-2`, `text-sm` (threshold bold foreground, label semibold brand).
+  bg: minimal `bg-card` / bold `bg-muted` / dark `bg-dark-template-input`.
+- Design guide `docs/design/waitlist-page-design-guide.md`: section 3 type-ladder rows +
+  7.1 + 7.3 annotated AMENDED 2026-10-21 (founder rebalance - never silent rewrite).
+- Test lock: new milestone-chip prominence test + step-card surface tests updated in
+  `src/__tests__/components/waitlist-template-content.test.tsx`.
+- Gates: eslint 0, targeted 68/68, full suite 1205 = 1198 pass / 7 fail (exact baseline),
+  clean build. Uncommitted.

@@ -72,6 +72,16 @@ describe("Subscriber Detail Page", () => {
     expect(content).toContain("Referral code");
   });
 
+  it("renders referral link section after referral code with copyable URL", () => {
+    const content = fs.readFileSync(PAGE_PATH, "utf-8");
+    expect(content).toContain("Referral link");
+    expect(content).toContain("prewaitlist.com?ref=");
+    expect(content).toContain("ReferralLink");
+    expect(content).toMatch(
+      /Referral code[\s\S]*?Referral link[\s\S]*?Referred subscribers/
+    );
+  });
+
   it("conditionally renders referred subscribers list", () => {
     const content = fs.readFileSync(PAGE_PATH, "utf-8");
     expect(content).toContain("Referred subscribers");

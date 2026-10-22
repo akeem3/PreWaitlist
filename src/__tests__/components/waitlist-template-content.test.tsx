@@ -255,8 +255,10 @@ describe("WaitlistTemplateContent", () => {
     expect(label.className).toContain("text-sm");
     expect(label.className).toContain("font-semibold");
     const step = screen.getByText(/Enter your email/);
-    expect(step.className).toContain("text-sm");
+    expect(step.className).toContain("text-xs");
     expect(step.className).toContain("rounded-[var(--radius-md)]");
+    expect(step.className).toContain("text-muted-foreground");
+    expect(step.className).not.toContain("bg-card");
   });
 
   it("how-it-works block (dark) — border-t + border-dark-template-border, dark step cards", () => {
@@ -266,14 +268,37 @@ describe("WaitlistTemplateContent", () => {
     expect(hiw.className).toContain("border-t");
     expect(hiw.className).toContain("border-dark-template-border");
     const step = screen.getByText(/Enter your email/);
-    expect(step.className).toContain("bg-dark-template-input");
+    expect(step.className).toContain("text-dark-template-muted");
+    expect(step.className).not.toContain("bg-dark-template-input");
   });
 
-  it("how-it-works block (bold) — border-2 step cards", () => {
+  it("how-it-works block (bold) — thin border step cards", () => {
     render(<WaitlistTemplateContent {...defaultProps} template="bold" />);
     const step = screen.getByText(/Enter your email/);
-    expect(step.className).toContain("border-2");
     expect(step.className).toContain("border-foreground");
+    expect(step.className).not.toContain("border-2");
+    expect(step.className).toContain("text-muted-foreground");
+  });
+
+  it("milestone chips — brand border + text-sm prominence per founder rebalance", () => {
+    render(
+      <WaitlistTemplateContent
+        {...defaultProps}
+        milestoneRewards={[{ threshold: 5, label: "Skip the line" }]}
+      />
+    );
+    const chip = screen
+      .getByText("Skip the line")
+      .closest("div") as HTMLElement;
+    expect(chip.className).toContain("border-[var(--brand-color)]");
+    expect(chip.className).toContain("px-3.5");
+    expect(chip.className).toContain("py-2");
+    expect(chip.className).toContain("rounded-(--radius-lg)");
+    expect(chip.className).toContain("bg-card");
+    const threshold = screen.getByText("Refer 5");
+    expect(threshold.className).toContain("text-sm");
+    expect(threshold.className).toContain("font-bold");
+    expect(screen.getByText("Skip the line").className).toContain("text-sm");
   });
 
   it("strings frozen — how-it-works steps render verbatim", () => {

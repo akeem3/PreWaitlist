@@ -8,11 +8,13 @@ vi.mock("next/link", () => ({
   default: ({
     children,
     href,
+    className,
   }: {
     children: React.ReactNode;
     href: string;
+    className?: string;
   }) => (
-    <a href={href} data-testid="link">
+    <a href={href} className={className} data-testid="link">
       {children}
     </a>
   ),
@@ -97,6 +99,18 @@ describe("Dashboard Leaderboard Client", () => {
     expect(emailLinks[0].getAttribute("href")).toBe(
       "/dashboard/subscribers/sub-0"
     );
+  });
+
+  it("whole row is clickable — email link stretches over the row", () => {
+    render(
+      <LeaderboardClient {...defaultProps} rows={makeRows(3)} totalCount={3} />
+    );
+    const link = screen.getByRole("link", { name: "user0@example.com" });
+    expect(link.className).toContain("after:absolute");
+    expect(link.className).toContain("after:inset-0");
+    const row = link.parentElement;
+    expect(row?.className).toContain("relative");
+    expect(row?.className).toContain("px-5");
   });
 
   it("sorts by referrals when clicking Referrals header", async () => {
