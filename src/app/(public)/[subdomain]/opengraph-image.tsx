@@ -99,6 +99,7 @@ export default async function Image({
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
+          alignItems: "center",
         }}
       >
         <div
@@ -118,6 +119,7 @@ export default async function Image({
             letterSpacing: -1.5,
             marginTop: 32,
             maxWidth: 1000,
+            textAlign: "center",
           }}
         >
           {title}
@@ -130,6 +132,7 @@ export default async function Image({
               color: MUTED,
               marginTop: 24,
               maxWidth: 1000,
+              textAlign: "center",
             }}
           >
             {subtitle}
@@ -141,6 +144,7 @@ export default async function Image({
           style={{
             display: "flex",
             alignItems: "center",
+            alignSelf: "center",
             fontSize: 26,
             color: MUTED,
           }}

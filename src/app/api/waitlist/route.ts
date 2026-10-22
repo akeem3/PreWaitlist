@@ -414,6 +414,47 @@ export async function PATCH(request: NextRequest) {
     if (rewardError) {
       return NextResponse.json({ error: rewardError }, { status: 400 });
     }
+
+    // Founder rule (2026-10-21): persisted milestones are public promises.
+    // Settings may only append — a payload that drops or edits an existing
+    // (threshold, label) pair is rejected before the delete-then-insert below.
+    const { data: existingRewardRows, error: existingRewardsError } =
+      await supabase
+        .from("milestone_rewards")
+        .select("tier_referrals, reward_label")
+        .eq("waitlist_id", waitlist_id);
+    if (existingRewardsError) {
+      console.error(
+        "[API PATCH] Failed to load existing milestone_rewards:",
+        JSON.stringify(existingRewardsError, null, 2)
+      );
+      return NextResponse.json(
+        { error: "Something went wrong. Please try again." },
+        { status: 500 }
+      );
+    }
+    const existingPairs = new Set(
+      (existingRewardRows ?? []).map(
+        (r: { tier_referrals: number; reward_label: string }) =>
+          `${Number(r.tier_referrals)}::${String(r.reward_label).trim()}`
+      )
+    );
+    if (existingPairs.size > 0) {
+      const incomingPairs = new Set(
+        milestone_rewards.map(
+          (r: { threshold: number; label: string }) =>
+            `${Number(r.threshold)}::${String(r.label).trim()}`
+        )
+      );
+      for (const pair of existingPairs) {
+        if (!incomingPairs.has(pair)) {
+          return NextResponse.json(
+            { error: "Existing milestones can't be removed or edited." },
+            { status: 400 }
+          );
+        }
+      }
+    }
   }
 
   // Validate email customization fields
@@ -447,6 +488,18 @@ export async function PATCH(request: NextRequest) {
   if (updates.phone_mode !== undefined && !isPhoneMode(updates.phone_mode)) {
     return NextResponse.json(
       { error: "phone_mode must be one of: off, optional, required" },
+      { status: 400 }
+    );
+  }
+  // Signup-counter threshold (settings editor): integer >= 1. Reuses the
+  // approved Step-3 validation string (no new copy).
+  if (
+    updates.signup_counter_threshold !== undefined &&
+    (!Number.isInteger(updates.signup_counter_threshold) ||
+      updates.signup_counter_threshold < 1)
+  ) {
+    return NextResponse.json(
+      { error: "Threshold must be a whole number greater than 0" },
       { status: 400 }
     );
   }

@@ -563,3 +563,197 @@ describe("PATCH /api/waitlist — qualification_enabled mirror", () => {
     expect(lastUpdatePayload()).toEqual({ qualification_enabled: true });
   });
 });
+
+describe("PATCH /api/waitlist — milestone append-only guard + counter threshold", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSupabase.__calls.length = 0;
+    mockSupabase.__queue.length = 0;
+  });
+
+  const EXISTING_REWARDS = [
+    { tier_referrals: 1, reward_label: "Early access" },
+    { tier_referrals: 5, reward_label: "VIP badge" },
+  ];
+
+  function lastUpdatePayload() {
+    const updates = mockSupabase.__calls.filter((c) => c.method === "update");
+    expect(updates.length).toBeGreaterThan(0);
+    return updates[updates.length - 1].args[0] as Record<string, unknown>;
+  }
+
+  it("returns 400 for signup_counter_threshold of 0", async () => {
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: { waitlist_id: "wl-1", signup_counter_threshold: 0 },
+      })
+    );
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("Threshold must be a whole number greater than 0");
+    const updates = mockSupabase.__calls.filter((c) => c.method === "update");
+    expect(updates).toHaveLength(0);
+  });
+
+  it("returns 400 for a non-integer signup_counter_threshold", async () => {
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: { waitlist_id: "wl-1", signup_counter_threshold: "10" },
+      })
+    );
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("Threshold must be a whole number greater than 0");
+  });
+
+  it("accepts a valid signup_counter_threshold and writes it through", async () => {
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+    mockSupabase.__queue.push({ data: null, error: null });
+
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: { waitlist_id: "wl-1", signup_counter_threshold: 10 },
+      })
+    );
+    expect(response.status).toBe(200);
+    expect(lastUpdatePayload()).toMatchObject({
+      signup_counter_threshold: 10,
+    });
+  });
+
+  it("rejects a payload that drops an existing tier (append-only)", async () => {
+    // Ownership, then the existing-rewards load (guard query).
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+    mockSupabase.__queue.push({ data: EXISTING_REWARDS, error: null });
+
+    const callsBefore = mockSupabase.__calls.length;
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: {
+          waitlist_id: "wl-1",
+          milestone_rewards: [{ threshold: 10, label: "Something else" }],
+        },
+      })
+    );
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("Existing milestones can't be removed or edited.");
+    // No write of any kind — the delete-then-insert wipe must never run.
+    const newCalls = mockSupabase.__calls.slice(callsBefore);
+    expect(newCalls.filter((c) => c.method === "delete")).toHaveLength(0);
+    expect(newCalls.filter((c) => c.method === "insert")).toHaveLength(0);
+    expect(newCalls.filter((c) => c.method === "update")).toHaveLength(0);
+  });
+
+  it("rejects a payload that edits an existing tier's label", async () => {
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+    mockSupabase.__queue.push({ data: EXISTING_REWARDS, error: null });
+
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: {
+          waitlist_id: "wl-1",
+          milestone_rewards: [
+            { threshold: 1, label: "Renamed reward" },
+            { threshold: 5, label: "VIP badge" },
+          ],
+        },
+      })
+    );
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("Existing milestones can't be removed or edited.");
+  });
+
+  it("accepts a superset payload (existing tiers preserved + new tier appended)", async () => {
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+    mockSupabase.__queue.push({ data: EXISTING_REWARDS, error: null });
+    mockSupabase.__queue.push({ data: null, error: null });
+
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: {
+          waitlist_id: "wl-1",
+          milestone_rewards: [
+            { threshold: 1, label: "Early access" },
+            { threshold: 5, label: "VIP badge" },
+            { threshold: 10, label: "Founder call" },
+          ],
+        },
+      })
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    const inserts = mockSupabase.__calls.filter((c) => c.method === "insert");
+    expect(inserts.length).toBeGreaterThan(0);
+  });
+
+  it("rejects an empty milestone_rewards array when tiers already exist", async () => {
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+    mockSupabase.__queue.push({ data: EXISTING_REWARDS, error: null });
+
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: { waitlist_id: "wl-1", milestone_rewards: [] },
+      })
+    );
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("Existing milestones can't be removed or edited.");
+  });
+
+  it("never queries milestone_rewards when the key is absent from the payload", async () => {
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+    mockSupabase.__queue.push({ data: null, error: null });
+
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: { waitlist_id: "wl-1", headline: "Updated headline" },
+      })
+    );
+    expect(response.status).toBe(200);
+    const guardSelects = mockSupabase.__calls.filter(
+      (c) =>
+        c.method === "select" && c.args[0] === "tier_referrals, reward_label"
+    );
+    expect(guardSelects).toHaveLength(0);
+    expect(lastUpdatePayload().headline).toBe("Updated headline");
+  });
+
+  it("returns 500 when the existing-rewards lookup fails", async () => {
+    mockSupabase.__queue.push({ data: { id: "wl-1" }, error: null });
+    mockSupabase.__queue.push({
+      data: null,
+      error: { message: "connection lost" },
+    });
+
+    const callsBefore = mockSupabase.__calls.length;
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: {
+          waitlist_id: "wl-1",
+          milestone_rewards: [{ threshold: 1, label: "Early access" }],
+        },
+      })
+    );
+    expect(response.status).toBe(500);
+    const body = await response.json();
+    expect(body.error).toBe("Something went wrong. Please try again.");
+    const newCalls = mockSupabase.__calls.slice(callsBefore);
+    expect(newCalls.filter((c) => c.method === "delete")).toHaveLength(0);
+  });
+});

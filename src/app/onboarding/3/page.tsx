@@ -406,11 +406,20 @@ export default function OnboardingStep3() {
             />
           ))}
         </div>
-        {/* Hex input */}
+        {/* Hex input + native color picker (same control as waitlist settings) */}
         <div className="flex items-center gap-3">
-          <div
-            className="h-10 w-10 shrink-0 rounded-(--radius-lg) border border-border"
-            style={{ backgroundColor: activeBrand }}
+          <input
+            type="color"
+            value={activeBrand}
+            onChange={(e) => {
+              setBrandColor(e.target.value);
+              setBrandColorInput(e.target.value);
+              setBrandColorError(null);
+              form.updateField("brandColor", e.target.value);
+            }}
+            disabled={isSubmitting}
+            aria-label="Brand Color"
+            className="h-10 w-10 shrink-0 cursor-pointer rounded-(--radius-lg) border border-border"
           />
           <input
             type="text"
@@ -434,7 +443,7 @@ export default function OnboardingStep3() {
           type="button"
           onClick={handleLogoClick}
           disabled={isSubmitting || logoUploading}
-          className="flex w-full items-center justify-center rounded-(--radius-lg) border-2 border-dashed border-border bg-card px-3 py-3 text-sm h-10 text-muted-foreground transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center justify-center rounded-(--radius-lg) border-2 border-dashed border-accent bg-card px-3 py-3 text-sm h-10 text-muted-foreground transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
           {logoUploading
             ? "Uploading..."

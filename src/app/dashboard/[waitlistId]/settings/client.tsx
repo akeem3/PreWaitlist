@@ -14,6 +14,7 @@ import QuestionEditor, {
   type Question,
 } from "../../../../../components/onboarding/question-editor";
 import { Select } from "../../../../../components/ui/select";
+import { Toggle } from "../../../../../components/ui/toggle";
 import { isPhoneMode, type PhoneMode } from "@/lib/phone";
 import { useUpgradeModal } from "../../shell";
 
@@ -33,6 +34,24 @@ interface WaitlistData {
   product_name: string | null;
   phone_mode?: string | null;
 }
+
+type MilestoneReward = { threshold: number; label: string };
+
+// Verbatim from onboarding/3/page.tsx (approved copy) — settings reuses the
+// exact literals instead of inventing new ones.
+const DEFAULT_REWARDS: MilestoneReward[] = [
+  { threshold: 1, label: "Early access" },
+  { threshold: 5, label: "Free Pro plan for 1 month" },
+  { threshold: 10, label: "Lifetime 20% discount" },
+  { threshold: 25, label: "Founding member status" },
+];
+
+const MILESTONE_REWARD_PLACEHOLDERS = [
+  "e.g. Early access",
+  "e.g. Free Pro plan for 1 month",
+  "e.g. Lifetime 20% discount",
+  "e.g. Founding member status",
+];
 
 interface WaitlistSettingsClientProps {
   waitlist: WaitlistData;
@@ -88,10 +107,23 @@ export default function WaitlistSettingsClient({
   const [questionsLoadError, setQuestionsLoadError] = useState<string | null>(
     null
   );
+  const [milestoneEnabled, setMilestoneEnabled] = useState(false);
+  const [persistedRewards, setPersistedRewards] = useState<MilestoneReward[]>(
+    []
+  );
+  const [draftRewards, setDraftRewards] = useState<MilestoneReward[]>([]);
+  const [milestoneSaving, setMilestoneSaving] = useState(false);
+  const [milestoneSaved, setMilestoneSaved] = useState(false);
+  const [milestoneErrors, setMilestoneErrors] = useState<string[]>([]);
+  const [counterEnabled, setCounterEnabled] = useState(false);
+  const [counterThreshold, setCounterThreshold] = useState(10);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const questionsSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const milestoneSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -101,7 +133,7 @@ export default function WaitlistSettingsClient({
   const isFreeTier = waitlist.tier === "free";
 
   const saveField = useCallback(
-    async (field: string, value: string | number | null) => {
+    async (field: string, value: string | number | boolean | null) => {
       setSaving(true);
       setSaved(false);
       setSaveError(null);
@@ -141,6 +173,143 @@ export default function WaitlistSettingsClient({
     [saveField]
   );
 
+  const handleMilestoneToggle = useCallback(
+    (checked: boolean) => {
+      // Persisted milestones are public promises — once saved they cannot be
+      // disabled (turning off would remove every existing tier).
+      if (persistedRewards.length > 0) return;
+      setMilestoneEnabled(checked);
+      setDraftRewards(checked ? DEFAULT_REWARDS.map((r) => ({ ...r })) : []);
+      setMilestoneErrors([]);
+    },
+    [persistedRewards.length]
+  );
+
+  const handleAddTier = useCallback(() => {
+    setDraftRewards((prev) => {
+      if (persistedRewards.length + prev.length >= 5) return prev;
+      const combined = [...persistedRewards, ...prev];
+      const lastThreshold =
+        combined.length > 0 ? combined[combined.length - 1].threshold : 0;
+      return [...prev, { threshold: lastThreshold + 5, label: "" }];
+    });
+    setMilestoneErrors([]);
+  }, [persistedRewards]);
+
+  const handleDraftThresholdChange = useCallback(
+    (index: number, value: string) => {
+      const num = parseInt(value, 10);
+      setDraftRewards((prev) => {
+        const next = [...prev];
+        next[index] = {
+          ...next[index],
+          threshold: isNaN(num) ? 0 : num,
+        };
+        return next;
+      });
+      setMilestoneErrors([]);
+    },
+    []
+  );
+
+  const handleDraftLabelChange = useCallback((index: number, value: string) => {
+    setDraftRewards((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], label: value };
+      return next;
+    });
+    setMilestoneErrors([]);
+  }, []);
+
+  const handleRemoveDraft = useCallback(
+    (index: number) => {
+      if (persistedRewards.length + draftRewards.length <= 1) return;
+      setDraftRewards((prev) => prev.filter((_, i) => i !== index));
+      setMilestoneErrors([]);
+    },
+    [persistedRewards.length, draftRewards.length]
+  );
+
+  async function handleSaveMilestones() {
+    setMilestoneSaving(true);
+    setMilestoneSaved(false);
+    setMilestoneErrors([]);
+    try {
+      const combined = [...persistedRewards, ...draftRewards];
+      const errors: string[] = [];
+      const seenThresholds = new Set<number>();
+      for (const r of combined) {
+        if (!Number.isInteger(r.threshold) || r.threshold < 1) {
+          errors.push("Threshold must be a whole number greater than 0");
+        } else if (seenThresholds.has(r.threshold)) {
+          errors.push("Each tier needs a unique referral count");
+        }
+        seenThresholds.add(r.threshold);
+        if (!r.label.trim()) {
+          errors.push(`Reward for "Refer ${r.threshold} friends" is required`);
+        }
+      }
+      if (errors.length > 0) {
+        setMilestoneErrors(errors);
+        return;
+      }
+      const res = await fetch("/api/waitlist", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          waitlist_id: waitlist.id,
+          milestone_rewards: combined,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(
+          data?.error || "Something went wrong. Please try again."
+        );
+      }
+      setPersistedRewards(combined);
+      setDraftRewards([]);
+      setMilestoneEnabled(combined.length > 0);
+      setMilestoneSaved(true);
+      if (milestoneSaveTimeoutRef.current)
+        clearTimeout(milestoneSaveTimeoutRef.current);
+      milestoneSaveTimeoutRef.current = setTimeout(
+        () => setMilestoneSaved(false),
+        2000
+      );
+    } catch (err) {
+      setMilestoneErrors([
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
+      ]);
+    } finally {
+      setMilestoneSaving(false);
+    }
+  }
+
+  const handleCounterToggle = useCallback(
+    (checked: boolean) => {
+      setCounterEnabled(checked);
+      // Mirrors Step 3: enabling with an invalid threshold defaults to 10.
+      if (
+        checked &&
+        (!Number.isInteger(counterThreshold) || counterThreshold < 1)
+      ) {
+        setCounterThreshold(10);
+        void saveField("signup_counter_threshold", 10);
+      }
+      void saveField("signup_counter_enabled", checked);
+    },
+    [counterThreshold, saveField]
+  );
+
+  const handleCounterThresholdInput = useCallback((value: string) => {
+    const num = parseInt(value, 10);
+    // Mirrors Step 3: silently ignore non-positive input (no invented error copy).
+    if (!isNaN(num) && num > 0) setCounterThreshold(num);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -156,10 +325,32 @@ export default function WaitlistSettingsClient({
                 waitlistId?: string;
                 id?: string;
                 questions?: Question[];
+                milestoneRewards?: MilestoneReward[];
+                signupCounterEnabled?: boolean;
+                signupCounterThreshold?: number;
               }[]
             ).find((w) => (w.waitlistId ?? w.id) === waitlist.id)
           : null;
-        if (!cancelled) setQuestions(mine?.questions ?? []);
+        if (!cancelled) {
+          setQuestions(mine?.questions ?? []);
+          const rewards = Array.isArray(mine?.milestoneRewards)
+            ? mine.milestoneRewards
+            : [];
+          // Existing milestones are public promises: they hydrate as the
+          // frozen, append-only base (see handleMilestoneToggle).
+          setPersistedRewards(rewards);
+          setMilestoneEnabled(rewards.length > 0);
+          setDraftRewards([]);
+          setCounterEnabled(mine?.signupCounterEnabled === true);
+          const threshold = mine?.signupCounterThreshold;
+          setCounterThreshold(
+            typeof threshold === "number" &&
+              Number.isInteger(threshold) &&
+              threshold >= 1
+              ? threshold
+              : 10
+          );
+        }
       } catch {
         // Story 19.4 C13: a failed load must not masquerade as "No
         // qualification questions configured" — hide the list and alert.
@@ -220,6 +411,8 @@ export default function WaitlistSettingsClient({
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       if (questionsSaveTimeoutRef.current)
         clearTimeout(questionsSaveTimeoutRef.current);
+      if (milestoneSaveTimeoutRef.current)
+        clearTimeout(milestoneSaveTimeoutRef.current);
     };
   }, []);
 
@@ -422,7 +615,7 @@ export default function WaitlistSettingsClient({
                       type="button"
                       onClick={handleLogoClick}
                       disabled={saving || logoUploading}
-                      className="flex flex-1 items-center justify-center rounded-(--radius-lg) border-2 border-dashed border-border bg-card px-3 py-3 text-sm h-10 text-muted-foreground transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex flex-1 items-center justify-center rounded-(--radius-lg) border-2 border-dashed border-accent bg-card px-3 py-3 text-sm h-10 text-muted-foreground transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {logoUploading
                         ? "Uploading..."
@@ -482,6 +675,246 @@ export default function WaitlistSettingsClient({
               )}
             </div>
             <div className="rounded-xl border border-border bg-card p-6">
+              <div className="mb-1 flex items-center justify-between gap-4">
+                <h2 className="text-h4 font-medium text-foreground">
+                  Milestone rewards
+                </h2>
+                <Toggle
+                  checked={milestoneEnabled}
+                  onCheckedChange={handleMilestoneToggle}
+                  aria-label="Milestone rewards"
+                  disabled={
+                    persistedRewards.length > 0 ||
+                    questionsLoading ||
+                    !!questionsLoadError ||
+                    milestoneSaving
+                  }
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Subscribers get a congratulation email when they hit a milestone
+                &mdash; and any reward with &quot;skip the line&quot; moves them
+                straight to #1.
+              </p>
+              {questionsLoading ? (
+                <div className="mt-4 space-y-3" aria-hidden="true">
+                  <div className="h-10 animate-pulse rounded-xl bg-muted" />
+                  <div className="h-10 animate-pulse rounded-xl bg-muted" />
+                </div>
+              ) : questionsLoadError ? (
+                <p role="alert" className="mt-4 text-body-sm text-destructive">
+                  {questionsLoadError}
+                </p>
+              ) : milestoneEnabled ? (
+                <div className="mt-4 flex flex-col gap-3">
+                  {persistedRewards.map((reward) => (
+                    <div
+                      key={`saved-${reward.threshold}`}
+                      className="flex items-end gap-2 rounded-(--radius-lg) border border-accent/25 bg-accent/5 px-3 pb-3 pt-2.5"
+                    >
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs text-muted-foreground">
+                          Refer
+                        </span>
+                        <span className="flex h-10 w-16 items-center justify-center rounded-(--radius-lg) border border-accent/30 bg-card px-3 text-center text-sm font-semibold text-accent">
+                          {reward.threshold}
+                        </span>
+                      </div>
+                      <div className="flex flex-1 flex-col gap-1">
+                        <span className="text-xs text-muted-foreground">
+                          friends → reward
+                        </span>
+                        <span className="flex h-10 items-center rounded-(--radius-lg) border border-accent/30 bg-card px-3 text-sm text-foreground">
+                          {reward.label}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {draftRewards.map((reward, index) => (
+                    <div
+                      key={`draft-${index}`}
+                      className="flex items-end gap-2 rounded-(--radius-lg) border border-border bg-card px-3 pb-3 pt-2.5"
+                    >
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-muted-foreground">
+                          Refer
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={reward.threshold || ""}
+                          onChange={(e) =>
+                            handleDraftThresholdChange(index, e.target.value)
+                          }
+                          placeholder="3"
+                          disabled={milestoneSaving}
+                          className="h-10 w-16 rounded-(--radius-lg) border border-border bg-card px-3 text-sm text-center placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
+                        />
+                      </div>
+                      <div className="flex flex-1 flex-col gap-1">
+                        <label className="text-xs text-muted-foreground">
+                          friends → reward
+                        </label>
+                        <input
+                          type="text"
+                          value={reward.label}
+                          onChange={(e) =>
+                            handleDraftLabelChange(index, e.target.value)
+                          }
+                          placeholder={
+                            MILESTONE_REWARD_PLACEHOLDERS[
+                              persistedRewards.length + index
+                            ] || "e.g. Special reward"
+                          }
+                          disabled={milestoneSaving}
+                          className="h-10 w-full rounded-(--radius-lg) border border-border bg-card px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
+                        />
+                      </div>
+                      {persistedRewards.length + draftRewards.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDraft(index)}
+                          disabled={milestoneSaving}
+                          aria-label="Remove tier"
+                          title="Remove tier"
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 14 14"
+                            fill="none"
+                          >
+                            <path
+                              d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {persistedRewards.length + draftRewards.length < 5 && (
+                    <button
+                      type="button"
+                      onClick={handleAddTier}
+                      disabled={milestoneSaving}
+                      className="flex w-full items-center justify-center gap-2 rounded-(--radius-lg) border-2 border-dashed border-accent/40 bg-accent/5 py-2.5 text-sm font-semibold text-accent transition-colors hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 14 14"
+                        fill="none"
+                      >
+                        <path
+                          d="M7 3V11M3 7H11"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                      Add tier
+                    </button>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Add &quot;skip the line&quot; to a reward to move that
+                    subscriber to #1 when they earn it
+                  </p>
+                  {milestoneErrors.length > 0 && (
+                    <div className="flex flex-col gap-1">
+                      {milestoneErrors.map((error, i) => (
+                        <p key={i} className="text-xs text-destructive">
+                          {error}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  {(draftRewards.length > 0 || milestoneSaved) && (
+                    <div className="mt-6">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleSaveMilestones}
+                        disabled={milestoneSaving}
+                      >
+                        {milestoneSaving
+                          ? "Saving…"
+                          : milestoneSaved
+                            ? "Saved!"
+                            : "Save changes"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+            <div className="rounded-xl border border-border bg-card p-6">
+              <div className="mb-1 flex items-center justify-between gap-4">
+                <h2 className="text-h4 font-medium text-foreground">
+                  Signup counter
+                </h2>
+                <Toggle
+                  checked={counterEnabled}
+                  onCheckedChange={handleCounterToggle}
+                  aria-label="Signup counter"
+                  disabled={questionsLoading || !!questionsLoadError || saving}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Show a real-time signup count on your public waitlist page for
+                social proof.
+              </p>
+              {questionsLoading ? (
+                <div className="mt-4" aria-hidden="true">
+                  <div className="h-10 w-64 animate-pulse rounded-xl bg-muted" />
+                </div>
+              ) : questionsLoadError ? (
+                <p role="alert" className="mt-4 text-body-sm text-destructive">
+                  {questionsLoadError}
+                </p>
+              ) : counterEnabled ? (
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <label className="text-xs text-muted-foreground">
+                    Show when I have
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={counterThreshold || ""}
+                    onChange={(e) =>
+                      handleCounterThresholdInput(e.target.value)
+                    }
+                    onBlur={() =>
+                      void saveField(
+                        "signup_counter_threshold",
+                        counterThreshold
+                      )
+                    }
+                    placeholder="10"
+                    disabled={saving}
+                    className="h-10 w-20 rounded-(--radius-lg) border border-border bg-card px-3 text-sm text-center placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                  <label className="text-xs text-muted-foreground">
+                    or more signups
+                  </label>
+                  {saving && (
+                    <p className="text-xs text-muted-foreground">Saving…</p>
+                  )}
+                  {saved && !saving && (
+                    <p className="text-xs text-accent">Saved</p>
+                  )}
+                  {saveError && !saving && (
+                    <p role="alert" className="text-xs text-destructive">
+                      {saveError}
+                    </p>
+                  )}
+                </div>
+              ) : null}
+            </div>
+            <div className="rounded-xl border border-border bg-card p-6">
               <p className="mb-3 text-overline text-muted-foreground">
                 Preview
               </p>
@@ -495,7 +928,11 @@ export default function WaitlistSettingsClient({
                 ctaText={ctaText}
                 brandColor={brandColor}
                 logoUrl={logoUrl}
-                milestoneRewards={[]}
+                milestoneRewards={
+                  milestoneEnabled ? [...persistedRewards, ...draftRewards] : []
+                }
+                signupCounterEnabled={counterEnabled}
+                signupCounterThreshold={counterThreshold}
                 tier={waitlist.tier as "free" | "pro"}
                 phoneMode={phoneMode}
               />

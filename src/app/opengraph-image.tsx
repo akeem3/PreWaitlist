@@ -34,6 +34,7 @@ export default async function Image() {
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
+        alignItems: "center",
         backgroundColor: BG,
         padding: "72px 96px",
         fontFamily: "Inter",
@@ -56,6 +57,7 @@ export default async function Image() {
           letterSpacing: -1.5,
           marginTop: 32,
           maxWidth: 1000,
+          textAlign: "center",
         }}
       >
         PreWaitlist
@@ -67,6 +69,7 @@ export default async function Image() {
           color: MUTED,
           marginTop: 24,
           maxWidth: 1000,
+          textAlign: "center",
         }}
       >
         Pre-launch waitlist builder
