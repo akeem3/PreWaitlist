@@ -19,6 +19,11 @@ import { ContactModal } from "./contact-modal";
  * "Submit A Feedback" (founder message 2026-10-09). Screen readers use the
  * matching aria-labels; tooltip spans are aria-hidden.
  *
+ * Tour (2026-10-23): both buttons carry data-tour hooks (last two steps of
+ * the dashboard tour). driver.js cannot trigger CSS :hover, so the pills
+ * also force-show via `group-[.driver-active-element]:` — driver.js adds
+ * that class to the highlighted element while their step is active.
+ *
  * Categories + free-text + follow-up live in the hosted Tally form (AC2 =
  * Tally form options, zero code).
  *
@@ -85,7 +90,7 @@ function HoverLabel({
     <span
       aria-hidden="true"
       data-testid={testId}
-      className="pointer-events-none absolute top-1/2 right-full mr-3 origin-right scale-90 -translate-y-1/2 whitespace-nowrap rounded-full bg-foreground px-3 py-1.5 text-sm font-medium text-background opacity-0 shadow-[var(--shadow-float)] transition-all duration-150 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:scale-100 group-focus-visible:opacity-100"
+      className="pointer-events-none absolute top-1/2 right-full mr-3 origin-right scale-90 -translate-y-1/2 whitespace-nowrap rounded-full bg-foreground px-3 py-1.5 text-sm font-medium text-background opacity-0 shadow-[var(--shadow-float)] transition-all duration-150 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:scale-100 group-focus-visible:opacity-100 group-[.driver-active-element]:scale-100 group-[.driver-active-element]:opacity-100"
     >
       {children}
     </span>
@@ -136,6 +141,7 @@ export function FeedbackButton() {
             onClick={() => setContactOpen(true)}
             aria-label="Talk to the founder"
             data-testid="founder-contact-pill"
+            data-tour="founder-contact"
             className="group relative flex h-12 w-12 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-[var(--shadow-float)] transition-colors hover:border-accent/30 hover:text-accent"
           >
             <svg
@@ -172,6 +178,7 @@ export function FeedbackButton() {
             disabled={opening}
             aria-label="Submit A Feedback"
             data-testid="feedback-fab"
+            data-tour="feedback-fab"
             className="group relative flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-[var(--shadow-float)] transition-colors hover:bg-accent/90 disabled:opacity-70"
           >
             <svg

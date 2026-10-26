@@ -180,7 +180,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 - AC1: The system shall calculate a warmth score (0–100) for each subscriber based on engagement signals.
 - AC2: The score shall be calculated from the following signals with these point values: email click (+5), email reply (+10), referral signup (+15), qualification answers completed (+8), leaderboard page visit (+5).
-- AC3: The score shall include time-based decay: no activity in 0–59 days = no penalty, no activity in 60–89 days = -25 points, no activity in 90+ days = score resets to 0.
+- AC3: The score shall include time-based decay: no activity in 0–59 days = no penalty, no activity in 60–89 days = -25 points, no activity in 90+ days = score resets to 0. **[AMENDED 2026-10-23:** grace shortened to 30 days — 0–29 free / 30–89 −25 / 90+ → 0.**]**
 - AC4: The score shall be clamped to 0–100 range (never below 0, never above 100).
 - AC5: The system shall assign tiers based on score: Hot (70+), Warm (40–69), Cold (<40).
 - AC6: New subscribers with no engagement signals shall have score = 0 and tier = "Unscored".
@@ -195,8 +195,8 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 - Create `src/lib/warmth.ts` with `calculateWarmthScore(subscriberId, supabase)` and `assignTier(score) => "hot" | "warm" | "cold" | null`
 - Query `email_events` for the subscriber (count clicks, bounces), `subscribers` for referral count and `qual_answers` (JSONB — check if populated for qual coverage)
 - **Apple MPP caveat:** Email opens are NOT included as a warmth signal. Apple Mail Privacy Protection preloads tracking pixels for ~40-50% of email clients, making open data unreliable. Clicks (+5) and referrals (+15) are the primary intent signals.
-- **Decay starts at 60 days (not 30):** Waitlist subscribers may go quiet while waiting for launch. This is not disengagement — it's expected behavior. 30-day decay would penalize early adopters unfairly.
-- Time decay: calculate days since last `email_events.created_at` for the subscriber; if >60 days, apply -25 penalty; if >90 days, reset to 0
+- **Decay starts at 60 days (not 30):** Waitlist subscribers may go quiet while waiting for launch. This is not disengagement — it's expected behavior. 30-day decay would penalize early adopters unfairly. **[AMENDED 2026-10-23 — reversed:** grace is now **30 days**; with baseline 70 a 60-day grace left everyone Hot for two months, so the Hot segment carried no signal. See MEMORY.**]**
+- Time decay: calculate days since last `email_events.created_at` for the subscriber; if >29 days, apply -25 penalty; if >90 days, reset to 0 **[AMENDED 2026-10-23:** threshold was >60; 90-day reset unchanged.**]**
 - Score formula: `min(100, max(0, rawScore - decayPenalty))`
 - The `warmth_score` column stores the tier string ("hot", "warm", "cold"), NOT the numeric score. The numeric score is transient — recalculated in batch.
 - For MVP, the daily cron is sufficient. Real-time recalculation on every webhook event is v1.1.
@@ -290,7 +290,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 **Acceptance Criteria (EARS):**
 
 - AC1: The score calculation shall apply time decay based on days since last engagement event (email click, email reply, referral).
-- AC2: Decay rules: 0–59 days = no penalty, 60–89 days = -25 points, 90+ days = score resets to 0.
+- AC2: Decay rules: 0–59 days = no penalty, 60–89 days = -25 points, 90+ days = score resets to 0. **[AMENDED 2026-10-23:** windows are now 0–29 / 30–89 / 90+ (grace 60 → 30 days).**]**
 - AC3: "Last engagement" shall be determined by the most recent `email_events.created_at` for the subscriber.
 - AC4: Subscribers with zero events shall have score = 0 regardless of signup date.
 - AC5: The decay shall be applied during the daily batch recalculation (Story 11.1), not on every read.

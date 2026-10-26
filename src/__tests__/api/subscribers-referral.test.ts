@@ -473,6 +473,8 @@ describe("POST /api/subscribers — referral tracking", () => {
     const html = mockedSendEmail.mock.calls[0][0]?.html;
     expect(html).toContain("<pro-footer>");
     expect(html).not.toContain("<free-footer>");
+    // Batch 7 logo fix: Pro = white-label, no PreWaitlist header logo.
+    expect(html).not.toContain("PreWaitlist-logo.svg");
   });
 
   it("19.1 AC2: free tier gets the Powered-by footer on moved-up (iff tier is free)", async () => {
@@ -489,5 +491,8 @@ describe("POST /api/subscribers — referral tracking", () => {
     const html = mockedSendEmail.mock.calls[0][0]?.html;
     expect(html).toContain("<free-footer>");
     expect(html).not.toContain("<pro-footer>");
+    // Batch 7 logo fix: header logo removed entirely — Free branding stays
+    // footer-only (buildFreeEmailFooter, mocked here as <free-footer>).
+    expect(html).not.toContain("PreWaitlist-logo.svg");
   });
 });

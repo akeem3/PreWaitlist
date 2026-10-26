@@ -246,7 +246,7 @@ describe("QualificationPanel", () => {
     expect(screen.getByText("Free text")).toBeDefined();
   });
 
-  it("overview variant renders panel title and View all link", async () => {
+  it("overview variant renders panel title as a link to the qualification page", async () => {
     mockFetchWith({ questions: [question], respondentTotal: 2 });
     render(
       <QualificationPanel
@@ -256,8 +256,13 @@ describe("QualificationPanel", () => {
       />
     );
     expect(await screen.findByText("Qualification Breakdown")).toBeDefined();
-    const link = screen.getByRole("link", { name: /View all/ });
+    const link = screen.getByRole("link", { name: "Qualification Breakdown" });
     expect(link.getAttribute("href")).toBe("/dashboard/qualification?wid=wl-9");
+    // whole-card overlay: ::after covers the panel, single tab stop
+    expect(link.className).toContain("after:absolute");
+    expect(link.className).toContain("after:inset-0");
+    const action = screen.getByText("View all →");
+    expect(action.getAttribute("aria-hidden")).toBe("true");
   });
 
   it("overview variant shows every question (3rd+ no longer hidden)", async () => {
@@ -421,7 +426,7 @@ describe("QualificationPanel", () => {
     expect(badges[0].className).toContain("text-accent");
   });
 
-  it("styles the View all link with accent color (brand color)", async () => {
+  it("styles the View all action with accent color (brand color)", async () => {
     mockFetchWith({ questions: [question], respondentTotal: 2 });
     render(
       <QualificationPanel
@@ -430,9 +435,10 @@ describe("QualificationPanel", () => {
         variant="overview"
       />
     );
-    const link = await screen.findByRole("link", { name: /View all/ });
-    expect(link.className).toContain("text-accent");
-    expect(link.className).not.toContain("text-muted-foreground");
+    const action = await screen.findByText("View all →");
+    expect(action.className).toContain("text-accent");
+    expect(action.className).toContain("group-hover:text-accent/80");
+    expect(action.className).not.toContain("text-muted-foreground");
   });
 
   it("renders respondent counts in accent brand color", async () => {

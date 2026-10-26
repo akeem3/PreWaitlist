@@ -8,18 +8,18 @@ Pre-launch waitlist SaaS. Solo founder project. Full spec: `docs/PRD.md`.
 
 ## Prompt Shortcuts
 
-| Shortcut             | Action                                       |
-| -------------------- | -------------------------------------------- |
-| `scan [story]`       | Load `docs/PROMPTS.md` → Execute Prompt #1   |
-| `execute [story]`    | Load `docs/PROMPTS.md` → Execute Prompt #2   |
-| `audit [story]`      | Load `docs/PROMPTS.md` → Execute Prompt #3   |
-| `epic-check`         | Load `docs/PROMPTS.md` → Execute Prompt #4   |
-| `create-epic [N]`    | Load `docs/PROMPTS.md` → Execute Prompt #5   |
-| `align-epic [N]`     | Load `docs/PROMPTS.md` → Execute Prompt #6   |
-| `align-design [N.S]` | Load `docs/PROMPTS.md` → Execute Prompt #7   |
-| `investigate [ ]`    | Load `docs/PROMPTS.md` → Execute Prompt #8   |
-| `commit-push`        | Stage, commit with auto-message, push        |
-| `merge-clean`        | Merge epic→dev, resolve conflicts, lint+test |
+| Shortcut                   | Action                                       |
+| -------------------------- | -------------------------------------------- |
+| `scan [story]`             | Load `docs/PROMPTS.md` → Execute Prompt #1   |
+| `execute [story]`          | Load `docs/PROMPTS.md` → Execute Prompt #2   |
+| `audit [story]`            | Load `docs/PROMPTS.md` → Execute Prompt #3   |
+| `epic-check`               | Load `docs/PROMPTS.md` → Execute Prompt #4   |
+| `create-epic [N]`          | Load `docs/PROMPTS.md` → Execute Prompt #5   |
+| `align-epic [N]`           | Load `docs/PROMPTS.md` → Execute Prompt #6   |
+| `align-design [N.S] / [N]` | Load `docs/PROMPTS.md` → Execute Prompt #7   |
+| `investigate [ ]`          | Load `docs/PROMPTS.md` → Execute Prompt #8   |
+| `commit-push`              | Stage, commit with auto-message, push        |
+| `merge-clean`              | Merge epic→dev, resolve conflicts, lint+test |
 
 ## Prompt Nesting
 
@@ -57,7 +57,10 @@ scan [story 7.1] → execute [story 7.1] → audit [story 7.1]
 ```
 pnpm dev          # start local dev server (Turbopack)
 pnpm lint         # ESLint
-pnpm format       # Prettier
+pnpm format       # Prettier (write)
+pnpm format:check # Prettier (check only)
+pnpm test         # Vitest watch mode
+pnpm test:run     # Vitest single run (gates/CI)
 pnpm build        # production build
 ```
 
@@ -68,7 +71,7 @@ Local subdomains: use `*.lvh.me:3000` (e.g. `acme.lvh.me:3000`).
 **Always do**
 
 - Read `docs/stories/<current-story>.md` before starting work; follow its ACs exactly.
-- Enforce RLS on every Supabase table — see `docs/PRD.md#74-data-model--implementation-grade`.
+- Enforce RLS on every Supabase table — see `docs/PRD.md#74-data-model----implementation-grade`.
 - Use the shared `components/share/share-copy-link.tsx` for sharing — never a one-off.
 - Render "Powered by PreWaitlist" footer in onboarding preview when tier = Free.
 
@@ -84,6 +87,7 @@ Local subdomains: use `*.lvh.me:3000` (e.g. `acme.lvh.me:3000`).
 - Never commit `.env*` files or any secret.
 - Never use inline styles — use Tailwind utility classes and design system tokens from `src/app/globals.css`.
 - Never introduce colors, shadows, or gradients outside Design System v2.0 tokens.
+- Never create `src/middleware.ts` — subdomain routing lives in `src/proxy.ts` (Next.js 16 renamed middleware.ts → proxy.ts).
 
 ## Design System
 
@@ -99,15 +103,20 @@ Local subdomains: use `*.lvh.me:3000` (e.g. `acme.lvh.me:3000`).
 ```
 docs/
   PRD.md                           product spec
-  epics/epic-0-...md               epic index
-  stories/epicN.storyNN-*.md       one file per unit of work
+  PROMPTS.md                       agent prompt workflow (shortcut → phase-gated prompt)
+  epics/                           active epic + sprint plans/summaries; older epics in epics/completed/
+  stories/story-N.M-*.md           one file per unit of work; done stories in stories/completed/
+  stories/sql-writeups/            founder-run SQL migrations (run before the matching deploy)
   design/High-fidelity-svgs/       Sprint 1 SVGs
-  design/High-fidelity-Sprint2/    Sprint 2 SVGs
+  design/High-fidelity-Sprit2/     Sprint 2 SVGs (on-disk name carries the "Sprit2" typo)
+  design/design-analysis.md        output of align-design runs
 .memory/
   MEMORY.md                        durable "why" — architecture decisions
   YYYY-MM-DD.md                    daily auto-logs
-app/                               Next.js App Router
+src/app/                           Next.js App Router
 components/ui/                     design-system primitives
+src/__tests__/                     Vitest suites
+tests/e2e/                         Playwright specs
 ```
 
 For anything not covered, check the current story's `Source` link before asking.

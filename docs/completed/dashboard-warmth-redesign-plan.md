@@ -33,27 +33,27 @@ Executed in D7 order: switcher (Fix A + B) → restructure + card redesign → t
 
 All decisions below were answered by the founder in interactive Q&A. **No open copy gates remain.**
 
-| ID    | Decision                                                                                                                                                                        |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D1→R9 | Meta line = **`"{n} subscribers"`** (accent count, pluralized, only when `total > 0`). Old `"20 subscribers · 2 unscored"` is dead (Unscored removed).                          |
-| D2    | Card redesign approved **as drafted**, adapted to 3 bars (title-link + overlay, status-token value colors, flex-distributed rows, `waitlistId` prop).                           |
-| D3    | Switcher fix = **A + B** (hard-nav CTA + shell self-heal). Fix C not included.                                                                                                  |
-| D4    | Superseded by D1/R10 — restructure replaces the status-quo pick.                                                                                                                |
-| D5    | Warmth stays **batch-only** (daily cron). Docs/test-guide only. Research corroborates daily recalc as industry ideal (Bounceproof).                                             |
-| D6    | Doc updates: **all 6 targets** (PRD, vision, design-guide, sprint-3-specs, MEMORY, this plan) **+ Epic 15/17/11/12.3 amendments** (governance — see §4.4).                      |
-| D7    | Execution order: switcher → restructure (+ redesign) → docs.                                                                                                                    |
-| D8    | Panel tests + manual switcher verification; **engine tests are mandatory** (AC-level behavior change).                                                                          |
-| D9    | Work on `dev`, **stop before commit** — founder runs `commit-push` later.                                                                                                       |
-| D10   | Proceed despite Epic 15's two open manual gates.                                                                                                                                |
-| R1    | Baseline = **70** (everyone starts Hot).                                                                                                                                        |
-| R2    | Decay (0–59d free / 60–89d −25 / 90d+ → 0) + thresholds (≥70 Hot / ≥40 Warm / else Cold) **kept as-is** — industry-standard bands confirmed (HubSpot/BetaCompression/Outsolvi). |
-| R3    | Signal weights **keep 5 / 15 / 8** — benchmark-verified (see §4.2).                                                                                                             |
-| R4    | Decay clock = **max(last click, latest referred signup, own signup)** — any meaningful action (research-flipped from clicks-only).                                              |
-| R5    | New subscribers **insert `warmth_score = 'hot'`** at signup.                                                                                                                    |
-| R6    | **SQL migration approved** (DEFAULT + backfill + NOT NULL) — new manual gate. Proper DB-level invariant, not a UI workaround.                                                   |
-| R7    | `unscored` field **removed cleanly** from all APIs/types.                                                                                                                       |
-| R8    | Orphan public `GET /api/warmth/[subdomain]` **deleted** (route + its test file).                                                                                                |
-| R10   | Document plan first (this file); execute only after founder OK.                                                                                                                 |
+| ID    | Decision                                                                                                                                                                                                                                                       |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1→R9 | Meta line = **`"{n} subscribers"`** (accent count, pluralized, only when `total > 0`). Old `"20 subscribers · 2 unscored"` is dead (Unscored removed).                                                                                                         |
+| D2    | Card redesign approved **as drafted**, adapted to 3 bars (title-link + overlay, status-token value colors, flex-distributed rows, `waitlistId` prop).                                                                                                          |
+| D3    | Switcher fix = **A + B** (hard-nav CTA + shell self-heal). Fix C not included.                                                                                                                                                                                 |
+| D4    | Superseded by D1/R10 — restructure replaces the status-quo pick.                                                                                                                                                                                               |
+| D5    | Warmth stays **batch-only** (daily cron). Docs/test-guide only. Research corroborates daily recalc as industry ideal (Bounceproof).                                                                                                                            |
+| D6    | Doc updates: **all 6 targets** (PRD, vision, design-guide, sprint-3-specs, MEMORY, this plan) **+ Epic 15/17/11/12.3 amendments** (governance — see §4.4).                                                                                                     |
+| D7    | Execution order: switcher → restructure (+ redesign) → docs.                                                                                                                                                                                                   |
+| D8    | Panel tests + manual switcher verification; **engine tests are mandatory** (AC-level behavior change).                                                                                                                                                         |
+| D9    | Work on `dev`, **stop before commit** — founder runs `commit-push` later.                                                                                                                                                                                      |
+| D10   | Proceed despite Epic 15's two open manual gates.                                                                                                                                                                                                               |
+| R1    | Baseline = **70** (everyone starts Hot).                                                                                                                                                                                                                       |
+| R2    | Decay (0–29d free / 30–89d −25 / 90d+ → 0) + thresholds (≥70 Hot / ≥40 Warm / else Cold) **kept as-is** — industry-standard bands confirmed (HubSpot/BetaCompression/Outsolvi). Grace was 60 days at approval; **shortened to 30 on 2026-10-23** (see MEMORY). |
+| R3    | Signal weights **keep 5 / 15 / 8** — benchmark-verified (see §4.2).                                                                                                                                                                                            |
+| R4    | Decay clock = **max(last click, latest referred signup, own signup)** — any meaningful action (research-flipped from clicks-only).                                                                                                                             |
+| R5    | New subscribers **insert `warmth_score = 'hot'`** at signup.                                                                                                                                                                                                   |
+| R6    | **SQL migration approved** (DEFAULT + backfill + NOT NULL) — new manual gate. Proper DB-level invariant, not a UI workaround.                                                                                                                                  |
+| R7    | `unscored` field **removed cleanly** from all APIs/types.                                                                                                                                                                                                      |
+| R8    | Orphan public `GET /api/warmth/[subdomain]` **deleted** (route + its test file).                                                                                                                                                                               |
+| R10   | Document plan first (this file); execute only after founder OK.                                                                                                                                                                                                |
 
 ---
 
@@ -240,12 +240,14 @@ So after a referral (pre-restructure):
 | 1 referral made                                           | 85                      | **Hot** (was Cold at 15 — the reported confusion, fixed) |
 | 2 referrals + qual                                        | 70+30+8 = 100 (clamped) | **Hot**                                                  |
 | Qual answered only                                        | 78                      | **Hot**                                                  |
-| 60–89 days since last meaningful action, no signals       | 45                      | **Warm**                                                 |
-| 60–89 days, 1 referral (+15)                              | 60                      | **Warm**                                                 |
+| 30–89 days since last meaningful action, no signals       | 45                      | **Warm**                                                 |
+| 30–89 days, 1 referral (+15)                              | 60                      | **Warm**                                                 |
 | 90+ days since last meaningful action                     | 0                       | **Cold**                                                 |
 | Clicks never score separately from baseline               | +5 each                 | pushes toward 100 / offsets decay                        |
 
-Semantics: **Hot = joined or active within 60 days · Warm = quiet for 2–3 months · Cold = silent for 3+ months.** Opens never score (standing decision — Apple MPP). Signals: click +5, referral +15, qual +8 (R3, benchmark-verified).
+Semantics: **Hot = joined or active within 30 days · Warm = quiet for 1–3 months · Cold = silent for 3+ months.** Opens never score (standing decision — Apple MPP). Signals: click +5, referral +15, qual +8 (R3, benchmark-verified). **[AMENDED 2026-10-23 — recency cap implemented in `scoreSubscriber`: a score ≥70 past the 30-day grace is demoted to Warm, so "Hot = active within 30 days" now holds even for click-heavy subscribers; score itself stays uncapped.]**
+
+> **[AMENDED 2026-10-23:** the grace window in the rows above was 60–89 days when this plan was approved; it is now **30–89** (0–29 free). `penalty_amount` (−25) and `reset_days` (90) unchanged. Rationale: baseline 70 made every subscriber Hot for two months, zeroing the Hot segment. Historical numbers above this table row set are left as recorded.**]**
 
 ### Test guide (manual — run these to see warmth move)
 
@@ -312,8 +314,8 @@ score = clamp( BASELINE + clicks×5 + referrals×15 + qual×8 − decay , 0 , 10
 lastActivity = max( last email click , latest referred-subscriber signup , own signup )
 
 decay (from lastActivity):
-  0–59 days  → 0
-  60–89 days → −25
+  0–29 days  → 0
+  30–89 days → −25
   ≥90 days   → force 0
 
 tiers:  score ≥ 70 → "hot"
@@ -321,7 +323,7 @@ tiers:  score ≥ 70 → "hot"
         else       → "cold"          ← never null; Tier type loses `| null`
 ```
 
-**Lifecycle progression (no actions):** Hot (0–59d) → Warm (60–89d, score 45) → Cold (90d+, score 0).
+**Lifecycle progression (no actions):** Hot (0–29d) → Warm (30–89d, score 45) → Cold (90d+, score 0). **[AMENDED 2026-10-23:** windows above were 0–59 / 60–89 until the grace change; only `no_penalty_days` moved.**]**
 **Fresh signup:** score 70 → Hot, written at insert (R5) — correct even before any cron run.
 
 **Unchanged (validated by research + prior decisions):** signal weights 5/15/8 (R3) · opens never score (Apple MPP standing decision) · batch-only daily recalc (D5) · tier string written to `subscribers.warmth_score` · cron auth `CRON_SECRET`.

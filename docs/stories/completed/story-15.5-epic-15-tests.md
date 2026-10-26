@@ -12,7 +12,7 @@ As a developer, I want automated tests for the warmth pipeline so scoring, sched
 
 ## Acceptance Criteria (EARS)
 
-- AC1: Unit tests for scoring/decay/tier shall cover: multi-signal totals; clamp 0/100; **sent/delivered do not reset decay**; day 59 no penalty; day 60 −25; 90+ → 0; engaged score 0 → cold; never-engaged 0 → null; zero-click + old `created_at` still decays; referrals ×15; qual +8.
+- AC1: Unit tests for scoring/decay/tier shall cover: multi-signal totals; clamp 0/100; **sent/delivered do not reset decay**; day 59 no penalty; day 60 −25; 90+ → 0; engaged score 0 → cold; never-engaged 0 → null; zero-click + old `created_at` still decays; referrals ×15; qual +8. **[AMENDED 2026-10-23:** boundary cases are now day 29 (free) / day 30 (−25); the tier items were already superseded by the 2026-09-25 restructure (`assignTier` never null).**]**
 - AC2: Batch tests shall cover: stable `.order("id")` used; referral counts via `.in("referrer_id", pageIds)` (cross-page referrer credited); multi-page loop terminates; return counters.
 - AC3: API tests for `POST /api/webhooks/resend` shall cover: missing headers → **401**; invalid signature → **401**; valid click stores event with correct subscriber/waitlist; duplicate svix id → single row; unknown event type → 200 no insert; unknown email → 200 no fail; multi-waitlist metadata or multi-insert behavior.
 - AC4: API tests for `GET /api/cron/warmth` shall cover: missing `CRON_SECRET` → 500; bad bearer → 401; valid bearer invokes batch (mocked) → 200 counts JSON.
@@ -62,9 +62,9 @@ const events = [
 ];
 // expect -25 applied → sent does not refresh clock
 
-// day 59 free, day 60 penalty
-calculateWarmthScore([clicked 59d], 0, false, daysAgo(59)) // no -25
-calculateWarmthScore([clicked 60d], 0, false, daysAgo(60)) // -25
+// day 29 free, day 30 penalty (was 59/60 before the 2026-10-23 grace change)
+calculateWarmthScore([clicked 29d], 0, false, daysAgo(29)) // no -25
+calculateWarmthScore([clicked 30d], 0, false, daysAgo(30)) // -25
 
 // tier
 assignTier(0, true)  // "cold"
@@ -184,7 +184,7 @@ Record final test total in Implementation Status. Baseline known failures only �
 
 | AC                      | Status | Evidence                                                                                                                                                                                                                                                                                                                |
 | ----------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| AC1 Unit decay/tier     | ✅     | `warmth.test.ts` — 29 tests verified against all 11 AC1 items (multi-signal, clamps, sent/delivered-ignored, day 59/60, 90+, engaged-0→cold, never-engaged→null, zero-click decay, ×15, +8); complete since 15.0 — no additions needed                                                                                  |
+| AC1 Unit decay/tier     | ✅     | `warmth.test.ts` — 36 tests verified against all 11 AC1 items (multi-signal, clamps, sent/delivered-ignored, day **29/30** after the 2026-10-23 grace change, 90+, engaged-0→cold, never-engaged→null, zero-click decay, ×15, +8); complete since 15.0 — no additions needed                                            |
 | AC2 Batch               | ✅     | `warmth-batch.test.ts` — 5 tests verified against AC2 (order("id") before range, `.in("referrer_id", pageIds)` direction, multi-page termination 501 processed, return counters); complete since 15.0                                                                                                                   |
 | AC3 Webhook             | ✅     | **New** `src/__tests__/api/webhook-resend.test.ts` — 7/7: missing headers 401, bad sig 401, valid click insert (`svix_id`, subscriber/waitlist, created_at), dup svix → 0 inserts, unknown type 200/no calls, unknown email 200/no insert, multi-waitlist → 2 inserts. `after()` runs sync; mock queue drains via flush |
 | AC4 Cron                | ✅     | **New** `src/__tests__/api/cron-warmth.test.ts` — 3/3: unset `CRON_SECRET` → 500 (+ batch not called), bad bearer → 401, valid bearer → 200 counts + batch called once                                                                                                                                                  |

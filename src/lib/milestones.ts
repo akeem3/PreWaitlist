@@ -242,15 +242,19 @@ export async function checkAndFulfillMilestones(
           referralLink,
           email.founderTier
         );
+        // Plain-text sibling for the multipart payload. Gmail's Primary
+        // classifier leans on the text part — HTML-only sends land in
+        // Promotions. Copy is byte-identical to the HTML (derived, not
+        // authored) so this never touches the content gate. Slice past the
+        // head (skips <title>); fall back to the full doc if the template
+        // ever loses its head — indexOf -1 + slice(-1) would silently
+        // corrupt the text part to a single character.
+        const headEnd = html.indexOf("</head>");
         const result = await sendEmail({
           to: subscriber.email,
           subject: `Congratulations! You earned: ${email.tier.reward_label}`,
           html,
-          // Plain-text sibling for the multipart payload. Gmail's Primary
-          // classifier leans on the text part — HTML-only sends land in
-          // Promotions. Copy is byte-identical to the HTML (derived, not
-          // authored) so this never touches the content gate.
-          text: htmlToText(html.slice(html.indexOf("</head>"))),
+          text: htmlToText(headEnd === -1 ? html : html.slice(headEnd)),
           stream: "transactional",
           senderName:
             email.founderTier === "pro" ? email.waitlist?.sender_name : null,

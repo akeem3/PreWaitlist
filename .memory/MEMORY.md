@@ -30,10 +30,12 @@
 
 - **Decision:** Use memsearch with ONNX embeddings (bge-m3) for fork-agnostic semantic search over markdown memory files.
 - **Reason:** Stores data as plain markdown files readable even without the tool. Uses local ONNX embeddings — zero API key, zero cost, zero dependency on whichever model provider is active.
-- **Status:** ✅ Working — CLI v0.4.16, Docker v29.7.2, Milvus v2.5.1 containers running, 421 chunks indexed.
+- **Status:** ✅ Working — CLI v0.4.19, Docker containers healthy (milvus-standalone + etcd + minio, Milvus v2.5.1), 3,927 chunks in `memsearch_chunks` (verified 2026-10-26: containers were found dead 3 days, restarted, stats + semantic search OK; 2026-10-23: expand all OK; MEMORY.md indexed including the newest block).
+- **Fix (2026-10-26):** all 3 containers had restart policy `no` — stayed dead after Docker Desktop restarts/reboots, failing every memsearch call with `Fail connecting to server on localhost:19530`. Set `docker update --restart unless-stopped` on all three so they auto-start with Docker Desktop. If memsearch ever errors with a connection failure, first check `docker ps` — containers are the usual cause, not the CLI.
 - **Fix:** Windows console encoding bug — must set `$env:PYTHONIOENCODING="utf-8"` before running memsearch commands (or add to PowerShell profile permanently). Without this, `click.echo` crashes on Unicode characters (emojis, arrows).
 - **Gotcha:** Collection name defaults to `memsearch_chunks` for CLI. When indexing with `--force`, it may create a separate collection. Always verify with `memsearch stats` and use `-c memsearch_chunks` if needed.
-- **Date:** 2026-07-26 (updated 2026-09-13)
+- **Gotcha (2026-10-23):** `memsearch index` is manual — no `memsearch watch` process runs in this project, so edits are not auto-indexed. Because indexing does not prune deleted/moved files, the collection carries stale duplicate sources (e.g. `docs/dashboard-warmth-redesign-plan.md` no longer exists on disk while `docs/completed/dashboard-warmth-redesign-plan.md` is indexed too). A clean rebuild = `memsearch reset` then `memsearch index docs .memory` (ask founder first — search is unavailable during the rebuild).
+- **Date:** 2026-07-26 (updated 2026-10-23)
 
 ### Wildcard subdomain routing via Vercel nameservers
 
@@ -267,7 +269,7 @@ picking up a paying customer.
 
 **Key decisions (from web research + audit):**
 
-- **Decay starts at 60 days (not 30):** Waitlist subscribers go quiet while waiting for launch — this is not disengagement. 30-day decay penalizes early adopters unfairly.
+- **Decay starts at 60 days (not 30):** Waitlist subscribers go quiet while waiting for launch — this is not disengagement. 30-day decay penalizes early adopters unfairly. **[AMENDED 2026-10-23 — reversed:** `DECAY.no_penalty_days` is now **30** (0–29 free / 30–89 −25 / 90+ → 0). A 60-day grace kept every subscriber Hot for two months, making the Hot segment meaningless. 30 days is the standard _recency tiering_ boundary (Campaign Monitor Active 0–30d; Klaviyo/ActiveCampaign 30/60/90 segments). Counter-caveat recorded: 60–90 days is the standard for _flagging inactivity_ (mailsoftly/mailtester) — not our use, since we only tier and never stop sending, but monthly-cadence lists will oscillate Hot→Warm between sends. LaunchList's "half attention per 30 days / <15% opens / <2% clicks by launch" verified but **vendor-reported**, not independent. See the "Warmth Decay Grace — 60 → 30 days" block at file end.**]**
 - **Email opens NOT tracked as warmth signal:** Apple Mail Privacy Protection preloads pixels for ~40-50% of email clients, making open data unreliable. Clicks (+5) and referrals (+15) are the primary intent signals.
 - **Cold bar color = blue (not red):** Both Hot (coral `#d0492f` at the time) and Cold (red) being red-family is confusing. Blue is more distinct. **[AMENDED 2026-09-27:** Hot is now green `#0F7A5E`, so Hot/Cold are fully distinct anyway.**]**
 - **Email infrastructure separation:** Transactional emails from `notifications@prewaitlist.com`, marketing from `updates@prewaitlist.com`. Protects deliverability if a broadcast triggers spam complaints. **[AMENDED 2026-10-10:** local-part separation proved insufficient — Gmail/Reputation is domain-level, so marketing now lives on a dedicated subdomain `updates@mail.prewaitlist.com`; transactional stays on root.**]**
@@ -966,7 +968,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 **Decisions (2026-09-25):**
 
 - Dropped `email_reply` (+10) and `leaderboard_visit` (+5) warmth signals — Resend emits no reply event and `page_views` is never written. Scored signals: click +5, referral +15, qualification answers +8.
-- Decay uses **clicked-only** last engagement with `subscribers.created_at` fallback; windows 0–59 free / 60–89 −25 / 90+ → 0. Boundary is `daysSince >= 60` (day 59 not penalized).
+- Decay uses **clicked-only** last engagement with `subscribers.created_at` fallback; windows 0–29 free / 30–89 −25 / 90+ → 0. Boundary is `daysSince >= 30` (day 29 not penalized). **[AMENDED 2026-10-23:** was 0–59 / 60–89; grace shortened to 30 — see the decay-grace block at file end.**]**
 - ~~Score 0 **with** lifetime engagement (clicks/referrals/qual) → **Cold**, never Unscored; Unscored only when never engaged (`assignTier(score, hadEngagement)`)~~ — **overturned 2026-09-25 by the warmth restructure** (below): Unscored removed entirely, `hadEngagement` deleted, everyone starts Hot.
 - Cron scheduled in `vercel.json`: `{ "path": "/api/cron/warmth", "schedule": "0 5 * * *" }` (UTC 05:00, Bearer `CRON_SECRET`) — Standing Decision 6.
 - Warmth badge + tier filter live on `/dashboard/warmth` only — no subscriber-table column (Story 11.2 surface corrected in 15.6).
@@ -976,7 +978,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 **Gotchas:**
 
 - Referral batch counting: `.in("referrer_id", pageIds)` counts referrals **made by** the page's members, not referrers **of** them (cross-page credit).
-- Day boundary: `daysSince >= 60` — use `>= 60`, never `>= 59` (the pre-15.0 bug).
+- Day boundary: `daysSince >= 30` — use `>= 30`, never `>= 29` (the same off-by-one class as the pre-15.0 `>= 59` bug; the window itself moved 60 → 30 on 2026-10-23).
 - Settings `warning-threshold` helper is the **cold-% warning** (range 20–80), not a score cutoff.
 - Segments API needs `?wid=` **and** `requirePro` — tier gate runs before waitlist lookup (Free + bad wid → 403, not 404).
 - `/api/dashboard/warmth` returns 400 without `waitlist_id` — the dashboard client fetch is guarded by `if (waitlist_id)`.
@@ -988,7 +990,7 @@ Design specs use hex values that don't always match the token system exactly. Ma
 
 **Decision (founder):** "the unscored functionality is to be removed and everyone starts from hot and they go cold based on activity."
 
-**Model:** `score = clamp(70 + clicks×5 + referrals×15 + qual×8 − decay, 0, 100)` · `Tier = "hot" | "warm" | "cold"` (never null) · baseline 70 = Hot at signup · decay windows unchanged (0–59 free / 60–89 −25 / 90+ → 0) · thresholds unchanged (≥70 Hot / ≥40 Warm) · recency clock = max(last click, latest referred signup, own signup) — **any meaningful action** resets decay.
+**Model:** `score = clamp(70 + clicks×5 + referrals×15 + qual×8 − decay, 0, 100)` · `Tier = "hot" | "warm" | "cold"` (never null) · baseline 70 = Hot at signup · decay windows **0–29 free / 30–89 −25 / 90+ → 0** (grace 60 → 30 on 2026-10-23; penalty and reset unchanged) · thresholds unchanged (≥70 Hot / ≥40 Warm) but the final tier is **capped at Warm once the clock passes 30 days** (recency cap, 2026-10-23) · recency clock = max(last click, latest referred signup, own signup) — **any meaningful action** resets decay.
 
 **Overturns:** Epic 15 Standing Decision 3 (engaged-zero → Cold / Unscored = never engaged) + ACs in Stories 11.1 (AC6/7), 11.2 (AC2/3), 11.3 (AC1/4), 12.3.3 (AC2/5), 15.0 (AC4/7), 15.1 (AC4), 15.4 (AC1/5), 15.5 (AC5), Epic 17 (AC3/7) — annotated in epic/story docs, not silently rewritten. Vision already said "three states" — aligns code back to vision (v4.3 bump).
 
@@ -2527,3 +2529,90 @@ paragraph.
 
 **Retest pending (founder):** leaderboard click a non-email cell -> detail; detail Referral
 link copy -> clipboard; public page hierarchy on Minimal/Bold/Dark (chips prominent, steps quiet).
+
+## Batch 5 fixes + leaderboard structure fix - shipped 9335209 (2026-10-22)
+
+**Status:** committed `9335209` on `dev`, fast-forward merged to `main`, pushed -> Vercel
+auto-deploys. Prompt #3 audit run after the fixes (2 findings, both fixed, re-audit green).
+**TC-LEAD-01..05 execution results still open** (founder has not recorded pass/fail — no
+checkboxes flipped in `docs/qa/manual-test-cases.md`).
+
+**Four fixes + one structure fix:**
+
+1. **Dashboard footer text-xs -> text-sm** — leaderboard + warmth table footers only
+   (founder-scoped; public leaderboard out of scope). `leaderboard/client.tsx:397`,
+   `warmth/client.tsx:339`.
+2. **Milestone tier strip in the dashboard leaderboard Milestone column** (TC-LEAD-03):
+   full strip, not just next tier — `page.tsx` row mapping emits `milestone_tiers`
+   (threshold/label/earned); `formatMilestone()` = earned accent + ✓, first pending
+   `font-medium text-foreground`, rest muted, `—` when no rewards, `✓ Complete` when
+   all earned; founder labels ride the native `title` tooltip (data, not copy). Header
+   stays non-sortable `Milestone` span. Column stays 120px; strip wraps via flex-wrap.
+3. **Plain-text multipart parts for milestone + cap-warning emails** (Gmail Promotions
+   fix): milestone = `htmlToText(html.slice past </head>)` (skips <title>); cap-warning
+   = `htmlToText(html)` on its headless fragment (slice would be `indexOf === -1`).
+   `htmlToText` gained `&nbsp; -> space` first in the unescape chain (`&amp;` stays
+   last — `&amp;nbsp;` correctly does not double-decode). Copy derived, never authored.
+   `sendEmail` already forwarded `text` to Resend; retry-queue already stores/
+   replays `text_payload`. Moved-up/confirmation remain HTML-only (scope was
+   milestone + cap-warning only).
+4. **TC-LEAD-04 cap-test procedure** in the QA doc — throwaway `cap-test` Free
+   waitlist, seed `subscriber_count` 449 -> signup -> 90% email (multipart note) ->
+   seed 499 -> signup -> 500 -> 501st 403 (pre-check `route.ts:560` + atomic claim
+   `route.ts:685` NULL) -> Pro exempt (`p_cap: null` `route.ts:677`) -> cleanup.
+   Line refs verified exact in the audit.
+5. **Leaderboard structure fix** (cross-row misalignment + overflow): bare `1fr` grid
+   tracks (= `minmax(auto,1fr)`) let a long unbreakable email widen THAT row's track
+   only. Fix = `minmax(0,1fr)` on both GRID variants, `truncate` + native `title`
+   tooltips on Name/Email/Phone cells, `whitespace-nowrap` on Date. Stretched
+   row-click overlay preserved (abspos `::after` containing block is the `relative`
+   row — escapes the truncating link's overflow clip).
+
+**Tests:** leaderboard page 37/37 (grid-string locks refreshed to minmax + 3 new:
+long-content truncate/title, header<->row grid parity via `gridColsOf` regex, phone
+truncate; next/link mock passes `title` through) · milestones 17/17 (plain-text part
+asserts Congratulations/label, no `&nbsp;`, no `<`) · subscribers cap-warning test
+(idempotency key `cap-warning/waitlist-1` + text asserts) · full suite
+**1212 = 1205 pass / 7 fail = exact sanctioned baseline** (dashboard-archive 4 +
+dashboard-subscriber-table 3) · lint 0/5 · prettier clean · clean build.
+
+**Prompt #3 audit (2026-10-22): 2 findings, both fixed.** F1 — milestones slice(-1)
+silent-corruption trap (indexOf </head> === -1) hardened with fallback to full doc.
+F2 — commit claimed MEMORY updates but only the f42ce06 correction block had landed —
+this block closes it. Observations: "✓ Complete" is a new UI string (state indicator,
+flagged for founder ratification — copy gate); milestone/cap-warning sends do NOT park
+on quota failure (pre-existing, log-only — retry-queue only replays confirmation/
+moved-up/broadcast/updates rows that carry text_payload).
+
+**Gotcha:** `1fr` in CSS Grid IS `minmax(auto,1fr)` — the auto minimum is content-based
+and is exactly how one long email destabilizes every other row's alignment. Always
+`minmax(0,1fr)` for text tracks inside fixed-width tables. `slice(-1)` from a failed
+`indexOf` is the classic silent text-part killer — never slice an indexOf result
+without a `-1` check.
+
+## Warmth Decay Grace — 60 → 30 days (2026-10-23)
+
+**Status:** implemented 2026-10-23 (Prompt #2 execute of the re-audit + investigation). Code + tests + docs; uncommitted.
+
+**Decision (founder, 2026-10-23):** `DECAY.no_penalty_days` **60 → 30**. `penalty_amount: 25` and `reset_days: 90` unchanged. Lifecycle becomes Hot 0–29d → Warm 30–89d (45) → Cold 90d+ (0).
+
+**Why:** baseline 70 means every subscriber is Hot at signup, so a 60-day grace kept **every** subscriber Hot for two months on a typical pre-launch list — the Hot segment carried no signal. 30 days is the standard recency-tier boundary (Campaign Monitor Active 0–30d; Klaviyo/ActiveCampaign 30/60/90 segments). The 90-day reset is the best-supported figure and matches the conversion cliff (≈50% of conversions in month 1; single digits past 90).
+
+**Research audit (2026-10-23) — what held and what did not:**
+
+- ✅ Verified: LaunchList "50% forget you within 30 days / 80% by launch day", "loses roughly half its attention per 30 days", "opens <15%, clicks <2% by launch" — `getlaunchlist.com/blog/5-proven-strategies-to-boost-waitlist-engagement-and-generate-excitement`. **Vendor-reported dataset**, not independent research — cite it as such.
+- ✅ Verified: 90-day cold/lapsed boundary (Campaign Monitor Unengaged 90–180 / Dormant 180+; lapsed 90–180).
+- ⚠️ Counter-evidence (disclosed, does not change the decision): for **flagging inactivity**, 60–90 days is the recommended threshold because monthly readers would be false positives (mailsoftly, mailtester). We only tier (Hot vs Warm) and never stop sending, so the false-positive cost is a narrower Hot segment, not lost subscribers. Monthly-cadence lists will oscillate Hot→Warm between sends.
+- ❌ Never cite the "8-second attention span" stat (debunked).
+
+**Implementation:** `src/lib/warmth.ts:16` constant + `:14` comment; the decay clock was extracted to `getRecencyDays` + `decayPenaltyFor` so one clock feeds both the penalty and the tier cap. Tests: `src/__tests__/lib/warmth.test.ts` decay block rewritten to 29/30 boundaries (+3 net tests: day 29 free with click, silent 29d Hot, day 30 −25, silent 30d = 45 Warm). Exactly one pre-existing assertion would have failed (the `59 days` case now yields 50); it was replaced, not deleted silently.
+
+**Recency cap (same session, founder: "Fix it now"):** Hot is activity-scoped, not just score-scoped — `applyRecencyCap(assignTier(score), daysSince)` demotes Hot → Warm once `daysSince >= DECAY.no_penalty_days` (30), so a click-heavy subscriber scoring 75–100 shows Warm at days 30–89; 90+ still forces score 0 → Cold. The numeric score stays uncapped/truthful (it is never stored or displayed — the `warmth_score` column holds the tier string). New tests: day 29 high-engagement Hot (100), day 30 capped Warm (75), day 89 20-click clamp→100 still Warm, referral-heavy day 45 Warm, a new click resets the clock → Hot, `calculateWarmthScore` stays uncapped (75). Matches the redesign plan semantics ("Hot = joined or active within 30 days") and closes the flat-penalty gap recorded at the end of this block. `assignTier` itself is unchanged (pure score bands); only `scoreSubscriber` applies the cap.
+
+**Docs synced:** `docs/qa/manual-test-cases.md` TC-WARM-01/03 + 2026-10-23 progress note; `docs/qa/behavior-sources.md:250`; `docs/product-vision-mvp-waitlist-tool.md:130`; this file (270/969/979/991 + this block); annotated (not rewritten): `dashboard-warmth-redesign-plan.md`, `epic-11`, `sprint-3-plan`, `epic-15`, `story-11.1/11.5/15.0/15.5`, `engine-audit-5-engines.md`.
+
+**Gates:** lint 0 errors / 5 baseline warnings · targeted warmth **42/42** · full suite **1219 total = 1212 pass / 7 fail = exact sanctioned baseline** (dashboard-archive 4 + dashboard-subscriber-table 3; +6 cap tests) · clean build (`.next` deleted first).
+
+**Rollback:** revert the single constant for the grace window, or drop `applyRecencyCap` from `scoreSubscriber` for the cap alone. No SQL, no env, no migration. Tiers refresh on the next 05:00 UTC cron (or a manual `/api/cron/warmth` invoke).
+
+**Known gap (closed same day):** ~~high-click subscribers stay Hot through days 30–89 because the penalty is flat~~ — fixed by the recency cap above.

@@ -87,7 +87,7 @@ Every story moves `ready` -> `in-progress` -> `done` (or `blocked`), and is only
 
 - AC1: The walkthrough shall start only when ALL hold: user is on `/dashboard`, the active waitlist has `subscriber_count >= 1`, and the tour has not been completed/dismissed before (localStorage flag).
 - AC2: The tour shall use `driver.js` (MIT) with a modal overlay, highlighting real dashboard elements (stat cards, subscriber table, warm panel / sidebar sections as designed) in sequence.
-- AC3: Tour step count shall be ≤ 6 steps, each with a title + description, plus Next/Skip controls; Skip or completion sets the localStorage flag.
+- AC3: Tour step count shall be ≤ 6 steps, each with a title + description, plus Next/Skip controls; Skip or completion sets the localStorage flag. **[AMENDED 2026-10-23 - founder directive:** 8 steps. Added "Talk to the founder" (second-to-last) and "Submit A Feedback" (last) on the feedback surfaces; copy approved Set A verbatim. Both steps force-show their hover pills via group-[.driver-active-element]:; feedback steps remain on mobile, sidebar stays the only lg-only step.**]**
 - AC4: A "Replay tour" affordance shall be available (small link/button in the dashboard header or settings) so the founder can rerun it on demand.
 - AC5: Tour step content strings shall be reviewed against the copy gate: strings sourced from the feedback doc or existing app copy; any new user-facing copy requires founder approval before merge.
 - AC6: The tour shall not render during the initial page-load skeleton (only after data resolves).

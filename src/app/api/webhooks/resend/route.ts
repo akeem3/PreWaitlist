@@ -157,7 +157,8 @@ export async function POST(req: NextRequest) {
         // AC6: side effects scoped to each resolved subscriber's waitlist row
         if (mappedType === "bounced" || mappedType === "complained") {
           const bounceType = determineBounceType(
-            data as Record<string, unknown>
+            data as Record<string, unknown>,
+            mappedType
           );
 
           const { error: bounceError } = await supabase
@@ -192,9 +193,14 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ received: true });
 }
 
-function determineBounceType(data: Record<string, unknown>): "hard" | "soft" {
-  // Complaints are always treated as hard bounces
-  if ("complaint" in data || data.type === "complained") return "hard";
+function determineBounceType(
+  data: Record<string, unknown>,
+  mappedType: string
+): "hard" | "soft" {
+  // Complaints are always treated as hard bounces. The mapped event type is
+  // the only reliable signal — Resend's email.complained payload carries no
+  // complaint field or data.type (resend.com/docs/webhooks/emails/complained).
+  if (mappedType === "complained") return "hard";
 
   // Resend's bounce payload: data.bounce.type = "Permanent" | "Transient" | "Undetermined"
   const bounce = data.bounce as { type?: string; subType?: string } | undefined;

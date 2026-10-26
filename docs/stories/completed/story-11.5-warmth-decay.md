@@ -12,7 +12,7 @@ As a system, I want warmth scores to decay over time so that stale subscribers a
 ## Acceptance Criteria (EARS)
 
 - AC1: The score calculation shall apply time decay based on days since the last engagement — the most recent `clicked` event only (Story 15.0 AC2; replies and referrals are not decay events).
-- AC2: Decay rules: 0–59 days = no penalty, 60–89 days = -25 points, 90+ days = score resets to 0.
+- AC2: Decay rules: 0–59 days = no penalty, 60–89 days = -25 points, 90+ days = score resets to 0. **[AMENDED 2026-10-23:** windows are now 0–29 / 30–89 / 90+ (grace 60 → 30 days).**]**
 - AC3: "Last engagement" shall be determined by the most recent `clicked` event's `email_events.created_at`, falling back to `subscribers.created_at` when the subscriber has no clicks (Story 15.0 AC2).
 - AC4: Subscribers with zero events shall have score = 0 regardless of signup date.
 - AC5: The decay shall be applied during the daily batch recalculation (Story 11.1), not on every read.
@@ -32,7 +32,7 @@ Real-time decay (every read is v1.1), page-visit-based decay (page_views table n
 
 ### Status: Implemented
 
-Decay lives in `src/lib/warmth.ts` (`calculateDecay`, hardened by Story 15.0): reference = most recent `clicked` event with `subscribers.created_at` fallback; penalty −25 at `daysSince >= 60` (day 59 not penalized); 90+ days forces score to 0. This story is the specification that function satisfies.
+Decay lives in `src/lib/warmth.ts` (`calculateDecay`, hardened by Story 15.0): reference = most recent `clicked` event with `subscribers.created_at` fallback; penalty −25 at `daysSince >= 30` (day 29 not penalized; was `>= 60` until the 2026-10-23 grace change); 90+ days forces score to 0. This story is the specification that function satisfies.
 
 ### T1: Implement decay logic
 
@@ -60,8 +60,8 @@ function calculateDecay(events: Array<{ created_at: string }> | null): number {
   if (daysSinceLastEvent >= 90) {
     return 999; // Reset to 0 (score - 999 = negative → clamped to 0 by AC4 of Story 11.1)
   }
-  if (daysSinceLastEvent >= 60) {
-    return 25; // -25 points
+  if (daysSinceLastEvent >= 30) {
+    return 25; // -25 points (was 60 until 2026-10-23)
   }
   return 0; // No penalty
 }

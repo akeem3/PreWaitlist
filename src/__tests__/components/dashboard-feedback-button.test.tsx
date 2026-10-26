@@ -82,6 +82,33 @@ describe("FeedbackButton", () => {
     expect(screen.getByTestId("founder-contact-pill")).toBeTruthy();
   });
 
+  it("exposes tour hooks and force-shows tooltips while their step is active", async () => {
+    vi.stubEnv("NEXT_PUBLIC_TALLY_FORM_URL", TALLY_URL);
+    vi.stubEnv("NEXT_PUBLIC_FOUNDER_INSTAGRAM_URL", IG_URL);
+    await renderButton();
+    const pill = screen.getByTestId("founder-contact-pill");
+    const fab = screen.getByTestId("feedback-fab");
+
+    // Last two dashboard-tour steps target these hooks.
+    expect(pill.getAttribute("data-tour")).toBe("founder-contact");
+    expect(fab.getAttribute("data-tour")).toBe("feedback-fab");
+
+    // driver.js cannot trigger CSS :hover — the pills must also reveal when
+    // driver.js tags the highlighted button with `driver-active-element`.
+    const pillTooltip = pill.querySelector(
+      '[data-testid="founder-contact-tooltip"]'
+    );
+    const fabTooltip = fab.querySelector('[data-testid="feedback-tooltip"]');
+    for (const tooltip of [pillTooltip, fabTooltip]) {
+      expect(tooltip?.className).toContain(
+        "group-[.driver-active-element]:opacity-100"
+      );
+      expect(tooltip?.className).toContain(
+        "group-[.driver-active-element]:scale-100"
+      );
+    }
+  });
+
   it("pill uses verbatim §8 copy and opens the modal on click", async () => {
     vi.stubEnv("NEXT_PUBLIC_FOUNDER_EMAIL", EMAIL);
     await renderButton();

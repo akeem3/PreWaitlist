@@ -282,24 +282,25 @@ _Dynamic OG images also generated per-subdomain at `/{subdomain}/opengraph-image
 
 ## 8. Cross-Reference: Known-Good Behaviors (Story 21.5 must NOT re-test as bugs)
 
-| Behavior                                                    | Story / decision        | Status                                               |
-| ----------------------------------------------------------- | ----------------------- | ---------------------------------------------------- |
-| `Array.isArray` tier read on PostgREST embed                | 19.1                    | Fixed — object → correct tier                        |
-| OWASP CSV formula-lead defense                              | 19.2 AC8                | Fixed — `'` prefix unless pure number                |
-| `?wid` preference cookie bridge                             | 2026-10-08 fix          | Fixed — server + client share precedence             |
-| `pro-cta-onboarding` / `pro-cta-billing` cooldown exemption | 2026-09-29 flicker fix  | Fixed — explicit-intent deep links survive dismissal |
-| Paddle `transaction.completed` cancel-guard                 | 2026-10-03 Phase A      | Fixed — same-canceled-sub ignored; new sub upgrades  |
-| FlushGate fresh-founder 200 `[]` contract                   | 2026-09-30 Phase 4 F1   | Fixed — 200 [] treated as empty                      |
-| Legal/unsub allowlist in middleware + proxy                 | F8 (Epic 19)            | Fixed — `/legal*`, `/unsubscribe*` pass through      |
-| Auth callback acquisition upsert                            | 20.4 audit F3           | Fixed — atomic upsert, no silent no-op               |
-| Tour yields to UpgradeModal                                 | 20.2 F1                 | Fixed — `interruptOpen` prop                         |
-| Warmth baseline 70, no Unscored                             | 2026-09-25 restructure  | Locked — everyone starts Hot                         |
-| Hot = green token                                           | 2026-09-27 founder flip | Locked — `--color-status-hot: #0f7a5e`               |
-| Opens never in warmth score                                 | Epic 15                 | Locked — Apple MPP                                   |
-| 60-day decay boundary (`>= 60`)                             | Epic 15                 | Locked — day 59 not penalized                        |
-| Broadcast/updates only senders with unsub                   | Epic 12/17              | Locked — transactional no opt-out                    |
-| `mail.prewaitlist.com` for broadcast                        | 2026-10-10 segregation  | Locked — verified in Resend                          |
-| No Resend Audiences ever                                    | REQ-7.1a                | Standing — custom HMAC only                          |
+| Behavior                                                    | Story / decision                   | Status                                               |
+| ----------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------- |
+| `Array.isArray` tier read on PostgREST embed                | 19.1                               | Fixed — object → correct tier                        |
+| OWASP CSV formula-lead defense                              | 19.2 AC8                           | Fixed — `'` prefix unless pure number                |
+| `?wid` preference cookie bridge                             | 2026-10-08 fix                     | Fixed — server + client share precedence             |
+| `pro-cta-onboarding` / `pro-cta-billing` cooldown exemption | 2026-09-29 flicker fix             | Fixed — explicit-intent deep links survive dismissal |
+| Paddle `transaction.completed` cancel-guard                 | 2026-10-03 Phase A                 | Fixed — same-canceled-sub ignored; new sub upgrades  |
+| FlushGate fresh-founder 200 `[]` contract                   | 2026-09-30 Phase 4 F1              | Fixed — 200 [] treated as empty                      |
+| Legal/unsub allowlist in middleware + proxy                 | F8 (Epic 19)                       | Fixed — `/legal*`, `/unsubscribe*` pass through      |
+| Auth callback acquisition upsert                            | 20.4 audit F3                      | Fixed — atomic upsert, no silent no-op               |
+| Tour yields to UpgradeModal                                 | 20.2 F1                            | Fixed — `interruptOpen` prop                         |
+| Warmth baseline 70, no Unscored                             | 2026-09-25 restructure             | Locked — everyone starts Hot                         |
+| Hot = green token                                           | 2026-09-27 founder flip            | Locked — `--color-status-hot: #0f7a5e`               |
+| Opens never in warmth score                                 | Epic 15                            | Locked — Apple MPP                                   |
+| 30-day decay boundary (`>= 30`)                             | Epic 15; grace 60→30 on 2026-10-23 | Locked — day 29 not penalized                        |
+| Hot requires activity ≤29 days (recency cap)                | recency cap 2026-10-23             | Locked — high score alone cannot stay Hot            |
+| Broadcast/updates only senders with unsub                   | Epic 12/17                         | Locked — transactional no opt-out                    |
+| `mail.prewaitlist.com` for broadcast                        | 2026-10-10 segregation             | Locked — verified in Resend                          |
+| No Resend Audiences ever                                    | REQ-7.1a                           | Standing — custom HMAC only                          |
 
 **AC4 ✓**
 
