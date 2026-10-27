@@ -78,6 +78,8 @@ export async function updateSession(request: NextRequest) {
     // nested /{subdomain}/opengraph-image-* route (og:image may be resolved
     // against any host via metadataBase).
     !request.nextUrl.pathname.includes("/opengraph-image") &&
+    request.nextUrl.pathname !== "/pricing" &&
+    !request.nextUrl.pathname.startsWith("/pricing/") &&
     request.nextUrl.pathname !== "/"
   ) {
     const url = request.nextUrl.clone();
