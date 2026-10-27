@@ -1,6 +1,11 @@
 import { createClient } from "../../lib/supabase/server";
 import { OnboardingGuard } from "../../components/auth/onboarding-guard";
 import { OnboardingClientLayout } from "./onboarding-client-layout";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  robots: { index: false },
+};
 
 async function resolveTier(): Promise<"free" | "pro"> {
   const supabase = await createClient();

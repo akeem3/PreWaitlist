@@ -227,6 +227,12 @@ function Footer() {
           </p>
           <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-body-sm text-muted-foreground">
             <Link
+              href="/pricing"
+              className="transition-colors duration-normal hover:text-foreground"
+            >
+              Pricing
+            </Link>
+            <Link
               href="/legal/privacy"
               className="transition-colors duration-normal hover:text-foreground"
             >
@@ -237,6 +243,12 @@ function Footer() {
               className="transition-colors duration-normal hover:text-foreground"
             >
               Terms of Service
+            </Link>
+            <Link
+              href="/refund-policy"
+              className="transition-colors duration-normal hover:text-foreground"
+            >
+              Refund and Cancellation Policy
             </Link>
             <a
               href="https://twitter.com/prewaitlist"

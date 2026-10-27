@@ -3,6 +3,11 @@ import { createClient } from "../../lib/supabase/server";
 import { resolveActiveWaitlist } from "../../lib/active-waitlist";
 import { getStoredWaitlistPref } from "../../lib/waitlist-pref";
 import DashboardShell from "./shell";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  robots: { index: false },
+};
 
 interface WaitlistRow {
   id: string;

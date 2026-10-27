@@ -10,6 +10,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // rewrite branch and never runs updateSession.
   return {
     metadataBase: new URL(`https://${subdomain}.prewaitlist.com`),
+    robots: { index: false },
   };
 }
 

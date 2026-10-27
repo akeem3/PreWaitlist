@@ -1,17 +1,8 @@
-"use client";
-
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
 import { Button } from "../ui/button";
 import { FadeIn } from "./animations";
 
-function HeroContent() {
-  const searchParams = useSearchParams();
-  // Only the "Powered by" footer attribution flips the hero — subscriber
-  // referral links (?ref={code}) must show the default marketing hero.
-  const isPoweredBy = searchParams.get("src") === "powered-by";
-
+export function Hero({ isPoweredBy = false }: { isPoweredBy?: boolean }) {
   if (isPoweredBy) {
     return (
       <section className="border-b border-border px-6 py-20 md:py-32">
@@ -80,13 +71,5 @@ function HeroContent() {
         </div>
       </div>
     </section>
-  );
-}
-
-export function Hero() {
-  return (
-    <Suspense fallback={null}>
-      <HeroContent />
-    </Suspense>
   );
 }

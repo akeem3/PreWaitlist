@@ -73,6 +73,7 @@ export async function updateSession(request: NextRequest) {
     // putting a login wall in front of an opt-out mechanism).
     !request.nextUrl.pathname.startsWith("/legal") &&
     !request.nextUrl.pathname.startsWith("/unsubscribe") &&
+    request.nextUrl.pathname !== "/refund-policy" &&
     // Social crawlers fetch og:image anonymously — a signin redirect here
     // would hand them HTML instead of a PNG. Covers the root route and the
     // nested /{subdomain}/opengraph-image-* route (og:image may be resolved

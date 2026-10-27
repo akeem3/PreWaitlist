@@ -56,13 +56,19 @@ const tiers = [
   },
 ];
 
-export function PricingSection() {
+export function PricingSection({
+  headingLevel = "h2",
+}: {
+  headingLevel?: "h1" | "h2";
+}) {
+  const Heading = headingLevel;
+
   return (
     <section id="pricing" className="px-6 py-16 md:py-24">
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-col items-center gap-12">
           <FadeIn>
-            <h2 className="text-h2">Pricing</h2>
+            <Heading className="text-h2">Pricing</Heading>
           </FadeIn>
 
           <StaggerGroup className="grid w-full max-w-3xl grid-cols-1 gap-6 md:grid-cols-2">
