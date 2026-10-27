@@ -76,6 +76,15 @@ describe("updateSession Phase-B guard (4.2)", () => {
     expect(res.status).toBe(200);
   });
 
+  it("serves the pricing page to anonymous visitors", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } });
+
+    const res = await updateSession(request("/pricing"));
+
+    expect(res.headers.get("location")).toBeNull();
+    expect(res.status).toBe(200);
+  });
+
   it("serves nested /{subdomain}/opengraph-image routes without a signin redirect", async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } });
 
