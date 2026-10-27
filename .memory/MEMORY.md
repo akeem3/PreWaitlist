@@ -2646,3 +2646,23 @@ without a `-1` check.
   - TC-TOOL-05: `?ref=` precedence over `?src=` acquisition in proxy middleware (`const acquisitionRef = ref ?? src`), locked by new automated test `src/__tests__/lib/acquisition-proxy.test.ts`.
 
 **Gates:** lint 0 errors / 5 baseline warnings · full suite **1220 passed / 7 failed = exact sanctioned baseline** · clean build.
+
+## SEO/Search Console and Paddle Production Transition — 2026-10-28
+
+### SEO and Google Search Console
+
+- SEO implementation is deployed to `main` in commit `929d5b61e7e43cdaa4d4a9f0d0a5af4802dde61a`.
+- Public sitemap lists `/`, `/pricing`, `/legal/terms`, `/legal/privacy`, and `/refund-policy`; `robots.txt` allows crawlers including OAI-SearchBot and GPTBot and links to the sitemap. Canonicals are set on the public pages.
+- Page history: homepage and pricing already existed and were SEO-enhanced (homepage server-rendered H1 + WebSite JSON-LD; pricing H1/canonical and crawlable footer link). Terms and Privacy already existed and were given canonicals/included in the sitemap. `/refund-policy` was the new public page created for this work, linked in the footer and sitemap. Do not describe the existing pricing/Terms/Privacy routes as newly created.
+- Authenticated/operational surfaces are `noindex`; tenant waitlists remain excluded from sitemap and indexing pending owner opt-in. Thank-you and leaderboard pages are also not intended for indexing.
+- Founder verified the `prewaitlist.com` Domain property in Google Search Console using the Google-provided DNS TXT record added in Vercel. Sitemap submission reported **Success**. Homepage URL Inspection reported indexed/served over HTTPS. Live tests for pricing, Terms, Privacy, and Refund Policy reported the pages available/indexable; indexing requests for these four pages were accepted/queued. Queueing is not confirmation of indexing—recheck later in Search Console.
+- `https://www.prewaitlist.com/refund-policy` is also the URL the founder confirmed was updated in Paddle's live dashboard.
+
+### Paddle sandbox-to-production transition
+
+- Paddle began as a sandbox-only integration (see the historical Story 0.5 and Epic 13 notes above). This status was superseded when the founder obtained live Paddle credentials/product configuration, updated local environment configuration and Vercel production environment, and deployed the production settings.
+- Production configuration was updated with the live Paddle API key, live client token, production price ID, and production environment setting. Never record or share credential values in memory or docs.
+- Paddle had approved `prewaitlist.com`. The founder reported address/identity verification was still pending at the time; this account-level verification is distinct from app configuration and deployment.
+- The notification/webhook-set ID is a Paddle dashboard identifier, not an app environment variable. The app needs the webhook signing secret to verify webhook events; do not substitute the ID for that secret. The production signing-secret status was not independently confirmed in this handoff.
+- No code change was required to switch environments. To assert real-payment readiness, confirm current account review status in Paddle and use the Paddle live dashboard/controlled live checkout; deployment/configuration alone is not proof of an end-to-end live transaction.
+- Durable progress details are in `docs/seo-and-google-search-console-progress.md`.
