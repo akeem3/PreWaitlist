@@ -19,12 +19,14 @@ const {
   replaceMock,
   pushMock,
   signInMock,
+  resetPasswordMock,
   onAuthStateChangeMock,
 } = vi.hoisted(() => ({
   getUserMock: vi.fn(),
   replaceMock: vi.fn(),
   pushMock: vi.fn(),
   signInMock: vi.fn(),
+  resetPasswordMock: vi.fn(),
   onAuthStateChangeMock: vi.fn(),
 }));
 
@@ -40,6 +42,7 @@ vi.mock("@/lib/supabase/client", () => ({
       onAuthStateChange: onAuthStateChangeMock,
       signInWithPassword: signInMock,
       signInWithOAuth: vi.fn(),
+      resetPasswordForEmail: resetPasswordMock,
     },
     from: () => ({
       select: () => ({
@@ -50,6 +53,7 @@ vi.mock("@/lib/supabase/client", () => ({
 }));
 
 import SigninPage from "@/app/(auth)/signin/page";
+import ForgotPasswordPage from "@/app/(auth)/forgot-password/page";
 
 const EMAIL = "founder@example.com";
 const PASSWORD = "wrong-pass-123";
@@ -73,6 +77,7 @@ beforeEach(() => {
   onAuthStateChangeMock.mockReturnValue({
     data: { subscription: { unsubscribe: vi.fn() } },
   });
+  resetPasswordMock.mockResolvedValue({ error: null });
 });
 
 afterEach(() => {
@@ -81,6 +86,22 @@ afterEach(() => {
 });
 
 describe("Sign-in submit — navigation only on confirmed success", () => {
+  it("blocks an invalid email on the first submit before calling Supabase", async () => {
+    render(<SigninPage />);
+    fireEvent.change(screen.getByLabelText("Email Address"), {
+      target: { value: "invalid" },
+    });
+    const form = screen
+      .getByRole("button", { name: "Sign in" })
+      .closest("form");
+    if (!form) throw new Error("sign-in form not found");
+
+    fireEvent.submit(form);
+
+    expect(signInMock).not.toHaveBeenCalled();
+    expect(screen.getByText("Please enter a valid email address")).toBeTruthy();
+  });
+
   it("failed sign-in never navigates, error copy is shown", async () => {
     signInMock.mockResolvedValue({
       error: { message: "Invalid login credentials" },
@@ -163,5 +184,23 @@ describe("Sign-in submit — navigation only on confirmed success", () => {
       await vi.advanceTimersByTimeAsync(3000);
     });
     expect(pushMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("Forgot password submit", () => {
+  it("blocks an invalid email on the first submit before calling Supabase", () => {
+    render(<ForgotPasswordPage />);
+    fireEvent.change(screen.getByLabelText("Email Address"), {
+      target: { value: "invalid" },
+    });
+    const form = screen
+      .getByRole("button", { name: "Send reset link" })
+      .closest("form");
+    if (!form) throw new Error("forgot-password form not found");
+
+    fireEvent.submit(form);
+
+    expect(resetPasswordMock).not.toHaveBeenCalled();
+    expect(screen.getByText("Please enter a valid email address")).toBeTruthy();
   });
 });

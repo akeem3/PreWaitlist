@@ -114,6 +114,26 @@ describe("POST /api/dashboard/broadcast", () => {
     expect(data.error).toContain("waitlist_id");
   });
 
+  it.each(["hot ", undefined])(
+    "rejects invalid broadcast segment %s before looking up a waitlist",
+    async (segment) => {
+      mockSupabase.__queue.push(PROF_PRO);
+      const body = {
+        ...VALID,
+        segment,
+      };
+
+      const res = await POST(makeRequest(body));
+
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({
+        error: "Invalid segment. Choose all, hot + warm, or cold.",
+      });
+      expect(batchSend).not.toHaveBeenCalled();
+      expect(mockSupabase.__queue).toHaveLength(0);
+    }
+  );
+
   it("returns 400 when subject is empty", async () => {
     mockSupabase.__queue.push(PROF_PRO);
     const res = await POST(makeRequest({ ...VALID, subject: "   " }));

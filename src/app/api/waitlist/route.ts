@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getTierLimits, type Tier } from "@/lib/tier-gating";
 import { isPhoneMode } from "@/lib/phone";
+import { isValidSubdomain } from "@/lib/subdomain";
+import { validateWaitlistFields } from "@/lib/waitlist-validation";
 
 type IncomingQuestion = {
   id?: string;
@@ -126,6 +128,25 @@ export async function POST(request: NextRequest) {
       { error: "Missing required fields" },
       { status: 400 }
     );
+  }
+
+  if (!isValidSubdomain(body.subdomain)) {
+    return NextResponse.json(
+      { error: "Invalid subdomain format" },
+      { status: 400 }
+    );
+  }
+
+  if (body.questions !== undefined && !Array.isArray(body.questions)) {
+    return NextResponse.json(
+      { error: "Questions must be an array" },
+      { status: 400 }
+    );
+  }
+
+  const fieldValidationError = validateWaitlistFields(body);
+  if (fieldValidationError) {
+    return NextResponse.json({ error: fieldValidationError }, { status: 400 });
   }
 
   // Ensure founder_profiles exists (required FK for waitlists table)
@@ -349,6 +370,18 @@ export async function PATCH(request: NextRequest) {
       { error: "waitlist_id is required" },
       { status: 400 }
     );
+  }
+
+  if (questions !== undefined && !Array.isArray(questions)) {
+    return NextResponse.json(
+      { error: "Questions must be an array" },
+      { status: 400 }
+    );
+  }
+
+  const fieldValidationError = validateWaitlistFields(updates);
+  if (fieldValidationError) {
+    return NextResponse.json({ error: fieldValidationError }, { status: 400 });
   }
 
   // Validate ownership (+ load tier for question cap in one query)

@@ -68,6 +68,13 @@ export async function POST(req: NextRequest) {
     cta_url,
   } = body ?? {};
 
+  if (!["all", "hot_warm", "cold"].includes(segment)) {
+    return NextResponse.json(
+      { error: "Invalid segment. Choose all, hot + warm, or cold." },
+      { status: 400 }
+    );
+  }
+
   if (!waitlist_id) {
     return NextResponse.json(
       { error: "waitlist_id is required" },

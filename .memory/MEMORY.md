@@ -2616,3 +2616,33 @@ without a `-1` check.
 **Rollback:** revert the single constant for the grace window, or drop `applyRecencyCap` from `scoreSubscriber` for the cap alone. No SQL, no env, no migration. Tiers refresh on the next 05:00 UTC cron (or a manual `/api/cron/warmth` invoke).
 
 **Known gap (closed same day):** ~~high-click subscribers stay Hot through days 30–89 because the penalty is flat~~ — fixed by the recency cap above.
+
+## QA Batches 7, 8 & 9 Executed & Closed (2026-10-27)
+
+**Status:** executed and verified. QA progress: **80 pass / 0 fail / 1 deferred** (107 total).
+
+**Summary of Closures:**
+
+- **Batch 7 (§7 Email & broadcast, 7/7 pass):**
+  - TC-EMAIL-01: Pro confirmation logo header removed (preserving white-label branding).
+  - TC-EMAIL-02: Stream separation confirmed (`notifications@` vs `updates@mail.`).
+  - TC-EMAIL-03: Full unsubscribe → suppression → resubscribe → re-delivery loop closed.
+  - TC-EMAIL-04: Complaint webhook mapped to "hard" bounce + auto-unsubscribe.
+  - TC-EMAIL-05: Configured physical address + default fallback verified.
+  - TC-EMAIL-06: Custom HMAC unsubscribe link + `List-Unsubscribe` / `List-Unsubscribe-Post` headers confirmed by founder.
+  - TC-EMAIL-07: Resend quota retry queue replay verified.
+- **Batch 8 (§8 Billing & upgrade, 6/6 pass):**
+  - TC-BILL-01: Checkout + webhook tier flip (`subscription.created`, `transaction.completed`) with immediate UI refresh and broadcast channel unlock.
+  - TC-BILL-02: Already-subscribed 400 guard rendered inline in upgrade modal.
+  - TC-BILL-03: Modal cooldown (24h) and explicit-intent exemptions (`subscriber_cap`, `billing`, `pro-cta-*`).
+  - TC-BILL-04: Free waitlist creation limit (402), scheduled cancellation period-end handling (`scheduled_change` in `founder_profiles`), surplus waitlist auto-archive on period-end downgrade, and stale transaction protection.
+  - TC-BILL-05: 3-step sender domain wizard with DNS records and Resend verification.
+  - TC-BILL-06: Paddle sandbox decline and 3DS challenge completion.
+- **Batch 9 (§9 Feedback & tooling, 5/5 pass):**
+  - TC-TOOL-01: PostHog event flow & property safety verified (no subscriber PII, non-blocking post-paint SDK load, offline event queueing).
+  - TC-TOOL-02: Surveys 1 & 2 live targeting conditions verified with modal/tour suppression flag (D7).
+  - TC-TOOL-03: UTM proxy cookie capture (`mw_acquisition`) and post-confirmation upsert into `founder_profiles`.
+  - TC-TOOL-04: Tour, feedback FAB, and contact modal verified (covers TC-DASH-05/06).
+  - TC-TOOL-05: `?ref=` precedence over `?src=` acquisition in proxy middleware (`const acquisitionRef = ref ?? src`), locked by new automated test `src/__tests__/lib/acquisition-proxy.test.ts`.
+
+**Gates:** lint 0 errors / 5 baseline warnings · full suite **1220 passed / 7 failed = exact sanctioned baseline** · clean build.

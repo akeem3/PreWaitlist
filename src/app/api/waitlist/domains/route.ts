@@ -57,8 +57,9 @@ export async function POST(request: Request) {
     const result = await resend.domains.create({ name: domain });
 
     if (result.error) {
+      console.error("[domains] create rejected:", result.error);
       return NextResponse.json(
-        { error: result.error.message },
+        { error: "Something went wrong. Please try again." },
         { status: 400 }
       );
     }

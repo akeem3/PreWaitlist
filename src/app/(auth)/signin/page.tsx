@@ -70,22 +70,27 @@ function SigninPageContent() {
     router.push(path);
   }, [supabase, dest, router]);
 
-  const validateEmail = useCallback((value: string) => {
+  const validateEmail = useCallback((value: string): string | null => {
     if (!value) {
-      setEmailError("Email address is required");
-    } else if (!EMAIL_REGEX.test(value)) {
-      setEmailError("Please enter a valid email address");
-    } else {
-      setEmailError(null);
+      const error = "Email address is required";
+      setEmailError(error);
+      return error;
     }
+
+    const error = EMAIL_REGEX.test(value)
+      ? null
+      : "Please enter a valid email address";
+    setEmailError(error);
+    return error;
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    validateEmail(email);
-    if (emailError) return;
+    const validationError = validateEmail(email);
+    setEmailTouched(true);
+    if (validationError) return;
 
     const now = Date.now();
     if (submitAttempts.current >= MAX_SUBMIT_ATTEMPTS) {

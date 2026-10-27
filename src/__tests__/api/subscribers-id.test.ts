@@ -106,10 +106,13 @@ describe("GET /api/subscribers/:id", () => {
 });
 
 describe("PATCH /api/subscribers/:id (audit F1 — display_name cap)", () => {
-  const patchRequest = (body: unknown) =>
+  const patchRequest = (body: unknown, ip = "203.0.113.40") =>
     new NextRequest("http://localhost/api/subscribers/sub-1", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-forwarded-for": ip,
+      },
       body: JSON.stringify(body),
     });
   const params = { params: Promise.resolve({ id: "sub-1" }) };
@@ -158,5 +161,45 @@ describe("PATCH /api/subscribers/:id (audit F1 — display_name cap)", () => {
     const response = await PATCH(patchRequest({ display_name: "Ada" }), params);
 
     expect(response.status).toBe(400);
+  });
+
+  it("rate-limits repeated display-name updates by IP", async () => {
+    const ip = "203.0.113.41";
+    for (let i = 0; i < 10; i++) {
+      mockAdminSupabase.__queue.push(
+        { data: { id: "sub-1", referral_code: "abc12345" }, error: null },
+        { error: null }
+      );
+    }
+
+    for (let i = 0; i < 10; i++) {
+      const response = await PATCH(
+        patchRequest(
+          {
+            display_name: `Name ${i}`,
+            referral_code: "abc12345",
+          },
+          ip
+        ),
+        params
+      );
+      expect(response.status).toBe(200);
+    }
+
+    const callsBefore = mockAdminSupabase.__calls.length;
+    const response = await PATCH(
+      patchRequest(
+        {
+          display_name: "Too many",
+          referral_code: "abc12345",
+        },
+        ip
+      ),
+      params
+    );
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("60");
+    expect(mockAdminSupabase.__calls).toHaveLength(callsBefore);
   });
 });

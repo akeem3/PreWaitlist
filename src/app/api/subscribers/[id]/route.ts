@@ -4,6 +4,28 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 type Props = { params: Promise<{ id: string }> };
 
+const PATCH_RATE_LIMIT = 10;
+const PATCH_RATE_WINDOW_MS = 60 * 1000;
+const patchRateLimits = new Map<string, { count: number; resetAt: number }>();
+
+function isPatchRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = patchRateLimits.get(ip);
+
+  if (!entry || now >= entry.resetAt) {
+    patchRateLimits.set(ip, {
+      count: 1,
+      resetAt: now + PATCH_RATE_WINDOW_MS,
+    });
+    return false;
+  }
+
+  if (entry.count >= PATCH_RATE_LIMIT) return true;
+
+  entry.count++;
+  return false;
+}
+
 export async function GET(request: NextRequest, { params }: Props) {
   const { id } = await params;
 
@@ -61,6 +83,18 @@ export async function GET(request: NextRequest, { params }: Props) {
 
 export async function PATCH(request: NextRequest, { params }: Props) {
   const { id } = await params;
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
+
+  if (isPatchRateLimited(ip)) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": "60" } }
+    );
+  }
+
   const body = await request.json();
   const { display_name, referral_code } = body;
 

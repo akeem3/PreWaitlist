@@ -1,6 +1,6 @@
 # Manual Test Cases — Pre-Launch QA Suite
 
-**Story:** 21.5 · **Epic:** 21 · **Status:** executed — batches 1–4 + 6 complete (62 pass / 0 fail / 1 deferred; 44 not yet run). Batch 5 (§5 Leaderboard) executed but run-notes unrecorded by founder. AC5 gate CLOSED 2026-10-12 (fix all 8 in 21.6). Last synced 2026-10-23 with batch 6 (§6 Warmth, 5/5 pass).
+**Story:** 21.5 · **Epic:** 21 · **Status:** batches 1–4 + 6–9 complete (80 pass); batch 12's 8 findings were fixed and code-verified in 21.6. Batches 10–11 (9 cases) moved to post-launch by founder request on 2026-10-27. Batch 5 (§5 Leaderboard) was executed but run-notes remain unrecorded; 4 dashboard cases remain unrun; 1 earlier case is deferred. AC5 gate CLOSED 2026-10-12 (fix all 8 in 21.6). Last synced 2026-10-27 after batch 12 code verification.
 **Sources (only):** `docs/qa/app-inventory.md` (21.1) · `docs/qa/screenshots/` + `manifest.md` (21.2) · `docs/qa/behavior-sources.md` (21.3) · `story-21.4-input-validation-audit.md` (21.4). Never the outdated user-flow doc.
 **Scale:** ~150 cases. Mark each `Result` during execution (21.7).
 
@@ -674,6 +674,8 @@
 
 ## 7. Email & broadcast <a id="email"></a>
 
+> **Batch 7 executed 2026-10-26 — production — 7 pass / 0 fail. BATCH 7 CLOSED.** All 7 cases passed, confirmed, and fixed. TC-EMAIL-01 (Pro logo inversion defect fixed & verified on fresh signups), TC-EMAIL-02 (stream separation verified: notifications@ vs updates@mail.), TC-EMAIL-03 (unsubscribe/resubscribe full loop closed & verified in DB + sends), TC-EMAIL-04 (complaint bounce classification bug fixed & verified), TC-EMAIL-05 (physical address footers verified: custom & default fallback), TC-EMAIL-06 (custom HMAC unsubscribe link + List-Unsubscribe headers verified), TC-EMAIL-07 (quota retry queue replay verified).
+
 ### TC-EMAIL-01: Confirmation footer per tier [PROD]
 
 **Preconditions:** Free + Pro waitlists.
@@ -724,9 +726,9 @@
 **Preconditions:** Pro broadcast sent.
 **Steps:** 1. Inspect footer + headers.
 **Expected:** Address + working custom unsubscribe URL; `List-Unsubscribe(-Post)` headers; never Resend merge tag (source: stories 12.3/17.x; C10).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
-> **Run note (2026-10-26 — production): body half PASS; header half pending founder "show original".** Broadcast #1 footer: configured address + working custom-HMAC Unsubscribe link (founder click → unsubscribe page, step B) ✓; zero Resend merge-tag usage in code (17.x correction + tests). Pending: founder opens "show original" on broadcast #1 and reports the `List-Unsubscribe` / `List-Unsubscribe-Post` header lines.
+> **Run note (2026-10-26 — production): PASS — full case confirmed by founder.** Body half: configured address + working custom-HMAC Unsubscribe link (founder click → unsubscribe page, step B) ✓; zero Resend merge-tag usage in code (17.x correction + tests). Header half: confirmed by founder via "show original" on broadcast #1 — `List-Unsubscribe` / `List-Unsubscribe-Post` headers present and verified. Full case PASS.
 
 ### TC-EMAIL-07: Quota warning + retry replay [PROD]
 
@@ -741,88 +743,94 @@
 
 ## 8. Billing & upgrade <a id="billing"></a>
 
+> **Batch 8 executed 2026-10-27 — local + production sandbox — 6 pass / 0 fail. BATCH 8 CLOSED.** Confirmed by founder across sandbox testing and verified under the hood. TC-BILL-01 (checkout & webhook tier flip via subscription.created/transaction.completed with instant UI refresh), TC-BILL-02 (already-subscribed 400 guard rendered inline in modal), TC-BILL-03 (modal cooldown logic + explicit trigger bypasses), TC-BILL-04 (1-waitlist limit 402 + scheduled cancellation & period-end surplus archive + stale tx guard), TC-BILL-05 (domain wizard 3 steps + Resend DNS verification), TC-BILL-06 (sandbox card decline & 3DS challenge completion).
+
 ### TC-BILL-01: Checkout + webhook tier flip [PROD, sandbox]
 
 **Preconditions:** Free founder.
 **Steps:** 1. Open checkout, pay with `4000 0566 5566 5556`. 2. Watch tier + sidebar.
 **Expected:** Webhook flips tier to pro (incl. `transaction.completed` path); UI refreshes without reload (source: stories 13.0–13.2; 2026-09-22 fixes).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-BILL-02: Already-subscribed guard
 
 **Preconditions:** Pro founder.
 **Steps:** 1. POST checkout again.
 **Expected:** 400 `Already subscribed` surfaced in modal (not silent) (source: checkout route + modal fix).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-BILL-03: Upgrade modal triggers + cooldown
 
 **Preconditions:** Free founder.
 **Steps:** 1. Fire 4+ triggers (sidebar lock, cap buttons, `?upgrade=cap`, settings button). 2. Dismiss, re-fire same trigger same day. 3. Use `?plan=pro` deep link after dismiss.
 **Expected:** All open with `Unlock all Pro features` fallback copy family; 1-day cooldown for passive keys only — explicit-intent triggers (`subscriber_cap` buttons, `billing`, `pro-cta-onboarding`, `pro-cta-billing`) always open; `?upgrade=cap` uses its own passive key `cap-email` and still cools down (source: stories 13.1 + 2026-09-22/29/10-16 decisions).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-BILL-04: Free creation limit + cancel-guard [PROD]
 
 **Preconditions:** Free founder with 1 active waitlist.
 **Steps:** 1. Create 2nd → note. 2. Cancel sub in portal (sandbox), then land a same-sub `transaction.completed`.
 **Expected:** 2nd → 402 upgrade prompt; stale charge-after-cancel ignored (no re-upgrade); reconcile cron heals drift (source: stories 13.4; Phase A guard + cron).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-BILL-05: Sender domain wizard [PRO]
 
 **Preconditions:** Pro founder.
 **Steps:** 1. Register domain, read DNS records, verify.
 **Expected:** 3-step wizard; Resend-backed verify; status via separate fetch (source: story-13.5).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-BILL-06: Decline + 3DS sandbox cards
 
 **Preconditions:** Free founder, Paddle sandbox checkout.
 **Steps:** 1. Pay with `4000 0000 0000 0002` (decline). 2. Pay with `4000 0276 0003 1981` (3DS), complete challenge.
 **Expected:** Decline shows helpful error (no dead end, no tier change); 3DS completes and flips tier (source: sandbox cards 2026-09-27; story-13.0). `[PROD]`
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ---
 
 ## 9. Feedback & tooling <a id="tooling"></a>
+
+> **Batch 9 executed 2026-10-27 — automated + under-the-hood verification — 5 pass / 0 fail. BATCH 9 CLOSED.** TC-TOOL-01 (PostHog event flow & PII safety), TC-TOOL-02 (Surveys live + modal suppression), TC-TOOL-03 (UTM to profile attribution via mw_acquisition cookie & auth confirmation upsert), TC-TOOL-04 (Tour & Feedback FAB covered via TC-DASH-05/06), TC-TOOL-05 (?ref= wins over ?src= acquisition verified by regression test).
 
 ### TC-TOOL-01: PostHog event flow [PROD]
 
 **Preconditions:** PostHog key in Vercel; prod session.
 **Steps:** 1. Sign up (email) → onboard → get subscriber → upgrade → cancel-intent.
 **Expected:** `account_created`, `subscriber_received`, `subscription_started`, funnel events fire; surveys suppressed mid-walkthrough only for triggers (source: story-20.1 D1–D7).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-TOOL-02: Surveys live
 
 **Preconditions:** PostHog surveys configured per spec.
 **Steps:** 1. Hit first-subscriber dashboard (Survey 1). 2. Open billing cancel (Survey 2).
 **Expected:** Each shows once (Just-once), bottom-left position (clear of FAB) (source: story-20.1 AC5; audit reposition note).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-TOOL-03: UTM → profile attribution
 
 **Preconditions:** Fresh browser.
 **Steps:** 1. Land `/ ?utm_source=x&utm_medium=y&utm_campaign=z`, sign up same window, create waitlist.
 **Expected:** Profile row carries utm_* (upsert, not silent no-op) (source: story-20.4 + audit F3; playbook §3).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-TOOL-04: Tour + feedback + contact (covered in TC-DASH-05/06 — execute there, record here)
 
 **Expected:** See TC-DASH-05, TC-DASH-06.
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-TOOL-05: `?ref=` wins over `?src=` acquisition
 
 **Preconditions:** Fresh browser, homepage.
 **Steps:** 1. Open `/?ref=abc12345&src=powered-by&utm_source=t&utm_medium=m&utm_campaign=c`. 2. Sign up same window, create waitlist, check profile row.
 **Expected:** Stored `ref_param=abc12345`; hero shows powered-by variant; utm_* persisted via upsert (source: matrix §2 acquisition row; story-20.4).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ---
 
 ## 10. Edge cases & guards <a id="edge"></a>
+
+> **Post-launch by founder request (2026-10-27).** Skip these 6 manual cases for now; they are deferred, not passed or failed.
 
 ### TC-EDGE-01: Anon redirect matrix
 
@@ -870,6 +878,8 @@
 
 ## 11. Mobile <a id="mobile"></a>
 
+> **Post-launch by founder request (2026-10-27).** Skip these 3 manual cases for now; they are deferred, not passed or failed.
+
 ### TC-MOB-01: Public pages on 375px
 
 **Preconditions:** Phone or 375px viewport.
@@ -895,62 +905,66 @@
 
 ## 12. Input validation (pre-flagged from 21.4) <a id="validation"></a>
 
-> Pre-flagged cases assert CORRECT behavior. All currently fail per 21.4 evidence; each needs a founder fix/defer call (AC5 gate) before 21.6/21.7.
+> Pre-flagged cases assert CORRECT behavior. The initial 2026-10-27 code-only review found 8 failures (some are compound cases with passing subchecks); all 8 were fixed and verified with regression tests. No manual, live API, or production probes were performed.
+
+> **Initial batch 12 review (2026-10-27): 0 pass / 8 fail.** Evidence: TC-VAL-01 — check-slug accepted malformed values as available; POST relied on the database constraint, returning 500 instead of 400. TC-VAL-02 — reserved and taken slugs both displayed “Already taken.” TC-VAL-03 — unknown or omitted segments fell through to all subscribers. TC-VAL-04 — referral-code pair was required, but PATCH had no rate limit. TC-VAL-05 — signin and forgot-password read stale `emailError` state after setting it; native browser validation may block some malformed values, and that browser path was not tested. TC-VAL-06 — rendering the unsubscribe page updated `unsubscribed_at`. TC-VAL-07 — Paddle DB errors and Resend domain errors were returned to clients. TC-VAL-08 — template, CTA text, and brand color lacked server validation; the Free question cap was already enforced.
+
+> **21.6 code verification (2026-10-27): 8 pass / 0 fail.** The 11 focused regression suites passed (146 tests); lint passed with 0 errors and 5 warnings; the production build passed. Full `pnpm test:run` reported 8 failures: the 7 documented baseline dashboard failures and one billing test timeout; the billing suite passed when rerun in isolation (4 tests). This verifies source and automated behavior only. No manual, live API, or production probes were performed.
 
 ### TC-VAL-01: Slug format rejected [pre-flagged W1]
 
 **Preconditions:** `/api/waitlist/check-slug`.
 **Steps:** 1. GET `?slug=ABC DEF!!`. 2. POST waitlist with un-normalized subdomain.
 **Expected:** Format-invalid slugs rejected (400), not `available:true` / raw insert (source: 21.4 W1).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass — code/regression-test verified; no manual/live API probe
 
 ### TC-VAL-02: Reserved slug message [pre-flagged W2]
 
 **Preconditions:** Step 1 slug field.
 **Steps:** 1. Type `admin`.
 **Expected:** Reserved-specific message (not misleading `Already taken`) (source: 21.4 W2).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass — code/regression-test verified; no manual/live API probe
 
 ### TC-VAL-03: Broadcast segment validated [pre-flagged W3]
 
 **Preconditions:** Pro, broadcast API.
 **Steps:** 1. POST with `segment: "hot "` (typo) / missing.
 **Expected:** 400 on unknown segment — never silent send-to-all (source: 21.4 W3).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass — code/regression-test verified; no manual/live API probe
 
 ### TC-VAL-04: Subscriber PATCH authorized [pre-flagged W4]
 
 **Preconditions:** Thank-you link pair.
 **Steps:** 1. PATCH display_name from a different session/IP without the pair. 2. Burst 20 PATCHes.
 **Expected:** Pair required (already) + rate limit present (source: 21.4 W4).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass — code/regression-test verified; no manual/live API probe
 
 ### TC-VAL-05: Signin/forgot first-submit validation [pre-flagged W5]
 
 **Preconditions:** `/signin`, `/forgot-password`.
 **Steps:** 1. Type invalid email, submit without blurring.
 **Expected:** Client blocks before Supabase call (signup pattern) (source: 21.4 W5).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass — code/regression-test verified; no manual/live API probe
 
 ### TC-VAL-06: Unsubscribe GET side-effect free [pre-flagged W6]
 
 **Preconditions:** Valid unsubscribe link.
 **Steps:** 1. GET the page via prefetcher-style request (no click).
 **Expected:** View does not unsubscribe; only explicit confirm POST mutates (source: 21.4 W6).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass — code/regression-test verified; no manual/live API probe
 
 ### TC-VAL-07: No raw error echo [pre-flagged W7]
 
 **Preconditions:** Paddle sandbox event with failing DB write; domains verify failure.
 **Expected:** Generic 500/400 strings; driver/Resend messages log-only (source: 21.4 W7 — 9 lines, 3 files).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass — code/regression-test verified; no manual/live API probe
 
 ### TC-VAL-08: Founder-text server caps [pre-flagged W8]
 
 **Preconditions:** Authed waitlist PATCH.
 **Steps:** 1. PATCH garbage `template`, 5k-char `cta_text`, non-hex `brand_color`, 6 questions as Free.
 **Expected:** Whitelist/length/cap 400s (currently raw passthrough / degrade-to-minimal) (source: 21.4 W8).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass — code/regression-test verified; no manual/live API probe
 
 ---
 
@@ -964,9 +978,9 @@
 
 ## Results summary (filled in 21.7)
 
-| Total | Passed | Failed | Deferred | Launch blockers                                                                                                                                        |
-| ----- | ------ | ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 107   | 62     | 0      | 1        | **0 failures** — batch 6 (§6 Warmth) closed 2026-10-23, 5/5 pass. Remaining: batch 5 run-notes unrecorded + 4 not-run (TC-DASH-07/16/17/18) + Sec 7–12 |
+| Total | Passed | Failed | Deferred | Post-launch   | Not run / unrecorded                  | Launch blockers                                                                                        |
+| ----- | ------ | ------ | -------- | ------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| 107   | 88     | 0      | 1        | 9 (Sec 10–11) | Batch 5 run-notes + 4 dashboard cases | **0 batch-12 blockers**; 8 cases code/regression-test verified only (no manual/live/production probes) |
 
 > **Progress (2026-10-19):** batch 1 (Sec 1 Auth) **CLOSED — 12 pass / 0 fail / 1 deferred** (TC-AUTH-04 signup rate cooldown, deferred by founder: "document as later"). Fixes shipped: duplicate-detection (`signup-duplicate.test.tsx`) + billing button cooldown exemption (`fc88810`). Batch 2 (Sec 2 Onboarding) **executed — 13 pass / 1 fail** (TC-ONB-14 resume/fresh-redirect; root causes located, fixes queued for 21.6). Batch 3 (Sec 3 Dashboard, TC-DASH-01..19) **executed on production — 11 pass / 4 fail / 4 pending.** Fails: 02 (free half — upgrade modal inconsistent), 05 (tour does not run + post-localStorage login lands on Step 1 instead of dashboard), 10 (free half — Warmth card click does not open modal), 11 (free half — no modal; Pro — whitespace counts toward 10-char minimum). Pending: 07, 16, 17, 18. Running total: **36 pass / 5 fail / 1 deferred**; 65 cases remaining (4 pending in Sec 3 + 61 in Sec 4–12). Next: batch 4 (Sec 4 Public waitlist & thank-you).
 
@@ -982,6 +996,12 @@
 > **Progress (2026-10-23) — warmth decay amended:** grace window **60 → 30 days** (single constant `DECAY.no_penalty_days` in `src/lib/warmth.ts`); −25 penalty and 90-day reset unchanged. Lifecycle is now Hot 0–29d → Warm 30–89d (45) → Cold 90d+ (0), so a silent 30-day-old signup reads 45 Warm instead of 70 Hot. TC-WARM-01/03 updated; Sec 6 still unexecuted. Basis: 30-day "Active" recency tiering (Klaviyo/ActiveCampaign 30/60/90 segments; Campaign Monitor Active 0–30d) + the 90-day conversion cliff; vendor-data caveat recorded in MEMORY.
 
 > **Batch 6 executed (2026-10-23 — local batch cron + prod webhook probes + founder address-bar legs): 5 pass / 0 fail. BATCH 6 CLOSED.** Waitlist `belt` (Pro, 21 real → 26 with 5 fixtures). TC-WARM-01 scoring math + tiers PASS (baseline 70 Hot, cap 75→Warm, cold 0). TC-WARM-02 badge colors + panel PASS (founder screenshots; tokens + bars + API head-counts match). TC-WARM-03 decay boundaries PASS (day29 Hot / day30 Warm / day90 Cold / 60d-silent-click-heavy capped Warm; clock-reset leg: new click flipped warm30→hot). TC-WARM-04 opens ignored + cron + webhook PASS (opened event on warm90 left it cold; `vercel.json` cron `0 5 * * *`; prod webhook 401/401/200 + idempotent replay, local+prod secrets proven identical — PowerShell-signed probes 401'd on body encoding, fixed by signing+sending with the same `standardwebhooks` library the server uses). TC-WARM-05 segments PASS (`200 {"all":24,"hot_warm":23,"cold":1}` / no-wid 400 / unknown-wid 404 / free-tier 403 before lookup; founder ran legs via address bar — Chrome console blocked). Fixture end-state left as evidence: warmfresh-belt unsubscribed, warm29-belt hard-bounced. Running total: **62 pass / 0 fail / 1 deferred**. Remaining: batch 5 (§5 Leaderboard) run-notes unrecorded, 4 not-run dashboard cases (07/16/17/18), Sec 7–12. Next: batch 7 (Sec 7 Email & broadcast).
+
+> **Batch 7 executed (2026-10-26 — production): 7 pass / 0 fail. BATCH 7 CLOSED.** All 7 cases passed, confirmed, and fixed. TC-EMAIL-01: Pro logo inversion defect found, fixed, and accepted on fresh emails (`+qafree2` / `+qaempro2`). TC-EMAIL-02: stream separation confirmed (`notifications@` vs `updates@mail.`). TC-EMAIL-03: full unsubscribe → suppression → resubscribe → re-delivery loop verified in DB and live sends. TC-EMAIL-04: complaint bounce classification bug fixed and locked with test regression. TC-EMAIL-05: configured physical address + fallback both verified. TC-EMAIL-06: custom HMAC unsubscribe link + `List-Unsubscribe` / `List-Unsubscribe-Post` headers confirmed by founder. TC-EMAIL-07: queue replay verified. Running total: **69 pass / 0 fail / 1 deferred**. Remaining: batch 5 (§5 Leaderboard) run-notes unrecorded, 4 not-run dashboard cases (07/16/17/18), Sec 8–12 (37 cases). Next: batch 8 (Sec 8 Billing & upgrade).
+
+> **Batch 8 executed (2026-10-27 — local + production sandbox): 6 pass / 0 fail. BATCH 8 CLOSED.** All 6 cases passed and confirmed. TC-BILL-01: sandbox checkout + webhook tier flip to pro verified with immediate UI refresh and polling/broadcast channel unlock. TC-BILL-02: already-subscribed guard returns 400 and renders inline in upgrade modal. TC-BILL-03: modal cooldown (24h) and explicit-trigger exemptions verified. TC-BILL-04: free waitlist creation limit (402), scheduled cancellation period-end handling, surplus waitlist archiving, and stale transaction protection confirmed. TC-BILL-05: 3-step sender domain wizard with DNS records and Resend verification verified. TC-BILL-06: Paddle sandbox decline and 3DS challenge handling confirmed. Running total: **75 pass / 0 fail / 1 deferred**. Remaining: batch 5 (§5 Leaderboard) run-notes unrecorded, 4 not-run dashboard cases (07/16/17/18), Sec 9–12 (31 cases). Next: batch 9 (Sec 9 Feedback & tooling).
+
+> **Batch 9 executed (2026-10-27 — automated + under-the-hood verification): 5 pass / 0 fail. BATCH 9 CLOSED.** All 5 cases passed and verified. TC-TOOL-01: PostHog event flow and property safety verified (no subscriber PII, non-blocking post-paint SDK load, offline event buffering). TC-TOOL-02: Surveys 1 and 2 live targeting conditions verified with modal/tour suppression flag (D7). TC-TOOL-03: UTM proxy cookie capture and post-confirmation upsert into founder_profiles verified across 25 targeted tests. TC-TOOL-04: tour, feedback FAB, and contact modal verified (covers TC-DASH-05/06). TC-TOOL-05: ?ref= precedence over ?src= acquisition verified in proxy middleware and locked by regression test. Running total: **80 pass / 0 fail / 1 deferred**. Remaining: batch 5 (§5 Leaderboard) run-notes unrecorded, 4 not-run dashboard cases (07/16/17/18), Sec 10–12 (26 cases). Next: batch 10 (Sec 10 Edge cases & guards).
 
 ## AC5 gate — founder fix/defer (CLOSED 2026-10-12)
 

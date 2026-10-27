@@ -39,6 +39,73 @@ describe("POST /api/waitlist (multi-waitlist)", () => {
     expect(response.status).toBe(401);
   });
 
+  it.each([
+    [{ template: "unknown" }, "Template must be minimal, bold, or dark."],
+    [
+      { cta_text: "x".repeat(5000) },
+      "Button text must be 100 characters or fewer.",
+    ],
+    [{ brand_color: "not-a-color" }, "Enter a valid hex color (e.g. #0F7A5E)"],
+  ])("rejects invalid founder content during create", async (fields, error) => {
+    const callsBefore = mockSupabase.__calls.length;
+
+    const response = await POST(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "POST",
+        body: { subdomain: "valid-slug", ...fields },
+      })
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error });
+    expect(mockSupabase.__calls.slice(callsBefore)).toHaveLength(0);
+  });
+
+  it("enforces the Free qualification question cap during create", async () => {
+    mockSupabase.__queue.push({
+      data: { id: "user-1", tier: "free" },
+      error: null,
+    });
+
+    const response = await POST(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "POST",
+        body: {
+          subdomain: "valid-slug",
+          questions: Array.from({ length: 6 }, (_, index) => ({
+            text: `Question ${index + 1}`,
+            type: "free_text",
+          })),
+        },
+      })
+    );
+
+    expect(response.status).toBe(400);
+    expect((await response.json()).error).toContain(
+      "Free plan allows 2 questions"
+    );
+    expect(mockSupabase.__calls.some((call) => call.method === "insert")).toBe(
+      false
+    );
+  });
+
+  it("rejects malformed subdomains before creating profile or waitlist", async () => {
+    const callsBefore = mockSupabase.__calls.length;
+
+    const response = await POST(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "POST",
+        body: { subdomain: "ABC DEF!!" },
+      })
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: "Invalid subdomain format",
+    });
+    expect(mockSupabase.__calls.slice(callsBefore)).toHaveLength(0);
+  });
+
   it("creates first waitlist for free tier user", async () => {
     // Auth (default user), profile (free tier), count (0 waitlists), insert
     mockSupabase.__queue.push({
@@ -323,6 +390,22 @@ describe("PATCH /api/waitlist (multi-waitlist)", () => {
     expect(response.status).toBe(400);
     const body = await response.json();
     expect(body.error).toContain("waitlist_id");
+  });
+
+  it("rejects invalid founder content before ownership lookup or write", async () => {
+    const callsBefore = mockSupabase.__calls.length;
+    const response = await PATCH(
+      makeRequest("http://localhost/api/waitlist", {
+        method: "PATCH",
+        body: { waitlist_id: "wl-1", cta_text: "x".repeat(5000) },
+      })
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: "Button text must be 100 characters or fewer.",
+    });
+    expect(mockSupabase.__calls.slice(callsBefore)).toHaveLength(0);
   });
 
   it("returns 404 when waitlist does not belong to user", async () => {
