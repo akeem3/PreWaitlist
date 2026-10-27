@@ -1,17 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-
-const RESERVED_WORDS = [
-  "api",
-  "www",
-  "app",
-  "admin",
-  "dashboard",
-  "onboarding",
-  "signin",
-  "signup",
-  "verify-email",
-];
+import { isReservedSubdomain, isValidSubdomain } from "@/lib/subdomain";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -25,8 +14,15 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (RESERVED_WORDS.includes(slug.toLowerCase())) {
-    return NextResponse.json({ available: false });
+  if (!isValidSubdomain(slug)) {
+    return NextResponse.json(
+      { error: "Invalid subdomain format" },
+      { status: 400 }
+    );
+  }
+
+  if (isReservedSubdomain(slug)) {
+    return NextResponse.json({ available: false, reason: "reserved" });
   }
 
   const { data, error } = await supabase

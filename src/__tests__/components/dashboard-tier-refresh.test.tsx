@@ -137,6 +137,13 @@ describe("Dashboard tier refresh", () => {
     expect(broadcastIsLocked()).toBe(false);
   });
 
+  it("renders the sidebar element the tour highlights", () => {
+    renderShell("free");
+    const sidebar = document.querySelector('[data-tour="dashboard-sidebar"]');
+    expect(sidebar).not.toBeNull();
+    expect(sidebar?.tagName).toBe("ASIDE");
+  });
+
   it("starts polling on paddle-checkout-opened and unlocks sidebar when API returns pro", async () => {
     renderShell("free");
     expect(broadcastIsLocked()).toBe(true);

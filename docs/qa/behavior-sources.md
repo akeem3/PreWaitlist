@@ -242,18 +242,19 @@
 
 ## 10. Warmth engine
 
-| Behavior                                                                              | Governing source              | Secondary refs                      | Conflict note    |
-| ------------------------------------------------------------------------------------- | ----------------------------- | ----------------------------------- | ---------------- |
-| Score = clamp(70 + clicks×5 + referrals×15 + qual×8 − decay, 0, 100)                  | warmth restructure 2026-09-25 | Epic 15 / 11.1 AMENDED              | Unscored removed |
-| Everyone starts Hot (baseline 70); tiers hot/warm/cold, never null                    | restructure                   | 11.1 AC6/7 AMENDED                  | —                |
-| Thresholds: ≥70 Hot, ≥40 Warm, else Cold                                              | restructure                   | —                                   | —                |
-| Decay: 0–59 free, 60–89 −25, 90+ → 0; clock = max(click, referred signup, own signup) | 15.0 + restructure            | day ≥60 boundary                    | —                |
-| Cron `/api/cron/warmth` daily 05:00 UTC, Bearer `CRON_SECRET`                         | 15.1 (Vercel-verified)        | Standing Decision 6                 | —                |
-| Webhook: Svix verify, `req.text()`, idempotent via svix uid, 401/401/200              | 15.2                          | —                                   | —                |
-| Opens never enter score (Apple MPP)                                                   | 15.6 / vision amended         | vision pre-amendment superseded     | —                |
-| Badges: hot green `--color-status-hot` (value `#0f7a5e` since 2026-09-27)             | founder flip 2026-09-27       | coral 2026-09-25 superseded (2-day) | —                |
-| Cold badge blue `#3b6fa6` (not red)                                                   | Epic 11 decision              | —                                   | —                |
-| Segments API: `?wid=` + `requirePro` before lookup                                    | 17.1 / 15.3                   | —                                   | —                |
+| Behavior                                                                              | Governing source                              | Secondary refs                      | Conflict note        |
+| ------------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------- | -------------------- |
+| Score = clamp(70 + clicks×5 + referrals×15 + qual×8 − decay, 0, 100)                  | warmth restructure 2026-09-25                 | Epic 15 / 11.1 AMENDED              | Unscored removed     |
+| Everyone starts Hot (baseline 70); tiers hot/warm/cold, never null                    | restructure                                   | 11.1 AC6/7 AMENDED                  | —                    |
+| Thresholds: ≥70 Hot, ≥40 Warm, else Cold                                              | restructure                                   | —                                   | —                    |
+| Hot requires activity within 30 days (recency cap: ≥30d cannot be Hot)                | recency cap 2026-10-23                        | score band row above; 90+ → Cold    | score stays uncapped |
+| Decay: 0–29 free, 30–89 −25, 90+ → 0; clock = max(click, referred signup, own signup) | 15.0 + restructure; grace 60→30 on 2026-10-23 | day ≥30 boundary                    | —                    |
+| Cron `/api/cron/warmth` daily 05:00 UTC, Bearer `CRON_SECRET`                         | 15.1 (Vercel-verified)                        | Standing Decision 6                 | —                    |
+| Webhook: Svix verify, `req.text()`, idempotent via svix uid, 401/401/200              | 15.2                                          | —                                   | —                    |
+| Opens never enter score (Apple MPP)                                                   | 15.6 / vision amended                         | vision pre-amendment superseded     | —                    |
+| Badges: hot green `--color-status-hot` (value `#0f7a5e` since 2026-09-27)             | founder flip 2026-09-27                       | coral 2026-09-25 superseded (2-day) | —                    |
+| Cold badge blue `#3b6fa6` (not red)                                                   | Epic 11 decision                              | —                                   | —                    |
+| Segments API: `?wid=` + `requirePro` before lookup                                    | 17.1 / 15.3                                   | —                                   | —                    |
 
 ---
 

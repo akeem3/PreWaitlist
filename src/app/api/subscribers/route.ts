@@ -36,7 +36,6 @@ function buildConfirmationEmail(opts: {
   referralCode: string;
   rewardTiers: { threshold: number; label: string }[];
   footer: string;
-  tier?: string;
   customSubject?: string;
   customBody?: string;
 }): {
@@ -113,21 +112,6 @@ function buildConfirmationEmail(opts: {
     <tr>
       <td align="center" style="padding: 40px 20px;">
         <div style="max-width: 600px; margin: 0 auto;">
-          ${
-            opts.tier !== "free"
-              ? `
-          <!-- Logo (Pro only) -->
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td align="center" style="padding: 0 0 24px 0;">
-                <img src="https://prewaitlist.com/PreWaitlist-logo.svg" alt="PreWaitlist" width="140" height="28" style="display: block; border: 0;" />
-              </td>
-            </tr>
-          </table>
-          `
-              : ""
-          }
-
           <!-- Content card -->
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; border: 1px solid ${BORDER_LIGHT};">
             <!-- Greeting + Body -->
@@ -237,7 +221,6 @@ function buildMovedUpEmail(opts: {
   referralLink: string;
   rewardTiers: { threshold: number; label: string }[];
   footer: string;
-  tier?: string;
 }): {
   subject: string;
   html: string;
@@ -303,21 +286,6 @@ function buildMovedUpEmail(opts: {
     <tr>
       <td align="center" style="padding: 40px 20px;">
         <div style="max-width: 600px; margin: 0 auto;">
-          ${
-            opts.tier !== "free"
-              ? `
-          <!-- Logo (Pro only) -->
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td align="center" style="padding: 0 0 24px 0;">
-                <img src="https://prewaitlist.com/PreWaitlist-logo.svg" alt="PreWaitlist" width="140" height="28" style="display: block; border: 0;" />
-              </td>
-            </tr>
-          </table>
-          `
-              : ""
-          }
-
           <!-- Content card -->
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; border: 1px solid ${BORDER_LIGHT};">
             <!-- Heading + Body -->
@@ -969,7 +937,6 @@ export async function POST(request: NextRequest) {
           label: t.reward_label,
         })),
         footer,
-        tier,
         customSubject: waitlist.email_subject || undefined,
         customBody: waitlist.email_body || undefined,
       });
@@ -1150,7 +1117,6 @@ export async function POST(request: NextRequest) {
             label: t.reward_label,
           })),
           footer,
-          tier,
         });
 
         const emailResult = await sendEmail({

@@ -1,6 +1,6 @@
 # Manual Test Cases — Pre-Launch QA Suite
 
-**Story:** 21.5 · **Epic:** 21 · **Status:** executed — batches 1–4 complete (57 pass / 0 fail / 1 deferred; 49 not yet run). AC5 gate CLOSED 2026-10-12 (fix all 8 in 21.6). Last synced 2026-10-21 with `f42ce06` (waitlist visual rebalance, subscriber referral link, leaderboard row click).
+**Story:** 21.5 · **Epic:** 21 · **Status:** batches 1–4 + 6–9 complete (80 pass); batch 12's 8 findings were fixed and code-verified in 21.6. Batches 10–11 (9 cases) moved to post-launch by founder request on 2026-10-27. Batch 5 (§5 Leaderboard) was executed but run-notes remain unrecorded; 4 dashboard cases remain unrun; 1 earlier case is deferred. AC5 gate CLOSED 2026-10-12 (fix all 8 in 21.6). Last synced 2026-10-27 after batch 12 code verification.
 **Sources (only):** `docs/qa/app-inventory.md` (21.1) · `docs/qa/screenshots/` + `manifest.md` (21.2) · `docs/qa/behavior-sources.md` (21.3) · `story-21.4-input-validation-audit.md` (21.4). Never the outdated user-flow doc.
 **Scale:** ~150 cases. Mark each `Result` during execution (21.7).
 
@@ -623,180 +623,214 @@
 
 ## 6. Warmth <a id="warmth"></a>
 
+> **Batch 6 executed 2026-10-23 - local + prod probes - 5 pass / 0 fail.** BATCH 6 CLOSED: TC-WARM-01..05 all PASS. Waitlist under test: `belt` (id `900b1600-ae25-4c4d-8755-e7349f35c4bb`, Pro, 21 real subscribers → 26 with QA fixtures). Fixtures: `warmfresh-belt` (signup today), `warm29-belt` (−29d), `warm30-belt` (−30d), `warmcap-belt` (−60d + 6 clicks @ −40d), `warm90-belt` (−90d). Batch trigger: local `POST /api/cron/warmth` with `CRON_SECRET` bearer (4 runs). Fixture end-state left as evidence: `warmfresh-belt` unsubscribed, `warm29-belt` hard-bounced (both by TC-05).
+
 ### TC-WARM-01: Scoring math + tiers
 
 **Preconditions:** Subscribers with known events (clicks/referrals/qual).
-**Steps:** 1. Compare dashboard badges vs `70 + 5c + 15r + 8q − decay`.
-**Expected:** Baseline 70 = Hot at signup; ≥70 Hot, ≥40 Warm, else Cold; never null (source: restructure 2026-09-25).
-**Result:** [ ] Pass [ ] Fail
+**Steps:** 1. Compare dashboard badges vs `70 + 5c + 15r + 8q − decay` (decay: 0–29 free / 30–89 −25 / 90+ → 0).
+**Expected:** Baseline 70 = Hot at signup; ≥70 Hot, ≥40 Warm, else Cold; Hot also requires activity within 29 days (recency cap); never null (source: restructure 2026-09-25; decay + cap amended 2026-10-23).
+**Result:** [x] Pass [ ] Fail
+
+> **Run note (2026-10-23 - local): PASS.** Baseline batch `28 hot / 25 warm / 2 cold / 1 total-mismatch-none` → fixtures read exactly as model predicts: `warmfresh-belt` 70 Hot, `warm29-belt` 70 Hot, `warm30-belt` 45 Warm, `warmcap-belt` 75 (clicks) but **capped to Warm** by recency (60d silent), `warm90-belt` 0 Cold. Click leg: new `clicked` event on `warmfresh-belt` → re-batch → still Hot (75). Distribution after runs: belt = 24 hot / 1 warm / 1 cold / 26 total (21 real all hot + 5 fixtures), matching DB head-count.
 
 ### TC-WARM-02: Badge colors + panel
 
 **Preconditions:** Mixed tiers.
 **Steps:** 1. Check subscriber warmth displays + overview panel bars.
 **Expected:** Hot green `#0f7a5e`, Cold blue (never red); 3 bars with counts (source: Epic 11 + 2026-09-27 flip + 15.4 redesign).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
+
+> **Run note (2026-10-23 - founder screenshots): PASS.** Tokens in `globals.css:40-42` = hot `#0f7a5e` / warm `#c7841a` / cold `#3b6fa6`. Warmth page cards 23/2/1 + "4% cold"; overview panel 3 bars 88%/8%/4% with colored counts (`warmth-panel.tsx`); badges `bg-status-* text-white` (`warmth/client.tsx`); `/api/dashboard/warmth` head-counts match DB exactly.
 
 ### TC-WARM-03: Decay boundary
 
-**Preconditions:** Aged test subscribers (60/90-day events).
-**Steps:** 1. Check scores at day 59 vs 60 vs 90+.
-**Expected:** Day 59 unpenalized; 60–89 −25; 90+ → 0; clock = latest meaningful action (source: Epic 15, `>= 60` boundary).
-**Result:** [ ] Pass [ ] Fail
+**Preconditions:** Aged test subscribers (30/90-day events).
+**Steps:** 1. Check scores at day 29 vs 30 vs 90+.
+**Expected:** Day 29 unpenalized (70 Hot); 30–89 −25 (45 Warm) and **cannot be Hot even with high engagement** (recency cap); 90+ → 0 (Cold); clock = latest meaningful action (source: 30-day grace + recency cap, 2026-10-23, `>= 30` boundary).
+**Result:** [x] Pass [ ] Fail
+
+> **Run note (2026-10-23 - local): PASS.** All four boundaries proven on belt fixtures in one batch: day 29 = 70 Hot · day 30 = 45 Warm · day 90 = 0 Cold · 60d-silent-but-click-heavy = 75 **Warm** (recency cap — the key amendment). Clock reset leg: new click on `warm30-belt` → re-batch → flipped warm→hot (batch `28/26/1/1`). Note: `warmth.ts` model changes were **uncommitted at run time** — prod still ran the old 60-day model until deploy; local runs are authoritative for this case.
 
 ### TC-WARM-04: Opens ignored; cron + webhook [PROD]
 
 **Preconditions:** Prod, Resend events flowing.
 **Steps:** 1. Confirm opens don't move scores. 2. Check cron ran 05:00 UTC (Vercel logs). 3. Check webhook 401/401/200 handling.
 **Expected:** Clicks/referrals/qual only; daily batch; idempotent webhook (source: stories 15.0–15.2; 15.6).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
+
+> **Run note (2026-10-23 - local batch + prod webhook probes): PASS.** **Part A:** injected `email.opened` event on `warm90-belt` (dated now) → re-batch → **still cold** (batch unchanged `28/26/1/1`) — opens enter neither score nor recency clock. **Part B:** cron schedule present in `vercel.json:9-10` (`/api/cron/warmth` @ `0 5 * * *` = 05:00 UTC daily); prior live verify Epic 15 (2026-09-27, prod invoke `200 {processed:9,...}`). Vercel dashboard glance still open as optional founder confirm — code-side + prior live invoke cover the expectation. **Part C (prod `https://www.prewaitlist.com/api/webhooks/resend`):** no svix headers → 401 `Missing svix headers` · garbage signature → 401 `Invalid signature` · **valid signed `email.opened`** (signed + sent with the same `standardwebhooks@1.0.0` library the server uses) → 200 `{"received":true}` + exactly one `email_events` row (`svix_id: qa-node-79t1f7xk`) · **replay same svix-id** → 200, **still one row** (idempotent). Local server accepts the same probe with the same `.env.local` secret → local and prod secrets proven identical. Gotcha: earlier PowerShell-signed probes 401'd due to body-encoding fidelity in the inline-arg path — harness issue, not product (recorded so it isn't re-diagnosed).
 
 ### TC-WARM-05: Segments eligibility [PRO]
 
 **Preconditions:** Pro, mixed tiers + unsub/bounced.
 **Steps:** 1. GET segments with/without `?wid=`; multi-waitlist without wid.
 **Expected:** Eligible counts (unsub+bounce excluded); tier gate before lookup; `wid` required when multi (source: stories 15.3/17.1).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
+
+> **Run note (2026-10-23 - local, founder address bar + service REST setup): PASS.** Fixtures: unsubscribed `warmfresh-belt`, hard-bounced `warm29-belt` (inserted via service REST; founder tier flipped free→pro for the run). Four legs on `/api/dashboard/broadcast/segments` (founder owns 3 waitlists): valid `?wid=belt` → `200 {"all":24,"hot_warm":23,"cold":1}` (26 − 1 unsub − 1 hard-bounce; hot_warm = 22 hot + 1 warm) · no wid → `400 {"error":"wid is required when multiple waitlists exist"}` · unknown wid → `404 {"error":"No waitlist found"}` · tier temporarily `free` → `403 {"error":"Broadcast requires a Pro subscription"}` (**gate fires before any waitlist lookup — no counts leak**), flipped back to `pro` after. Founder ran legs via address bar (console blocked in their Chrome) — GETs carry session cookies on same-origin navigation. Eligible-count math mirrored from DB and matches route's in-memory filter (`unsubscribed_at IS NULL` + active bounce suppression).
 
 ---
 
 ## 7. Email & broadcast <a id="email"></a>
+
+> **Batch 7 executed 2026-10-26 — production — 7 pass / 0 fail. BATCH 7 CLOSED.** All 7 cases passed, confirmed, and fixed. TC-EMAIL-01 (Pro logo inversion defect fixed & verified on fresh signups), TC-EMAIL-02 (stream separation verified: notifications@ vs updates@mail.), TC-EMAIL-03 (unsubscribe/resubscribe full loop closed & verified in DB + sends), TC-EMAIL-04 (complaint bounce classification bug fixed & verified), TC-EMAIL-05 (physical address footers verified: custom & default fallback), TC-EMAIL-06 (custom HMAC unsubscribe link + List-Unsubscribe headers verified), TC-EMAIL-07 (quota retry queue replay verified).
 
 ### TC-EMAIL-01: Confirmation footer per tier [PROD]
 
 **Preconditions:** Free + Pro waitlists.
 **Steps:** 1. Sign up to each.
 **Expected:** Free footer = Powered-by lockup + address; Pro = address only; custom sender honored for Pro (source: stories 12.5/12.6/19.1).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
+
+> **Run note (2026-10-26 — production): PASS — with a defect found, fixed, and accepted on fresh emails.** Agent legs (2026-10-23): `qa-free-em` → hazaak009+qafree delivered From `QA Free Email <notifications@prewaitlist.com>` (sender_name null → default) · `qa-em-pro` → hazaak009+qaempro delivered From `QA Pro Sender <notifications@prewaitlist.com>` (custom sender honored, 12.5/12.6 ✓). **DEFECT FOUND ON THIS CASE (reported by founder 2026-10-26): the Pro confirmation rendered a PreWaitlist logo header.** Root cause: `subscribers/route.ts` gated the 140×28 header logo `tier !== "free"` (`<!-- Logo (Pro only) -->`) — inverted vs the standing brand rule (Free = Powered-by attribution, Pro = white-label). Identical inverted block in `buildMovedUpEmail`. **Fixed 2026-10-26 (founder chose "remove header logo entirely"):** both header blocks + the dead `tier` param removed from both builders and their call sites; footer tier gating untouched (footers were already correct everywhere: confirmation/moved-up/milestone `free → buildFreeEmailFooter`, broadcast/updates logo-free). Locked by `not.toContain("PreWaitlist-logo.svg")` assertions on pro + free confirmation html and pro + free moved-up html (`subscribers.test.ts`, `subscribers-referral.test.ts`). **Acceptance (fresh emails 2026-10-26, `+qafree2` + `+qaempro2`, both delivered 20:21Z, built by the fixed code): founder verified free footer = Powered-by lockup + default address, pro = no top logo + address-only footer → both tier expectations PASS.**
 
 ### TC-EMAIL-02: Stream separation [PROD]
 
 **Preconditions:** Sent transactional + broadcast.
 **Steps:** 1. Inspect From headers.
 **Expected:** Transactional via `notifications@prewaitlist.com`; bulk via `updates@mail.prewaitlist.com` (verified domain) (source: story-12.6 amended 2026-10-10).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
+
+> **Run note (2026-10-26 — production): PASS.** Transactional confirmations From `notifications@prewaitlist.com` (both free + pro legs, 2026-10-23, display names "QA Free Email" / "QA Pro Sender"); bulk broadcast From `updates@mail.prewaitlist.com` verified by founder inspecting broadcast #1 (step A, 2026-10-25). Streams never mixed.
 
 ### TC-EMAIL-03: Unsubscribe → resubscribe loop [PROD]
 
 **Preconditions:** Received email with footer.
 **Steps:** 1. Click unsubscribe → confirm. 2. Verify no further bulk mail. 3. Resubscribe via token link.
 **Expected:** One-click unsub (no login); suppression enforced pre-send; resubscribe restores (source: stories 12.2.7/12.2.8).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
+
+> **Run note (2026-10-26 — production): PASS — full loop closed.** Step B (2026-10-25): founder clicked Unsubscribe in broadcast #1 → confirmation page rendered with "Changed your mind? Resubscribe" link (no login) = PASS; DB verified same day: `subscribers.unsubscribed_at = 2026-10-25T10:13:43Z` on `0d712ab1` (hazaak009+qaempro) — suppression persisted. **Suppression leg (2026-10-26):** broadcast #2 on qa-em-pro → eligible count **1** (was 3 rows: 2 unsubscribed excluded — incl. the complaint row) and exactly one copy delivered To `hazaak009+qaempro2@gmail.com`, never to an unsubscribed row → pre-send suppression enforced (12.2.7). **Resubscribe leg:** founder clicked the email's Unsubscribe → Resubscribe in the browser flow → "You have been resubscribed" rendered; DB re-verified: `+qaempro2.unsubscribed_at = null`. Agent then proved the toggle server-side with mid-flight DB reads on `0d712ab1` using a real HMAC token: start `2026-10-25T10:13:43Z` → POST `/api/unsubscribe/resubscribe` 200 → `null` → POST `/api/unsubscribe` (RFC 8058 one-click) 200 → `2026-10-26T20:32:03Z` → resubscribe 200 → `null` final. Both directions persist; resubscribe requires a matched row (no silent success, 4.6). **Re-delivery leg (broadcast #3, 2026-10-26T20:39Z):** `broadcasts` row `recipient_count = 2`; Resend webhook events show `sent`+`delivered` for both `0d712ab1` (+qaem-pro) and `93932b9e` (+qaempro2); the still-unsubscribed complaint row got **zero** events — resubscribed subscribers receive bulk mail again while suppression continues to hold for the rest. Founder screenshots: two copies, To `+qaempro2` and To `+qaempro`, From `QA Pro Sender <updates@mail.prewaitlist.com>`. Final fixture state: `+qaem-pro` + `+qaempro2` subscribed, `qa-complaint` still unsubscribed/suppressed.
 
 ### TC-EMAIL-04: Bounce suppression [PROD]
 
 **Preconditions:** Hard-bounced address on list.
 **Steps:** 1. Attempt sends to it.
 **Expected:** Suppressed pre-send; `bounced_emails` row; complaint = hard (source: stories 12.2.8/15.2).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
+
+> **Run note (2026-10-26 — production): PASS — with a bug found & fixed mid-run.** (a) Bounce half: `qa-bounced@example.com` signup → 201 but **zero** `email_events` rows = `isEmailBounced` suppression ran pre-send (12.2.8) ✓. (b) Complaint half: **BUG** — Resend's official `email.complained` payload carries the type only at event top level (`data` has no complaint marker, no `data.type`), so `determineBounceType` sniffing `data` classified it "soft". **Fixed:** webhook passes its already-correct `mappedType` → `mappedType === "complained"` → "hard" + auto-unsubscribe. Live re-probe: `20cb256c` → `bounce_type:"hard"` + `unsubscribed_at` set. Locked by `webhook-resend.test.ts` regression using Resend's official payload shape (8/8 green).
 
 ### TC-EMAIL-05: Physical address footer [PROD]
 
 **Preconditions:** Waitlist with `business_address` set + one without.
 **Steps:** 1. Inspect footers of both.
 **Expected:** Configured address rendered; fallback present when unset (source: story-12.2.9).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
+
+> **Run note (2026-10-26 — production): PASS — both halves.** Broadcast #1 footer showed `123 QA Test Avenue, QA City, QA 12345` exactly as configured on qa-em-pro (founder step A, 2026-10-25). Fallback half: `qa-free-em` has `business_address` null → fresh confirmation to `hazaak009+qafree2` (2026-10-26) rendered the `DEFAULT_ADDRESS` fallback (`buildFreeEmailFooter(business_address ?? DEFAULT_ADDRESS)`) — founder verified the fallback address present in the footer.
 
 ### TC-EMAIL-06: Broadcast CAN-SPAM + custom HMAC [PROD]
 
 **Preconditions:** Pro broadcast sent.
 **Steps:** 1. Inspect footer + headers.
 **Expected:** Address + working custom unsubscribe URL; `List-Unsubscribe(-Post)` headers; never Resend merge tag (source: stories 12.3/17.x; C10).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
+
+> **Run note (2026-10-26 — production): PASS — full case confirmed by founder.** Body half: configured address + working custom-HMAC Unsubscribe link (founder click → unsubscribe page, step B) ✓; zero Resend merge-tag usage in code (17.x correction + tests). Header half: confirmed by founder via "show original" on broadcast #1 — `List-Unsubscribe` / `List-Unsubscribe-Post` headers present and verified. Full case PASS.
 
 ### TC-EMAIL-07: Quota warning + retry replay [PROD]
 
 **Preconditions:** Resend quota exhausted (staging key or simulated).
 **Steps:** 1. Trigger a send past quota. 2. Restore quota, let `cron/email-retry` drain.
 **Expected:** Quota-warning email to founder; confirmation/moved-up replay with original idempotency keys; others dead-letter (source: inventory §4 templates 7–8; retry-queue rules).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
+
+> **Run note (2026-10-26 — production replay + local cron; scope per batch-7 consolidation = retry replay): PASS.** Queue row `5e35bd2c` inserted past-dated → local `GET /api/cron/email-retry` (CRON_SECRET) → `{"processed":1,"sent":1,"reparked":0,"deadLettered":0}`; replayed confirmation kept its original idempotency key (`confirmation-email/<id>`), email arrived in the founder inbox, row drained + deleted. Quota-warning half cannot exhaust the production Resend quota — covered instead by unit tests (90%-cap warning idempotency key + plain-text part, batch 5) and the TC-LEAD-04 cap procedure; repark/dead-letter paths covered by retry-queue unit tests (live sim exercised only the sent path).
 
 ---
 
 ## 8. Billing & upgrade <a id="billing"></a>
+
+> **Batch 8 executed 2026-10-27 — local + production sandbox — 6 pass / 0 fail. BATCH 8 CLOSED.** Confirmed by founder across sandbox testing and verified under the hood. TC-BILL-01 (checkout & webhook tier flip via subscription.created/transaction.completed with instant UI refresh), TC-BILL-02 (already-subscribed 400 guard rendered inline in modal), TC-BILL-03 (modal cooldown logic + explicit trigger bypasses), TC-BILL-04 (1-waitlist limit 402 + scheduled cancellation & period-end surplus archive + stale tx guard), TC-BILL-05 (domain wizard 3 steps + Resend DNS verification), TC-BILL-06 (sandbox card decline & 3DS challenge completion).
 
 ### TC-BILL-01: Checkout + webhook tier flip [PROD, sandbox]
 
 **Preconditions:** Free founder.
 **Steps:** 1. Open checkout, pay with `4000 0566 5566 5556`. 2. Watch tier + sidebar.
 **Expected:** Webhook flips tier to pro (incl. `transaction.completed` path); UI refreshes without reload (source: stories 13.0–13.2; 2026-09-22 fixes).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-BILL-02: Already-subscribed guard
 
 **Preconditions:** Pro founder.
 **Steps:** 1. POST checkout again.
 **Expected:** 400 `Already subscribed` surfaced in modal (not silent) (source: checkout route + modal fix).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-BILL-03: Upgrade modal triggers + cooldown
 
 **Preconditions:** Free founder.
 **Steps:** 1. Fire 4+ triggers (sidebar lock, cap buttons, `?upgrade=cap`, settings button). 2. Dismiss, re-fire same trigger same day. 3. Use `?plan=pro` deep link after dismiss.
 **Expected:** All open with `Unlock all Pro features` fallback copy family; 1-day cooldown for passive keys only — explicit-intent triggers (`subscriber_cap` buttons, `billing`, `pro-cta-onboarding`, `pro-cta-billing`) always open; `?upgrade=cap` uses its own passive key `cap-email` and still cools down (source: stories 13.1 + 2026-09-22/29/10-16 decisions).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-BILL-04: Free creation limit + cancel-guard [PROD]
 
 **Preconditions:** Free founder with 1 active waitlist.
 **Steps:** 1. Create 2nd → note. 2. Cancel sub in portal (sandbox), then land a same-sub `transaction.completed`.
 **Expected:** 2nd → 402 upgrade prompt; stale charge-after-cancel ignored (no re-upgrade); reconcile cron heals drift (source: stories 13.4; Phase A guard + cron).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-BILL-05: Sender domain wizard [PRO]
 
 **Preconditions:** Pro founder.
 **Steps:** 1. Register domain, read DNS records, verify.
 **Expected:** 3-step wizard; Resend-backed verify; status via separate fetch (source: story-13.5).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-BILL-06: Decline + 3DS sandbox cards
 
 **Preconditions:** Free founder, Paddle sandbox checkout.
 **Steps:** 1. Pay with `4000 0000 0000 0002` (decline). 2. Pay with `4000 0276 0003 1981` (3DS), complete challenge.
 **Expected:** Decline shows helpful error (no dead end, no tier change); 3DS completes and flips tier (source: sandbox cards 2026-09-27; story-13.0). `[PROD]`
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ---
 
 ## 9. Feedback & tooling <a id="tooling"></a>
+
+> **Batch 9 executed 2026-10-27 — automated + under-the-hood verification — 5 pass / 0 fail. BATCH 9 CLOSED.** TC-TOOL-01 (PostHog event flow & PII safety), TC-TOOL-02 (Surveys live + modal suppression), TC-TOOL-03 (UTM to profile attribution via mw_acquisition cookie & auth confirmation upsert), TC-TOOL-04 (Tour & Feedback FAB covered via TC-DASH-05/06), TC-TOOL-05 (?ref= wins over ?src= acquisition verified by regression test).
 
 ### TC-TOOL-01: PostHog event flow [PROD]
 
 **Preconditions:** PostHog key in Vercel; prod session.
 **Steps:** 1. Sign up (email) → onboard → get subscriber → upgrade → cancel-intent.
 **Expected:** `account_created`, `subscriber_received`, `subscription_started`, funnel events fire; surveys suppressed mid-walkthrough only for triggers (source: story-20.1 D1–D7).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-TOOL-02: Surveys live
 
 **Preconditions:** PostHog surveys configured per spec.
 **Steps:** 1. Hit first-subscriber dashboard (Survey 1). 2. Open billing cancel (Survey 2).
 **Expected:** Each shows once (Just-once), bottom-left position (clear of FAB) (source: story-20.1 AC5; audit reposition note).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-TOOL-03: UTM → profile attribution
 
 **Preconditions:** Fresh browser.
 **Steps:** 1. Land `/ ?utm_source=x&utm_medium=y&utm_campaign=z`, sign up same window, create waitlist.
 **Expected:** Profile row carries utm_* (upsert, not silent no-op) (source: story-20.4 + audit F3; playbook §3).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-TOOL-04: Tour + feedback + contact (covered in TC-DASH-05/06 — execute there, record here)
 
 **Expected:** See TC-DASH-05, TC-DASH-06.
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ### TC-TOOL-05: `?ref=` wins over `?src=` acquisition
 
 **Preconditions:** Fresh browser, homepage.
 **Steps:** 1. Open `/?ref=abc12345&src=powered-by&utm_source=t&utm_medium=m&utm_campaign=c`. 2. Sign up same window, create waitlist, check profile row.
 **Expected:** Stored `ref_param=abc12345`; hero shows powered-by variant; utm_* persisted via upsert (source: matrix §2 acquisition row; story-20.4).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass [ ] Fail
 
 ---
 
 ## 10. Edge cases & guards <a id="edge"></a>
+
+> **Post-launch by founder request (2026-10-27).** Skip these 6 manual cases for now; they are deferred, not passed or failed.
 
 ### TC-EDGE-01: Anon redirect matrix
 
@@ -844,6 +878,8 @@
 
 ## 11. Mobile <a id="mobile"></a>
 
+> **Post-launch by founder request (2026-10-27).** Skip these 3 manual cases for now; they are deferred, not passed or failed.
+
 ### TC-MOB-01: Public pages on 375px
 
 **Preconditions:** Phone or 375px viewport.
@@ -869,62 +905,66 @@
 
 ## 12. Input validation (pre-flagged from 21.4) <a id="validation"></a>
 
-> Pre-flagged cases assert CORRECT behavior. All currently fail per 21.4 evidence; each needs a founder fix/defer call (AC5 gate) before 21.6/21.7.
+> Pre-flagged cases assert CORRECT behavior. The initial 2026-10-27 code-only review found 8 failures (some are compound cases with passing subchecks); all 8 were fixed and verified with regression tests. No manual, live API, or production probes were performed.
+
+> **Initial batch 12 review (2026-10-27): 0 pass / 8 fail.** Evidence: TC-VAL-01 — check-slug accepted malformed values as available; POST relied on the database constraint, returning 500 instead of 400. TC-VAL-02 — reserved and taken slugs both displayed “Already taken.” TC-VAL-03 — unknown or omitted segments fell through to all subscribers. TC-VAL-04 — referral-code pair was required, but PATCH had no rate limit. TC-VAL-05 — signin and forgot-password read stale `emailError` state after setting it; native browser validation may block some malformed values, and that browser path was not tested. TC-VAL-06 — rendering the unsubscribe page updated `unsubscribed_at`. TC-VAL-07 — Paddle DB errors and Resend domain errors were returned to clients. TC-VAL-08 — template, CTA text, and brand color lacked server validation; the Free question cap was already enforced.
+
+> **21.6 code verification (2026-10-27): 8 pass / 0 fail.** The 11 focused regression suites passed (146 tests); lint passed with 0 errors and 5 warnings; the production build passed. Full `pnpm test:run` reported 8 failures: the 7 documented baseline dashboard failures and one billing test timeout; the billing suite passed when rerun in isolation (4 tests). This verifies source and automated behavior only. No manual, live API, or production probes were performed.
 
 ### TC-VAL-01: Slug format rejected [pre-flagged W1]
 
 **Preconditions:** `/api/waitlist/check-slug`.
 **Steps:** 1. GET `?slug=ABC DEF!!`. 2. POST waitlist with un-normalized subdomain.
 **Expected:** Format-invalid slugs rejected (400), not `available:true` / raw insert (source: 21.4 W1).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass — code/regression-test verified; no manual/live API probe
 
 ### TC-VAL-02: Reserved slug message [pre-flagged W2]
 
 **Preconditions:** Step 1 slug field.
 **Steps:** 1. Type `admin`.
 **Expected:** Reserved-specific message (not misleading `Already taken`) (source: 21.4 W2).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass — code/regression-test verified; no manual/live API probe
 
 ### TC-VAL-03: Broadcast segment validated [pre-flagged W3]
 
 **Preconditions:** Pro, broadcast API.
 **Steps:** 1. POST with `segment: "hot "` (typo) / missing.
 **Expected:** 400 on unknown segment — never silent send-to-all (source: 21.4 W3).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass — code/regression-test verified; no manual/live API probe
 
 ### TC-VAL-04: Subscriber PATCH authorized [pre-flagged W4]
 
 **Preconditions:** Thank-you link pair.
 **Steps:** 1. PATCH display_name from a different session/IP without the pair. 2. Burst 20 PATCHes.
 **Expected:** Pair required (already) + rate limit present (source: 21.4 W4).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass — code/regression-test verified; no manual/live API probe
 
 ### TC-VAL-05: Signin/forgot first-submit validation [pre-flagged W5]
 
 **Preconditions:** `/signin`, `/forgot-password`.
 **Steps:** 1. Type invalid email, submit without blurring.
 **Expected:** Client blocks before Supabase call (signup pattern) (source: 21.4 W5).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass — code/regression-test verified; no manual/live API probe
 
 ### TC-VAL-06: Unsubscribe GET side-effect free [pre-flagged W6]
 
 **Preconditions:** Valid unsubscribe link.
 **Steps:** 1. GET the page via prefetcher-style request (no click).
 **Expected:** View does not unsubscribe; only explicit confirm POST mutates (source: 21.4 W6).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass — code/regression-test verified; no manual/live API probe
 
 ### TC-VAL-07: No raw error echo [pre-flagged W7]
 
 **Preconditions:** Paddle sandbox event with failing DB write; domains verify failure.
 **Expected:** Generic 500/400 strings; driver/Resend messages log-only (source: 21.4 W7 — 9 lines, 3 files).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass — code/regression-test verified; no manual/live API probe
 
 ### TC-VAL-08: Founder-text server caps [pre-flagged W8]
 
 **Preconditions:** Authed waitlist PATCH.
 **Steps:** 1. PATCH garbage `template`, 5k-char `cta_text`, non-hex `brand_color`, 6 questions as Free.
 **Expected:** Whitelist/length/cap 400s (currently raw passthrough / degrade-to-minimal) (source: 21.4 W8).
-**Result:** [ ] Pass [ ] Fail
+**Result:** [x] Pass — code/regression-test verified; no manual/live API probe
 
 ---
 
@@ -938,9 +978,9 @@
 
 ## Results summary (filled in 21.7)
 
-| Total | Passed | Failed | Deferred | Launch blockers                                                                                                                           |
-| ----- | ------ | ------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| 107   | 57     | 0      | 1        | **0 failures** — all 6 retests passed (2026-10-20: batch 1–3 blockers + TC-PUB-14). Remaining: 4 not-run (TC-DASH-07/16/17/18) + Sec 5–12 |
+| Total | Passed | Failed | Deferred | Post-launch   | Not run / unrecorded                  | Launch blockers                                                                                        |
+| ----- | ------ | ------ | -------- | ------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| 107   | 88     | 0      | 1        | 9 (Sec 10–11) | Batch 5 run-notes + 4 dashboard cases | **0 batch-12 blockers**; 8 cases code/regression-test verified only (no manual/live/production probes) |
 
 > **Progress (2026-10-19):** batch 1 (Sec 1 Auth) **CLOSED — 12 pass / 0 fail / 1 deferred** (TC-AUTH-04 signup rate cooldown, deferred by founder: "document as later"). Fixes shipped: duplicate-detection (`signup-duplicate.test.tsx`) + billing button cooldown exemption (`fc88810`). Batch 2 (Sec 2 Onboarding) **executed — 13 pass / 1 fail** (TC-ONB-14 resume/fresh-redirect; root causes located, fixes queued for 21.6). Batch 3 (Sec 3 Dashboard, TC-DASH-01..19) **executed on production — 11 pass / 4 fail / 4 pending.** Fails: 02 (free half — upgrade modal inconsistent), 05 (tour does not run + post-localStorage login lands on Step 1 instead of dashboard), 10 (free half — Warmth card click does not open modal), 11 (free half — no modal; Pro — whitespace counts toward 10-char minimum). Pending: 07, 16, 17, 18. Running total: **36 pass / 5 fail / 1 deferred**; 65 cases remaining (4 pending in Sec 3 + 61 in Sec 4–12). Next: batch 4 (Sec 4 Public waitlist & thank-you).
 
@@ -952,6 +992,16 @@
 > **Final status (2026-10-20): 57 pass / 0 fail / 1 deferred — zero failures.** All 6 prior failures retested PASSED (founder): TC-ONB-14 + TC-DASH-02/05/10/11 (batch 2–3, fixes `ea721c0`) and TC-PUB-14 (batch 4, og-card center-composition — fix accepted; **still uncommitted** alongside the doc). Batch sections: Sec 1 = 12/0 + 1 deferred · Sec 2 = 14/0 · Sec 3 = 15/0 + 4 not-run (07/16/17/18) · Sec 4 = 16/0. Remaining work: 4 not-run dashboard cases + Sec 5–12 (45 cases) = 49 unexecuted, the 1 deferred (TC-AUTH-04), and `commit-push` when instructed.
 
 > **Progress (2026-10-21) — founder UX follow-ups shipped, `f42ce06` (merged to main + deployed):** (1) waitlist page **visual rebalance** — how-it-works demoted to quiet metadata, milestone chips promoted to second focal point (TC-PUB-01/08 amended; preview parity applies via the shared renderer, TC-ONB-12); (2) subscriber detail gains a **Referral link** card after Referral code (copyable canonical `https://{subdomain}.prewaitlist.com?ref={code}`); (3) dashboard leaderboard rows are **fully clickable** → subscriber detail (resolves the TC-DASH-13 founder UX note). TC-DASH-08/13 now carry a **row-click leg added after their 2026-10-20 pass — retest pending**. Running total unchanged until that retest: **57 pass / 0 fail / 1 deferred**; 49 cases still unexecuted. The 2026-10-20 note's "still uncommitted" items (og-card fix + doc updates) also landed in that push. **Also folded in:** TC-DASH-15 step 4 covers milestone-reward + signup-counter editing in waitlist settings (shipped earlier in `086cc17`, previously onboarding-only).
+
+> **Progress (2026-10-23) — warmth decay amended:** grace window **60 → 30 days** (single constant `DECAY.no_penalty_days` in `src/lib/warmth.ts`); −25 penalty and 90-day reset unchanged. Lifecycle is now Hot 0–29d → Warm 30–89d (45) → Cold 90d+ (0), so a silent 30-day-old signup reads 45 Warm instead of 70 Hot. TC-WARM-01/03 updated; Sec 6 still unexecuted. Basis: 30-day "Active" recency tiering (Klaviyo/ActiveCampaign 30/60/90 segments; Campaign Monitor Active 0–30d) + the 90-day conversion cliff; vendor-data caveat recorded in MEMORY.
+
+> **Batch 6 executed (2026-10-23 — local batch cron + prod webhook probes + founder address-bar legs): 5 pass / 0 fail. BATCH 6 CLOSED.** Waitlist `belt` (Pro, 21 real → 26 with 5 fixtures). TC-WARM-01 scoring math + tiers PASS (baseline 70 Hot, cap 75→Warm, cold 0). TC-WARM-02 badge colors + panel PASS (founder screenshots; tokens + bars + API head-counts match). TC-WARM-03 decay boundaries PASS (day29 Hot / day30 Warm / day90 Cold / 60d-silent-click-heavy capped Warm; clock-reset leg: new click flipped warm30→hot). TC-WARM-04 opens ignored + cron + webhook PASS (opened event on warm90 left it cold; `vercel.json` cron `0 5 * * *`; prod webhook 401/401/200 + idempotent replay, local+prod secrets proven identical — PowerShell-signed probes 401'd on body encoding, fixed by signing+sending with the same `standardwebhooks` library the server uses). TC-WARM-05 segments PASS (`200 {"all":24,"hot_warm":23,"cold":1}` / no-wid 400 / unknown-wid 404 / free-tier 403 before lookup; founder ran legs via address bar — Chrome console blocked). Fixture end-state left as evidence: warmfresh-belt unsubscribed, warm29-belt hard-bounced. Running total: **62 pass / 0 fail / 1 deferred**. Remaining: batch 5 (§5 Leaderboard) run-notes unrecorded, 4 not-run dashboard cases (07/16/17/18), Sec 7–12. Next: batch 7 (Sec 7 Email & broadcast).
+
+> **Batch 7 executed (2026-10-26 — production): 7 pass / 0 fail. BATCH 7 CLOSED.** All 7 cases passed, confirmed, and fixed. TC-EMAIL-01: Pro logo inversion defect found, fixed, and accepted on fresh emails (`+qafree2` / `+qaempro2`). TC-EMAIL-02: stream separation confirmed (`notifications@` vs `updates@mail.`). TC-EMAIL-03: full unsubscribe → suppression → resubscribe → re-delivery loop verified in DB and live sends. TC-EMAIL-04: complaint bounce classification bug fixed and locked with test regression. TC-EMAIL-05: configured physical address + fallback both verified. TC-EMAIL-06: custom HMAC unsubscribe link + `List-Unsubscribe` / `List-Unsubscribe-Post` headers confirmed by founder. TC-EMAIL-07: queue replay verified. Running total: **69 pass / 0 fail / 1 deferred**. Remaining: batch 5 (§5 Leaderboard) run-notes unrecorded, 4 not-run dashboard cases (07/16/17/18), Sec 8–12 (37 cases). Next: batch 8 (Sec 8 Billing & upgrade).
+
+> **Batch 8 executed (2026-10-27 — local + production sandbox): 6 pass / 0 fail. BATCH 8 CLOSED.** All 6 cases passed and confirmed. TC-BILL-01: sandbox checkout + webhook tier flip to pro verified with immediate UI refresh and polling/broadcast channel unlock. TC-BILL-02: already-subscribed guard returns 400 and renders inline in upgrade modal. TC-BILL-03: modal cooldown (24h) and explicit-trigger exemptions verified. TC-BILL-04: free waitlist creation limit (402), scheduled cancellation period-end handling, surplus waitlist archiving, and stale transaction protection confirmed. TC-BILL-05: 3-step sender domain wizard with DNS records and Resend verification verified. TC-BILL-06: Paddle sandbox decline and 3DS challenge handling confirmed. Running total: **75 pass / 0 fail / 1 deferred**. Remaining: batch 5 (§5 Leaderboard) run-notes unrecorded, 4 not-run dashboard cases (07/16/17/18), Sec 9–12 (31 cases). Next: batch 9 (Sec 9 Feedback & tooling).
+
+> **Batch 9 executed (2026-10-27 — automated + under-the-hood verification): 5 pass / 0 fail. BATCH 9 CLOSED.** All 5 cases passed and verified. TC-TOOL-01: PostHog event flow and property safety verified (no subscriber PII, non-blocking post-paint SDK load, offline event buffering). TC-TOOL-02: Surveys 1 and 2 live targeting conditions verified with modal/tour suppression flag (D7). TC-TOOL-03: UTM proxy cookie capture and post-confirmation upsert into founder_profiles verified across 25 targeted tests. TC-TOOL-04: tour, feedback FAB, and contact modal verified (covers TC-DASH-05/06). TC-TOOL-05: ?ref= precedence over ?src= acquisition verified in proxy middleware and locked by regression test. Running total: **80 pass / 0 fail / 1 deferred**. Remaining: batch 5 (§5 Leaderboard) run-notes unrecorded, 4 not-run dashboard cases (07/16/17/18), Sec 10–12 (26 cases). Next: batch 10 (Sec 10 Edge cases & guards).
 
 ## AC5 gate — founder fix/defer (CLOSED 2026-10-12)
 

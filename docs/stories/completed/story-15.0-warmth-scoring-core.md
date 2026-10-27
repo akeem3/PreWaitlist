@@ -14,7 +14,7 @@ As a platform, I want warmth scores computed from only real engagement signals w
 
 - AC1: The system shall score subscribers using only: `email_click` (+5), `referral_signup` (+15), `qualification_completed` (+8). The `email_reply` and `leaderboard_visit` weights and any `replied` event filtering shall be removed from `src/lib/warmth.ts`.
 - AC2: Time decay shall consider **only** `email_events.event_type === "clicked"` for the "last engagement" timestamp; if the subscriber has zero clicked events, the decay clock shall start from `subscribers.created_at`.
-- AC3: Decay windows shall be: days since last engagement 0–59 → no penalty; 60–89 → −25 points; 90+ → score forced to 0 (clamped). Day 59 shall **not** apply the −25 penalty (`daysSince >= 60`, not `>= 59`).
+- AC3: Decay windows shall be: days since last engagement 0–59 → no penalty; 60–89 → −25 points; 90+ → score forced to 0 (clamped). Day 59 shall **not** apply the −25 penalty (`daysSince >= 60`, not `>= 59`). **[AMENDED 2026-10-23:** grace shortened to 30 days — 0–29 free / 30–89 −25 / 90+, boundary `daysSince >= 30`. Penalty and reset unchanged.**]**
 - AC4: `assignTier` (or a score+tier helper) shall return `hot` for score ≥ 70, `warm` for ≥ 40, `cold` for score > 0 **or** (score === 0 **and** the subscriber has lifetime engagement: clicks > 0, referrals > 0, or qual answers present), and `null` (Unscored) only when score is 0 **and** there is no lifetime engagement.
 - AC5: `batchRecalculateWarmth` shall paginate subscribers with a stable `.order("id", { ascending: true })` before `.range(...)`.
 - AC6: For each page of subscriber IDs, referral counts shall be computed as the number of rows whose `referrer_id` is **in that page’s subscriber IDs** (referrals _made by_ page members), not referrers _of_ page members — so cross-page referrals still credit the referrer on the page where the referrer is scored.
@@ -87,7 +87,7 @@ Export weights only if tests/docs import them; otherwise keep module-private. Re
 
 ```ts
 const DECAY = {
-  no_penalty_days: 60, // 0–59 free; penalty at >= 60
+  no_penalty_days: 30, // 0–29 free; penalty at >= 30 (was 60 until 2026-10-23)
   penalty_amount: 25,
   reset_days: 90,
 } as const;
@@ -247,7 +247,7 @@ File: `src/__tests__/lib/warmth.test.ts`
 | Existing test          | Action                                                                                                                               |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `assignTier(0) → null` | Split: with `hadEngagement: true` → `"cold"`; without → `null`                                                                       |
-| Decay 30/70/95d        | Keep; add **day 59** and **day 60** boundary                                                                                         |
+| Decay 30/70/95d        | Keep; add **day 29** and **day 30** boundary (was 59/60 before the 2026-10-23 grace change)                                          |
 | `counts only clicked`  | Keep for **score** signals                                                                                                           |
 | New                    | `sent` + `delivered` only, last “engagement” via old created_at → still decays using `createdAt` fallback or shows decay from signup |
 | New                    | All events `sent`/`delivered`, `createdAt` 100d → score 0; `hadEngagement` false → tier null                                         |

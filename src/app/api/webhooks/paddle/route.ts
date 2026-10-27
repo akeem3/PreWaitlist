@@ -90,7 +90,10 @@ export async function POST(req: NextRequest) {
 
       if (error) {
         console.error("Failed to update tier to pro", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json(
+          { error: "Something went wrong. Please try again." },
+          { status: 500 }
+        );
       }
       console.info("Tier upgraded via subscription event", {
         userId,
@@ -129,7 +132,7 @@ export async function POST(req: NextRequest) {
           error: profileError.message,
         });
         return NextResponse.json(
-          { error: profileError.message },
+          { error: "Something went wrong. Please try again." },
           {
             status: 500,
           }
@@ -173,7 +176,10 @@ export async function POST(req: NextRequest) {
 
       if (error) {
         console.error("Failed to update tier to pro via transaction", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json(
+          { error: "Something went wrong. Please try again." },
+          { status: 500 }
+        );
       }
       console.info("Tier upgraded via transaction.completed", {
         userId: txUserId,
@@ -214,7 +220,10 @@ export async function POST(req: NextRequest) {
 
       if (error) {
         console.error("Failed to persist subscription.updated", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json(
+          { error: "Something went wrong. Please try again." },
+          { status: 500 }
+        );
       }
       console.info("Subscription updated persisted", {
         userId,
@@ -251,7 +260,10 @@ export async function POST(req: NextRequest) {
 
       if (error) {
         console.error("Failed to revert tier to free", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json(
+          { error: "Something went wrong. Please try again." },
+          { status: 500 }
+        );
       }
       console.info("Tier reverted via subscription.canceled", { userId });
 
@@ -277,7 +289,10 @@ export async function POST(req: NextRequest) {
 
       if (error) {
         console.error("Failed to persist past_due status", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json(
+          { error: "Something went wrong. Please try again." },
+          { status: 500 }
+        );
       }
       console.info("Status set to past_due (tier kept pro)", { userId });
       break;

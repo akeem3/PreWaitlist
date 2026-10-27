@@ -31,8 +31,12 @@ export async function POST() {
     // Trigger verification check
     const verifyResult = await resend.domains.verify(waitlist.resend_domain_id);
     if (verifyResult.error) {
+      console.error(
+        "[domains] verification request rejected:",
+        verifyResult.error
+      );
       return NextResponse.json(
-        { error: verifyResult.error.message },
+        { error: "Something went wrong. Please try again." },
         { status: 400 }
       );
     }
@@ -40,8 +44,9 @@ export async function POST() {
     // Fetch updated domain status
     const getResult = await resend.domains.get(waitlist.resend_domain_id);
     if (getResult.error) {
+      console.error("[domains] status lookup rejected:", getResult.error);
       return NextResponse.json(
-        { error: getResult.error.message },
+        { error: "Something went wrong. Please try again." },
         { status: 400 }
       );
     }

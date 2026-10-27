@@ -207,4 +207,52 @@ describe("POST /api/webhooks/resend", () => {
     );
     expect(waitlistIds).toEqual(["wl-1", "wl-2"]);
   });
+
+  it("classifies complaints as hard bounces from Resend's official payload shape", async () => {
+    // resend.com/docs/webhooks/emails/complained — data carries NO complaint
+    // field and NO data.type; the event type lives only at the top level.
+    const complaintEvent = {
+      type: "email.complained",
+      created_at: "2026-10-23T19:35:07.470Z",
+      data: {
+        email_id: "56761188-7520-42d8-8898-ff6fc54ce618",
+        message_id: "<111-222-333@email.example.com>",
+        from: "QA Pro Sender <notifications@prewaitlist.com>",
+        to: ["fan@example.com"],
+        subject: "Sending this example",
+        tags: { waitlist_id: "wl-1", subscriber_id: "sub-1" },
+      },
+    };
+    mockVerify.mockReturnValue(complaintEvent);
+
+    mockAdmin.__queue.push(
+      { data: [sub("sub-1", "wl-1")], error: null },
+      { data: null, error: null },
+      { data: null, error: null },
+      { data: null, error: null }
+    );
+
+    const response = await respond(makeRequest({ type: "email.complained" }));
+
+    expect(response.status).toBe(200);
+
+    const inserts = mockAdmin.__calls.filter((c) => c.method === "insert");
+    const bounceInsert = inserts.find(
+      (c) => (c.args[0] as { email?: string }).email === "fan@example.com"
+    );
+    expect(bounceInsert).toBeDefined();
+    expect(bounceInsert!.args[0]).toMatchObject({
+      waitlist_id: "wl-1",
+      email: "fan@example.com",
+      bounce_type: "hard",
+    });
+
+    const unsubUpdates = mockAdmin.__calls.filter(
+      (c) =>
+        c.method === "update" &&
+        (c.args[0] as { unsubscribed_at?: string }).unsubscribed_at !==
+          undefined
+    );
+    expect(unsubUpdates).toHaveLength(1);
+  });
 });

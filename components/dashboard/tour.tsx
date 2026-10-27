@@ -17,7 +17,10 @@ const STEP_WAIT_MS = 3000;
 
 /**
  * Story 20.2 AC5: copy approved verbatim by the founder (2026-10-04).
- * Order: header/link → stat cards → chart → warmth → qualification → sidebar.
+ * 2026-10-23: founder added the last two steps — "Talk to the founder"
+ * (second-to-last) and "Submit A Feedback" (last), copy approved Set A.
+ * Order: header/link → stat cards → chart → warmth → qualification →
+ * sidebar → founder contact → feedback.
  *
  * driver.js v1.9 reads title/description/side ONLY from `step.popover` —
  * a flat {title, description, side} step renders an empty popover (buttons
@@ -79,6 +82,24 @@ const STEPS: DriveStep[] = [
         "Leaderboard, updates, broadcast, and settings — everything else lives in the sidebar.",
     },
   },
+  {
+    element: '[data-tour="founder-contact"]',
+    popover: {
+      side: "top",
+      title: "Talk to the founder",
+      description:
+        "Questions or ideas? Message me directly on Instagram or email — I read every message.",
+    },
+  },
+  {
+    element: '[data-tour="feedback-fab"]',
+    popover: {
+      side: "top",
+      title: "Submit A Feedback",
+      description:
+        "Found a bug or have a suggestion? Send feedback in seconds — it goes straight to me.",
+    },
+  },
 ];
 
 export function DashboardTour({
@@ -115,13 +136,18 @@ export function DashboardTour({
 
     // Story 20.2 AC7: below lg the sidebar drawer is off-canvas, so the
     // sidebar step is omitted (remaining steps highlight real elements).
-    const isDesktop =
-      typeof window.matchMedia === "function"
-        ? window.matchMedia("(min-width: 1024px)").matches
-        : true;
-    const visibleSteps = isDesktop
-      ? STEPS
-      : STEPS.filter((step) => step.element !== SIDEBAR_TARGET);
+    // Evaluated at START time, not mount time — a dashboard first mounted in a
+    // narrow window (docked DevTools) and later widened must not replay the
+    // desktop tour without the sidebar step.
+    const stepsForViewport = () => {
+      const isDesktop =
+        typeof window.matchMedia === "function"
+          ? window.matchMedia("(min-width: 1024px)").matches
+          : true;
+      return isDesktop
+        ? STEPS
+        : STEPS.filter((step) => step.element !== SIDEBAR_TARGET);
+    };
 
     const startTour = (force: boolean) => {
       if (driverRef.current?.isActive()) return;
@@ -129,8 +155,24 @@ export function DashboardTour({
       if (interruptOpen) return;
       if (!force && window.localStorage.getItem(TOUR_FLAG_KEY)) return;
 
+      const steps = stepsForViewport();
+      if (process.env.NODE_ENV !== "production") {
+        // Debug aid: a silently skipped step means its target was not in the
+        // DOM when the tour started (driver.js skips missing elements).
+        const missing = steps
+          .map((step) => step.element)
+          .filter(
+            (el) => typeof el === "string" && !document.querySelector(el)
+          );
+        console.info(
+          `[tour] steps=${steps.length} width=${window.innerWidth} missing=${
+            missing.length > 0 ? missing.join(",") : "none"
+          }`
+        );
+      }
+
       const config: Config = {
-        steps: visibleSteps,
+        steps,
         showProgress: true,
         skipMissingElement: true,
         waitForElement: STEP_WAIT_MS,

@@ -168,9 +168,18 @@ export default function OnboardingStep1() {
 
       if (controller.signal.aborted) return;
 
+      if (!res.ok) {
+        setSlugStatus("error");
+        setSlugError("Could not check availability");
+        return;
+      }
+
       if (data.available) {
         setSlugStatus("available");
         setSlugError(null);
+      } else if (data.reason === "reserved") {
+        setSlugStatus("unavailable");
+        setSlugError("This slug is reserved. Please choose another.");
       } else {
         setSlugStatus("unavailable");
         setSlugError("Already taken");

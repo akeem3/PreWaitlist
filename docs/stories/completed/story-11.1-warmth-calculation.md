@@ -13,7 +13,7 @@ As a founder, I want each subscriber to have an engagement score (0–100) so th
 
 - AC1: The system shall calculate a warmth score (0–100) for each subscriber based on engagement signals.
 - AC2: The score shall be calculated from the following signals with these point values: email click (+5), referral signup (+15), qualification answers completed (+8). Story 15.0 AC1 removed email reply (+10) and leaderboard page visit (+5) — Resend emits no reply event and `page_views` is never populated.
-- AC3: The score shall include time-based decay measured from the last engagement — the most recent `clicked` event, falling back to subscriber signup when there are no clicks: days 0–59 = no penalty (penalty applies at `daysSince >= 60`), days 60–89 = −25 points, days 90+ = score forced to 0. (Story 15.0 AC2–AC3.)
+- AC3: The score shall include time-based decay measured from the last engagement — the most recent `clicked` event, falling back to subscriber signup when there are no clicks: days 0–59 = no penalty (penalty applies at `daysSince >= 60`), days 60–89 = −25 points, days 90+ = score forced to 0. (Story 15.0 AC2–AC3.) **[AMENDED 2026-10-23:** grace shortened — now 0–29 free (`daysSince >= 30` triggers), 30–89 = −25, 90+ = 0. `penalty_amount` and `reset_days` unchanged.**]**
 - AC4: The score shall be clamped to 0–100 range (never below 0, never above 100).
 - AC5: The system shall assign tiers based on score: Hot (≥ 70), Warm (40–69), Cold (score > 0, or score = 0 with lifetime engagement — clicks, referrals, or qualification answers present). (Story 15.0 AC4.)
 - AC6: New subscribers with no engagement signals shall have score = 0 and tier = "Unscored". Conversely, subscribers with lifetime engagement whose score decays to 0 shall be tier = "Cold", never "Unscored". (Story 15.0 AC4.)
@@ -51,10 +51,10 @@ const SIGNAL_WEIGHTS = {
   leaderboard_visit: 5,
 } as const;
 
-// AC3: Decay thresholds (days) — SUPERSEDED by Story 15.0 (shipped uses daysSince >= 60 for -25, >= 90 for reset; day 59 not penalized; clicked-only reference)
+// AC3: Decay thresholds (days) — SUPERSEDED by Story 15.0 (shipped uses daysSince >= 30 for -25 after the 2026-10-23 grace change, >= 90 for reset; day 29 not penalized; clicked-only reference)
 const DECAY = {
-  no_penalty_max: 59, // 0-59 days = no penalty
-  penalty_max: 89, // 60-89 days = -25
+  no_penalty_max: 29, // 0-29 days = no penalty (was 59 until 2026-10-23)
+  penalty_max: 89, // 30-89 days = -25
   penalty_amount: 25,
   reset_at: 90, // 90+ days = score resets to 0
 } as const;
@@ -133,7 +133,7 @@ function calculateDecay(events: Array<{ created_at: string }> | null): number {
   if (daysSinceLastEvent >= DECAY.reset_at) {
     return 999; // Reset to 0 (score - 999 = negative → clamped to 0)
   }
-  if (daysSinceLastEvent >= DECAY.no_penalty_max) {
+  if (daysSinceLastEvent > DECAY.no_penalty_max) {
     return DECAY.penalty_amount; // -25 points
   }
   return 0; // No penalty

@@ -118,7 +118,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 - AC1: The system shall calculate a warmth score (0–100) for each subscriber based on engagement signals.
 - AC2: The score shall be calculated from the following signals with these point values: email click (+5), email reply (+10), referral signup (+15), qualification answers completed (+8), leaderboard page visit (+5).
-- AC3: The score shall include time-based decay: no activity in 0–59 days = no penalty, no activity in 60–89 days = -25 points, no activity in 90+ days = score resets to 0.
+- AC3: The score shall include time-based decay: no activity in 0–59 days = no penalty, no activity in 60–89 days = -25 points, no activity in 90+ days = score resets to 0. **[AMENDED 2026-10-23:** grace shortened to 30 days — windows are now 0–29 free / 30–89 −25 / 90+ → 0 (`daysSince >= 30`).**]**
 - AC4: The score shall be clamped to 0–100 range (never below 0, never above 100).
 - AC5: The system shall assign tiers based on score: Hot (70+), Warm (40–69), Cold (<40).
 - AC6: ~~New subscribers with no engagement signals shall have score = 0 and tier = "Unscored".~~ **[AMENDED 2026-09-25 — warmth restructure:** baseline 70 — new subscribers start at score 70 / tier `hot`; tiers always `hot|warm|cold` (never null); "Unscored" removed**]**
@@ -134,7 +134,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 
 - T1 (AC1–AC4): ✅ `src/lib/warmth.ts` — scored signals: email click +5, referral signup +15, qualification answers +8. The original weights in AC2 above are superseded: **reply (+10) and leaderboard visit (+5) were dropped** (Epic 15 Story 15.0) — Resend emits no reply event and `page_views` is never written. Canonical ACs: `story-11.1-warmth-calculation.md`.
 - T1 (Apple MPP): ✅ Opens are NOT a warmth signal — `docs/product-vision-mvp-waitlist-tool.md` amended in Story 15.6 (5 sites).
-- T1 (decay): ✅ Clicked-only last engagement with `subscribers.created_at` fallback; windows 0–59 free / 60–89 −25 / 90+ → 0. Boundary is `daysSince >= 60` (day 59 not penalized).
+- T1 (decay): ✅ Clicked-only last engagement with `subscribers.created_at` fallback; windows 0–59 free / 60–89 −25 / 90+ → 0. Boundary is `daysSince >= 60` (day 59 not penalized). **[AMENDED 2026-10-23:** now 0–29 free / 30–89 −25 / 90+ → 0, boundary `>= 30`.**]**
 - T2 (AC5/AC6): ~~✅ `assignTier(score, hadEngagement)` — Hot ≥70, Warm ≥40, Cold >0; score 0 **with** lifetime engagement → Cold; Unscored only when never engaged.~~ **[SUPERSEDED 2026-09-25 — warmth restructure:** AC6/AC7 amended: Unscored removed; `assignTier(score)` = Hot ≥70 / Warm ≥40 / Cold otherwise; `warmth_score` not null; fresh signup inserts `'hot'` (baseline 70). Plan: `docs/completed/dashboard-warmth-redesign-plan.md` §4**]**
 - T3 (AC8): ✅ Daily batch at `src/app/api/cron/warmth/route.ts` (Bearer `CRON_SECRET`), scheduled `0 5 * * *` UTC in `vercel.json`. **Manual gate: verify the Vercel cron deployed.**
 - T3: `GET /api/dashboard/warmth` ~~(44 lines) already returns `{hot, warm, cold, unscored, total}`~~ **[shape amended 2026-09-25: `{hot, warm, cold, total}` — no `unscored`]**.
@@ -238,9 +238,9 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 **Acceptance Criteria (EARS):**
 
 - AC1: The score calculation shall apply time decay based on days since last engagement event (email click, email reply, referral).
-- AC2: Decay rules: 0–59 days = no penalty, 60–89 days = -25 points, 90+ days = score resets to 0.
+- AC2: Decay rules: 0–59 days = no penalty, 60–89 days = -25 points, 90+ days = score resets to 0. **[AMENDED 2026-10-23:** windows are now 0–29 / 30–89 / 90+ (grace 60 → 30 days).**]**
 - AC3: "Last engagement" shall be determined by the most recent `email_events.created_at` for the subscriber.
-- AC4: ~~Subscribers with zero events shall have score = 0 regardless of signup date.~~ **[AMENDED 2026-09-25 — warmth restructure:** baseline 70 — zero-event subscribers start at score 70 (Hot) and decay from there (60–89 days → 45; 90+ days → 0/Cold)**]**
+- AC4: ~~Subscribers with zero events shall have score = 0 regardless of signup date.~~ **[AMENDED 2026-09-25 — warmth restructure:** baseline 70 — zero-event subscribers start at score 70 (Hot) and decay from there (60–89 days → 45; 90+ days → 0/Cold)**]** **[AMENDED 2026-10-23:** the 60–89 band is now 30–89 (silent 30-day-old = 45 Warm).**]**
 - AC5: The decay shall be applied during the daily batch recalculation (Story 11.1), not on every read.
 - AC6: Lint and build shall pass with zero errors.
 
@@ -253,7 +253,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 - T1 (AC1–AC3): ✅ Decay lives in `calculateWarmthScore()` (`src/lib/warmth.ts`) — applied after signal summing. Last engagement = most recent **clicked** event; fallback to `subscribers.created_at` when no clicks exist. The original AC1/AC3 wording (click/reply/referral, `email_events.created_at`) is superseded — reply events don't exist in Resend and `created_at` of _any_ event (incl. old sends) skewed staleness. Canonical ACs: `story-11.5-warmth-decay.md`.
 - T2 (AC4): ~~✅ Never-engaged subscribers → Unscored (not Cold); engaged-but-score-0 → Cold (Story 15.0 tier rule).~~ **[SUPERSEDED 2026-09-25 — warmth restructure:** Unscored removed; everyone starts Hot (baseline 70); score 0 after decay → Cold**]**
 - T3 (AC5): ✅ Applied inside the daily batch (`/api/cron/warmth`, `0 5 * * *` UTC) — never on read. **Manual gate: verify Vercel cron deployed.**
-- Boundary: `daysSince >= 60` — the pre-15.0 `>= 59` off-by-one is fixed and covered by tests in `src/__tests__/lib/warmth.test.ts`.
+- Boundary: `daysSince >= 30` (was `>= 60` until 2026-10-23) — the pre-15.0 `>= 59` off-by-one is fixed and covered by tests in `src/__tests__/lib/warmth.test.ts`.
 
 ---
 
@@ -280,7 +280,7 @@ Every subscriber has a warmth score (0–100) that updates via daily batch recal
 **Dev Notes:**
 
 - T1 (AC1): ✅ `src/__tests__/api/webhook-resend.test.ts` — 7 tests (lines 84, 99, 112, 147, 161, 171, 183) covering missing-header 401, signature-failure 401, valid-event storage, idempotent duplicate handling, event types, and the Epic 15 multi-waitlist attribution fix.
-- T2 (AC2): ✅ `src/__tests__/lib/warmth.test.ts` + `warmth-batch.test.ts` — multi-signal scores, clamping, tier thresholds (~~incl. engagement-aware Unscored vs Cold~~ post-restructure: `assignTier(score)` never returns null), decay windows + the `>= 60` boundary, zero-event handling, batch pagination.
+- T2 (AC2): ✅ `src/__tests__/lib/warmth.test.ts` + `warmth-batch.test.ts` — multi-signal scores, clamping, tier thresholds (~~incl. engagement-aware Unscored vs Cold~~ post-restructure: `assignTier(score)` never returns null), decay windows + the `>= 30` boundary (was `>= 60`; grace shortened 2026-10-23), zero-event handling, batch pagination.
 - T3 (AC3–AC4): ✅ Warmth badge + filter coverage ships in `src/__tests__/components/dashboard-warmth-page.test.tsx` (Story 15.5) — the originally planned `warmth-badge.test.tsx` / `warmth-filter.test.tsx` files were never created; canonical ACs updated accordingly.
 - T4 (AC5): ✅ `src/__tests__/components/dashboard-warmth-page.test.tsx` (distribution rendering + empty state) + `warning-banner.test.tsx` + `warmth-panel.test.tsx` (Story 15.5).
 - T5 (AC7): ✅ Suite total **527** (520 passing + 7 pre-existing failures: dashboard-archive 4, dashboard-subscriber-table 3) — far above the ≥250 target (original baseline 231).

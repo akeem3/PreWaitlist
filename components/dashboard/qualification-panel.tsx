@@ -208,21 +208,35 @@ function PanelBody({
     };
   }, [subdomain, waitlistId]);
 
-  const viewAllLink = (
+  // Overview card is fully clickable (WarmthPanel pattern): the title is the
+  // single tab stop, its ::after stretches over the whole card, and the
+  // "View all" action is decorative.
+  const overviewTitle = (
     <Link
       href={`/dashboard/qualification${waitlistId ? `?wid=${waitlistId}` : ""}`}
-      className="text-body-sm font-medium text-accent transition-colors hover:text-accent/80"
+      className="after:absolute after:inset-0 after:rounded-[var(--card-radius)] focus-visible:after:outline-2 focus-visible:after:outline-accent"
     >
-      View all &rarr;
+      Qualification Breakdown
     </Link>
   );
+  const overviewAction = (
+    <span
+      aria-hidden="true"
+      className="text-body-sm font-medium text-accent transition-colors group-hover:text-accent/80"
+    >
+      View all &rarr;
+    </span>
+  );
+  const overviewPanelClass =
+    "group relative flex flex-col transition-colors hover:bg-muted/30";
 
   if (loadError) {
     if (variant === "overview") {
       return (
         <Panel
-          title="Qualification Breakdown"
-          action={viewAllLink}
+          title={overviewTitle}
+          action={overviewAction}
+          className={overviewPanelClass}
           dataTour="qualification-panel"
         >
           <p
@@ -248,8 +262,9 @@ function PanelBody({
     if (variant === "overview") {
       return (
         <Panel
-          title="Qualification Breakdown"
-          action={viewAllLink}
+          title={overviewTitle}
+          action={overviewAction}
+          className={overviewPanelClass}
           dataTour="qualification-panel"
         >
           <div className="space-y-3">
@@ -280,8 +295,9 @@ function PanelBody({
     if (variant === "overview") {
       return (
         <Panel
-          title="Qualification Breakdown"
-          action={viewAllLink}
+          title={overviewTitle}
+          action={overviewAction}
+          className={overviewPanelClass}
           dataTour="qualification-panel"
         >
           <EmptyState />
@@ -313,8 +329,9 @@ function PanelBody({
     const answerCap = questions.length >= 5 ? 1 : 2;
     return (
       <Panel
-        title="Qualification Breakdown"
-        action={viewAllLink}
+        title={overviewTitle}
+        action={overviewAction}
+        className={overviewPanelClass}
         dataTour="qualification-panel"
       >
         {meta}

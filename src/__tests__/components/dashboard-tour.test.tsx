@@ -91,6 +91,8 @@ function TourFixture({
       <div data-tour="warmth-panel" />
       <div data-tour="qualification-panel" />
       <div data-tour="dashboard-sidebar" />
+      <div data-tour="founder-contact" />
+      <div data-tour="feedback-fab" />
       <DashboardTour subscriberCount={count} interruptOpen={interrupt} />
     </>
   );
@@ -127,6 +129,16 @@ const APPROVED_COPY = [
     description:
       "Leaderboard, updates, broadcast, and settings — everything else lives in the sidebar.",
   },
+  {
+    title: "Talk to the founder",
+    description:
+      "Questions or ideas? Message me directly on Instagram or email — I read every message.",
+  },
+  {
+    title: "Submit A Feedback",
+    description:
+      "Found a bug or have a suggestion? Send feedback in seconds — it goes straight to me.",
+  },
 ];
 
 beforeEach(() => {
@@ -143,7 +155,7 @@ afterEach(() => {
 });
 
 describe("DashboardTour", () => {
-  it("starts once with the approved six-step copy when all gates hold", () => {
+  it("starts once with the approved eight-step copy when all gates hold", () => {
     render(<TourFixture />);
     expect(mocks.mockDriver).toHaveBeenCalledTimes(1);
     expect(mocks.mockDrive).toHaveBeenCalledTimes(1);
@@ -165,13 +177,15 @@ describe("DashboardTour", () => {
       '[data-tour="warmth-panel"]',
       '[data-tour="qualification-panel"]',
       '[data-tour="dashboard-sidebar"]',
+      '[data-tour="founder-contact"]',
+      '[data-tour="feedback-fab"]',
     ]);
   });
 
   it("uses the driver.js popover shape on every step (no flat title/description/side)", () => {
     render(<TourFixture />);
     const cfg = lastConfig();
-    expect(cfg.steps).toHaveLength(6);
+    expect(cfg.steps).toHaveLength(8);
 
     for (const step of cfg.steps) {
       // Popover present, non-empty, and typed.
@@ -194,6 +208,8 @@ describe("DashboardTour", () => {
       "top",
       "top",
       "right",
+      "top",
+      "top",
     ]);
   });
 
@@ -204,12 +220,42 @@ describe("DashboardTour", () => {
     render(<TourFixture />);
     expect(mocks.mockDriver).toHaveBeenCalledTimes(1);
     const cfg = lastConfig();
-    expect(cfg.steps).toHaveLength(5);
+    expect(cfg.steps).toHaveLength(7);
     expect(
       cfg.steps.some(
         (step) => step.element === '[data-tour="dashboard-sidebar"]'
       )
     ).toBe(false);
+    // Feedback surfaces are fixed-position and stay in the mobile tour.
+    expect(
+      cfg.steps.some((step) => step.element === '[data-tour="founder-contact"]')
+    ).toBe(true);
+    expect(
+      cfg.steps.some((step) => step.element === '[data-tour="feedback-fab"]')
+    ).toBe(true);
+  });
+
+  it("re-evaluates the viewport when the tour is replayed", () => {
+    const matchMedia = vi.spyOn(window, "matchMedia").mockReturnValue({
+      matches: false,
+    } as unknown as MediaQueryList);
+    render(<TourFixture />);
+    expect(lastConfig().steps).toHaveLength(7);
+
+    // Close the mobile tour, widen the window, replay.
+    mocks.mockDestroy();
+    matchMedia.mockReturnValue({ matches: true } as unknown as MediaQueryList);
+    act(() => {
+      window.dispatchEvent(new Event(TOUR_REPLAY_EVENT));
+    });
+
+    const cfg = lastConfig();
+    expect(cfg.steps).toHaveLength(8);
+    expect(
+      cfg.steps.some(
+        (step) => step.element === '[data-tour="dashboard-sidebar"]'
+      )
+    ).toBe(true);
   });
 
   it("does not start when subscriberCount is below 1", () => {

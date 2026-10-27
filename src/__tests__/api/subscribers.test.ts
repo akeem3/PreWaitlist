@@ -397,6 +397,8 @@ describe("POST /api/subscribers", () => {
     const html = mockedSendEmail.mock.calls[0][0]?.html;
     expect(html).toContain("<pro-footer>");
     expect(html).not.toContain("<free-footer>");
+    // Batch 7 logo fix: Pro = white-label, no PreWaitlist header logo.
+    expect(html).not.toContain("PreWaitlist-logo.svg");
   });
 
   it("19.1 AC7 defensive branch: array-shaped embed resolves pro → non-free footer", async () => {
@@ -416,6 +418,8 @@ describe("POST /api/subscribers", () => {
     const html = mockedSendEmail.mock.calls[0][0]?.html;
     expect(html).toContain("<pro-footer>");
     expect(html).not.toContain("<free-footer>");
+    // Batch 7 logo fix: Pro = white-label, no PreWaitlist header logo.
+    expect(html).not.toContain("PreWaitlist-logo.svg");
   });
 
   it("19.1 AC4: free tier gets the Powered-by footer (iff tier is free)", async () => {
@@ -435,6 +439,9 @@ describe("POST /api/subscribers", () => {
     const html = mockedSendEmail.mock.calls[0][0]?.html;
     expect(html).toContain("<free-footer>");
     expect(html).not.toContain("<pro-footer>");
+    // Batch 7 logo fix: header logo removed entirely — Free branding stays
+    // footer-only (buildFreeEmailFooter, mocked here as <free-footer>).
+    expect(html).not.toContain("PreWaitlist-logo.svg");
   });
 
   // --- 90% cap warning: plain-text part (Batch 5) ---

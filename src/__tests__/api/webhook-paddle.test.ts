@@ -224,6 +224,50 @@ describe("POST /api/webhooks/paddle — Phase 2 billing correctness", () => {
     });
   });
 
+  it.each([
+    "subscription.created",
+    "subscription.activated",
+    "transaction.completed",
+    "subscription.updated",
+    "subscription.canceled",
+    "subscription.past_due",
+  ])("does not echo database errors from %s", async (eventType) => {
+    mockUnmarshal.mockResolvedValueOnce(subEvent(eventType));
+    if (eventType === "transaction.completed") {
+      mockAdminSupabase.__queue.push(OK, {
+        data: null,
+        error: { message: "private database detail" },
+      });
+    } else {
+      mockAdminSupabase.__queue.push({
+        data: null,
+        error: { message: "private database detail" },
+      });
+    }
+
+    const res = await POST(paddleRequest());
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({
+      error: "Something went wrong. Please try again.",
+    });
+  });
+
+  it("does not echo database errors from the transaction cancellation guard", async () => {
+    mockUnmarshal.mockResolvedValueOnce(subEvent("transaction.completed"));
+    mockAdminSupabase.__queue.push({
+      data: null,
+      error: { message: "private database detail" },
+    });
+
+    const res = await POST(paddleRequest());
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({
+      error: "Something went wrong. Please try again.",
+    });
+  });
+
   it("missing user_id acks without touching the database", async () => {
     mockUnmarshal.mockResolvedValueOnce(
       subEvent("subscription.updated", { customData: null })

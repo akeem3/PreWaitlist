@@ -77,28 +77,29 @@ describe("calculateWarmthScore", () => {
   });
 
   describe("time decay", () => {
-    it("applies no penalty for events within 59 days", () => {
+    it("applies no penalty on day 29", () => {
+      const events = [{ event_type: "clicked", created_at: daysAgo(29) }];
+      const score = calculateWarmthScore(events, 0, false, daysAgo(29));
+      expect(score).toBe(75); // 70 + 5; day 29 is still inside the grace window
+    });
+
+    it("keeps a silent 29-day-old signup Hot at 70", () => {
+      const score = calculateWarmthScore([], 0, false, daysAgo(29));
+      expect(score).toBe(70); // no penalty until day 30
+    });
+
+    it("applies -25 penalty on day 30", () => {
       const events = [{ event_type: "clicked", created_at: daysAgo(30) }];
-      const score = calculateWarmthScore(events, 0, false, daysAgo(0));
-      expect(score).toBe(75); // 70 + 5, no decay penalty
+      const score = calculateWarmthScore(events, 0, false, daysAgo(30));
+      expect(score).toBe(50); // 70 + 5 - 25 = 50 → Warm
     });
 
-    it("applies no penalty at exactly 59 days", () => {
-      const events = [{ event_type: "clicked", created_at: daysAgo(59) }];
-      const score = calculateWarmthScore(events, 0, false, daysAgo(59));
-      expect(score).toBe(75); // day 59 is still in the grace window
+    it("drops a silent 30-day-old signup to Warm at 45", () => {
+      const score = calculateWarmthScore([], 0, false, daysAgo(30));
+      expect(score).toBe(45); // 70 - 25 = 45 → Warm
     });
 
-    it("applies -25 penalty at exactly 60 days", () => {
-      const events = Array.from({ length: 6 }, () => ({
-        event_type: "clicked" as string,
-        created_at: daysAgo(60),
-      }));
-      const score = calculateWarmthScore(events, 0, false, daysAgo(60));
-      expect(score).toBe(75); // 70 + 30 - 25 = 75 (not the 999 reset)
-    });
-
-    it("applies -25 penalty for events 60-89 days old", () => {
+    it("applies -25 penalty for events 30-89 days old", () => {
       const events = [{ event_type: "clicked", created_at: daysAgo(70) }];
       const score = calculateWarmthScore(events, 0, false, daysAgo(70));
       expect(score).toBe(50); // 70 + 5 - 25 = 50
@@ -141,13 +142,13 @@ describe("calculateWarmthScore", () => {
       const events = [
         { event_type: "clicked", created_at: daysAgo(10) },
         { event_type: "clicked", created_at: daysAgo(20) },
-        { event_type: "clicked", created_at: daysAgo(30) },
+        { event_type: "clicked", created_at: daysAgo(28) },
       ];
       const score = calculateWarmthScore(events, 0, false, daysAgo(0));
       expect(score).toBe(85); // 70 + 3 clicks * 5, no decay
     });
 
-    it("penalizes even with recent signals if the clock is 60+ days", () => {
+    it("penalizes even with recent signals if the clock is 30+ days", () => {
       const events = [{ event_type: "clicked", created_at: daysAgo(65) }];
       const score = calculateWarmthScore(events, 1, false, daysAgo(65));
       expect(score).toBe(65); // 70 + 5 + 15 - 25 = 65
@@ -300,6 +301,88 @@ describe("scoreSubscriber", () => {
     });
     expect(result.score).toBe(85); // 70 + 15, clock reads the referral
     expect(result.tier).toBe("hot");
+  });
+
+  it("keeps a high-engagement subscriber Hot on day 29", () => {
+    const events = Array.from({ length: 6 }, () => ({
+      event_type: "clicked",
+      created_at: daysAgo(29),
+    }));
+    const result = scoreSubscriber({
+      events,
+      referralCount: 0,
+      hasQualAnswers: false,
+      createdAt: daysAgo(29),
+    });
+    expect(result.score).toBe(100); // 70 + 30, still inside the grace window
+    expect(result.tier).toBe("hot");
+  });
+
+  it("caps a high-engagement subscriber to Warm on day 30", () => {
+    const events = Array.from({ length: 6 }, () => ({
+      event_type: "clicked",
+      created_at: daysAgo(30),
+    }));
+    const result = scoreSubscriber({
+      events,
+      referralCount: 0,
+      hasQualAnswers: false,
+      createdAt: daysAgo(30),
+    });
+    expect(result.score).toBe(75); // 70 + 30 - 25 — score alone would be Hot
+    expect(result.tier).toBe("warm");
+  });
+
+  it("caps a heavy-click subscriber to Warm at day 89", () => {
+    const events = Array.from({ length: 20 }, () => ({
+      event_type: "clicked",
+      created_at: daysAgo(89),
+    }));
+    const result = scoreSubscriber({
+      events,
+      referralCount: 0,
+      hasQualAnswers: false,
+      createdAt: daysAgo(89),
+    });
+    expect(result.score).toBe(100); // clamp to 100 masks the -25; cap still applies
+    expect(result.tier).toBe("warm");
+  });
+
+  it("caps a referral-heavy subscriber to Warm past the grace window", () => {
+    const result = scoreSubscriber({
+      events: [],
+      referralCount: 2,
+      hasQualAnswers: false,
+      createdAt: daysAgo(45),
+    });
+    expect(result.score).toBe(75); // 70 + 30 - 25
+    expect(result.tier).toBe("warm");
+  });
+
+  it("returns to Hot when a new click resets the recency clock", () => {
+    const events = [
+      ...Array.from({ length: 6 }, () => ({
+        event_type: "clicked",
+        created_at: daysAgo(40),
+      })),
+      { event_type: "clicked", created_at: daysAgo(1) },
+    ];
+    const result = scoreSubscriber({
+      events,
+      referralCount: 0,
+      hasQualAnswers: false,
+      createdAt: daysAgo(40),
+    });
+    expect(result.score).toBe(100); // 70 + 35, clock reads the recent click
+    expect(result.tier).toBe("hot");
+  });
+
+  it("leaves the numeric score uncapped when only the tier is capped", () => {
+    const events = Array.from({ length: 6 }, () => ({
+      event_type: "clicked",
+      created_at: daysAgo(31),
+    }));
+    expect(calculateWarmthScore(events, 0, false, daysAgo(31))).toBe(75);
   });
 
   it("does not return hadEngagement", () => {

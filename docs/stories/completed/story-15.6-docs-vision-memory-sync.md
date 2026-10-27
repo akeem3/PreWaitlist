@@ -67,7 +67,7 @@ Keep click tracking via webhooks (true). Do not claim leaderboard visits feed sc
 Append under Sprint 3 / new **Epic 15** section:
 
 - Decisions: drop reply/visit weights; click-only decay + signup fallback; engaged zero → cold; vercel.json cron `0 5 * * *`; badge/filter on warmth page only; Hot ≥70 unchanged; opens never in score.
-- Gotchas: referral batch `.in("referrer_id", pageIds)`; day boundary `>= 60`; settings helper is cold-% not score; segments need wid + requirePro.
+- Gotchas: referral batch `.in("referrer_id", pageIds)`; day boundary `>= 30` (was `>= 60`; grace shortened 2026-10-23); settings helper is cold-% not score; segments need wid + requirePro.
 - Date: implementation date when stories complete.
 
 ### T4 — Audit + Epic 11 index

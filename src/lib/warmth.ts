@@ -11,9 +11,9 @@ const SIGNAL_WEIGHTS = {
 // before signals, so a fresh signup scores 70 and classifies without any clicks.
 const BASELINE = 70;
 
-// 15.0 AC3: 0–59 days free, 60–89 days −25, 90+ days forces 0 (clamped)
+// Decay (amended 2026-10-23): 0–29 days free, 30–89 days −25, 90+ forces 0
 const DECAY = {
-  no_penalty_days: 60,
+  no_penalty_days: 30,
   penalty_amount: 25,
   reset_days: 90,
 } as const;
@@ -48,12 +48,25 @@ export function calculateWarmthScore(
 /**
  * Warmth restructure (2026-09-25): ≥70 hot, ≥40 warm, else cold. Never null —
  * a decayed-zero subscriber with lifetime engagement is Cold, and a fresh
- * signup at baseline 70 is Hot.
+ * signup at baseline 70 is Hot. Pure score bands: the recency cap in
+ * `scoreSubscriber` decides the final tier (Hot requires activity ≤29 days).
  */
 export function assignTier(score: number): Tier {
   if (score >= 70) return "hot";
   if (score >= 40) return "warm";
   return "cold";
+}
+
+/**
+ * Recency cap (2026-10-23): Hot means "active within the grace window", not
+ * "accumulated a high score" — a flat −25 penalty let click-heavy subscribers
+ * stay Hot through days 30–89. Score stays a truthful engagement number;
+ * only the tier is capped, at Warm, once the clock passes
+ * `DECAY.no_penalty_days`. 90+ days already forces score 0 → Cold.
+ */
+function applyRecencyCap(tier: Tier, daysSince: number): Tier {
+  if (daysSince >= DECAY.no_penalty_days && tier === "hot") return "warm";
+  return tier;
 }
 
 /**
@@ -86,10 +99,13 @@ export function scoreSubscriber(input: {
     rawScore += SIGNAL_WEIGHTS.qualification_completed;
   }
 
-  const decayPenalty = calculateDecay(events, referralActivityAt, createdAt);
-  const score = Math.max(0, Math.min(100, rawScore - decayPenalty));
+  const recencyDays = getRecencyDays(events, referralActivityAt, createdAt);
+  const score = Math.max(
+    0,
+    Math.min(100, rawScore - decayPenaltyFor(recencyDays))
+  );
 
-  return { score, tier: assignTier(score) };
+  return { score, tier: applyRecencyCap(assignTier(score), recencyDays) };
 }
 
 /**
@@ -98,7 +114,7 @@ export function scoreSubscriber(input: {
  * whichever is most recent (research: recency = last engagement, Tarvent /
  * Madkudu / Outsolvi). `sent`/`delivered`/`opened` never reset the clock.
  */
-function calculateDecay(
+function getRecencyDays(
   events: EmailEvent[],
   referralActivityAt: string | null,
   fallbackDate: string
@@ -121,10 +137,12 @@ function calculateDecay(
     }
   }
 
-  const daysSince = Math.floor(
+  return Math.floor(
     (Date.now() - new Date(reference).getTime()) / (1000 * 60 * 60 * 24)
   );
+}
 
+function decayPenaltyFor(daysSince: number): number {
   if (daysSince >= DECAY.reset_days) return 999;
   if (daysSince >= DECAY.no_penalty_days) return DECAY.penalty_amount;
   return 0;
