@@ -1,7 +1,19 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
+
+const subscribeToHydration = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
+
+function useHydrated() {
+  return useSyncExternalStore(
+    subscribeToHydration,
+    getClientSnapshot,
+    getServerSnapshot
+  );
+}
 
 /* ── Smooth scroll hook ────────────────────────────────────────── */
 
@@ -51,8 +63,9 @@ interface FadeInProps {
 
 export function FadeIn({ children, className, delay = 0 }: FadeInProps) {
   const shouldReduceMotion = useReducedMotion();
+  const hydrated = useHydrated();
 
-  if (shouldReduceMotion) {
+  if (shouldReduceMotion || !hydrated) {
     return <div className={className}>{children}</div>;
   }
 
@@ -87,8 +100,9 @@ interface StaggerGroupProps {
 
 export function StaggerGroup({ children, className }: StaggerGroupProps) {
   const shouldReduceMotion = useReducedMotion();
+  const hydrated = useHydrated();
 
-  if (shouldReduceMotion) {
+  if (shouldReduceMotion || !hydrated) {
     return <div className={className}>{children}</div>;
   }
 
